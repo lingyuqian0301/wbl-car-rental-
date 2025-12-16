@@ -71,4 +71,12 @@ class User extends Authenticatable
     {
         return $this->role === 'customer';
     }
+
+    /**
+     * Check if user is a staff member.
+     */
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
 }

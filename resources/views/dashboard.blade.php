@@ -1,145 +1,78 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Success Message -->
-            @if(session('success'))
-                <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            @endif
-
-            <!-- Quick Actions -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <a href="{{ route('bookings.index') }}" class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">
-                    <div class="p-6">
-                        <div class="flex items-center">
-                            <svg class="h-8 w-8 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                            </svg>
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-900">My Bookings</h3>
-                                <p class="text-sm text-gray-500">View all your bookings</p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                @auth
-                    @if(Auth::user()->isAdmin())
-                        <a href="{{ route('admin.payments.index') }}" class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">
-                            <div class="p-6">
-                                <div class="flex items-center">
-                                    <svg class="h-8 w-8 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-gray-900">Payment Verification</h3>
-                                        <p class="text-sm text-gray-500">Verify pending payments</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    @endif
-                @endauth
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="flex items-center">
-                            <svg class="h-8 w-8 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-900">Payment & Billing</h3>
-                                <p class="text-sm text-gray-500">Manage payments and invoices</p>
-                            </div>
-                        </div>
-                    </div>
+@section('content')
+<div class="py-12">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="flex items-center justify-center w-full transition-opacity opacity-100 duration-750 lg:grow starting:opacity-0">
+    <main class="flex max-w-[335px] w-full flex-col-reverse lg:max-w-4xl lg:flex-row">
+        <div class="text-[13px] leading-[20px] flex-1 p-6 pb-12 lg:p-20 bg-transparent dark:bg-transparent dark:text-[#EDEDEC] rounded-bl-lg rounded-br-lg lg:rounded-tl-lg lg:rounded-br-none">
+            <h1 class="mb-1 font-medium">Welcome to Your Dashboard</h1>
+            <p class="mb-2 text-[#706f6c] dark:text-[#A1A09A]">Get started by exploring the available features and options.</p>
+            
+            <div class="mt-6">
+                <h2 class="text-lg font-medium mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="{{ route('bookings.index') }}" class="p-4 bg-white/0 hover:bg-white dark:bg-[#1f1f1f]/0 dark:hover:bg-[#1f1f1f] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200">
+                        <h3 class="font-medium">View Bookings</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Check your current and past bookings</p>
+                    </a>
+                    <a href="{{ route('profile.edit') }}" class="p-4 bg-white/0 hover:bg-white dark:bg-[#1f1f1f]/0 dark:hover:bg-[#1f1f1f] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200">
+                        <h3 class="font-medium">Update Profile</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your account information</p>
+                    </a>
                 </div>
             </div>
 
-            <!-- Recent Bookings -->
-            @php
-                $recentBookings = \App\Models\Booking::with(['vehicle', 'payments'])
-                    ->where('user_id', Auth::id())
-                    ->orderBy('created_at', 'desc')
-                    ->take(5)
-                    ->get();
-            @endphp
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Recent Bookings</h3>
-                        <a href="{{ route('bookings.index') }}" class="text-sm text-blue-600 hover:text-blue-800">View All</a>
-                    </div>
-
-                    @if($recentBookings->count() > 0)
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach($recentBookings as $booking)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ $booking->id }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $booking->vehicle->full_model ?? 'N/A' }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $booking->start_date->format('M d') }} - {{ $booking->end_date->format('M d, Y') }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                @if($booking->status == 'Pending')
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                                                @elseif($booking->status == 'Confirmed')
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Confirmed</span>
-                                                @elseif($booking->status == 'Cancelled')
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Cancelled</span>
-                                                @else
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Completed</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                @php
-                                                    $verifiedPayment = $booking->payments->where('status', 'Verified')->first();
-                                                    $pendingPayment = $booking->payments->where('status', 'Pending')->first();
-                                                    $rejectedPayment = $booking->payments->where('status', 'Rejected')->first();
-                                                @endphp
-                                                @if($verifiedPayment)
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
-                                                @elseif($pendingPayment)
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                                                @elseif($rejectedPayment)
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>
-                                                @else
-                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Not Paid</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <a href="{{ route('bookings.show', $booking->id) }}" class="text-blue-600 hover:text-blue-900">View</a>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+            @if(Auth::user()->isAdmin())
+            <div class="mt-8">
+                <h2 class="text-lg font-medium mb-4">Admin Tools</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="{{ route('admin.dashboard') }}" class="p-4 bg-white/0 hover:bg-white dark:bg-[#1f1f1f]/0 dark:hover:bg-[#1f1f1f] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200">
+                        <h3 class="font-medium">Admin Dashboard</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Access admin controls and analytics</p>
+                    </a>
+                    <a href="{{ route('admin.payments.index') }}" class="p-4 bg-white/0 hover:bg-white dark:bg-[#1f1f1f]/0 dark:hover:bg-[#1f1f1f] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200">
+                        <h3 class="font-medium">Payment Verification</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Review and verify pending payments</p>
+                    </a>
+                </div>
+            </div>
+            @endif
+        </div>
+        
+        <div class="bg-[#fff2f2] dark:bg-[#1D0002] relative lg:-ml-px -mb-px lg:mb-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg aspect-[335/376] lg:aspect-auto w-full lg:w-[438px] shrink-0 overflow-hidden">
+            <div class="p-8 h-full flex flex-col justify-center">
+                <h2 class="text-2xl font-medium mb-4">Welcome back, {{ Auth::user()->name }}!</h2>
+                <p class="text-gray-700 dark:text-gray-300 mb-6">We're glad to see you again. Here's what's happening with your account.</p>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-white dark:bg-[#2a2a2a] rounded-lg shadow-sm mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                         </div>
-                    @else
-                        <p class="text-gray-500">No bookings yet. Create a booking to get started.</p>
-                    @endif
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Next Booking</p>
+                            <p class="font-medium">Check your upcoming trips</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <div class="p-2 bg-white dark:bg-[#2a2a2a] rounded-lg shadow-sm mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Payment Status</p>
+                            <p class="font-medium">View payment history</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+            </main>
+        </div>
     </div>
-</x-app-layout>
+@endsection
