@@ -301,7 +301,7 @@
                 <a href="#">Contact Us</a>
             </nav>
             <div>
-                <a href="#" class="header-btn">Login</a>
+                <a href="{{ route('login') }}" class="header-btn">Login</a>
             </div>
         </div>
     </header>
