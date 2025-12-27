@@ -22,6 +22,17 @@
             color: #333;
         }
 
+        :root {
+            --primary-orange: #ff8c42;
+            --primary-dark-orange: #f97316;
+            --success-green: #059669;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --bg-light: #f8fafc;
+            --error-red: #dc2626;
+        }
+
         /* Header Styles */
         header {
             background-color: #ffffff;
@@ -48,7 +59,7 @@
         .logo h1 {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #dc2626;
+            color: var(--primary-orange);
         }
 
         .logo span {
@@ -68,13 +79,13 @@
         }
 
         nav a:hover {
-            color: #dc2626;
+            color: var(--primary-orange);
         }
 
         .header-btn {
             display: inline-block;
             padding: 0.5rem 1rem;
-            background-color: #dc2626;
+            background-color: var(--primary-orange);
             color: white;
             text-decoration: none;
             border-radius: 0.375rem;
@@ -82,12 +93,12 @@
         }
 
         .header-btn:hover {
-            background-color: #b91c1c;
+            background-color: var(--primary-dark-orange);
         }
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(to right, #dc2626, #b91c1c);
+            background: linear-gradient(to right, var(--primary-orange), var(--primary-dark-orange));
             color: white;
             padding: 5rem 2rem;
             text-align: center;
@@ -114,7 +125,7 @@
             display: inline-block;
             padding: 0.75rem 2rem;
             background-color: white;
-            color: #dc2626;
+            color: var(--primary-orange);
             font-weight: 700;
             text-decoration: none;
             border-radius: 0.5rem;
@@ -267,7 +278,7 @@
         .car-price {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #dc2626;
+            color: var(--primary-orange);
             margin-bottom: 1rem;
         }
 
@@ -280,7 +291,7 @@
             display: block;
             width: 100%;
             padding: 0.5rem;
-            background-color: #dc2626;
+            background-color: var(--primary-orange);
             color: white;
             text-align: center;
             text-decoration: none;
@@ -289,7 +300,7 @@
         }
 
         .car-btn:hover {
-            background-color: #b91c1c;
+            background-color: var(--primary-dark-orange);
         }
 
         /* Filter Styles */
@@ -410,7 +421,7 @@
             height: 48px;
             min-width: 140px;
             padding: 0 2rem;
-            background-color: #dc2626;
+            background-color: var(--primary-orange);
             color: white;
             border: none;
             border-radius: 0.375rem;
@@ -423,7 +434,7 @@
         }
 
         .filter-btn:hover {
-            background-color: #b91c1c;
+            background-color: var(--primary-dark-orange);
         }
 
         /* Location input with icon */
