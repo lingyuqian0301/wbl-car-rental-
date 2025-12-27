@@ -97,6 +97,16 @@
             overflow: hidden;
         }
 
+        .logo-text {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #dc7e26ff 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
         .login-wrapper {
             width: 100%;
             max-width: 440px;
@@ -448,9 +458,12 @@
         <div class="login-section">
             <div class="login-wrapper animate-fade-in-up">
                 <!-- Brand Header -->
-                <div class="brand-header animate-fade-in" style="animation-delay: 0.1s;">
-                    <img src="{{ asset('images/hasta-logo.png') }}" alt="Hasta Travel & Tours" style="height: 60px; width: auto;">
-                </div>
+                <div class="logo-container">
+                        <div class="logo-box">
+                            <span class="logo-text">HASTA Travel</span>
+                        </div>
+                    </a>
+                </div>
 
                 <!-- Form Title -->
                 <div class="form-title animate-fade-in" style="animation-delay: 0.2s;">
