@@ -12,10 +12,6 @@ use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
 
-// Public welcome page
-Route::get('/', function () {
-    return view('welcome');
-});
 // Homepage – show approved cars
 Route::get('/', [VehicleController::class, 'index'])->name('home');
 

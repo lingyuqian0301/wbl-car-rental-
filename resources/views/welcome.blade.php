@@ -208,14 +208,15 @@
 
 
         .car-image {
-            background-color: #dbeafe;
-            height: 12rem;
+            height: 180px;
+            width: 100%;
+            background-color: #f3f4f6;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
-            color: #9ca3af;
         }
+
 
         .car-card.green .car-image {
             background-color: #d1fae5;
@@ -227,13 +228,18 @@
 
         .car-content {
             padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .car-content h4 {
+            min-height: 48px;
             font-size: 1.25rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
             color: #1f2937;
+            line-height: 1.3;
         }
 
         .car-type {
@@ -242,11 +248,19 @@
             font-size: 0.9rem;
         }
 
+        .car-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+        }
+
         .car-specs {
             margin-bottom: 1rem;
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
+            min-height: 28px;
         }
 
         .car-specs p {
@@ -280,6 +294,7 @@
             font-weight: 700;
             color: var(--primary-orange);
             margin-bottom: 1rem;
+            min-height: 40px;
         }
 
         .car-price span {
@@ -297,6 +312,7 @@
             text-decoration: none;
             border-radius: 0.375rem;
             transition: background-color 0.3s;
+            margin-top: auto;
         }
 
         .car-btn:hover {
@@ -500,8 +516,8 @@
                 <span>Travel</span>
             </div>
             <nav>
-                <a href="#">Home</a>
-                <a href="/bookings">View Bookings</a>
+                <a href="{{ route('home') }}">Home</a>
+                <a href="{{ route('bookings.index') }}">View Bookings</a>
                 <a href="#">Wallet Transaction</a>
                 <a href="#">Loyalty Card</a>
                 <a href="#">Contact Us</a>
@@ -517,7 +533,7 @@
         <div class="hero-container">
             <h2>Experience the road like never before</h2>
             <p>Discover our premium car rental service with unbeatable rates and reliable vehicles</p>
-            <a href="#" class="hero-btn">View all cars</a>
+            <a href="{{ route('home') }}" class="hero-btn">View all cars</a>
         </div>
     </section>
 
@@ -574,6 +590,8 @@
                         <option value="Perodua" {{ request('brand') == 'Perodua' ? 'selected' : '' }}>Perodua</option>
                         <option value="Proton" {{ request('brand') == 'Proton' ? 'selected' : '' }}>Proton</option>
                         <option value="Toyota" {{ request('brand') == 'Toyota' ? 'selected' : '' }}>Toyota</option>
+                        <option value="Honda" {{ request('brand') == 'Honda' ? 'selected' : '' }}>Honda</option>
+
                     </select>
                 </div>
 
@@ -586,6 +604,9 @@
                         </option>
                         <option value="Sedan" {{ request('vehicle_type') == 'Sedan' ? 'selected' : '' }}>Sedan</option>
                         <option value="SUV" {{ request('vehicle_type') == 'SUV' ? 'selected' : '' }}>SUV</option>
+                        <option value="Compact" {{ request('vehicle_type') == 'Compact' ? 'selected' : '' }}>Compact
+                        </option>
+
                     </select>
                 </div>
 
@@ -608,12 +629,29 @@
                         ) . '.png';
                     @endphp
 
+                    <!-- <div class="car-image">
+                            <img src="{{ asset('images/cars/browse/' . $imageName) }}"
+                                alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}" loading="lazy"
+                                onerror="this.src='{{ asset('images/cars/browse/default.png') }}'">
+                        </div> -->
+                    @php
+                        $imagePath = public_path('images/cars/browse/' . $imageName);
+                    @endphp
+
+
                     <div class="car-image">
-                        <img src="{{ asset('images/cars/browse/' . $imageName) }}"
-                            alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}" loading="lazy"
-                            onerror="this.src='{{ asset('images/cars/browse/default.png') }}'"
-                            style="width:100%; height:100%; object-fit:cover;">
-                    </div>
+    @if(file_exists($imagePath))
+        <img 
+            src="{{ asset('images/cars/browse/' . $imageName) }}" 
+            alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}"
+        >
+    @else
+        <img 
+            src="{{ asset('images/cars/browse/default.png') }}" 
+            alt="Default car"
+        >
+    @endif
+</div>
 
 
 

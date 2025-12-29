@@ -11,7 +11,7 @@ class VehicleController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Vehicle::where('isActive', 'true');
+        $query = Vehicle::whereIn('isActive', [1, 'true']);
         // Filter by brand
         if ($request->filled('brand')) {
             $query->where('vehicle_brand', $request->brand);
@@ -35,6 +35,7 @@ class VehicleController extends Controller
                             ->where('rental_end_date', '>=', $startDate);
                     });
             });
+
         }
         //         $request->validate([
 //         'brand' => 'required|string',
