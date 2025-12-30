@@ -63,8 +63,8 @@
             background-color: var(--primary-dark-orange);
         }
                :root {
-            --primary-orange: #ff8c42;
-            --primary-dark-orange: #f97316;
+            --primary-orange: #dc2626;
+            --primary-dark-orange: #991b1b;
             --success-green: #059669;
             --text-primary: #1e293b;
             --text-secondary: #64748b;

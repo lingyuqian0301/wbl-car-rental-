@@ -23,8 +23,8 @@
         }
 
         :root {
-            --primary-orange: #ff8c42;
-            --primary-dark-orange: #f97316;
+            --primary-orange: #dc2626;
+            --primary-dark-orange: #991b1b;
             --success-green: #059669;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
@@ -62,7 +62,7 @@
         .hero-btn {
             display: inline-block;
             padding: 0.75rem 2rem;
-            background-color: white;
+            background-color: #ffffff;
             color: var(--primary-orange);
             font-weight: 700;
             text-decoration: none;
@@ -289,11 +289,6 @@
             border-bottom: 3px solid transparent;
         }
 
-        .filter-tab.active {
-            color: #1f2937;
-            border-bottom-color: #3b82f6;
-            background-color: #ffffff;
-        }
 
         .filter-tab:hover {
             color: #374151;
@@ -330,12 +325,6 @@
             background-color: #ffffff;
         }
 
-        .filter-group input:focus,
-        .filter-group select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
 
         /* Time group (inline for pickup and return times) */
         .filter-time-group {
@@ -366,8 +355,8 @@
 
         .filter-time-item input:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
 
         /* Buttons */
@@ -389,6 +378,16 @@
 
         .filter-btn:hover {
             background-color: var(--primary-dark-orange);
+        }
+
+        .filter-tab.active {
+            border-bottom-color: var(--primary-orange);
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
 
         /* Location input with icon */

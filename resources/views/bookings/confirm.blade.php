@@ -28,7 +28,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #ff8c42 0%, #f97316 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             color: white;
             padding: 40px 30px;
             text-align: center;
@@ -57,7 +57,7 @@
             color: #333;
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 3px solid #ff8c42;
+            border-bottom: 3px solid #dc2626;
             display: inline-block;
         }
 
@@ -90,8 +90,8 @@
         }
 
         .price-summary {
-            background: #fff3e0;
-            border: 2px solid #ffb74d;
+            background: #fee2e2;
+            border: 2px solid #dc2626;
             padding: 25px;
             border-radius: 8px;
             margin-bottom: 30px;
@@ -101,7 +101,7 @@
             display: flex;
             justify-content: space-between;
             padding: 12px 0;
-            border-bottom: 1px solid #ffe0b2;
+            border-bottom: 1px solid #fecdd3;
             font-size: 1em;
         }
 
@@ -123,7 +123,7 @@
             display: flex;
             justify-content: space-between;
             padding-top: 15px;
-            border-top: 2px solid #ffb74d;
+            border-top: 2px solid #dc2626;
             margin-top: 15px;
             font-size: 1.3em;
         }
@@ -134,7 +134,7 @@
         }
 
         .total-value {
-            color: #ff8c42;
+            color: #dc2626;
             font-weight: bold;
         }
 
@@ -169,13 +169,13 @@
         }
 
         .btn-confirm {
-            background: linear-gradient(135deg, #ff8c42 0%, #f97316 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             color: white;
-            box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
         }
 
         .btn-confirm:hover {
-            box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
             transform: translateY(-2px);
         }
 
@@ -211,7 +211,7 @@
             height: 60px;
             margin: 0 auto 30px;
             border: 6px solid #f0f0f0;
-            border-top: 6px solid #ff8c42;
+            border-top: 6px solid #dc2626;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -256,7 +256,7 @@
         }
 
         .addon-price {
-            color: #ff8c42;
+            color: #dc2626;
             font-weight: 600;
         }
     </style>
@@ -308,7 +308,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Daily Rate:</span>
-                        <span class="info-value" style="color: #ff8c42; font-weight: bold;">RM {{ number_format($vehicle->rental_price, 2) }}</span>
+                        <span class="info-value" style="color: #dc2626; font-weight: bold;">RM {{ number_format($vehicle->rental_price, 2) }}</span>
                     </div>
                 </div>
             </div>
@@ -364,7 +364,7 @@
 
             <!-- Price Summary -->
             <div class="price-summary">
-                <h2 style="border-bottom: 2px solid #ffb74d; padding-bottom: 10px; margin-bottom: 20px;">Price Summary</h2>
+                <h2 style="border-bottom: 2px solid #dc2626; padding-bottom: 10px; margin-bottom: 20px;">Price Summary</h2>
                 <div class="price-row">
                     <span class="price-label">Vehicle (RM {{ $vehicle->rental_price }} × {{ $bookingData['duration_days'] }} days)</span>
                     <span class="price-value">RM {{ number_format($vehicle->rental_price * $bookingData['duration_days'], 2) }}</span>

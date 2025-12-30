@@ -14,8 +14,8 @@
         }
 
         :root {
-            --primary-orange: #ff8c42;
-            --primary-dark-orange: #f97316;
+            --primary-orange: #dc2626;
+            --primary-dark-orange: #991b1b;
             --success-green: #059669;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
@@ -335,7 +335,7 @@
         .booking-form select:focus {
             outline: none;
             border-color: var(--primary-orange);
-            box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.1);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
 
         .booking-form input::placeholder {
@@ -354,12 +354,12 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
         }
 
         .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
         }
 
         .submit-btn:active {

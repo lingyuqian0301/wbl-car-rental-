@@ -13,8 +13,8 @@
 
     <style>
         :root {
-            --primary-orange: #ff8c42;
-            --primary-dark-orange: #f97316;
+            --primary-orange: #dc2626;
+            --primary-dark-orange: #991b1b;
             --success-green: #059669;
             --text-primary: #1e293b;
             --text-secondary: #64748b;
@@ -100,11 +100,11 @@
         .logo-text {
             font-size: 1.6rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #dc7e26ff 0%, #ef4444 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.5px;
         }
 
         .login-wrapper {
@@ -131,7 +131,7 @@
 
         .input-field:focus {
             border-color: var(--primary-orange);
-            box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.1);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
             outline: none;
         }
 
@@ -189,7 +189,7 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(255, 140, 66, 0.3);
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
         }
 
         .btn-primary:active {
@@ -332,7 +332,7 @@
         .gradient-overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(255, 140, 66, 0.9) 0%, rgba(249, 115, 22, 0.85) 100%);
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.9) 0%, rgba(153, 27, 27, 0.85) 100%);
         }
 
         .branded-content {
@@ -354,7 +354,7 @@
         }
 
         .branded-content h2 span {
-            color: #fed7aa;
+            color: #fee2e2;
         }
 
         .branded-content > div:first-child p {
