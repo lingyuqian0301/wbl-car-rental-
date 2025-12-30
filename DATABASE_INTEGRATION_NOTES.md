@@ -94,9 +94,4 @@ keep_deposit column to payment table
 keep_deposit column to booking table
 user_id column to walletaccount table (optional, for Laravel users)
 description, reference_type, reference_id to wallettransaction table
-2025_01_20_000001_add_payment_fields_to_payment_table — Added keep_deposit column
-2025_01_20_000002_create_walletaccount_table — Added user_id column to existing table
-2025_01_20_000003_create_wallettransaction_table — Added description, reference_type, reference_id columns
-2025_01_20_000004_add_keep_deposit_to_bookings_table — Added keep_deposit column
-2025_12_07_115851_add_role_to_users_table — Fixed to check if column exists (already existed)
-2025_12_08_000000_add_item_category_id_to_vehicles_table — Completed
+

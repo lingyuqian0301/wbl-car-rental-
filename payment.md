@@ -171,14 +171,6 @@ GET  /payments/create/{booking} - Show payment form
 POST /payments/store           - Store payment (existing)
 ```
 
-## Migrations
-
-### Migration Files Created
-1. `2025_01_20_000001_add_payment_fields_to_payment_table.php`
-2. `2025_01_20_000002_create_walletaccount_table.php`
-3. `2025_01_20_000003_create_wallettransaction_table.php`
-4. `2025_01_20_000004_add_keep_deposit_to_bookings_table.php`
-
 ## Usage Examples
 
 ### 1. Submit Payment with Receipt
