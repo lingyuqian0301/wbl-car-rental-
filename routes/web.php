@@ -8,12 +8,12 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
-// Public welcome page
-Route::get('/', function () {
-    return view('welcome');
-});
+
+// Homepage – show approved cars
+Route::get('/', [VehicleController::class, 'index'])->name('home');
 
 // ----------------------------
 // Staff Login Routes (GUESTS ONLY)

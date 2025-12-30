@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HASTA Travel - Car Rental System</title>
-    
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-    
+
     <style>
         * {
             margin: 0;
@@ -19,6 +20,17 @@
             font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             line-height: 1.6;
             color: #333;
+        }
+
+        :root {
+            --primary-orange: #ff8c42;
+            --primary-dark-orange: #f97316;
+            --success-green: #059669;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --bg-light: #f8fafc;
+            --error-red: #dc2626;
         }
 
         /* Header Styles */
@@ -47,7 +59,7 @@
         .logo h1 {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #dc2626;
+            color: var(--primary-orange);
         }
 
         .logo span {
@@ -56,7 +68,7 @@
         }
 
         nav {
-            display: none;
+            display: block;
         }
 
         nav a {
@@ -67,13 +79,13 @@
         }
 
         nav a:hover {
-            color: #dc2626;
+            color: var(--primary-orange);
         }
 
         .header-btn {
             display: inline-block;
             padding: 0.5rem 1rem;
-            background-color: #dc2626;
+            background-color: var(--primary-orange);
             color: white;
             text-decoration: none;
             border-radius: 0.375rem;
@@ -81,12 +93,12 @@
         }
 
         .header-btn:hover {
-            background-color: #b91c1c;
+            background-color: var(--primary-dark-orange);
         }
 
         /* Hero Section */
         .hero {
-            background: linear-gradient(to right, #dc2626, #b91c1c);
+            background: linear-gradient(to right, var(--primary-orange), var(--primary-dark-orange));
             color: white;
             padding: 5rem 2rem;
             text-align: center;
@@ -113,7 +125,7 @@
             display: inline-block;
             padding: 0.75rem 2rem;
             background-color: white;
-            color: #dc2626;
+            color: var(--primary-orange);
             font-weight: 700;
             text-decoration: none;
             border-radius: 0.5rem;
@@ -126,56 +138,66 @@
 
         /* Section Styles */
         section {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 4rem 2rem;
+            padding: 2rem 2rem 0.5rem 2rem;
         }
 
         section h3 {
             font-size: 1.875rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 1.5rem;
         }
 
         /* Features Grid */
         .features-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
         }
 
         .feature-card {
             background-color: #f9fafb;
-            padding: 2rem;
+            padding: 1.25rem;
             border-radius: 0.5rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
 
         .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
         }
 
         .feature-card h4 {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         .feature-card p {
             color: #6b7280;
+            font-size: 0.9rem;
         }
 
         /* Cars Grid */
+        /* Cars Grid - FIXED */
         .cars-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
         }
 
+        /* Hide non-card elements in grid */
+        .cars-grid> :not(.car-card) {
+            display: none;
+        }
+
         .car-card {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
             background-color: white;
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -183,15 +205,18 @@
             overflow: hidden;
         }
 
+
+
         .car-image {
-            background-color: #dbeafe;
-            height: 12rem;
+            height: 180px;
+            width: 100%;
+            background-color: #f3f4f6;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
-            color: #9ca3af;
         }
+
 
         .car-card.green .car-image {
             background-color: #d1fae5;
@@ -203,38 +228,73 @@
 
         .car-content {
             padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .car-content h4 {
+            min-height: 48px;
             font-size: 1.25rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
+            color: #1f2937;
+            line-height: 1.3;
         }
 
         .car-type {
             color: #6b7280;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .car-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
         }
 
         .car-specs {
             margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            min-height: 28px;
         }
 
         .car-specs p {
             font-size: 0.875rem;
-            color: #374151;
-            margin-bottom: 0.5rem;
+            color: #6b7280;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .car-specs strong {
             font-weight: 600;
+            color: #374151;
+        }
+
+        .spec-icon {
+            font-size: 1.2rem;
+        }
+
+        .color-dot {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            border: 1px solid #d1d5db;
         }
 
         .car-price {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #dc2626;
+            color: var(--primary-orange);
             margin-bottom: 1rem;
+            min-height: 40px;
         }
 
         .car-price span {
@@ -246,45 +306,207 @@
             display: block;
             width: 100%;
             padding: 0.5rem;
-            background-color: #dc2626;
+            background-color: var(--primary-orange);
             color: white;
             text-align: center;
             text-decoration: none;
             border-radius: 0.375rem;
             transition: background-color 0.3s;
+            margin-top: auto;
         }
 
         .car-btn:hover {
-            background-color: #b91c1c;
+            background-color: var(--primary-dark-orange);
         }
 
-        /* Responsive Design */
-        @media (min-width: 768px) {
-            nav {
-                display: flex;
-            }
-
-            .hero h2 {
-                font-size: 3rem;
-            }
-
-            .hero p {
-                font-size: 1.25rem;
-            }
-
-            .features-grid,
-            .cars-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
+        /* Filter Styles */
+        /* Filter Section */
+        .filter-section {
+            background-color: #ffffff;
+            padding: 0;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2.5rem;
+            overflow: hidden;
         }
 
-        @media (min-width: 1024px) {
-            .hero h2 {
-                font-size: 3rem;
-            }
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .filter-tab.active {
+            color: #1f2937;
+            border-bottom-color: #3b82f6;
+            background-color: #ffffff;
+        }
+
+        .filter-tab:hover {
+            color: #374151;
+        }
+
+        .filter-form {
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.95rem;
+            background-color: #ffffff;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Time group (inline for pickup and return times) */
+        .filter-time-group {
+            display: flex;
+            gap: 1rem;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .filter-time-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .filter-time-item label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .filter-time-item input {
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.95rem;
+        }
+
+        .filter-time-item input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Buttons */
+        .filter-btn {
+            height: 48px;
+            min-width: 140px;
+            padding: 0 2rem;
+            background-color: var(--primary-orange);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .filter-btn:hover {
+            background-color: var(--primary-dark-orange);
+        }
+
+        /* Location input with icon */
+        .filter-location-group {
+            flex: 1.5;
+            min-width: 250px;
+        }
+
+        .filter-location-group .location-input {
+            display: flex;
+            align-items: center;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: #ffffff;
+        }
+
+        .filter-location-group .location-input::before {
+            content: "📍";
+            padding: 0 0.75rem;
+        }
+
+        .filter-location-group input {
+            border: none !important;
+            box-shadow: none !important;
+            flex: 1;
+            padding: 0.75rem 0.75rem 0.75rem 0 !important;
+        }
+
+        .filter-location-group input:focus {
+            outline: none;
+        }
+
+        /* Checkbox for return location */
+        .filter-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .filter-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .filter-checkbox label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 400;
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation Header -->
     <header>
@@ -294,8 +516,8 @@
                 <span>Travel</span>
             </div>
             <nav>
-                <a href="#">Home</a>
-                <a href="#">View Bookings</a>
+                <a href="{{ route('home') }}">Home</a>
+                <a href="{{ route('bookings.index') }}">View Bookings</a>
                 <a href="#">Wallet Transaction</a>
                 <a href="#">Loyalty Card</a>
                 <a href="#">Contact Us</a>
@@ -311,7 +533,7 @@
         <div class="hero-container">
             <h2>Experience the road like never before</h2>
             <p>Discover our premium car rental service with unbeatable rates and reliable vehicles</p>
-            <a href="#" class="hero-btn">View all cars</a>
+            <a href="{{ route('home') }}" class="hero-btn">View all cars</a>
         </div>
     </section>
 
@@ -339,56 +561,134 @@
 
     <!-- Cars Section -->
     <section>
-        <h3>Our Fleet</h3>
+        <div class="filter-section">
+            <!-- Filter Form -->
+            <form method="GET" action="{{ route('home') }}" class="filter-form">
+                <!-- Pick-up Date -->
+                <div class="filter-group">
+                    <label>Pick-up date</label>
+                    <input type="date" name="start_date" value="{{ request('start_date') }}">
+                </div>
+
+                <!-- Return Date -->
+                <div class="filter-group">
+                    <label>Return date</label>
+                    <input type="date" name="end_date" value="{{ request('end_date') }}">
+                </div>
+
+                <!-- Return Time
+        <div class="filter-group">
+            <label>Return time</label>
+            <input type="time" name="end_time" value="{{ request('end_time') }}">
+        </div> -->
+
+                <!-- Brand -->
+                <div class="filter-group">
+                    <label>Brand</label>
+                    <select name="brand">
+                        <option value="">All Brands</option>
+                        <option value="Perodua" {{ request('brand') == 'Perodua' ? 'selected' : '' }}>Perodua</option>
+                        <option value="Proton" {{ request('brand') == 'Proton' ? 'selected' : '' }}>Proton</option>
+                        <option value="Toyota" {{ request('brand') == 'Toyota' ? 'selected' : '' }}>Toyota</option>
+                        <option value="Honda" {{ request('brand') == 'Honda' ? 'selected' : '' }}>Honda</option>
+
+                    </select>
+                </div>
+
+                <!-- Car Type -->
+                <div class="filter-group">
+                    <label>Car Type</label>
+                    <select name="vehicle_type">
+                        <option value="">All Types</option>
+                        <option value="Hatchback" {{ request('vehicle_type') == 'Hatchback' ? 'selected' : '' }}>Hatchback
+                        </option>
+                        <option value="Sedan" {{ request('vehicle_type') == 'Sedan' ? 'selected' : '' }}>Sedan</option>
+                        <option value="SUV" {{ request('vehicle_type') == 'SUV' ? 'selected' : '' }}>SUV</option>
+                        <option value="Compact" {{ request('vehicle_type') == 'Compact' ? 'selected' : '' }}>Compact
+                        </option>
+
+                    </select>
+                </div>
+
+                <!-- Search Button -->
+                <button type="submit" class="filter-btn">Filter</button>
+            </form>
+        </div>
+
         <div class="cars-grid">
-            <!-- Perodua Axia -->
-            <div class="car-card blue">
-                <div class="car-image">🚗</div>
-                <div class="car-content">
-                    <h4>Perodua Axia 2018</h4>
-                    <p class="car-type">Hatchback</p>
-                    <div class="car-specs">
-                        <p><strong>Transmission:</strong> Automatic</p>
-                        <p><strong>Fuel:</strong> RON 95/PB 95</p>
-                        <p><strong>A/C:</strong> Yes</p>
-                    </div>
-                    <p class="car-price">RM120 <span>/day</span></p>
-                    <a href="#" class="car-btn">Book Now</a>
-                </div>
-            </div>
+            <p style="text-align:center; font-weight:bold;">
+            </p>
 
-            <!-- Perodua Bezza -->
-            <div class="car-card green">
-                <div class="car-image">🚗</div>
-                <div class="car-content">
-                    <h4>Perodua Bezza 2018</h4>
-                    <p class="car-type">Sedan</p>
-                    <div class="car-specs">
-                        <p><strong>Transmission:</strong> Automatic</p>
-                        <p><strong>Fuel:</strong> RON 95/PB 95</p>
-                        <p><strong>A/C:</strong> Yes</p>
-                    </div>
-                    <p class="car-price">RM120 <span>/day</span></p>
-                    <a href="#" class="car-btn">Book Now</a>
-                </div>
-            </div>
+            @forelse($cars as $car)
+                <div
+                    class="car-card {{ $loop->iteration % 3 == 1 ? 'blue' : ($loop->iteration % 3 == 2 ? 'green' : 'yellow') }}">
 
-            <!-- Perodua Myvi -->
-            <div class="car-card yellow">
-                <div class="car-image">🚗</div>
-                <div class="car-content">
-                    <h4>Perodua Myvi 2015</h4>
-                    <p class="car-type">Sport</p>
-                    <div class="car-specs">
-                        <p><strong>Transmission:</strong> Automatic</p>
-                        <p><strong>Fuel:</strong> RON 95/PB 95</p>
-                        <p><strong>A/C:</strong> Yes</p>
+                    @php
+                        $imageName = strtolower(
+                            str_replace(' ', '-', $car->vehicle_brand . '-' . $car->vehicle_model)
+                        ) . '.png';
+                    @endphp
+
+                    <!-- <div class="car-image">
+                            <img src="{{ asset('images/cars/browse/' . $imageName) }}"
+                                alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}" loading="lazy"
+                                onerror="this.src='{{ asset('images/cars/browse/default.png') }}'">
+                        </div> -->
+                    @php
+                        $imagePath = public_path('images/cars/browse/' . $imageName);
+                    @endphp
+
+
+                    <div class="car-image">
+    @if(file_exists($imagePath))
+        <img 
+            src="{{ asset('images/cars/browse/' . $imageName) }}" 
+            alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}"
+        >
+    @else
+        <img 
+            src="{{ asset('images/cars/browse/default.png') }}" 
+            alt="Default car"
+        >
+    @endif
+</div>
+
+
+
+
+                    <div class="car-content">
+                        <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
+
+                        <p class="car-type">{{ $car->type }}</p>
+
+                        <div class="car-specs">
+                            <p>
+                                <span class="spec-icon">⚙</span>
+                                {{ $car->transmission }}
+                            </p>
+                            <p>
+                                <span class="color-dot" style="background-color: {{ $car->color ?? '#cccccc' }};"></span>
+                                {{ $car->color ?? 'N/A' }}
+                            </p>
+                        </div>
+
+                        <p class="car-price">
+                            RM {{ $car->price_per_day }}
+                            <span>/day</span>
+                        </p>
+
+                        <a href="/cars/{{ $car->id }}" class="car-btn">
+                            Book Now
+                        </a>
                     </div>
-                    <p class="car-price">RM120 <span>/day</span></p>
-                    <a href="#" class="car-btn">Book Now</a>
                 </div>
-            </div>
+            @empty
+                <p style="text-align:center;">No cars available at the moment.</p>
+            @endforelse
         </div>
     </section>
+    @include('components.footer')
+
 </body>
+
 </html>

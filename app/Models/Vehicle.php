@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vehicle extends Model
 {
+
+    protected $table = 'cars';
+    protected $primaryKey = 'vehicleID';
+    public $incrementing = true;
+    protected $keyType = 'int';
     /**
      * The attributes that are mass assignable.
      *
@@ -46,10 +51,10 @@ class Vehicle extends Model
     /**
      * Get the bookings for the vehicle.
      */
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class);
-    }
+    public function bookings()
+{
+    return $this->hasMany(Booking::class, 'car_id');
+}
 
     /**
      * Get the category for the vehicle.
