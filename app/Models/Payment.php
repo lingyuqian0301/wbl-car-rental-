@@ -12,6 +12,7 @@ class Payment extends Model
      *
      * @var array<int, string>
      */
+    protected $table = "payment";
     protected $fillable = [
         'booking_id',
         'amount',

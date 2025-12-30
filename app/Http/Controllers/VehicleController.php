@@ -31,8 +31,8 @@ class VehicleController extends Controller
             $query->whereDoesntHave('bookings', function ($q) use ($startDate, $endDate) {
                 $q->where('booking_status', '!=', 'cancelled')
                     ->where(function ($overlap) use ($startDate, $endDate) {
-                        $overlap->where('rental_start_date', '<=', $endDate)
-                            ->where('rental_end_date', '>=', $startDate);
+                        $overlap->where('start_date', '<=', $endDate)
+                            ->where('end_date', '>=', $startDate);
                     });
             });
 
@@ -68,8 +68,9 @@ class VehicleController extends Controller
 
     public function show($id)
     {
-        $car = Vehicle::findOrFail($id);
-        return view('cars.show', compact('car'));
+        $vehicle = Vehicle::findOrFail($id);
+
+        return view('vehicles.show', compact('vehicle'));
     }
     // public function store(Request $request)
 //     {

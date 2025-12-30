@@ -33,68 +33,6 @@
             --error-red: #dc2626;
         }
 
-        /* Header Styles */
-        header {
-            background-color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .header-container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-        }
-
-        .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-orange);
-        }
-
-        .logo span {
-            color: #6b7280;
-            margin-left: 0.5rem;
-        }
-
-        nav {
-            display: block;
-        }
-
-        nav a {
-            color: #374151;
-            text-decoration: none;
-            margin: 0 1.5rem;
-            transition: color 0.3s;
-        }
-
-        nav a:hover {
-            color: var(--primary-orange);
-        }
-
-        .header-btn {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background-color: var(--primary-orange);
-            color: white;
-            text-decoration: none;
-            border-radius: 0.375rem;
-            transition: background-color 0.3s;
-        }
-
-        .header-btn:hover {
-            background-color: var(--primary-dark-orange);
-        }
 
         /* Hero Section */
         .hero {
@@ -509,24 +447,7 @@
 
 <body>
     <!-- Navigation Header -->
-    <header>
-        <div class="header-container">
-            <div class="logo">
-                <h1>HASTA</h1>
-                <span>Travel</span>
-            </div>
-            <nav>
-                <a href="{{ route('home') }}">Home</a>
-                <a href="{{ route('bookings.index') }}">View Bookings</a>
-                <a href="#">Wallet Transaction</a>
-                <a href="#">Loyalty Card</a>
-                <a href="#">Contact Us</a>
-            </nav>
-            <div>
-                <a href="{{ route('login') }}" class="header-btn">Login</a>
-            </div>
-        </div>
-    </header>
+@include('components.header')
 
     <!-- Hero Section -->
     <section class="hero">
@@ -630,28 +551,23 @@
                     @endphp
 
                     <!-- <div class="car-image">
-                            <img src="{{ asset('images/cars/browse/' . $imageName) }}"
-                                alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}" loading="lazy"
-                                onerror="this.src='{{ asset('images/cars/browse/default.png') }}'">
-                        </div> -->
+                                <img src="{{ asset('images/cars/browse/' . $imageName) }}"
+                                    alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}" loading="lazy"
+                                    onerror="this.src='{{ asset('images/cars/browse/default.png') }}'">
+                            </div> -->
                     @php
                         $imagePath = public_path('images/cars/browse/' . $imageName);
                     @endphp
 
 
                     <div class="car-image">
-    @if(file_exists($imagePath))
-        <img 
-            src="{{ asset('images/cars/browse/' . $imageName) }}" 
-            alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}"
-        >
-    @else
-        <img 
-            src="{{ asset('images/cars/browse/default.png') }}" 
-            alt="Default car"
-        >
-    @endif
-</div>
+                        @if(file_exists($imagePath))
+                            <img src="{{ asset('images/cars/browse/' . $imageName) }}"
+                                alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}">
+                        @else
+                            <img src="{{ asset('images/cars/browse/default.png') }}" alt="Default car">
+                        @endif
+                    </div>
 
 
 
@@ -673,13 +589,14 @@
                         </div>
 
                         <p class="car-price">
-                            RM {{ $car->price_per_day }}
+                            RM {{ $car->rental_price }}
                             <span>/day</span>
                         </p>
 
-                        <a href="/cars/{{ $car->id }}" class="car-btn">
+                        <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">
                             Book Now
                         </a>
+
                     </div>
                 </div>
             @empty
