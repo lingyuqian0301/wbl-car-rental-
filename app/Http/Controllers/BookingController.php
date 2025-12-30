@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Customer;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -12,6 +13,12 @@ use Carbon\Carbon;
 
 class BookingController extends Controller
 {
+    protected PaymentService $paymentService;
+
+    public function __construct(PaymentService $paymentService)
+    {
+        $this->paymentService = $paymentService;
+    }
     /**
      * Display a listing of the user's bookings.
      */
@@ -156,10 +163,25 @@ public function store(Request $request, $vehicleID)
             }
         }
 
+        // Calculate deposit amount
+        $tempBooking = new Booking([
+            'duration_days' => $bookingData['duration_days'],
+            'total_price' => $bookingData['total_amount'],
+        ]);
+        $depositAmount = $this->paymentService->calculateDeposit($tempBooking);
+
+        // Check wallet balance
+        $walletAccount = $user->walletAccount;
+        $walletBalance = $walletAccount ? $walletAccount->available_balance : 0;
+        $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet($user->id, $depositAmount);
+
         return view('bookings.confirm', [
             'bookingData' => $bookingData,
             'vehicle'     => $vehicle,
             'addons'      => $addonDetails,
+            'depositAmount' => $depositAmount,
+            'walletBalance' => $walletBalance,
+            'canSkipDeposit' => $canSkipDeposit,
         ]);
     }
 
@@ -182,8 +204,10 @@ public function store(Request $request, $vehicleID)
                 'start_date'   => $bookingData['start_date'],
                 'end_date'     => $bookingData['end_date'],
                 'duration_days' => $bookingData['duration_days'],
+                'number_of_days' => $bookingData['duration_days'], // Add number_of_days for deposit calculation
                 'total_price'  => $bookingData['total_amount'],
                 'status'       => 'Pending',
+                'keep_deposit' => $request->boolean('keep_deposit', false),
             ];
 
             // Log the booking data for debugging

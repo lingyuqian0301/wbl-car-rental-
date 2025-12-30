@@ -57,6 +57,26 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the wallet account for the user.
+     */
+    public function walletAccount()
+    {
+        return $this->hasOne(\App\Models\WalletAccount::class);
+    }
+
+    /**
+     * Get or create wallet account for the user.
+     */
+    public function getOrCreateWalletAccount(): \App\Models\WalletAccount
+    {
+        return $this->walletAccount ?? \App\Models\WalletAccount::create([
+            'user_id' => $this->id,
+            'virtual_balance' => 0.00,
+            'available_balance' => 0.00,
+        ]);
+    }
+
+    /**
      * Check if user is an admin.
      */
     public function isAdmin(): bool

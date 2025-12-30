@@ -66,6 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('payments')->name('payments.')->group(function () {
         Route::get('/create/{booking}', [PaymentController::class, 'create'])->name('create');
         Route::post('/store', [PaymentController::class, 'store'])->name('store');
+        Route::post('/submit', [PaymentController::class, 'submitPayment'])->name('submit');
+        Route::post('/wallet/{booking}', [PaymentController::class, 'payWithWallet'])->name('wallet');
     });
 
     // Invoice Routes

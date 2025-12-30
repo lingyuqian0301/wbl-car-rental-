@@ -13,16 +13,26 @@ class Payment extends Model
      * @var array<int, string>
      */
     protected $table = "payment";
+    protected $primaryKey = 'paymentID';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    
     protected $fillable = [
-        'booking_id',
+        'bookingID',
         'amount',
         'payment_type',
-        'payment_method',
-        'proof_of_payment',
-        'status',
-        'verified_by',
-        'rejected_reason',
+        'payment_purpose',
         'payment_date',
+        'receiptURL',
+        'status',
+        'deposit_returned',
+        'keep_deposit',
+        'transaction_reference',
+        'refund_amount',
+        'refund_date',
+        'deposit_bank_name',
+        'deposit_bank_number',
+        'isPayment_complete',
     ];
 
     /**
@@ -35,6 +45,8 @@ class Payment extends Model
         return [
             'amount' => 'decimal:2',
             'payment_date' => 'date',
+            'deposit_returned' => 'boolean',
+            'keep_deposit' => 'boolean',
         ];
     }
 
@@ -43,14 +55,17 @@ class Payment extends Model
      */
     public function booking(): BelongsTo
     {
-        return $this->belongsTo(Booking::class);
+        // payment table uses bookingID (singular booking table)
+        return $this->belongsTo(Booking::class, 'bookingID', 'bookingID');
     }
 
     /**
      * Get the user who verified the payment.
+     * Note: payment table doesn't have verified_by, but keeping for compatibility
      */
     public function verifier(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'verified_by');
+        // payment table doesn't have verified_by field, return null relationship
+        return $this->belongsTo(User::class, 'verified_by')->whereRaw('1 = 0');
     }
 }
