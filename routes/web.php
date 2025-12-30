@@ -9,6 +9,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -18,6 +19,10 @@ Route::get('/', [VehicleController::class, 'index'])->name('home');
 // ----------------------------
 // Staff Login Routes (GUESTS ONLY)
 // ----------------------------
+// routes/web.php
+Route::get('/vehicles/{id}', [VehicleController::class, 'show'])
+    ->name('vehicles.show');
+
 Route::middleware('guest')->group(function () {
     // Show login page
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -25,6 +30,8 @@ Route::middleware('guest')->group(function () {
     // Handle login submission
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.submit');
 });
+
+
 
 // ----------------------------
 // Protected Routes (AUTHENTICATED USERS)
@@ -39,9 +46,20 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Booking Routes (Customer)
+    
+    Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
+        ->name('booking.store');
+
+    Route::get('/booking/confirm', [BookingController::class, 'confirm'])
+        ->name('booking.confirm');
+
+    Route::post('/booking/finalize', [BookingController::class, 'finalize'])
+        ->name('booking.finalize');
+
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
         Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
+
     });
 
     // Payment Routes (Customer)
@@ -78,4 +96,4 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

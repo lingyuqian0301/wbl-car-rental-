@@ -53,7 +53,7 @@ class Vehicle extends Model
      */
     public function bookings()
 {
-    return $this->hasMany(Booking::class, 'car_id');
+    return $this->hasMany(Booking::class, 'vehicleID');
 }
 
     /**
