@@ -8,16 +8,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vehicle extends Model
 {
-
+    // 1. Link to the 'cars' table
     protected $table = 'cars';
+
+    // 2. Define the Primary Key
     protected $primaryKey = 'vehicleID';
+
+    // 3. Key Settings
     public $incrementing = true;
     protected $keyType = 'int';
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+
+    // 4. Mass Assignable Fields
     protected $fillable = [
         'brand',
         'model',
@@ -28,11 +29,6 @@ class Vehicle extends Model
         'item_category_id',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -40,25 +36,33 @@ class Vehicle extends Model
         ];
     }
 
-    /**
-     * Get the full model name (brand + model).
-     */
-    public function getFullModelAttribute(): string
+    // --- ACCESSORS (The Fix for "N/A") ---
+
+    // This allows the View to use $vehicle->vehicle_brand
+    public function getVehicleBrandAttribute()
     {
-        return "{$this->brand} {$this->model}";
+        return $this->attributes['brand'] ?? $this->attributes['vehicle_brand'] ?? 'Unknown Brand';
     }
 
-    /**
-     * Get the bookings for the vehicle.
-     */
-    public function bookings()
-{
-    return $this->hasMany(Booking::class, 'vehicleID');
-}
+    // This allows the View to use $vehicle->vehicle_model
+    public function getVehicleModelAttribute()
+    {
+        return $this->attributes['model'] ?? $this->attributes['vehicle_model'] ?? 'Unknown Model';
+    }
 
-    /**
-     * Get the category for the vehicle.
-     */
+    // This allows the View to use $vehicle->plate_number
+    public function getPlateNumberAttribute()
+    {
+        return $this->attributes['registration_number'] ?? $this->attributes['plate_number'] ?? 'No Plate';
+    }
+
+    // --- RELATIONSHIPS ---
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'vehicleID', 'vehicleID');
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(ItemCategory::class, 'item_category_id');

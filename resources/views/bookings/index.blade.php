@@ -32,11 +32,21 @@
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($bookings as $booking)
                                         <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ $booking->id }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm font-medium text-gray-900">{{ $booking->vehicle->full_model ?? 'N/A' }}</div>
-                                                <div class="text-sm text-gray-500">{{ $booking->vehicle->registration_number ?? '' }}</div>
-                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ $booking->bookingID }}   </td></td>
+                                         <td class="px-6 py-4 whitespace-nowrap">
+    @if($booking->vehicle)
+        <div class="text-sm font-medium text-gray-900">
+            {{ $booking->vehicle->brand ?? $booking->vehicle->vehicle_brand ?? 'Car' }}
+            {{ $booking->vehicle->model ?? $booking->vehicle->vehicle_model ?? '' }}
+        </div>
+
+        <div class="text-sm text-gray-500">
+            {{ $booking->vehicle->registration_number ?? $booking->vehicle->plate_number ?? '' }}
+        </div>
+    @else
+        <span class="text-red-500 font-bold text-sm">Vehicle Not Found</span>
+    @endif
+</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <div>{{ $booking->start_date->format('M d, Y') }}</div>
                                                 <div class="text-xs text-gray-400">to {{ $booking->end_date->format('M d, Y') }}</div>
@@ -71,12 +81,14 @@
                                                 @endif
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <a href="{{ route('bookings.show', $booking->id) }}" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
-                                                @if(!$verifiedPayment && !$pendingPayment)
-                                                    <a href="{{ route('payments.create', $booking->id) }}" class="text-green-600 hover:text-green-900">
-                                                        {{ $rejectedPayment ? 'Resubmit' : 'Pay Now' }}
-                                                    </a>
-                                                @endif
+     <a href="{{ route('bookings.show', $booking->bookingID) }}" class="text-indigo-600 hover:text-indigo-900">
+                    View
+                </a>
+                @if(!$verifiedPayment && !$pendingPayment)
+                    <a href="{{ route('payments.create', $booking->bookingID) }}" class="text-indigo-600 hover:text-indigo-900 ml-4">
+                        {{ $rejectedPayment ? 'Resubmit' : 'Pay Now' }}
+                    </a>
+                @endif
                                             </td>
                                         </tr>
                                     @endforeach

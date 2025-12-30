@@ -22,19 +22,33 @@ class BookingController extends Controller
     /**
      * Display a listing of the user's bookings.
      */
-    public function index(): View
-    {
-        // Use customerID to match existing database structure
-        $bookings = Booking::with(['vehicle', 'payments'])
-            ->where('customerID', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+  public function index()
+{
+    $customer = \App\Models\Customer::where('user_id', auth()->id())->first();
 
-        return view('bookings.index', [
-            'bookings' => $bookings,
-        ]);
+    if (!$customer) {
+        return view('bookings.index', ['bookings' => collect([])]);
     }
 
+    $bookings = \App\Models\Booking::where('customerID', $customer->customerID)
+                    ->with('vehicle') // Load vehicle data
+                    ->orderBy('bookingID', 'desc')
+                    ->paginate(10);
+
+    // --- TEMPORARY DEBUG CHECK ---
+    // This will stop the code and show us the raw data on screen.
+    // We want to see if 'vehicle' is NULL or if it has data.
+    // if ($bookings->first()) {
+    //     dd([
+    //         'Booking ID' => $bookings->first()->bookingID,
+    //         'Vehicle ID in Booking' => $bookings->first()->vehicleID,
+    //         'Vehicle Relationship' => $bookings->first()->vehicle,
+    //     ]);
+    // }
+    // -----------------------------
+
+    return view('bookings.index', compact('bookings'));
+}
     /**
      * Display the specified booking.
      */
