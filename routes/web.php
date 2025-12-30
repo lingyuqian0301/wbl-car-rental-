@@ -11,33 +11,30 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 
-
-// Homepage – show approved cars
-Route::get('/', [VehicleController::class, 'index'])->name('home');
-
-// ----------------------------
-// Staff Login Routes (GUESTS ONLY)
-// ----------------------------
-// routes/web.php
-Route::get('/vehicles/{id}', [VehicleController::class, 'show'])
-    ->name('vehicles.show');
-
-Route::middleware('guest')->group(function () {
-    // Show login page
-    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-
-    // Handle login submission
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.submit');
+Route::get('/fix-admin-password', function () {
+    $user = \App\Models\User::where('email', 'yuqian@hasta.com')->first();
+    if ($user) {
+        $user->password = Hash::make('password123');
+        $user->save();
+        return "Fixed! You can now log in with password: password123";
+    }
+    return "User not found!";
 });
 
+Route::get('/', [VehicleController::class, 'index'])->name('home');
+Route::get('/vehicles/{id}', [VehicleController::class, 'show'])->name('vehicles.show');
 
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.submit');
+});
 
 // ----------------------------
 // Protected Routes (AUTHENTICATED USERS)
 // ----------------------------
 Route::middleware('auth')->group(function () {
-    // Regular user dashboard
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
     // Profile routes
@@ -45,28 +42,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
- // Booking Routes (Customer)
-
-    // === SPECIFIC ROUTES FIRST ===
-
-    // 1. Confirm Page
-    Route::get('/booking/confirm', [BookingController::class, 'confirm'])
-        ->name('booking.confirm');
-
-    // 2. Finalize Action (The one giving you the error)
-    Route::post('/booking/finalize', [BookingController::class, 'finalize'])
-        ->name('booking.finalize');
-
-    // === WILDCARD ROUTES LAST ===
-
-    // 3. Store Action (This catches everything else, like /booking/1, /booking/5)
-    Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
-        ->name('booking.store');
+    // Booking Routes (Customer)
+    Route::get('/booking/confirm', [BookingController::class, 'confirm'])->name('booking.confirm');
+    Route::post('/booking/finalize', [BookingController::class, 'finalize'])->name('booking.finalize');
+    Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])->name('booking.store');
 
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
         Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
     });
+
+    // Customer Invoice Download Route
+    Route::get('/booking/{id}/invoice', [BookingController::class, 'downloadInvoice'])->name('booking.invoice');
 
     // Payment Routes (Customer)
     Route::prefix('payments')->name('payments.')->group(function () {
@@ -76,31 +63,40 @@ Route::middleware('auth')->group(function () {
         Route::post('/wallet/{booking}', [PaymentController::class, 'payWithWallet'])->name('wallet');
     });
 
-    // Payment Routes (Alternative - using bookingID)
+    // Fix Storage Link Route
+    Route::get('/fix-storage', function () {
+        $target = storage_path('app/public');
+        $link = public_path('storage');
+        if (file_exists($link)) {
+            return "The link already exists!";
+        }
+        symlink($target, $link);
+        return "Success! The storage link has been created.";
+    });
+
+    // Payment Routes (Alternative)
     Route::prefix('payment')->name('payment.')->group(function () {
         Route::get('/{bookingID}', [PaymentController::class, 'showPaymentForm'])->name('create');
         Route::post('/submit', [PaymentController::class, 'processPayment'])->name('submit');
     });
 
-    // Invoice Routes
+    // Invoice Routes (General)
     Route::prefix('invoices')->name('invoices.')->group(function () {
         Route::get('/generate/{bookingId}', [InvoiceController::class, 'generatePDF'])->name('generate');
     });
 
     // Admin-only routes
     Route::middleware('admin')->group(function () {
-        // Admin dashboard
         Route::get('/admin/dashboard', AdminDashboardController::class)->name('admin.dashboard');
 
-        // Payment verification
         Route::prefix('admin/payments')->name('admin.payments.')->group(function () {
             Route::get('/', [AdminPaymentController::class, 'index'])->name('index');
+            Route::get('/{id}/invoice', [AdminPaymentController::class, 'generateInvoice'])->name('invoice');
             Route::get('/{payment}', [AdminPaymentController::class, 'show'])->name('show');
             Route::post('/{payment}/approve', [AdminPaymentController::class, 'approve'])->name('approve');
             Route::post('/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('reject');
         });
 
-        // Vehicle category pages
         Route::prefix('admin/vehicles')->name('admin.vehicles.')->group(function () {
             Route::get('/cars', [AdminVehicleController::class, 'cars'])->name('cars');
             Route::get('/motorcycles', [AdminVehicleController::class, 'motorcycles'])->name('motorcycles');

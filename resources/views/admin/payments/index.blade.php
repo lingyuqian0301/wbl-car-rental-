@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Payment Verification - {{ config('app.name', 'Hasta Travel') }}</title>
-    
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -89,21 +89,44 @@
                                     <tbody>
                                         @foreach($payments as $payment)
                                             <tr>
-                                                <td>#{{ $payment->id }}</td>
-                                                <td>#{{ $payment->booking_id }}</td>
-                                                <td>{{ $payment->booking->user->name }}</td>
-                                                <td>{{ $payment->booking->vehicle->full_model }}</td>
-                                                <td>RM {{ number_format($payment->amount, 2) }}</td>
-                                                <td>{{ $payment->payment_type }}</td>
-                                                <td>{{ $payment->payment_date->format('d M Y') }}</td>
-                                                <td>
-                                                    <span class="badge bg-warning text-dark">{{ $payment->status }}</span>
-                                                </td>
-                                                <td>
-                                                    <a href="{{ route('admin.payments.show', $payment->id) }}" 
-                                                       class="btn btn-sm btn-primary">View Details</a>
-                                                </td>
-                                            </tr>
+    <td>#{{ $payment->paymentID }}</td>
+
+    <td>#{{ $payment->bookingID }}</td>
+
+    <td>
+        {{ $payment->booking->customer->fullname ?? 'Unknown Customer' }}
+    </td>
+
+<td>
+    <div class="fw-bold">
+        {{ $payment->booking->vehicle->brand ?? $payment->booking->vehicle->vehicle_brand ?? 'Car' }}
+        {{ $payment->booking->vehicle->model ?? $payment->booking->vehicle->vehicle_model ?? '' }}
+    </div>
+    <small class="text-muted">
+        {{ $payment->booking->vehicle->registration_number ?? $payment->booking->vehicle->plate_number ?? 'Vehicle #'.$payment->booking->vehicleID }}
+    </small>
+</td>
+
+    <td>RM {{ number_format($payment->amount, 2) }}</td>
+    <td>{{ $payment->payment_type }}</td>
+
+    <td>
+        {{ $payment->payment_date ? $payment->payment_date->format('d M Y') : 'N/A' }}
+    </td>
+
+    <td>
+        <span class="badge {{ $payment->status == 'Verified' ? 'bg-success' : 'bg-warning' }} text-dark">
+            {{ $payment->status }}
+        </span>
+    </td>
+
+    <td>
+        <a href="{{ route('admin.payments.show', $payment->paymentID) }}"
+           class="btn btn-sm btn-primary">
+           View Details
+        </a>
+    </td>
+</tr>
                                         @endforeach
                                     </tbody>
                                 </table>

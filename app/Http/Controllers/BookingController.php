@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use App\Models\Vehicle;
 use Carbon\Carbon;
-
+use Barryvdh\DomPDF\Facade\Pdf;
 class BookingController extends Controller
 {
     protected PaymentService $paymentService;
@@ -22,7 +22,7 @@ class BookingController extends Controller
     /**
      * Display a listing of the user's bookings.
      */
-  public function index()
+ public function index()
 {
     $customer = \App\Models\Customer::where('user_id', auth()->id())->first();
 
@@ -31,21 +31,10 @@ class BookingController extends Controller
     }
 
     $bookings = \App\Models\Booking::where('customerID', $customer->customerID)
-                    ->with('vehicle') // Load vehicle data
+   //IX: Load both 'vehicle' AND 'payments'
+                    ->with(['vehicle', 'payments'])
                     ->orderBy('bookingID', 'desc')
                     ->paginate(10);
-
-    // --- TEMPORARY DEBUG CHECK ---
-    // This will stop the code and show us the raw data on screen.
-    // We want to see if 'vehicle' is NULL or if it has data.
-    // if ($bookings->first()) {
-    //     dd([
-    //         'Booking ID' => $bookings->first()->bookingID,
-    //         'Vehicle ID in Booking' => $bookings->first()->vehicleID,
-    //         'Vehicle Relationship' => $bookings->first()->vehicle,
-    //     ]);
-    // }
-    // -----------------------------
 
     return view('bookings.index', compact('bookings'));
 }
@@ -258,5 +247,28 @@ public function store(Request $request, $vehicleID)
     return redirect()->route('payments.create', ['booking' => $booking->bookingID])
                      ->with('success', 'Booking submitted! Please proceed to payment.');
 }
+public function downloadInvoice($id)
+{
+    // 1. Find the booking with its relationships
+    // We remove the direct where('userID') because that column doesn't exist
+    $booking = \App\Models\Booking::where('bookingID', $id)
+                      ->with(['vehicle', 'customer', 'payments'])
+                      ->firstOrFail();
 
+    // 2. Security Check: Ensure this booking belongs to the logged-in user
+    // We check the user_id inside the customer table
+    if (!$booking->customer || $booking->customer->user_id !== auth()->id()) {
+        abort(403, 'Unauthorized access to this invoice.');
+    }
+
+    // 3. Check if payment is verified
+    $verifiedPayment = $booking->payments->where('status', 'Verified')->first();
+    if (!$verifiedPayment) {
+        abort(403, 'Invoice not available until payment is verified.');
+    }
+
+    // 4. Generate PDF
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('booking'));
+    return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');
+}
 }
