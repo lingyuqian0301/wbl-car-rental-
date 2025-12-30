@@ -26,9 +26,10 @@ class AdminDashboardController extends Controller
             'revenueThisMonth' => Payment::where('status', 'Verified')
                 ->whereBetween('payment_date', [$startOfMonth, $endOfMonth])
                 ->sum('amount'),
-            'vehiclesAvailable' => Vehicle::where('status', 'Available')->count(),
-            'vehiclesRented' => Vehicle::where('status', 'Rented')->count(),
-            'vehiclesMaintenance' => Vehicle::where('status', 'Maintenance')->count(),
+            // Use 'availability_status' instead of 'status'
+'vehiclesAvailable'   => Vehicle::where('availability_status', 'available')->count(),
+'vehiclesRented'      => Vehicle::where('availability_status', 'rented')->count(),
+'vehiclesMaintenance' => Vehicle::where('availability_status', 'maintenance')->count(),
             'fleetTotal' => Vehicle::count(),
         ];
 
