@@ -45,21 +45,27 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Booking Routes (Customer)
-    
-    Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
-        ->name('booking.store');
+ // Booking Routes (Customer)
 
+    // === SPECIFIC ROUTES FIRST ===
+
+    // 1. Confirm Page
     Route::get('/booking/confirm', [BookingController::class, 'confirm'])
         ->name('booking.confirm');
 
+    // 2. Finalize Action (The one giving you the error)
     Route::post('/booking/finalize', [BookingController::class, 'finalize'])
         ->name('booking.finalize');
+
+    // === WILDCARD ROUTES LAST ===
+
+    // 3. Store Action (This catches everything else, like /booking/1, /booking/5)
+    Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
+        ->name('booking.store');
 
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
         Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
-
     });
 
     // Payment Routes (Customer)
@@ -68,6 +74,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/store', [PaymentController::class, 'store'])->name('store');
         Route::post('/submit', [PaymentController::class, 'submitPayment'])->name('submit');
         Route::post('/wallet/{booking}', [PaymentController::class, 'payWithWallet'])->name('wallet');
+    });
+
+    // Payment Routes (Alternative - using bookingID)
+    Route::prefix('payment')->name('payment.')->group(function () {
+        Route::get('/{bookingID}', [PaymentController::class, 'showPaymentForm'])->name('create');
+        Route::post('/submit', [PaymentController::class, 'processPayment'])->name('submit');
     });
 
     // Invoice Routes

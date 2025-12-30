@@ -24,6 +24,7 @@ class BookingController extends Controller
      */
     public function index(): View
     {
+        // Use customerID to match existing database structure
         $bookings = Booking::with(['vehicle', 'payments'])
             ->where('customerID', Auth::id())
             ->orderBy('created_at', 'desc')
@@ -40,7 +41,15 @@ class BookingController extends Controller
     public function show(Booking $booking): View
     {
         // Ensure the booking belongs to the authenticated user
-        if ($booking->user_id !== Auth::id()) {
+        // Check both customerID and user relationship
+        $isAuthorized = false;
+        if ($booking->customerID == Auth::id()) {
+            $isAuthorized = true;
+        }
+        if ($booking->user && $booking->user->id === Auth::id()) {
+            $isAuthorized = true;
+        }
+        if (!$isAuthorized) {
             abort(403, 'Unauthorized access to this booking.');
         }
 
@@ -66,8 +75,9 @@ public function store(Request $request, $vehicleID)
     ]);
 
     // Check overlapping booking
-    $isBooked = Booking::where('vehicle_id', $vehicleID)
-        ->where('status', '!=', 'Cancelled')
+    // Use vehicleID and booking_status to match existing database structure
+    $isBooked = Booking::where('vehicleID', $vehicleID)
+        ->where('booking_status', '!=', 'Cancelled')
         ->where(function ($q) use ($request) {
             $q->where('start_date', '<=', $request->end_date)
               ->where('end_date', '>=', $request->start_date);
@@ -166,7 +176,8 @@ public function store(Request $request, $vehicleID)
         // Calculate deposit amount
         $tempBooking = new Booking([
             'duration_days' => $bookingData['duration_days'],
-            'total_price' => $bookingData['total_amount'],
+            'number_of_days' => $bookingData['duration_days'],
+            'total_amount' => $bookingData['total_amount'],
         ]);
         $depositAmount = $this->paymentService->calculateDeposit($tempBooking);
 
@@ -188,48 +199,50 @@ public function store(Request $request, $vehicleID)
     /**
      * Finalize booking (called from confirmation page)
      */
-    public function finalize(Request $request)
-    {
-        $bookingData = session('booking_data');
+ public function finalize(Request $request)
+{
+    // 1. Validation (Matches the data seen in your screenshot)
+    $validated = $request->validate([
+        'vehicle_id' => 'required|integer',
+        'start_date' => 'required|date',
+        'end_date'   => 'required|date|after_or_equal:start_date',
+        'pickup_point' => 'required|string',
+        'return_point' => 'required|string',
+        'total_amount' => 'required|numeric',
+    ]);
 
-        if (!$bookingData) {
-            return redirect('/')->with('error', 'Booking session expired.');
-        }
+    // 2. Get the logged-in Customer
+    // (Assuming the user is logged in and linked to the customer table)
+    $customer = Customer::where('user_id', Auth::id())->first();
 
-        try {
-            // Transform booking data to match database table structure
-            $bookingToCreate = [
-                'user_id'      => Auth::id(),
-                'vehicle_id'   => $bookingData['vehicleID'],
-                'start_date'   => $bookingData['start_date'],
-                'end_date'     => $bookingData['end_date'],
-                'duration_days' => $bookingData['duration_days'],
-                'number_of_days' => $bookingData['duration_days'], // Add number_of_days for deposit calculation
-                'total_price'  => $bookingData['total_amount'],
-                'status'       => 'Pending',
-                'keep_deposit' => $request->boolean('keep_deposit', false),
-            ];
-
-            // Log the booking data for debugging
-            \Log::info('Creating booking with data:', $bookingToCreate);
-
-            // Create the booking with transformed data
-            $booking = Booking::create($bookingToCreate);
-
-            // Log successful creation
-            \Log::info('Booking created successfully with ID:', ['id' => $booking->id]);
-
-            // Clear session
-            session()->forget('booking_data');
-
-            // Redirect to booking details with success message
-            return redirect()->route('bookings.show', $booking->id)
-                ->with('success', 'Booking confirmed successfully!');
-        } catch (\Exception $e) {
-            \Log::error('Error creating booking:', ['error' => $e->getMessage()]);
-            return redirect()->back()
-                ->with('error', 'Error creating booking: ' . $e->getMessage());
-        }
+    if (!$customer) {
+        return redirect()->back()->withErrors(['msg' => 'Error: Customer profile not found.']);
     }
+
+    // 3. Create the Booking
+    $booking = new Booking();
+
+    // Map the form inputs to your specific Database Columns
+    $booking->customerID = $customer->customerID;
+    $booking->vehicleID  = $request->vehicle_id;
+
+    $booking->start_date = $request->start_date;
+    $booking->end_date   = $request->end_date;
+    $booking->pickup_point = $request->pickup_point;
+    $booking->return_point = $request->return_point;
+    $booking->total_amount = $request->total_amount;
+
+    // Set Defaults
+    $booking->booking_status = 'pending';
+    $booking->creationDate   = now(); // Matches your SQL column 'creationDate'
+
+    // 4. Save to Database
+    $booking->save();
+
+    // 5. Redirect to Payment (or Success Page)
+    // We send the ID so the payment page knows which booking to pay for
+    return redirect()->route('payments.create', ['booking' => $booking->bookingID])
+                     ->with('success', 'Booking submitted! Please proceed to payment.');
+}
 
 }

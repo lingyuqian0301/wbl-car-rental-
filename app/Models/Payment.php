@@ -44,7 +44,7 @@ class Payment extends Model
     {
         return [
             'amount' => 'decimal:2',
-            'payment_date' => 'date',
+            'payment_date' => 'datetime', // Changed from 'date' to 'datetime' to match database
             'deposit_returned' => 'boolean',
             'keep_deposit' => 'boolean',
         ];

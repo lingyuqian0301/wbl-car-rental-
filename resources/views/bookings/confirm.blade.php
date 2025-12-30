@@ -271,6 +271,15 @@
 
         <!-- Content -->
         <div class="content">
+            @if ($errors->any())
+        <div style="background-color: #fee2e2; border: 1px solid #dc2626; color: #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <ul style="list-style-type: none;">
+                @foreach ($errors->all() as $error)
+                    <li>• {{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
             <!-- Customer Information -->
             <div class="section">
                 <h2>Customer Information</h2>
@@ -382,13 +391,28 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="actions">
-                <button class="btn btn-cancel" onclick="history.back()">Cancel</button>
-                <form method="POST" action="{{ route('booking.finalize') }}" style="flex: 1;" id="confirmForm">
-                    @csrf
-                    <button type="submit" class="btn btn-confirm" style="width: 100%; margin: 0;" id="submitBtn">Confirm Booking</button>
-                </form>
-            </div>
+         <div class="actions">
+    <button class="btn btn-cancel" type="button" onclick="history.back()">Cancel</button>
+
+    <form method="POST" action="{{ route('booking.finalize') }}" style="flex: 1;" id="confirmForm">
+        @csrf
+
+        <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicleID ?? $vehicle->id }}">
+        <input type="hidden" name="start_date" value="{{ $bookingData['start_date'] }}">
+        <input type="hidden" name="end_date" value="{{ $bookingData['end_date'] }}">
+        <input type="hidden" name="pickup_point" value="{{ $bookingData['pickup_point'] }}">
+        <input type="hidden" name="return_point" value="{{ $bookingData['return_point'] }}">
+        <input type="hidden" name="total_amount" value="{{ $bookingData['total_amount'] }}">
+
+        @if(isset($addons))
+            @foreach($addons as $index => $addon)
+                <input type="hidden" name="addons[{{ $index }}][name]" value="{{ $addon['name'] }}">
+                <input type="hidden" name="addons[{{ $index }}][price]" value="{{ $addon['total'] }}">
+            @endforeach
+        @endif
+        <button type="submit" class="btn btn-confirm" style="width: 100%; margin: 0;" id="submitBtn">Confirm Booking</button>
+    </form>
+</div>
         </div>
     </div>
 

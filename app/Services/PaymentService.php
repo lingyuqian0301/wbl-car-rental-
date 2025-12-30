@@ -70,7 +70,7 @@ class PaymentService
         if (!$walletAccount && $booking->customerID) {
             $walletAccount = WalletAccount::where('customerID', $booking->customerID)->first();
         }
-        
+
         if (!$walletAccount) {
             $walletAccount = WalletAccount::create([
                 'customerID' => $booking->customerID,
@@ -136,7 +136,7 @@ class PaymentService
         if (!$walletAccount && $booking->customerID) {
             $walletAccount = WalletAccount::where('customerID', $booking->customerID)->first();
         }
-        
+
         if (!$walletAccount) {
             return null; // No wallet account found
         }
@@ -157,7 +157,7 @@ class PaymentService
         $payment = Payment::create([
             'bookingID' => $booking->bookingID,
             'amount' => $depositAmount,
-            'payment_type' => $booking->getNumberOfDays() >= 15 ? 'Full Payment' : 'Deposit',
+            'payment_type' => $request->input('payment_type', 'Deposit'),
             'payment_purpose' => 'booking_deposit',
             'status' => 'Verified', // Auto-verified since it's from wallet
             'receiptURL' => null,

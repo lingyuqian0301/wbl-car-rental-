@@ -1,7 +1,7 @@
 *.log
 .DS_Store
 .env
-.sql
+*.sql
 .md
 .env.backup
 .env.production

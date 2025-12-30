@@ -5,20 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Make Payment - {{ config('app.name', 'Hasta Travel') }}</title>
-    
-    <!-- Bootstrap 5 CSS -->
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
         :root {
             --hasta-maroon: #800020;
             --hasta-white: #ffffff;
         }
-        .bg-maroon {
-            background-color: var(--hasta-maroon);
-        }
-        .text-maroon {
-            color: var(--hasta-maroon);
-        }
+        .bg-maroon { background-color: var(--hasta-maroon); }
+        .text-maroon { color: var(--hasta-maroon); }
         .btn-maroon {
             background-color: var(--hasta-maroon);
             border-color: var(--hasta-maroon);
@@ -33,19 +30,24 @@
             background-color: var(--hasta-maroon);
             color: var(--hasta-white);
         }
+        .qr-container {
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 10px;
+            background: white;
+            display: inline-block;
+        }
     </style>
 </head>
 <body class="bg-light">
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-md-10">
-                <!-- Header -->
+            <div class="col-md-8">
                 <div class="text-center mb-4">
-                    <h1 class="text-maroon">HASTA TRAVEL & TOURS SDN. BHD.</h1>
-                    <p class="text-muted">Payment Submission</p>
+                    <h1 class="text-maroon fw-bold">HASTA TRAVEL & TOURS SDN. BHD.</h1>
+                    <p class="text-muted">Secure Payment Submission</p>
                 </div>
 
-                <!-- Success/Error Messages -->
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ session('success') }}
@@ -64,118 +66,104 @@
                     </div>
                 @endif
 
-                <!-- Booking Summary Card -->
-                <div class="card mb-4 shadow-sm">
+                <div class="card mb-4 shadow-sm border-0">
                     <div class="card-header card-header-maroon">
-                        <h5 class="mb-0">Booking Summary</h5>
+                        <h5 class="mb-0"><i class="fas fa-car me-2"></i>Booking Summary (ID: #{{ $booking->bookingID }})</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <p><strong>Car Model:</strong> {{ $booking->vehicle->full_model }}</p>
-                                <p><strong>Registration:</strong> {{ $booking->vehicle->registration_number }}</p>
-                                <p><strong>Start Date:</strong> {{ $booking->start_date->format('d M Y') }}</p>
-                                <p><strong>End Date:</strong> {{ $booking->end_date->format('d M Y') }}</p>
+                                <p class="mb-1"><strong>Car:</strong> {{ $booking->vehicle->full_model ?? $booking->vehicle->vehicle_model }}</p>
+                                <p class="mb-1"><strong>Plate:</strong> {{ $booking->vehicle->registration_number ?? $booking->vehicle->plate_number }}</p>
+                                <p class="mb-1"><strong>Dates:</strong> {{ $booking->start_date->format('d M Y') }} - {{ $booking->end_date->format('d M Y') }}</p>
                             </div>
-                            <div class="col-md-6">
-                                <p><strong>Duration:</strong> {{ $booking->duration_days }} days</p>
-                                <p><strong>Daily Rate:</strong> RM {{ number_format($booking->vehicle->daily_rate, 2) }}</p>
-                                <p><strong>Total Price:</strong> RM {{ number_format($booking->total_price, 2) }}</p>
-                                <p class="h5 text-maroon"><strong>Required Deposit:</strong> RM {{ number_format($depositAmount, 2) }}</p>
+                            <div class="col-md-6 text-md-end">
+                                <p class="mb-1">Total Price: <strong>RM {{ number_format($booking->total_amount ?? $booking->total_price, 2) }}</strong></p>
+                                <h4 class="text-maroon fw-bold mt-2">Required Deposit: RM {{ number_format($depositAmount, 2) }}</h4>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bank Details Card -->
-                <div class="card mb-4 shadow-sm border-warning">
-                    <div class="card-header bg-warning">
-                        <h5 class="mb-0">Bank Transfer Details</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Bank:</strong> Maybank</p>
-                                <p><strong>Account Name:</strong> HASTA TRAVEL TOURS SDN. BHD.</p>
-                                <p><strong>Account No:</strong> 5513 0654 1568</p>
+                <form action="{{ route('payments.submit') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="bookingID" value="{{ $booking->bookingID }}">
+
+                    <div class="card mb-4 shadow-sm border-2 border-warning">
+                        <div class="card-header bg-warning text-dark fw-bold">
+                            <i class="fas fa-qrcode me-2"></i>Step 1: Scan DuitNow QR to Pay
+                        </div>
+                        <div class="card-body text-center bg-white">
+                            <div class="qr-container mb-3">
+                                <img src="{{ asset('images/qr.png') }}" alt="DuitNow QR Code" style="width: 200px; height: 200px;">
                             </div>
-                            <div class="col-md-6">
-                                <div class="alert alert-info">
-                                    <small><strong>Note:</strong> Please transfer the exact deposit amount and upload your payment receipt below.</small>
-                                </div>
+                            <h5 class="fw-bold">HASTA TRAVEL TOURS SDN. BHD.</h5>
+                            <p class="text-muted mb-0">Maybank: 5513 0654 1568</p>
+
+                            <div class="alert alert-info mt-3 mb-0 d-inline-block text-start">
+                                <small><i class="fas fa-info-circle"></i> <strong>Tip:</strong> You can pay the <strong>Deposit (RM {{ number_format($depositAmount, 0) }})</strong> or the <strong>Full Amount</strong>.</small>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Payment Form Card -->
-                <div class="card shadow-sm">
-                    <div class="card-header card-header-maroon">
-                        <h5 class="mb-0">Payment Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <form action="{{ route('payments.store') }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            
-                            <input type="hidden" name="booking_id" value="{{ $booking->id }}">
-
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="payment_date" class="form-label">Payment Date <span class="text-danger">*</span></label>
-                                    <input type="date" 
-                                           class="form-control @error('payment_date') is-invalid @enderror" 
-                                           id="payment_date" 
-                                           name="payment_date" 
-                                           value="{{ old('payment_date', date('Y-m-d')) }}" 
-                                           required>
-                                    @error('payment_date')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label for="payment_method" class="form-label">Payment Method <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('payment_method') is-invalid @enderror" 
-                                            id="payment_method" 
-                                            name="payment_method" 
-                                            required>
-                                        <option value="">Select Payment Method</option>
-                                        <option value="Bank Transfer" {{ old('payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                                        <option value="Cash" {{ old('payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                                    </select>
-                                    @error('payment_method')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header card-header-maroon">
+                            <h5 class="mb-0"><i class="fas fa-file-upload me-2"></i>Step 2: Upload Proof & Details</h5>
+                        </div>
+                        <div class="card-body">
 
                             <div class="mb-3">
-                                <label for="proof_of_payment" class="form-label">Proof of Payment <span class="text-danger">*</span></label>
-                                <input type="file" 
-                                       class="form-control @error('proof_of_payment') is-invalid @enderror" 
-                                       id="proof_of_payment" 
-                                       name="proof_of_payment" 
-                                       accept="image/jpeg,image/png,application/pdf"
-                                       required>
-                                <div class="form-text">Accepted formats: JPG, PNG, PDF. Maximum file size: 2MB</div>
-                                @error('proof_of_payment')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <label class="form-label fw-bold">Payment Type <span class="text-danger">*</span></label>
+                                <select name="payment_type" class="form-select" required>
+                                    <option value="Deposit">Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})</option>
+                                    <option value="Full Payment">Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->total_price, 2) }})</option>
+                                </select>
                             </div>
 
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <a href="{{ route('bookings.show', $booking->id) }}" class="btn btn-secondary">Cancel</a>
-                                <button type="submit" class="btn btn-maroon">Submit Payment</button>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Payment Date <span class="text-danger">*</span></label>
+                                    <input type="date" name="payment_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Payment Method</label>
+                                    <input type="text" class="form-control" value="DuitNow / Bank Transfer" readonly>
+                                    <input type="hidden" name="payment_method" value="Bank Transfer">
+                                </div>
                             </div>
-                        </form>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Upload Receipt <span class="text-danger">*</span></label>
+                                <input type="file" name="receipt_image" class="form-control" accept=".jpg,.jpeg,.png,.pdf" required>
+                                <div class="form-text">Please ensure the reference number is visible. Max 2MB.</div>
+                            </div>
+
+                            <hr>
+
+                            <h6 class="text-maroon fw-bold mb-3">Your Bank Details (For Deposit Refund)</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Your Bank Name <span class="text-danger">*</span></label>
+                                    <input type="text" name="bank_name" class="form-control" placeholder="e.g. CIMB" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Your Account Number <span class="text-danger">*</span></label>
+                                    <input type="text" name="bank_account_number" class="form-control" placeholder="e.g. 7654321098" required>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                <a href="{{ route('bookings.show', $booking->bookingID) }}" class="btn btn-secondary px-4 me-2">Cancel</a>
+                                <button type="submit" class="btn btn-maroon px-5">Submit Payment</button>
+                            </div>
+
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

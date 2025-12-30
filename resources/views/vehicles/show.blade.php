@@ -593,7 +593,7 @@
                         <span class="breakdown-label">Rental Duration:</span>
                         <span class="breakdown-value"><span id="durationDays">0</span> day(s)</span>
                     </div>
-                    
+
                     <div class="breakdown-item">
                         <span class="breakdown-label">Base Price:</span>
                         <span class="breakdown-value">RM <span id="basePriceBreakdown">0</span></span>
@@ -727,7 +727,7 @@
                 if (checkbox.checked) {
                     const addonValue = checkbox.value;
                     const config = addonConfig[addonValue];
-                    
+
                     if (config) {
                         const input = document.createElement('input');
                         input.type = 'hidden';

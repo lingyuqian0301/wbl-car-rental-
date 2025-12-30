@@ -90,5 +90,5 @@
                 <a href="{{ route('login') }}" class="header-btn">Login</a>
             </div>
         </div>
-        
+
     </header>
