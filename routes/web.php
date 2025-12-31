@@ -12,6 +12,7 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
+use App\Mail\BookingInvoiceMail;
 
 Route::get('/fix-admin-password', function () {
     $user = \App\Models\User::where('email', 'yuqian@hasta.com')->first();
@@ -22,7 +23,15 @@ Route::get('/fix-admin-password', function () {
     }
     return "User not found!";
 });
+Route::get('/mail-preview', function () {
+    $booking = \App\Models\Booking::with(['customer', 'vehicle', 'payments'])->latest()->first();
+    
+    // Check if a booking exists first to avoid errors
+    if (!$booking) return "No bookings found in database to preview.";
 
+    // Using the full namespace fixes the "Class not found" error
+    return new \App\Mail\BookingInvoiceMail($booking, null); 
+});
 Route::get('/', [VehicleController::class, 'index'])->name('home');
 Route::get('/vehicles/{id}', [VehicleController::class, 'show'])->name('vehicles.show');
 

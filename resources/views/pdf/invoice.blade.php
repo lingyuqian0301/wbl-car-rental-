@@ -87,5 +87,13 @@
             Thank you for choosing Hasta Travel! Computer-generated invoice.
         </div>
     </div>
+       <div style="margin-top: 50px;">
+    <div style="float: right; width: 200px; text-align: center;">
+        <hr>
+        <p><strong>Authorized Signature</strong></p>
+        <p>{{ Auth::user()->name }}</p> 
+        <p>Hasta Travel Management</p>
+    </div>
+</div>
 </body>
 </html>
