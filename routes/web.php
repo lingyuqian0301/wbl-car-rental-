@@ -13,7 +13,7 @@ use App\Http\Controllers\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\BookingInvoiceMail;
-
+use Barryvdh\DomPDF\Facade\Pdf;
 Route::get('/fix-admin-password', function () {
     $user = \App\Models\User::where('email', 'yuqian@hasta.com')->first();
     if ($user) {
@@ -24,13 +24,43 @@ Route::get('/fix-admin-password', function () {
     return "User not found!";
 });
 Route::get('/mail-preview', function () {
-    $booking = \App\Models\Booking::with(['customer', 'vehicle', 'payments'])->latest()->first();
+    // 1. Get the latest booking
+    $booking = \App\Models\Booking::with(['customer', 'vehicle'])->latest()->first();
     
-    // Check if a booking exists first to avoid errors
     if (!$booking) return "No bookings found in database to preview.";
 
-    // Using the full namespace fixes the "Class not found" error
-    return new \App\Mail\BookingInvoiceMail($booking, null); 
+    // 2. Mock Invoice Data (So the PDF view doesn't crash)
+    $invoiceData = new \App\Models\Invoice([
+        'invoice_number' => 'PREVIEW-123',
+        'issue_date'     => now(),
+        'totalAmount'    => $booking->total_price,
+        'bookingID'      => $booking->bookingID
+    ]);
+
+    // 3. Generate the PDF (Crucial Step: Do not pass null!)
+    $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData'));
+
+    // 4. Return the Mail View
+    return new \App\Mail\BookingInvoiceMail($booking, $pdf);
+});
+Route::get('/send-test', function () {
+    $booking = \App\Models\Booking::with(['customer', 'vehicle'])->latest()->first();
+    
+    if (!$booking) return "No booking found.";
+
+    // Generate PDF
+    $invoiceData = \App\Models\Invoice::firstOrNew(['bookingID' => $booking->bookingID]);
+    $invoiceData->invoice_number = 'TEST-SEND';
+    $invoiceData->issue_date = now();
+    $invoiceData->totalAmount = $booking->total_price;
+    
+    $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData'));
+
+    // Send to YOUR email (Replace with your actual email)
+    \Illuminate\Support\Facades\Mail::to('yqling29@gmail.com')
+        ->send(new \App\Mail\BookingInvoiceMail($booking, $pdf));
+
+    return "Test email sent to yqling29@gmail.com! Check your inbox.";
 });
 Route::get('/', [VehicleController::class, 'index'])->name('home');
 Route::get('/vehicles/{id}', [VehicleController::class, 'show'])->name('vehicles.show');

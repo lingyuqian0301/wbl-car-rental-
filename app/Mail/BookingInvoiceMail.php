@@ -16,18 +16,13 @@ class BookingInvoiceMail extends Mailable
     public $booking;
     public $pdf;
 
-    /**
-     * Receive the booking and PDF from the Controller
-     */
+    // Ensure we require both $booking AND $pdf
     public function __construct($booking, $pdf)
     {
         $this->booking = $booking;
         $this->pdf = $pdf;
     }
 
-    /**
-     * Set the email subject
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -35,21 +30,18 @@ class BookingInvoiceMail extends Mailable
         );
     }
 
-    /**
-     * Point to the correct blade view
-     */
     public function content(): Content
     {
-        return new Content(
-            view: 'pdf.invoice', // This uses your resources/views/pdf/invoice.blade.php
-        );
+        return new Content(view: 'pdf.invoice');
     }
 
-    /**
-     * Attach the generated PDF to the Gmail
-     */
     public function attachments(): array
     {
+        // Safety check: if $pdf is somehow missing (like in your preview route), don't crash.
+        if (!$this->pdf) {
+            return [];
+        }
+
         return [
             Attachment::fromData(fn () => $this->pdf->output(), 'Invoice_' . $this->booking->bookingID . '.pdf')
                 ->withMime('application/pdf'),
