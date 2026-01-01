@@ -14,8 +14,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
+        // Store the redirect URL if provided as query parameter
+        if ($request->has('redirect')) {
+            $request->session()->put('url.intended', $request->get('redirect'));
+        }
+        
         return view('auth.login');
     }
 
@@ -30,14 +35,25 @@ class AuthenticatedSessionController extends Controller
         // 2. Regenerate session ID (Security standard)
         $request->session()->regenerate();
 
-        // 3. Check if the authenticated user is an Admin
+        // 3. Get the intended URL (previous page before login)
+        $intendedUrl = $request->session()->pull('url.intended', null);
+
+        // 4. Check if the authenticated user is an Admin
         if ($request->user()->isAdmin()) {
-            // Redirect to the route named 'admin.dashboard' found in your web.php
+            // If there's an intended URL and it's not the admin dashboard, redirect there
+            if ($intendedUrl && !str_contains($intendedUrl, '/admin/dashboard')) {
+                return redirect($intendedUrl);
+            }
+            // Otherwise redirect to admin dashboard
             return redirect()->route('admin.dashboard');
         }
 
-        // 4. If not Admin, redirect to the standard dashboard
-        return redirect()->intended(route('dashboard', absolute: false));
+        // 5. If not Admin, redirect to intended URL or standard dashboard
+        if ($intendedUrl) {
+            return redirect($intendedUrl);
+        }
+        
+        return redirect()->route('dashboard');
     }
 
     /**

@@ -87,6 +87,13 @@ class BookingController extends Controller
 
    public function store(Request $request, $vehicleID)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            // Store the intended URL so we can redirect back after login
+            $request->session()->put('url.intended', url()->previous());
+            return redirect()->route('login')->with('error', 'Please sign in to proceed with booking.');
+        }
+
         $request->validate([
             'start_date'    => 'required|date|after_or_equal:today',
             'end_date'      => 'required|date|after:start_date',

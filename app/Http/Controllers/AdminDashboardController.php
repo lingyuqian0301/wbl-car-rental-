@@ -18,8 +18,8 @@ class AdminDashboardController extends Controller
 
         $metrics = [
             'totalBookings' => Booking::count(),
-            'activeBookings' => Booking::whereIn('status', ['Pending', 'Confirmed'])->count(),
-            'completedBookings' => Booking::where('status', 'Completed')->count(),
+            'activeBookings' => Booking::whereIn('booking_status', ['Pending', 'Confirmed'])->count(),
+            'completedBookings' => Booking::where('booking_status', 'Completed')->count(),
             'pendingPayments' => Payment::where('status', 'Pending')->count(),
             'verifiedPayments' => Payment::where('status', 'Verified')->count(),
             'revenueAllTime' => Payment::where('status', 'Verified')->sum('amount'),

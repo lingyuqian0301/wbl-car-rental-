@@ -70,6 +70,9 @@ Route::get('/send-test', function () {
 Route::get('/', [VehicleController::class, 'index'])->name('home');
 Route::get('/vehicles/{id}', [VehicleController::class, 'show'])->name('vehicles.show');
 
+// Booking route - accessible to all, but requires auth in controller
+Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])->name('booking.store');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.submit');
@@ -90,11 +93,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-wallet', [CustomerDashboardController::class, 'wallet'])->name('wallet.show');
     Route::get('/my-loyalty', [CustomerDashboardController::class, 'loyalty'])->name('loyalty.show');
 
-
-    // Booking Routes (Customer)
+    // Booking Routes (Customer) - Require authentication
     Route::get('/booking/confirm', [BookingController::class, 'confirm'])->name('booking.confirm');
     Route::post('/booking/finalize', [BookingController::class, 'finalize'])->name('booking.finalize');
-    Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])->name('booking.store');
 
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');

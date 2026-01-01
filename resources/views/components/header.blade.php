@@ -81,13 +81,19 @@
             </div>
             <nav>
                 <a href="{{ route('home') }}">Home</a>
-                <a href="{{ route('bookings.index') }}">View Bookings</a>
-                <a href="#">Wallet Transaction</a>
-                <a href="#">Loyalty Card</a>
+                @auth
+                    <a href="{{ route('bookings.index') }}">View Bookings</a>
+                    <a href="#">Wallet Transaction</a>
+                    <a href="#">Loyalty Card</a>
+                @endauth
                 <a href="#">Contact Us</a>
             </nav>
             <div>
-                <a href="{{ route('login') }}" class="header-btn">Login</a>
+                @auth
+                    <a href="{{ route('profile.edit') }}" class="header-btn">{{ Auth::user()->name }}</a>
+                @else
+                    <a href="{{ route('login') }}?redirect={{ urlencode(request()->fullUrl()) }}" class="header-btn">Login</a>
+                @endauth
             </div>
         </div>
 
