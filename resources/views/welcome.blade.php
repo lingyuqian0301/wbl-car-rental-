@@ -459,39 +459,16 @@
 <body>
     @include('components.header')
 
-@auth
+    @auth
         @php
             $currentCustomer = \App\Models\Customer::where('user_id', auth()->id())->first();
             
-            $outstanding = 0;
-            $stamps = 0;
-
-            if ($currentCustomer) {
-                // 1. DYNAMIC CALCULATION: Total Debt
-                // Get all active bookings
-                $bookings = \Illuminate\Support\Facades\DB::table('booking')
-                            ->where('customerID', $currentCustomer->customerID)
-                            ->where('booking_status', '!=', 'Cancelled')
-                            ->get();
-                
-                $totalBookingCost = $bookings->sum('total_amount');
-                
-                // Get all verified payments for those bookings
-                $bookingIds = $bookings->pluck('bookingID');
-                $totalPaid = \Illuminate\Support\Facades\DB::table('payment')
-                            ->whereIn('bookingID', $bookingIds)
-                            ->where('status', 'Verified')
-                            ->sum('amount');
-                
-                // Outstanding = Cost - Paid
-                $outstanding = max(0, $totalBookingCost - $totalPaid);
-
-                // 2. Get Loyalty Stamps (Table: loyaltycard)
-                $loyalty = \Illuminate\Support\Facades\DB::table('loyaltycard')
-                            ->where('customerID', $currentCustomer->customerID)
-                            ->first();
-                $stamps = $loyalty ? $loyalty->total_stamps : 0;
-            }
+            $wallet = $currentCustomer ? \Illuminate\Support\Facades\DB::table('walletaccount')->where('customerID', $currentCustomer->customerID)->first() : null;
+            $loyalty = $currentCustomer ? \Illuminate\Support\Facades\DB::table('loyaltycard')->where('customerID', $currentCustomer->customerID)->first() : null;
+            
+            // Read columns directly
+            $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
+            $stamps = $loyalty ? $loyalty->total_stamps : 0;
         @endphp
 
         <section style="padding: 1.5rem 2rem; background-color: #fff1f2;">
@@ -530,6 +507,7 @@
             </div>
         </section>
     @endauth
+
     <section class="hero">
         <div class="hero-container">
             <h2>Experience the road like never before</h2>
@@ -580,7 +558,6 @@
                         <option value="Proton" {{ request('brand') == 'Proton' ? 'selected' : '' }}>Proton</option>
                         <option value="Toyota" {{ request('brand') == 'Toyota' ? 'selected' : '' }}>Toyota</option>
                         <option value="Honda" {{ request('brand') == 'Honda' ? 'selected' : '' }}>Honda</option>
-
                     </select>
                 </div>
 
@@ -588,13 +565,10 @@
                     <label>Car Type</label>
                     <select name="vehicle_type">
                         <option value="">All Types</option>
-                        <option value="Hatchback" {{ request('vehicle_type') == 'Hatchback' ? 'selected' : '' }}>Hatchback
-                        </option>
+                        <option value="Hatchback" {{ request('vehicle_type') == 'Hatchback' ? 'selected' : '' }}>Hatchback</option>
                         <option value="Sedan" {{ request('vehicle_type') == 'Sedan' ? 'selected' : '' }}>Sedan</option>
                         <option value="SUV" {{ request('vehicle_type') == 'SUV' ? 'selected' : '' }}>SUV</option>
-                        <option value="Compact" {{ request('vehicle_type') == 'Compact' ? 'selected' : '' }}>Compact
-                        </option>
-
+                        <option value="Compact" {{ request('vehicle_type') == 'Compact' ? 'selected' : '' }}>Compact</option>
                     </select>
                 </div>
 
@@ -603,28 +577,16 @@
         </div>
 
         <div class="cars-grid">
-            <p style="text-align:center; font-weight:bold;">
-            </p>
-
             @forelse($cars as $car)
-                <div
-                    class="car-card {{ $loop->iteration % 3 == 1 ? 'blue' : ($loop->iteration % 3 == 2 ? 'green' : 'yellow') }}">
-
+                <div class="car-card {{ $loop->iteration % 3 == 1 ? 'blue' : ($loop->iteration % 3 == 2 ? 'green' : 'yellow') }}">
                     @php
-                        $imageName = strtolower(
-                            str_replace(' ', '-', $car->vehicle_brand . '-' . $car->vehicle_model)
-                        ) . '.png';
-                    @endphp
-
-                    @php
+                        $imageName = strtolower(str_replace(' ', '-', $car->vehicle_brand . '-' . $car->vehicle_model)) . '.png';
                         $imagePath = public_path('images/cars/browse/' . $imageName);
                     @endphp
 
-
                     <div class="car-image">
                         @if(file_exists($imagePath))
-                            <img src="{{ asset('images/cars/browse/' . $imageName) }}"
-                                alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}">
+                            <img src="{{ asset('images/cars/browse/' . $imageName) }}" alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}">
                         @else
                             <img src="{{ asset('images/cars/browse/default.png') }}" alt="Default car">
                         @endif
@@ -632,29 +594,13 @@
 
                     <div class="car-content">
                         <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
-
                         <p class="car-type">{{ $car->type }}</p>
-
                         <div class="car-specs">
-                            <p>
-                                <span class="spec-icon">⚙</span>
-                                {{ $car->transmission }}
-                            </p>
-                            <p>
-                                <span class="color-dot" style="background-color: {{ $car->color ?? '#cccccc' }};"></span>
-                                {{ $car->color ?? 'N/A' }}
-                            </p>
+                            <p><span class="spec-icon">⚙</span> {{ $car->transmission }}</p>
+                            <p><span class="color-dot" style="background-color: {{ $car->color ?? '#cccccc' }};"></span> {{ $car->color ?? 'N/A' }}</p>
                         </div>
-
-                        <p class="car-price">
-                            RM {{ $car->rental_price }}
-                            <span>/day</span>
-                        </p>
-
-                        <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">
-                            Book Now
-                        </a>
-
+                        <p class="car-price">RM {{ $car->rental_price }} <span>/day</span></p>
+                        <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">Book Now</a>
                     </div>
                 </div>
             @empty
@@ -662,8 +608,7 @@
             @endforelse
         </div>
     </section>
+
     @include('components.footer')
-
 </body>
-
 </html>

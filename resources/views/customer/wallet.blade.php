@@ -45,7 +45,7 @@
                     </div>
                 </div>
 
-                <h4 class="mb-3 text-secondary">Payment History</h4>
+                <h4 class="mb-3 text-secondary">Transaction History</h4>
                 
                 <div class="card shadow-sm border-0">
                     <div class="list-group list-group-flush">
@@ -54,15 +54,15 @@
                                 <div class="d-flex w-100 justify-content-between align-items-start mb-2">
                                     <div>
                                         <h5 class="mb-1 fw-bold">
-                                            Payment for Booking #{{ $t->bookingID }}
+                                            {{ $t->description ?? 'Wallet Transaction' }}
                                         </h5>
                                         <p class="mb-0 text-muted small">
-                                            Method: {{ $t->payment_type }}
+                                            Type: {{ $t->transaction_type }}
                                         </p>
                                     </div>
                                     <div class="text-end">
                                         <span class="d-block text-muted small">
-                                            {{ \Carbon\Carbon::parse($t->payment_date)->format('d M Y, h:i A') }}
+                                            {{ \Carbon\Carbon::parse($t->transaction_date)->format('d M Y, h:i A') }}
                                         </span>
                                     </div>
                                 </div>
@@ -72,24 +72,12 @@
                                         RM {{ number_format($t->amount, 2) }}
                                     </span>
                                     
-                                    @if($t->status == 'Verified')
-                                        <span class="badge bg-success rounded-pill">Verified</span>
-                                    @elseif($t->status == 'Pending')
-                                        <span class="badge bg-warning text-dark rounded-pill">Pending Review</span>
-                                    @else
-                                        <span class="badge bg-danger rounded-pill">Rejected</span>
-                                    @endif
+                                    <span class="badge bg-success rounded-pill">Completed</span>
                                 </div>
-                                
-                                @if($t->status == 'Rejected' && !empty($t->rejected_reason))
-                                    <div class="mt-2 p-2 bg-danger-subtle text-danger rounded small">
-                                        Reason: {{ $t->rejected_reason }}
-                                    </div>
-                                @endif
                             </div>
                         @empty
                             <div class="p-5 text-center text-muted">
-                                <p class="mb-0">No payment history found.</p>
+                                <p class="mb-0">No transaction history found.</p>
                             </div>
                         @endforelse
                     </div>

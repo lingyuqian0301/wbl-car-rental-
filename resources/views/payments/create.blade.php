@@ -135,6 +135,11 @@
                                     <label class="form-label fw-bold">Payment Date <span class="text-danger">*</span></label>
                                     <input type="date" name="payment_date" class="form-control" value="{{ date('Y-m-d') }}" required>
                                 </div>
+                                <div class="col-md-4 mb-3">
+        <label class="form-label fw-bold">Transaction Reference No. <span class="text-danger">*</span></label>
+        <input type="text" name="transaction_reference" class="form-control" placeholder="e.g. 12345678" required>
+        <div class="form-text" style="font-size: 0.8rem;">Found on your banking receipt</div>
+    </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Payment Method</label>
                                     <input type="text" class="form-control" value="DuitNow / Bank Transfer" readonly>

@@ -2,98 +2,98 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Invoice #INV-{{ $booking->bookingID }}</title>
+    <title>Invoice #{{ $invoiceData->invoice_number ?? $booking->bookingID }}</title>
     <style>
-        body { font-family: sans-serif; color: #333; }
-        .container { width: 100%; max-width: 800px; margin: 0 auto; }
-        .header { width: 100%; margin-bottom: 30px; }
-        .logo { font-size: 24px; font-weight: bold; text-align: right; }
-        .invoice-title { font-size: 36px; font-weight: bold; margin-bottom: 5px; }
-
-        .info-table { width: 100%; margin-bottom: 30px; }
-        .info-table td { vertical-align: top; width: 33%; }
-        .label { font-size: 12px; font-weight: bold; margin-bottom: 3px; }
-
-        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .items-table th { text-align: left; border-bottom: 1px solid #ddd; padding: 10px 0; }
-        .items-table td { border-bottom: 1px solid #eee; padding: 10px 0; }
-
-        .totals { text-align: right; margin-top: 20px; }
-        .total-row { margin-bottom: 5px; }
-        .grand-total { font-size: 18px; font-weight: bold; color: #6d28d9; border-top: 2px solid #6d28d9; padding-top: 10px; display: inline-block; }
+        body { font-family: 'Helvetica', sans-serif; font-size: 14px; color: #333; }
+        .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .logo { font-size: 24px; font-weight: bold; color: #dc2626; }
+        .invoice-details { text-align: right; }
+        
+        table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; }
+        table td { padding: 10px; vertical-align: top; }
+        table tr.heading td { background: #eee; border-bottom: 1px solid #ddd; font-weight: bold; }
+        table tr.item td { border-bottom: 1px solid #eee; }
+        table tr.total td { border-top: 2px solid #333; font-weight: bold; }
+        
+        .text-right { text-align: right; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <table class="header">
-            <tr>
-                <td>
-                    <div class="invoice-title">INVOICE</div>
-                    <div>#INV-{{ str_pad($booking->bookingID, 6, '0', STR_PAD_LEFT) }}</div>
-                </td>
-                <td class="logo">HASTA TRAVEL</td>
-            </tr>
-        </table>
-
-        <table class="info-table">
-            <tr>
-                <td>
-                    <div class="label">Issued</div>
-                    <div>{{ now()->format('d M, Y') }}</div>
-                </td>
-                <td>
-                    <div class="label">Billed To</div>
-                    <div><strong>{{ $booking->customer->fullname }}</strong></div>
-                    <div>{{ $booking->customer->email }}</div>
-                </td>
-                <td>
-                    <div class="label">From</div>
-                    <div><strong>Hasta Car Rental</strong></div>
-                    <div>Johor Bahru, Malaysia</div>
+    <div class="invoice-box">
+        <table cellpadding="0" cellspacing="0">
+            <tr class="top">
+                <td colspan="3">
+                    <table>
+                        <tr>
+                            <td class="title">
+                                <span class="logo">HASTA TRAVEL</span>
+                            </td>
+                            <td class="text-right">
+                                Invoice #: {{ $invoiceData->invoice_number ?? 'INV-'.$booking->bookingID }}<br>
+                                Date: {{ \Carbon\Carbon::parse($invoiceData->issue_date ?? now())->format('d M, Y') }}<br>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+
+            <tr class="information">
+                <td colspan="3">
+                    <table>
+                        <tr>
+                            <td>
+                                <strong>Billed To:</strong><br>
+                                {{ $booking->customer->fullname ?? 'Customer' }}<br>
+                                {{ $booking->customer->email ?? '' }}
+                            </td>
+                            <td class="text-right">
+                                <strong>From:</strong><br>
+                                Hasta Car Rental<br>
+                                Johor Bahru, Malaysia
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr class="heading">
+                <td>Vehicle</td>
+                <td>Dates</td>
+                <td class="text-right">Total</td>
+            </tr>
+
+            <tr class="item">
+                <td>
+                    {{-- FIXED: Using correct DB columns --}}
+                    @if($booking->vehicle)
+                        {{ $booking->vehicle->vehicle_brand }} {{ $booking->vehicle->vehicle_model }}
+                        <br><small>{{ $booking->vehicle->vehicle_number ?? '' }}</small>
+                    @else
+                        <em>Vehicle details unavailable</em>
+                    @endif
+                </td>
+                <td>
+                    {{ \Carbon\Carbon::parse($booking->start_date)->format('d M') }} - 
+                    {{ \Carbon\Carbon::parse($booking->end_date)->format('d M, Y') }}
+                </td>
+                <td class="text-right">
+                    RM {{ number_format($booking->total_amount, 2) }}
+                </td>
+            </tr>
+
+            <tr class="total">
+                <td colspan="2"></td>
+                <td class="text-right">
+                    Total: RM {{ number_format($booking->total_amount, 2) }}
+                </td>
+            </tr>
         </table>
-
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Vehicle</th>
-                    <th>Dates</th>
-                    <th style="text-align: right;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <strong>{{ $booking->vehicle->brand }} {{ $booking->vehicle->model }}</strong><br>
-                        <small>{{ $booking->vehicle->registration_number }}</small>
-                    </td>
-                    <td>
-                        {{ \Carbon\Carbon::parse($booking->start_date)->format('d M') }} -
-                        {{ \Carbon\Carbon::parse($booking->end_date)->format('d M, Y') }}
-                    </td>
-                    <td style="text-align: right;">RM {{ number_format($booking->total_price, 2) }}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="totals">
-            <div class="grand-total">
-                Amount Paid: RM {{ number_format($booking->total_price, 2) }}
-            </div>
-        </div>
-
-        <div style="margin-top: 50px; font-size: 12px; color: #777; border-top: 1px solid #eee; padding-top: 10px;">
-            Thank you for choosing Hasta Travel! Computer-generated invoice.
-        </div>
+        
+        <br>
+        <p style="text-align: center; font-size: 12px; color: #777;">
+            Thank you for choosing Hasta Travel! This is a computer-generated invoice.
+        </p>
     </div>
-       <div style="margin-top: 50px;">
-    <div style="float: right; width: 200px; text-align: center;">
-        <hr>
-        <p><strong>Authorized Signature</strong></p>
-        <p>{{ Auth::user()->name }}</p> 
-        <p>Hasta Travel Management</p>
-    </div>
-</div>
 </body>
 </html>
