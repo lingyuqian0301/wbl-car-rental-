@@ -32,7 +32,14 @@ class AdminPaymentController extends Controller
             'payments' => $payments,
         ]);
     }
+public function show($id)
+    {
+        // Find the payment and load related booking/customer info
+        $payment = \App\Models\Payment::with(['booking.customer', 'booking.vehicle'])
+                    ->findOrFail($id);
 
+        return view('admin.payments.show', compact('payment'));
+    }
     /**
      * Approve a payment, generate an invoice record, and send the Gmail.
      */
@@ -71,8 +78,8 @@ public function approve($id): RedirectResponse
         // STEP 3: LOYALTY LOGIC (Stamps + Vouchers)
         // =========================================================
         try {
-            $start = Carbon::parse($booking->pickup_date);
-            $end   = Carbon::parse($booking->return_date);
+            $start = Carbon::parse($booking->start_date);
+            $end   = Carbon::parse($booking->end_date);
             $hours = $start->diffInHours($end);
 
             // Log for debugging
@@ -83,32 +90,32 @@ public function approve($id): RedirectResponse
                 $stamps = floor($hours / 3); // 1 stamp per 3 hours
 
                 // 3a. Find or Create Loyalty Card
-                $card = DB::table('loyalty_cards')->where('customerID', $booking->customerID)->first();
+                $card = DB::table('loyaltycard')->where('customerID', $booking->customerID)->first();
 
                 if ($card) {
                     // Update existing card
-                    DB::table('loyalty_cards')
+                    DB::table('loyaltycard')
                         ->where('loyaltyCardID', $card->loyaltyCardID)
                         ->update([
                             'total_stamps' => $card->total_stamps + $stamps,
                             'last_updated' => now() // <--- Your specific column
                         ]);
                     // Refresh data to get the new total
-                    $card = DB::table('loyalty_cards')->where('loyaltyCardID', $card->loyaltyCardID)->first();
+                    $card = DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
                 } else {
                     // Create new card
-                    $newId = DB::table('loyalty_cards')->insertGetId([
+                    $newId = DB::table('loyaltycard')->insertGetId([
                         'customerID'   => $booking->customerID,
                         'total_stamps' => $stamps,
                         'last_updated' => now()
                     ], 'loyaltyCardID');
-                    $card = DB::table('loyalty_cards')->where('loyaltyCardID', $newId)->first();
+                    $card = DB::table('loyaltycard')->where('loyaltyCardID', $newId)->first();
                 }
 
                 // 3b. VOUCHER LOGIC: Check if they reached 48 stamps
                 if ($card->total_stamps >= 48) {
                     // Create the Voucher
-                    DB::table('vouchers')->insert([
+                    DB::table('voucher')->insert([
                         'loyaltyCardID' => $card->loyaltyCardID,        // Linked to Loyalty Card
                         'discount_type' => '1 Free Day (Mon-Fri)',      // Reward Description
                         'isActive'      => 1,                           // Set as Active
@@ -116,7 +123,7 @@ public function approve($id): RedirectResponse
                     ]);
 
                     // Deduct the 48 stamps used
-                    DB::table('loyalty_cards')
+                    DB::table('loyaltycard')
                         ->where('loyaltyCardID', $card->loyaltyCardID)
                         ->decrement('total_stamps', 48);
                     
@@ -132,7 +139,7 @@ public function approve($id): RedirectResponse
         // STEP 4: WALLET LOGIC (Deduct Outstanding Amount)
         // =========================================================
         try {
-            $wallet = DB::table('wallet_accounts')
+            $wallet = DB::table('walletaccount')
                 ->where('customerID', $booking->customerID)
                 ->first();
 
@@ -146,7 +153,7 @@ public function approve($id): RedirectResponse
                     if ($newOutstanding < 0) $newOutstanding = 0;
 
                     // Update Wallet Balance
-                    DB::table('wallet_accounts')
+                    DB::table('walletaccount')
                         ->where('walletAccountID', $wallet->walletAccountID)
                         ->update([
                             'outstanding_amount'   => $newOutstanding,
@@ -157,7 +164,7 @@ public function approve($id): RedirectResponse
                 }
 
                 // Always Record Transaction History
-                DB::table('wallet_transactions')->insert([
+                DB::table('wallettransaction')->insert([
                     'amount'           => $payment->amount,
                     'transaction_type' => 'Payment Verified',
                     'description'      => 'Payment verified for Booking #' . $booking->bookingID,

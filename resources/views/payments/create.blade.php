@@ -99,10 +99,6 @@
                             </div>
                             <h5 class="fw-bold">HASTA TRAVEL TOURS SDN. BHD.</h5>
                             <p class="text-muted mb-0">Maybank: 5513 0654 1568</p>
-
-                            <div class="alert alert-info mt-3 mb-0 d-inline-block text-start">
-                                <small><i class="fas fa-info-circle"></i> <strong>Tip:</strong> You can pay the <strong>Deposit (RM {{ number_format($depositAmount, 0) }})</strong> or the <strong>Full Amount</strong>.</small>
-                            </div>
                         </div>
                     </div>
 
@@ -112,14 +108,28 @@
                         </div>
                         <div class="card-body">
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Payment Type <span class="text-danger">*</span></label>
-                                <select name="payment_type" class="form-select" required>
-                                    <option value="Deposit">Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})</option>
-                                    <option value="Full Payment">Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->total_price, 2) }})</option>
-                                </select>
-                            </div>
+                            <div class="mb-4 p-3 bg-light rounded border">
+                                <label class="form-label fw-bold">Choose Payment Option <span class="text-danger">*</span></label>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="payment_type" id="payDeposit" value="Deposit" checked onchange="updateAmount(this.value)">
+                                    <label class="form-check-label" for="payDeposit">
+                                        Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="radio" name="payment_type" id="payFull" value="Full Payment" onchange="updateAmount(this.value)">
+                                    <label class="form-check-label" for="payFull">
+                                        Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->total_price, 2) }})
+                                    </label>
+                                </div>
 
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Amount to Pay (RM)</label>
+                                    <input type="number" step="0.01" name="amount" id="amountInput" class="form-control fw-bold text-success fs-5" value="{{ $depositAmount }}" readonly>
+                                    <div class="form-text">This updates automatically based on your selection above.</div>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Payment Date <span class="text-danger">*</span></label>
@@ -165,5 +175,21 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function updateAmount(type) {
+            // Get PHP values into JS variables
+            var deposit = {{ $depositAmount ?? 50 }};
+            var full = {{ $booking->total_amount ?? $booking->total_price }};
+
+            var input = document.getElementById('amountInput');
+
+            if (type === 'Full Payment') {
+                input.value = full.toFixed(2);
+            } else {
+                input.value = deposit.toFixed(2);
+            }
+        }
+    </script>
 </body>
 </html>

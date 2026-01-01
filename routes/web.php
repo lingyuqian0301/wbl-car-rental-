@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\BookingInvoiceMail;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Http\Controllers\CustomerDashboardController;
 Route::get('/fix-admin-password', function () {
     $user = \App\Models\User::where('email', 'yuqian@hasta.com')->first();
     if ($user) {
@@ -43,6 +44,10 @@ Route::get('/mail-preview', function () {
     // 4. Return the Mail View
     return new \App\Mail\BookingInvoiceMail($booking, $pdf);
 });
+
+
+
+
 Route::get('/send-test', function () {
     $booking = \App\Models\Booking::with(['customer', 'vehicle'])->latest()->first();
     
@@ -80,6 +85,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Group under 'auth' so only logged-in users can access
+
+    Route::get('/my-wallet', [CustomerDashboardController::class, 'wallet'])->name('wallet.show');
+    Route::get('/my-loyalty', [CustomerDashboardController::class, 'loyalty'])->name('loyalty.show');
+
 
     // Booking Routes (Customer)
     Route::get('/booking/confirm', [BookingController::class, 'confirm'])->name('booking.confirm');

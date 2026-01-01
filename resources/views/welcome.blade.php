@@ -441,14 +441,95 @@
             font-size: 0.95rem;
             font-weight: 400;
         }
+
+        /* CUSTOM DASHBOARD STYLES */
+        .dashboard-link {
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .dashboard-link:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 
 <body>
-    <!-- Navigation Header -->
-@include('components.header')
+    @include('components.header')
 
-    <!-- Hero Section -->
+@auth
+        @php
+            $currentCustomer = \App\Models\Customer::where('user_id', auth()->id())->first();
+            
+            $outstanding = 0;
+            $stamps = 0;
+
+            if ($currentCustomer) {
+                // 1. DYNAMIC CALCULATION: Total Debt
+                // Get all active bookings
+                $bookings = \Illuminate\Support\Facades\DB::table('booking')
+                            ->where('customerID', $currentCustomer->customerID)
+                            ->where('booking_status', '!=', 'Cancelled')
+                            ->get();
+                
+                $totalBookingCost = $bookings->sum('total_amount');
+                
+                // Get all verified payments for those bookings
+                $bookingIds = $bookings->pluck('bookingID');
+                $totalPaid = \Illuminate\Support\Facades\DB::table('payment')
+                            ->whereIn('bookingID', $bookingIds)
+                            ->where('status', 'Verified')
+                            ->sum('amount');
+                
+                // Outstanding = Cost - Paid
+                $outstanding = max(0, $totalBookingCost - $totalPaid);
+
+                // 2. Get Loyalty Stamps (Table: loyaltycard)
+                $loyalty = \Illuminate\Support\Facades\DB::table('loyaltycard')
+                            ->where('customerID', $currentCustomer->customerID)
+                            ->first();
+                $stamps = $loyalty ? $loyalty->total_stamps : 0;
+            }
+        @endphp
+
+        <section style="padding: 1.5rem 2rem; background-color: #fff1f2;">
+            <div class="hero-container">
+                <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                    
+                    <a href="{{ route('wallet.show') }}" class="feature-card dashboard-link" style="background: white; border-left: 5px solid var(--primary-orange); text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="feature-icon" style="font-size: 1.5rem; margin-bottom: 0;">💳</div>
+                            <h4 style="margin: 0; font-size: 1rem;">My Wallet</h4>
+                            <p style="margin: 0; font-size: 0.85rem;">Click for details</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.85rem; color: #666;">Outstanding</span>
+                            <h3 style="margin: 0; color: {{ $outstanding > 0 ? 'var(--primary-orange)' : 'var(--success-green)' }}; font-size: 1.5rem;">
+                                RM {{ number_format($outstanding, 2) }}
+                            </h3>
+                        </div>
+                    </a>
+
+                    <a href="{{ route('loyalty.show') }}" class="feature-card dashboard-link" style="background: white; border-left: 5px solid var(--success-green); text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="feature-icon" style="font-size: 1.5rem; margin-bottom: 0;">🎁</div>
+                            <h4 style="margin: 0; font-size: 1rem;">Loyalty Card</h4>
+                            <p style="margin: 0; font-size: 0.85rem;">View Rewards</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.85rem; color: #666;">Stamps Earned</span>
+                            <h3 style="margin: 0; color: #333; font-size: 1.5rem;">
+                                {{ $stamps }} <span style="font-size: 1rem; color: #999;">/ 48</span>
+                            </h3>
+                        </div>
+                    </a>
+
+                </div>
+            </div>
+        </section>
+    @endauth
     <section class="hero">
         <div class="hero-container">
             <h2>Experience the road like never before</h2>
@@ -457,7 +538,6 @@
         </div>
     </section>
 
-    <!-- Features Section -->
     <section>
         <h3>Why Choose HASTA?</h3>
         <div class="features-grid">
@@ -479,30 +559,19 @@
         </div>
     </section>
 
-    <!-- Cars Section -->
     <section>
         <div class="filter-section">
-            <!-- Filter Form -->
             <form method="GET" action="{{ route('home') }}" class="filter-form">
-                <!-- Pick-up Date -->
                 <div class="filter-group">
                     <label>Pick-up date</label>
                     <input type="date" name="start_date" value="{{ request('start_date') }}">
                 </div>
 
-                <!-- Return Date -->
                 <div class="filter-group">
                     <label>Return date</label>
                     <input type="date" name="end_date" value="{{ request('end_date') }}">
                 </div>
 
-                <!-- Return Time
-        <div class="filter-group">
-            <label>Return time</label>
-            <input type="time" name="end_time" value="{{ request('end_time') }}">
-        </div> -->
-
-                <!-- Brand -->
                 <div class="filter-group">
                     <label>Brand</label>
                     <select name="brand">
@@ -515,7 +584,6 @@
                     </select>
                 </div>
 
-                <!-- Car Type -->
                 <div class="filter-group">
                     <label>Car Type</label>
                     <select name="vehicle_type">
@@ -530,7 +598,6 @@
                     </select>
                 </div>
 
-                <!-- Search Button -->
                 <button type="submit" class="filter-btn">Filter</button>
             </form>
         </div>
@@ -549,11 +616,6 @@
                         ) . '.png';
                     @endphp
 
-                    <!-- <div class="car-image">
-                                <img src="{{ asset('images/cars/browse/' . $imageName) }}"
-                                    alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}" loading="lazy"
-                                    onerror="this.src='{{ asset('images/cars/browse/default.png') }}'">
-                            </div> -->
                     @php
                         $imagePath = public_path('images/cars/browse/' . $imageName);
                     @endphp
@@ -567,9 +629,6 @@
                             <img src="{{ asset('images/cars/browse/default.png') }}" alt="Default car">
                         @endif
                     </div>
-
-
-
 
                     <div class="car-content">
                         <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
