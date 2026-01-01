@@ -85,8 +85,15 @@
                     <a href="{{ route('bookings.index') }}">View Bookings</a>
                     <a href="#">Wallet Transaction</a>
                     <a href="#">Loyalty Card</a>
+                @if(Auth::user()->isAdmin())
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                        {{ __('Admin Dashboard') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.payments.index')" :active="request()->routeIs('admin.payments.*')">
+                        {{ __('Payment Verification') }}
+                    </x-nav-link>
+                @endif                  
                 @endauth
-                <a href="#">Contact Us</a>
             </nav>
             <div>
                 @auth

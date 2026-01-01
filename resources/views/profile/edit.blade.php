@@ -19,11 +19,18 @@
                 </div>
             </div>
 
+            <!-- Logout Button -->
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">
+                            {{ __('Log Out') }}
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </x-app-layout>
+

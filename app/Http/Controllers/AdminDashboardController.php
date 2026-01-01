@@ -33,19 +33,19 @@ class AdminDashboardController extends Controller
             'fleetTotal' => Vehicle::count(),
         ];
 
-        $recentBookings = Booking::with(['vehicle', 'user'])
-            ->orderByDesc('created_at')
+        $recentBookings = Booking::with(['vehicle', 'customer.user'])
+            ->orderByDesc('creationDate')
             ->take(5)
             ->get();
 
-        $recentPayments = Payment::with(['booking.vehicle', 'booking.user'])
+        $recentPayments = Payment::with(['booking.vehicle', 'booking.customer.user'])
             ->orderByDesc('payment_date')
             ->take(5)
             ->get();
 
-        $pendingPayments = Payment::with(['booking.vehicle', 'booking.user'])
+        $pendingPayments = Payment::with(['booking.vehicle', 'booking.customer.user'])
             ->where('status', 'Pending')
-            ->orderByDesc('created_at')
+            ->orderByDesc('payment_date')
             ->take(5)
             ->get();
 

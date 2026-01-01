@@ -56,6 +56,14 @@ class Vehicle extends Model
         return $this->attributes['registration_number'] ?? $this->attributes['plate_number'] ?? 'No Plate';
     }
 
+    // This allows the View to use $vehicle->full_model
+    public function getFullModelAttribute()
+    {
+        $brand = $this->vehicle_brand ?? $this->brand ?? 'Unknown';
+        $model = $this->vehicle_model ?? $this->model ?? 'Unknown';
+        return $brand . ' ' . $model;
+    }
+
     // --- RELATIONSHIPS ---
 
     public function bookings(): HasMany
