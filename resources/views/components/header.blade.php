@@ -76,7 +76,7 @@
         </style>
         <div class="header-container">
             <div class="logo">
-                <h1>HASTA</h1>
+                <h1 >HASTA</h1>
                 <span>Travel</span>
             </div>
             <nav>

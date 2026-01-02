@@ -508,13 +508,7 @@
         </section>
     @endauth
 
-    <section class="hero">
-        <div class="hero-container">
-            <h2>Experience the road like never before</h2>
-            <p>Discover our premium car rental service with unbeatable rates and reliable vehicles</p>
-            <a href="{{ route('home') }}" class="hero-btn">View all cars</a>
-        </div>
-    </section>
+ 
 
     <section>
         <h3>Why Choose HASTA?</h3>
@@ -578,7 +572,7 @@
 
         <div class="cars-grid">
             @forelse($cars as $car)
-                <div class="car-card {{ $loop->iteration % 3 == 1 ? 'blue' : ($loop->iteration % 3 == 2 ? 'green' : 'yellow') }}">
+                <div class="car-card">
                     @php
                         $imageName = strtolower(str_replace(' ', '-', $car->vehicle_brand . '-' . $car->vehicle_model)) . '.png';
                         $imagePath = public_path('images/cars/browse/' . $imageName);
