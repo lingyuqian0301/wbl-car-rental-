@@ -507,8 +507,13 @@
             </div>
         </section>
     @endauth
-
- 
+<section class="hero">
+        <div class="hero-container">
+            <h2>Experience the road like never before</h2>
+            <p>Discover our premium car rental service with unbeatable rates and reliable vehicles</p>
+            <!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
+        </div>
+    </section>
 
     <section>
         <h3>Why Choose HASTA?</h3>
