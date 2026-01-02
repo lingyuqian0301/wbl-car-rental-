@@ -75,20 +75,24 @@ class BookingController extends Controller
      * Display the specified booking.
      */
     public function show(Booking $booking): View
-    {
-        // Security Check
+        {
+        // --- START OF FIX ---
         $isAuthorized = false;
-        if ($booking->customerID == Auth::id()) {
+
+        // 1. Check if the booking belongs to the logged-in user
+        // We traverse: Booking -> Customer -> User ID
+        if ($booking->customer && $booking->customer->user_id === Auth::id()) {
             $isAuthorized = true;
         }
-        if ($booking->user && $booking->user->id === Auth::id()) {
+
+        // 2. Allow Admins to view any booking (Optional but recommended)
+        if (Auth::user()->role === 'admin' || Auth::user()->role === 'staff') {
             $isAuthorized = true;
         }
-        
-        // Specific Error for Unauthorized Access
-        if (!$isAuthorized) {
-            abort(403, 'You are not authorized to view this booking.');
-        }
+
+    if (!$isAuthorized) {
+        abort(403, 'You are not authorized to view this booking.');
+    }
 
         try {
             $booking->load(['vehicle', 'payments.verifier']);

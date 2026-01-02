@@ -2,7 +2,8 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Booking Details') }} #{{ $booking->id }}
+                {{-- FIX 1: Changed id to bookingID --}}
+                {{ __('Booking Details') }} #{{ $booking->bookingID }}
             </h2>
             <a href="{{ route('bookings.index') }}" class="text-sm text-gray-600 hover:text-gray-900">← Back to Bookings</a>
         </div>
@@ -23,14 +24,14 @@
             @endif
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Booking Information -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4">Booking Information</h3>
                         <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Booking ID</dt>
-                                <dd class="mt-1 text-sm text-gray-900">#{{ $booking->id }}</dd>
+                                {{-- FIX 2: Changed id to bookingID --}}
+                                <dd class="mt-1 text-sm text-gray-900">#{{ $booking->bookingID }}</dd>
                             </div>
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Status</dt>
@@ -78,7 +79,6 @@
                     </div>
                 </div>
 
-                <!-- Payment Information -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4">Payment Information</h3>
@@ -87,6 +87,7 @@
                             $verifiedPayment = $booking->payments->where('status', 'Verified')->first();
                             $pendingPayment = $booking->payments->where('status', 'Pending')->first();
                             $rejectedPayment = $booking->payments->where('status', 'Rejected')->first();
+                            $hasVerifiedPayment = $verifiedPayment ? true : false;
                         @endphp
 
                         @if($verifiedPayment)
@@ -137,7 +138,6 @@
                             </div>
                         @endif
 
-                        <!-- Payment History -->
                         @if($booking->payments->count() > 0)
                             <div class="mt-4">
                                 <h4 class="text-sm font-semibold text-gray-700 mb-2">Payment History</h4>
@@ -164,10 +164,10 @@
                             </div>
                         @endif
 
-                        <!-- Action Buttons -->
                         <div class="mt-6 space-y-3">
                             @if(!$verifiedPayment && !$pendingPayment)
-                                <a href="{{ route('payments.create', $booking->id) }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                {{-- FIX 3: Changed id to bookingID --}}
+                                <a href="{{ route('payments.create', $booking->bookingID) }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                     @if($rejectedPayment)
                                         Resubmit Payment
                                     @else
@@ -185,7 +185,8 @@
                             @endif
 
                             @if($hasVerifiedPayment)
-                                <a href="{{ route('invoices.generate', $booking->id) }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                {{-- FIX 4: Changed id to bookingID --}}
+                                <a href="{{ route('booking.invoice', $booking->bookingID) }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                     Download Invoice
                                 </a>
                             @endif
@@ -196,4 +197,3 @@
         </div>
     </div>
 </x-app-layout>
-
