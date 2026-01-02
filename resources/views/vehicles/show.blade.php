@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $vehicle->vehicle_brand }} {{ $vehicle->vehicle_model }} | HASTA Travel</title>
+    
+    <!-- Leaflet.js CSS (Open Source Map Library) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
         * {
@@ -487,6 +490,15 @@
             font-weight: 700;
             font-size: 1.3rem;
         }
+
+        /* Leaflet Map Styles */
+        #pickup_map, #return_map {
+            z-index: 1;
+        }
+
+        .leaflet-container {
+            font-family: inherit;
+        }
     </style>
     @include('components.header')
 
@@ -555,13 +567,17 @@
 
                 <h4>📍 Pick-up Details</h4>
                 <div class="form-group">
-                    <input type="text" name="pickup_point" placeholder="Pick-up location" required>
+                    <input type="text" id="pickup_point" name="pickup_point" placeholder="Enter address manually or click on map below" required>
+                    <div id="pickup_map" style="height: 250px; width: 100%; margin-top: 10px; border-radius: 8px; border: 2px solid var(--border-color);"></div>
+                    <small style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px; display: block;">You can type the address manually or click on the map to set location</small>
                 </div>
                 <input type="date" id="startDate" name="start_date" required title="Pick-up date">
 
                 <h4>📍 Return Details</h4>
                 <div class="form-group">
-                    <input type="text" name="return_point" placeholder="Return location" required>
+                    <input type="text" id="return_point" name="return_point" placeholder="Enter address manually or click on map below" required>
+                    <div id="return_map" style="height: 250px; width: 100%; margin-top: 10px; border-radius: 8px; border: 2px solid var(--border-color);"></div>
+                    <small style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px; display: block;">You can type the address manually or click on the map to set location</small>
                 </div>
                 <input type="date" id="endDate" name="end_date" required title="Return date">
 
@@ -620,7 +636,130 @@
 
     @include('components.footer')
 
+    <!-- Leaflet.js JS (Open Source Map Library) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script>
+        // Initialize Pickup Location Map using Leaflet (Open Source)
+        let pickupMap, pickupMarker;
+        const pickupInput = document.getElementById('pickup_point');
+        const pickupMapDiv = document.getElementById('pickup_map');
+
+        // Initialize pickup map centered on Malaysia (default)
+        pickupMap = L.map(pickupMapDiv).setView([3.1390, 101.6869], 12); // Kuala Lumpur, Malaysia
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(pickupMap);
+
+        // Create initial marker for pickup (not visible until clicked)
+        pickupMarker = null;
+
+        // Function to update pickup address from coordinates
+        function updatePickupAddress(lat, lng) {
+            // Update input with coordinates first (user can edit manually)
+            pickupInput.value = lat.toFixed(6) + ', ' + lng.toFixed(6);
+            
+            // Try to get address using Nominatim (OpenStreetMap geocoding)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.display_name) {
+                        pickupInput.value = data.display_name;
+                    }
+                })
+                .catch(err => console.log('Geocoding failed:', err));
+        }
+
+        // Click on map to set pickup location
+        pickupMap.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            
+            // Remove existing marker if any
+            if (pickupMarker) {
+                pickupMap.removeLayer(pickupMarker);
+            }
+            
+            // Add new marker
+            pickupMarker = L.marker([lat, lng], { draggable: true }).addTo(pickupMap);
+            
+            // Update address
+            updatePickupAddress(lat, lng);
+            
+            // Drag marker to update location
+            pickupMarker.on('dragend', function(e) {
+                const newLat = e.target.getLatLng().lat;
+                const newLng = e.target.getLatLng().lng;
+                updatePickupAddress(newLat, newLng);
+            });
+        });
+
+        // Allow manual input - user can type address freely
+        // The input field is fully editable and doesn't require map interaction
+
+        // Initialize Return Location Map using Leaflet (Open Source)
+        let returnMap, returnMarker;
+        const returnInput = document.getElementById('return_point');
+        const returnMapDiv = document.getElementById('return_map');
+
+        // Initialize return map centered on Malaysia (default)
+        returnMap = L.map(returnMapDiv).setView([3.1390, 101.6869], 12); // Kuala Lumpur, Malaysia
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(returnMap);
+
+        // Create initial marker for return (not visible until clicked)
+        returnMarker = null;
+
+        // Function to update return address from coordinates
+        function updateReturnAddress(lat, lng) {
+            // Update input with coordinates first (user can edit manually)
+            returnInput.value = lat.toFixed(6) + ', ' + lng.toFixed(6);
+            
+            // Try to get address using Nominatim (OpenStreetMap geocoding)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.display_name) {
+                        returnInput.value = data.display_name;
+                    }
+                })
+                .catch(err => console.log('Geocoding failed:', err));
+        }
+
+        // Click on map to set return location
+        returnMap.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            
+            // Remove existing marker if any
+            if (returnMarker) {
+                returnMap.removeLayer(returnMarker);
+            }
+            
+            // Add new marker
+            returnMarker = L.marker([lat, lng], { draggable: true }).addTo(returnMap);
+            
+            // Update address
+            updateReturnAddress(lat, lng);
+            
+            // Drag marker to update location
+            returnMarker.on('dragend', function(e) {
+                const newLat = e.target.getLatLng().lat;
+                const newLng = e.target.getLatLng().lng;
+                updateReturnAddress(newLat, newLng);
+            });
+        });
+
+        // Allow manual input - user can type address freely
+        // The input field is fully editable and doesn't require map interaction
+
         // Vehicle rental price per day (for real-time display only)
         const dailyRate = {{ $vehicle->rental_price }};
 

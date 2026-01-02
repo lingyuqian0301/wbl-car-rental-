@@ -23,6 +23,16 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'matric_number',
+        'identification_card',
+        'college',
+        'faculty',
+        'program',
+        'address',
+        'city',
+        'region',
+        'postcode',
+        'state',
     ];
 
     /**
