@@ -41,7 +41,29 @@ class BookingController extends Controller
                         ->orderBy('bookingID', 'desc')
                         ->paginate(10);
 
-            return view('bookings.index', compact('bookings'));
+            // Log payment data for debugging
+            foreach ($bookings as $booking) {
+                Log::info('Booking ID: ' . $booking->bookingID);
+                Log::info('Payments: ' . $booking->payments->toJson());
+            }
+
+            // Update status logic to handle bookings without payments explicitly
+            $status = 'Completed';
+            if ($bookings->isNotEmpty()) {
+                $firstBooking = $bookings->first();
+                if ($firstBooking->payments->where('status', 'Pending')->isNotEmpty() || $firstBooking->payments->where('status', 'Rejected')->isNotEmpty()) {
+                    $status = 'Pending';
+                } elseif ($firstBooking->status === 'Confirmed') {
+                    $status = 'Confirmed';
+                } elseif ($firstBooking->status === 'Cancelled') {
+                    $status = 'Cancelled';
+                }
+            }
+
+            return view('bookings.index', [
+                'bookings' => $bookings,
+                'status' => $status,
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching bookings: ' . $e->getMessage());
@@ -163,7 +185,7 @@ class BookingController extends Controller
             'addOns_item'    => implode(',', $addons),
             'addOns_charge'  => $addonsCharge,
             'total_amount'   => $totalAmount,
-            'booking_status' => 'pending',
+            'booking_status' => 'Pending',
         ];
 
         session(['booking_data' => $bookingData]);
@@ -260,7 +282,7 @@ class BookingController extends Controller
             $booking->pickup_point = $request->pickup_point;
             $booking->return_point = $request->return_point;
             $booking->total_amount = $request->total_amount;
-            $booking->booking_status = 'pending';
+            $booking->booking_status = 'Pending';
             $booking->creationDate   = now();
             
             if (!$booking->save()) {
