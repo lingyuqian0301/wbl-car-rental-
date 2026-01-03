@@ -11,35 +11,36 @@ class WalletAccount extends Model
 {
     use HasFactory;
 
-    protected $table = 'walletaccount';
+    protected $table = 'WalletAccount';
     protected $primaryKey = 'walletAccountID';
     public $incrementing = true;
     protected $keyType = 'int';
 
+    public $timestamps = false;
+
     protected $fillable = [
+        'wallet_balance',
+        'outstanding_amount',
+        'wallet_status',
+        'wallet_lastUpdate_Date_Time',
         'customerID',
-        'user_id',
-        'virtual_balance',
-        'hold_amount',
-        'available_balance',
-        'status',
-        'created_date',
     ];
 
     protected function casts(): array
     {
         return [
-            'virtual_balance' => 'decimal:2',
-            'available_balance' => 'decimal:2',
+            'wallet_balance' => 'decimal:2',
+            'outstanding_amount' => 'decimal:2',
+            'wallet_lastUpdate_Date_Time' => 'datetime',
         ];
     }
 
     /**
-     * Get the user that owns the wallet account.
+     * Get the customer that owns the wallet account.
      */
-    public function user(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Customer::class, 'customerID', 'customerID');
     }
 
     /**

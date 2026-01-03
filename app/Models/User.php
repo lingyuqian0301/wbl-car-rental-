@@ -5,6 +5,8 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -14,25 +16,36 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * The table associated with the model.
+     */
+    protected $table = 'User';
+
+    /**
+     * The primary key for the model.
+     */
+    protected $primaryKey = 'userID';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     */
+    public $incrementing = true;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
+        'username',
         'password',
-        'role',
-        'matric_number',
-        'identification_card',
-        'college',
-        'faculty',
-        'program',
-        'address',
-        'city',
-        'region',
-        'postcode',
-        'state',
+        'email',
+        'phone',
+        'name',
+        'lastLogin',
+        'dateRegistered',
+        'DOB',
+        'age',
+        'isActive',
     ];
 
     /**
@@ -50,40 +63,56 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    public $timestamps = false;
+
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'lastLogin' => 'datetime',
+            'dateRegistered' => 'datetime',
+            'DOB' => 'date',
+            'isActive' => 'boolean',
         ];
     }
 
     /**
-     * Get the bookings for the user.
+     * Get the customer profile for the user.
      */
-    public function bookings(): HasMany
+    public function customer()
     {
-        return $this->hasMany(Booking::class);
+        return $this->hasOne(Customer::class, 'userID', 'userID');
     }
 
     /**
-     * Get the wallet account for the user.
+     * Get the staff profile for the user.
+     */
+    public function staff()
+    {
+        return $this->hasOne(Staff::class, 'userID', 'userID');
+    }
+
+    /**
+     * Get the admin profile for the user.
+     */
+    public function admin()
+    {
+        return $this->hasOne(Admin::class, 'userID', 'userID');
+    }
+
+    /**
+     * Get the wallet account for the user (through customer).
      */
     public function walletAccount()
     {
-        return $this->hasOne(\App\Models\WalletAccount::class);
-    }
-
-    /**
-     * Get or create wallet account for the user.
-     */
-    public function getOrCreateWalletAccount(): \App\Models\WalletAccount
-    {
-        return $this->walletAccount ?? \App\Models\WalletAccount::create([
-            'user_id' => $this->id,
-            'virtual_balance' => 0.00,
-            'available_balance' => 0.00,
-        ]);
+        return $this->hasOneThrough(
+            WalletAccount::class,
+            Customer::class,
+            'userID',
+            'customerID',
+            'userID',
+            'customerID'
+        );
     }
 
     /**
@@ -91,7 +120,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->admin()->exists();
     }
 
     /**
@@ -99,7 +128,7 @@ class User extends Authenticatable
      */
     public function isCustomer(): bool
     {
-        return $this->role === 'customer';
+        return $this->customer()->exists();
     }
 
     /**
@@ -107,6 +136,6 @@ class User extends Authenticatable
      */
     public function isStaff(): bool
     {
-        return $this->role === 'staff';
+        return $this->staff()->exists();
     }
 }

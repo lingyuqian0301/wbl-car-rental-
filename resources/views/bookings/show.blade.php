@@ -65,15 +65,15 @@
                             </div>
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Duration</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $booking->duration_days }} days</dd>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $booking->duration ?? $booking->getNumberOfDays() }} days</dd>
                             </div>
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Daily Rate</dt>
-                                <dd class="mt-1 text-sm text-gray-900">RM {{ number_format($booking->vehicle->daily_rate ?? 0, 2) }}</dd>
+                                <dd class="mt-1 text-sm text-gray-900">RM {{ number_format($booking->vehicle->rental_price ?? 0, 2) }}</dd>
                             </div>
                             <div class="sm:col-span-2">
                                 <dt class="text-sm font-medium text-gray-500">Total Price</dt>
-                                <dd class="mt-1 text-lg font-semibold text-gray-900">RM {{ number_format($booking->total_price, 2) }}</dd>
+                                <dd class="mt-1 text-lg font-semibold text-gray-900">RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -149,10 +149,10 @@
                                                 <span class="text-xs text-gray-500 ml-2">{{ $payment->payment_date->format('M d, Y') }}</span>
                                             </div>
                                             <div class="flex items-center space-x-2">
-                                                <span class="text-sm font-medium">RM {{ number_format($payment->amount, 2) }}</span>
-                                                @if($payment->status == 'Pending')
+                                                <span class="text-sm font-medium">RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }}</span>
+                                                @if($payment->payment_status == 'Pending' || $payment->status == 'Pending')
                                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                                                @elseif($payment->status == 'Verified')
+                                                @elseif($payment->payment_status == 'Verified' || $payment->status == 'Verified')
                                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Verified</span>
                                                 @else
                                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>

@@ -5,35 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Invoice extends Model
+class Review extends Model
 {
-    protected $table = 'Invoice';
-    protected $primaryKey = 'invoiceID';
+    protected $table = 'Review';
+    protected $primaryKey = 'reviewID';
     public $incrementing = true;
     protected $keyType = 'int';
 
     public $timestamps = false;
 
     protected $fillable = [
-        'issue_date',
-        'invoice_number',
-        'totalAmount',
+        'rating',
+        'comment',
+        'review_date',
         'bookingID',
     ];
 
     protected function casts(): array
     {
         return [
-            'issue_date' => 'date',
-            'totalAmount' => 'decimal:2',
+            'rating' => 'integer',
+            'review_date' => 'date',
         ];
     }
 
     /**
-     * Get the booking that owns the invoice.
+     * Get the booking that owns the review.
      */
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class, 'bookingID', 'bookingID');
     }
 }
+

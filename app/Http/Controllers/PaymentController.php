@@ -30,7 +30,7 @@ class PaymentController extends Controller
     public function create(Request $request, Booking $booking): View
     {
         // 1. Security Check
-        $currentCustomer = \App\Models\Customer::where('user_id', Auth::id())->first();
+        $currentCustomer = \App\Models\Customer::where('userID', Auth::user()->userID)->first();
 
         if (!$currentCustomer || $booking->customerID !== $currentCustomer->customerID) {
             abort(403, 'UNAUTHORIZED ACCESS TO THIS BOOKING.');
@@ -39,11 +39,12 @@ class PaymentController extends Controller
         $booking->load(['vehicle']);
 
         $depositAmount = $this->paymentService->calculateDeposit($booking);
-        $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet(Auth::id(), $depositAmount);
+        $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet(Auth::user()->userID, $depositAmount);
 
         $walletBalance = 0;
-        if(Auth::user()->walletAccount) {
-            $walletBalance = Auth::user()->walletAccount->available_balance;
+        $customer = Auth::user()->customer;
+        if($customer && $customer->walletAccount) {
+            $walletBalance = $customer->walletAccount->wallet_balance;
         }
 
         return view('payments.create', [
@@ -59,7 +60,7 @@ class PaymentController extends Controller
         $booking = Booking::where('bookingID', $bookingID)->firstOrFail();
 
         // Security Check
-        if ($booking->customerID !== \App\Models\Customer::where('user_id', Auth::id())->value('customerID')) {
+        if ($booking->customerID !== \App\Models\Customer::where('userID', Auth::user()->userID)->value('customerID')) {
             abort(403, 'Unauthorized access to this booking.');
         }
 
@@ -77,7 +78,7 @@ class PaymentController extends Controller
         $booking = Booking::findOrFail($request->booking_id);
 
         // Security Check
-        if ($booking->customerID !== \App\Models\Customer::where('user_id', Auth::id())->value('customerID')) {
+        if ($booking->customerID !== \App\Models\Customer::where('userID', Auth::user()->userID)->value('customerID')) {
              abort(403, 'Unauthorized access to this booking.');
         }
 
@@ -86,7 +87,7 @@ class PaymentController extends Controller
         
         $finalAmount = $depositAmount; // Default to deposit
         if ($request->input('payment_type') === 'Full Payment') {
-            $finalAmount = $booking->total_amount;
+            $finalAmount = $booking->rental_amount;
         }
         // -------------------------------------
 
@@ -101,15 +102,15 @@ class PaymentController extends Controller
 
         $payment = Payment::create([
             'bookingID' => $booking->bookingID,
-            'amount' => $finalAmount, // Use the calculated variable
-            'payment_type' => $request->input('payment_type', 'Deposit'),
-            'payment_purpose' => 'booking_deposit',
-            'receiptURL' => $receiptURL,
-            'status' => 'Pending',
-            'deposit_returned' => false,
-            'keep_deposit' => $request->boolean('keep_deposit', false),
+            'total_amount' => $finalAmount,
+            'payment_bank_name' => $request->input('bank_name', ''),
+            'payment_bank_account_no' => $request->input('bank_account_number', ''),
+            'payment_status' => 'Pending',
+            'transaction_reference' => $request->input('transaction_reference', ''),
             'payment_date' => $request->payment_date ?? now(),
             'isPayment_complete' => false,
+            'payment_isVerify' => false,
+            'latest_Update_Date_Time' => now(),
         ]);
 
         $booking->update([
@@ -145,7 +146,7 @@ class PaymentController extends Controller
         $booking = Booking::findOrFail($request->bookingID);
 
         // Security Check
-        $currentCustomer = \App\Models\Customer::where('user_id', Auth::id())->first();
+        $currentCustomer = \App\Models\Customer::where('userID', Auth::user()->userID)->first();
         if (!$currentCustomer || $booking->customerID !== $currentCustomer->customerID) {
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -155,7 +156,7 @@ class PaymentController extends Controller
 
         // --- Amount Logic ---
         $depositAmount = $this->paymentService->calculateDeposit($booking);
-        $finalAmount = $request->input('payment_type') === 'Full Payment' ? $booking->total_amount : $depositAmount;
+        $finalAmount = $request->input('payment_type') === 'Full Payment' ? $booking->rental_amount : $depositAmount;
         // --------------------
 
         $file = $request->file('receipt_image');
@@ -166,27 +167,15 @@ class PaymentController extends Controller
         // Create payment record
         $payment = Payment::create([
             'bookingID'             => $booking->bookingID,
-            'amount'                => $finalAmount,
-            'payment_type'          => $request->input('payment_type', 'Deposit'),
-            'payment_purpose'       => 'booking_deposit',
-            'receiptURL'            => $receiptURL,
-            
-            // --- FIX: ADDED MISSING COLUMNS HERE ---
+            'total_amount'          => $finalAmount,
+            'payment_bank_name'     => $request->bank_name,
+            'payment_bank_account_no' => $request->bank_account_number,
             'transaction_reference' => $request->transaction_reference, 
-            'deposit_bank_name'     => $request->bank_name,
-            'deposit_bank_number'   => $request->bank_account_number,
-            // ---------------------------------------
-
-            'status'                => 'Pending Verification', // Updated status text
-            'deposit_returned'      => false,
-            'keep_deposit'          => $request->boolean('keep_deposit', false),
+            'payment_status'        => 'Pending',
             'payment_date'          => now(),
             'isPayment_complete'    => false,
-        ]);
-
-        // Update booking keep_deposit flag
-        $booking->update([
-            'keep_deposit' => $request->boolean('keep_deposit', false),
+            'payment_isVerify'      => false,
+            'latest_Update_Date_Time' => now(),
         ]);
 
         if ($request->expectsJson()) {
@@ -204,14 +193,15 @@ class PaymentController extends Controller
 
     public function payWithWallet(Request $request, Booking $booking)
     {
-        if ($booking->user_id !== Auth::id()) {
+        $currentCustomer = \App\Models\Customer::where('userID', Auth::user()->userID)->first();
+        if (!$currentCustomer || $booking->customerID !== $currentCustomer->customerID) {
             if ($request->expectsJson()) return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             abort(403, 'Unauthorized access to this booking.');
         }
 
         $depositAmount = $this->paymentService->calculateDeposit($booking);
 
-        if (!$this->paymentService->canSkipDepositWithWallet(Auth::id(), $depositAmount)) {
+        if (!$this->paymentService->canSkipDepositWithWallet(Auth::user()->userID, $depositAmount)) {
             if ($request->expectsJson()) return response()->json(['success' => false, 'message' => 'Insufficient wallet balance.'], 400);
             return redirect()->back()->with('error', 'Insufficient wallet balance.');
         }
@@ -245,7 +235,7 @@ class PaymentController extends Controller
         $booking = Booking::where('bookingID', $request->bookingID)->firstOrFail();
 
         // Security Check
-        $currentCustomer = \App\Models\Customer::where('user_id', Auth::id())->first();
+        $currentCustomer = \App\Models\Customer::where('userID', Auth::user()->userID)->first();
         if (!$currentCustomer || $booking->customerID !== $currentCustomer->customerID) {
             abort(403, 'Unauthorized access to this booking.');
         }
@@ -254,7 +244,7 @@ class PaymentController extends Controller
         $finalAmount = $request->amount;
         if (!$finalAmount) {
              $depositAmount = $this->paymentService->calculateDeposit($booking);
-             $finalAmount = ($request->payment_type === 'Full Payment') ? $booking->total_amount : $depositAmount;
+             $finalAmount = ($request->payment_type === 'Full Payment') ? $booking->rental_amount : $depositAmount;
         }
 
         // File Upload
@@ -272,21 +262,15 @@ class PaymentController extends Controller
         // 2. Create Payment (Added transaction_reference)
         $payment = Payment::create([
             'bookingID'             => $booking->bookingID,
-            'amount'                => $finalAmount,
-            'payment_type'          => $request->input('payment_type', 'Deposit'),
-            'payment_purpose'       => 'booking_deposit',
-            'receiptURL'            => $receiptURL,
-            
-            // --- MAPPING INPUTS TO DATABASE COLUMNS ---
-            'transaction_reference' => $request->transaction_reference, // <--- ADDED THIS
-            'deposit_bank_name'     => $request->bank_name,
-            'deposit_bank_number'   => $request->bank_account_number,
-            // ------------------------------------------
-
-            'status'                => 'Pending Verification',
+            'total_amount'          => $finalAmount,
+            'payment_bank_name'     => $request->bank_name,
+            'payment_bank_account_no' => $request->bank_account_number,
+            'transaction_reference' => $request->transaction_reference,
+            'payment_status'        => 'Pending',
             'payment_date'          => now(),
-            'deposit_returned'      => false,
             'isPayment_complete'    => false,
+            'payment_isVerify'      => false,
+            'latest_Update_Date_Time' => now(),
         ]);
 
         Notification::createForStaff(

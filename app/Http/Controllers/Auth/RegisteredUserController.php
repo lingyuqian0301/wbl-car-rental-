@@ -42,32 +42,34 @@ class RegisteredUserController extends Controller
 
         // 2. Create User Account
         $user = User::create([
+            'username' => $request->email, // Use email as username for now
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'customer', // All new registrations are customers by default
+            'dateRegistered' => now(),
+            'isActive' => true,
         ]);
 
         // 3. Create Customer Profile
         $customer = Customer::create([
-            'user_id' => $user->id,
-            'fullname' => $user->name,
-            'email' => $user->email,
-            'registration_date' => now(),
-            'customer_type' => 'regular',
+            'userID' => $user->userID,
+            'phone_number' => $request->phone ?? '',
+            'address' => '',
+            'customer_license' => '',
+            'emergency_contact' => '',
+            'booking_times' => 0,
         ]);
 
         // ---------------------------------------------------------
         // 4. CREATE WALLET IMMEDIATELY (New Addition)
         // ---------------------------------------------------------
         // This guarantees every new user has a wallet from Day 1.
-        \Illuminate\Support\Facades\DB::table('walletaccount')->insert([
-            'customerID'         => $customer->customerID, // Linked to the new customer
-            'user_id'            => $user->id,            // Linked to the user login
-            'available_balance'  => 0.00,
-            'outstanding_amount' => 0.00,                 // Starts with 0 debt
+        \App\Models\WalletAccount::create([
+            'customerID'         => $customer->customerID,
+            'wallet_balance'     => 0.00,
+            'outstanding_amount' => 0.00,
             'wallet_status'      => 'Active',
-            'last_update_datetime' => now()
+            'wallet_lastUpdate_Date_Time' => now()
         ]);
         // ---------------------------------------------------------
 

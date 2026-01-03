@@ -78,7 +78,7 @@
                                 <p class="mb-1"><strong>Dates:</strong> {{ $booking->start_date->format('d M Y') }} - {{ $booking->end_date->format('d M Y') }}</p>
                             </div>
                             <div class="col-md-6 text-md-end">
-                                <p class="mb-1">Total Price: <strong>RM {{ number_format($booking->total_amount ?? $booking->total_price, 2) }}</strong></p>
+                                <p class="mb-1">Total Price: <strong>RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }}</strong></p>
                                 <h4 class="text-maroon fw-bold mt-2">Required Deposit: RM {{ number_format($depositAmount, 2) }}</h4>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="radio" name="payment_type" id="payFull" value="Full Payment" onchange="updateAmount(this.value)">
                                     <label class="form-check-label" for="payFull">
-                                        Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->total_price, 2) }})
+                                        Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }})
                                     </label>
                                 </div>
 
@@ -185,7 +185,7 @@
         function updateAmount(type) {
             // Get PHP values into JS variables
             var deposit = {{ $depositAmount ?? 50 }};
-            var full = {{ $booking->total_amount ?? $booking->total_price }};
+            var full = {{ $booking->total_amount ?? $booking->rental_amount ?? 0 }};
 
             var input = document.getElementById('amountInput');
 

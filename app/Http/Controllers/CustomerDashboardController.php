@@ -11,19 +11,20 @@ class CustomerDashboardController extends Controller
    public function wallet()
 {
     $user = Auth::user();
-    $customer = \Illuminate\Support\Facades\DB::table('customer')->where('user_id', $user->id)->first();
+    $customer = \App\Models\Customer::where('userID', $user->userID)->first();
 
     if (!$customer) {
         return redirect()->route('home')->with('error', 'Profile not found.');
     }
 
-    $wallet = \Illuminate\Support\Facades\DB::table('walletaccount')->where('customerID', $customer->customerID)->first();
+    $wallet = $customer->walletAccount;
     
     // Just pass the raw value
     $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
 
     $transactions = [];
     if ($wallet) {
+        // Note: WalletTransaction model not in schema, using DB for now
         $transactions = \Illuminate\Support\Facades\DB::table('wallettransaction')
             ->where('walletAccountID', $wallet->walletAccountID)
             ->orderBy('transaction_date', 'desc')
@@ -36,22 +37,18 @@ class CustomerDashboardController extends Controller
     public function loyalty()
     {
         $user = Auth::user();
-        $customer = DB::table('customer')->where('user_id', $user->id)->first();
+        $customer = \App\Models\Customer::where('userID', $user->userID)->first();
 
         if (!$customer) {
             return redirect()->route('home')->with('error', 'Customer profile not found.');
         }
 
         // Fetch Loyalty Card
-        $card = DB::table('loyaltycard')->where('customerID', $customer->customerID)->first();
+        $card = $customer->loyaltyCard;
 
-        // Fetch Vouchers
+        // Fetch Vouchers (if voucher table exists)
         $vouchers = [];
-        if ($card) {
-            $vouchers = DB::table('voucher') 
-                ->where('loyaltyCardID', $card->loyaltyCardID)
-                ->get();
-        }
+        // Note: Voucher table not in schema, but keeping for future use
 
         return view('customer.loyalty', compact('card', 'vouchers'));
     }

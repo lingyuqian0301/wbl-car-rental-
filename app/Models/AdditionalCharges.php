@@ -5,35 +5,39 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Invoice extends Model
+class AdditionalCharges extends Model
 {
-    protected $table = 'Invoice';
-    protected $primaryKey = 'invoiceID';
+    protected $table = 'AdditionalCharges';
+    protected $primaryKey = 'chargeID';
     public $incrementing = true;
     protected $keyType = 'int';
 
     public $timestamps = false;
 
     protected $fillable = [
-        'issue_date',
-        'invoice_number',
-        'totalAmount',
+        'addOns_charge',
+        'late_return_fee',
+        'damage_fee',
+        'total_extra_charge',
         'bookingID',
     ];
 
     protected function casts(): array
     {
         return [
-            'issue_date' => 'date',
-            'totalAmount' => 'decimal:2',
+            'addOns_charge' => 'decimal:2',
+            'late_return_fee' => 'decimal:2',
+            'damage_fee' => 'decimal:2',
+            'total_extra_charge' => 'decimal:2',
         ];
     }
 
     /**
-     * Get the booking that owns the invoice.
+     * Get the booking that owns the additional charges.
      */
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class, 'bookingID', 'bookingID');
     }
 }
+

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 
 class Booking extends Model
@@ -17,68 +18,78 @@ class Booking extends Model
      */
     use HasFactory;
 
-    // Support both booking (singular) and bookings (plural) tables
-    protected $table = 'booking'; // Use singular table name from hastatravel.sql
-
-    protected $primaryKey = 'bookingID'; // Use bookingID from hastatravel.sql
+    protected $table = 'Booking';
+    protected $primaryKey = 'bookingID';
     public $incrementing = true;
     protected $keyType = 'int';
 
-    public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
-        'customerID',
-        'vehicleID',
-        'start_date',
-        'end_date',
-        'duration_days',
-        'number_of_days',
-        'total_amount',
-        'booking_status',
-        'keep_deposit',
+        'lastUpdateDate',
+        'rental_start_date',
+        'rental_end_date',
+        'duration',
+        'deposit_amount',
+        'rental_amount',
         'pickup_point',
         'return_point',
         'addOns_item',
-        'addOns_charge',
-        'late_return_fees',
-        'damage_fee',
-        'cancellation_type',
-        'creationDate',
-        'status_update_date_time',
-        'staffID',
+        'booking_status',
+        'customerID',
+        'vehicleID',
     ];
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+
     protected function casts(): array
     {
         return [
-            'start_date' => 'date',
-            'end_date' => 'date',
-            'total_amount' => 'decimal:2',
-            'addOns_charge' => 'decimal:2',
-            'late_return_fees' => 'decimal:2',
-            'damage_fee' => 'decimal:2',
-            'keep_deposit' => 'boolean',
-            'creationDate' => 'datetime',
-            'status_update_date_time' => 'datetime',
+            'lastUpdateDate' => 'datetime',
+            'rental_start_date' => 'date',
+            'rental_end_date' => 'date',
+            'duration' => 'integer',
+            'deposit_amount' => 'decimal:2',
+            'rental_amount' => 'decimal:2',
         ];
     }
 
     /**
-     * Get the user that owns the booking.
-     * Note: booking table uses customerID, but we'll support user_id for Laravel users
+     * Get status (alias for booking_status).
      */
-    public function user(): BelongsTo
+    public function getStatusAttribute()
     {
-        // Try to find user by customerID first, then fallback to user_id if exists
-        if ($this->customerID) {
-            // You may need to create a Customer model that links to User
-            return $this->belongsTo(User::class, 'customerID');
-        }
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->booking_status;
+    }
+
+    /**
+     * Set status (alias for booking_status).
+     */
+    public function setStatusAttribute($value)
+    {
+        $this->booking_status = $value;
+    }
+
+    /**
+     * Get start_date (alias for rental_start_date).
+     */
+    public function getStartDateAttribute()
+    {
+        return $this->rental_start_date;
+    }
+
+    /**
+     * Get end_date (alias for rental_end_date).
+     */
+    public function getEndDateAttribute()
+    {
+        return $this->rental_end_date;
+    }
+
+    /**
+     * Get total_amount (alias for rental_amount).
+     */
+    public function getTotalAmountAttribute()
+    {
+        return $this->rental_amount;
     }
 
     /**
@@ -97,9 +108,36 @@ class Booking extends Model
         return $this->belongsTo(Customer::class, 'customerID');
     }
 
+    /**
+     * Get the invoice for the booking.
+     */
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class, 'bookingID', 'bookingID');
+    }
+
+    /**
+     * Get the payments for the booking.
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'bookingID', 'bookingID');
+    }
+
+    /**
+     * Get the additional charges for the booking.
+     */
+    public function additionalCharges(): HasOne
+    {
+        return $this->hasOne(AdditionalCharges::class, 'bookingID', 'bookingID');
+    }
+
+    /**
+     * Get the review for the booking.
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class, 'bookingID', 'bookingID');
     }
 
     /**
@@ -107,30 +145,6 @@ class Booking extends Model
      */
     public function getNumberOfDays(): int
     {
-        return $this->number_of_days ?? $this->duration_days ?? 0;
-    }
-
-    /**
-     * Get total price (alias for total_amount).
-     */
-    public function getTotalPriceAttribute()
-    {
-        return $this->total_amount;
-    }
-
-    /**
-     * Get status (alias for booking_status).
-     */
-    public function getStatusAttribute()
-    {
-        return $this->booking_status;
-    }
-
-    /**
-     * Set status (alias for booking_status).
-     */
-    public function setStatusAttribute($value)
-    {
-        $this->booking_status = $value;
+        return $this->duration ?? 0;
     }
 }

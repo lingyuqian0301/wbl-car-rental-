@@ -12,41 +12,34 @@ class Payment extends Model
      *
      * @var array<int, string>
      */
-    protected $table = "payment";
+    protected $table = 'Payment';
     protected $primaryKey = 'paymentID';
     public $incrementing = true;
     protected $keyType = 'int';
-    
+
+    public $timestamps = false;
+
     protected $fillable = [
-        'bookingID',
-        'amount',
-        'payment_type',
-        'payment_purpose',
+        'payment_bank_name',
+        'payment_bank_account_no',
         'payment_date',
-        'receiptURL',
-        'status',
-        'deposit_returned',
-        'keep_deposit',
+        'total_amount',
+        'payment_status',
         'transaction_reference',
-        'refund_amount',
-        'refund_date',
-        'deposit_bank_name',
-        'deposit_bank_number',
         'isPayment_complete',
+        'payment_isVerify',
+        'latest_Update_Date_Time',
+        'bookingID',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
-            'payment_date' => 'datetime', // Changed from 'date' to 'datetime' to match database
-            'deposit_returned' => 'boolean',
-            'keep_deposit' => 'boolean',
+            'payment_date' => 'datetime',
+            'total_amount' => 'decimal:2',
+            'isPayment_complete' => 'boolean',
+            'payment_isVerify' => 'boolean',
+            'latest_Update_Date_Time' => 'datetime',
         ];
     }
 
@@ -60,12 +53,18 @@ class Payment extends Model
     }
 
     /**
-     * Get the user who verified the payment.
-     * Note: payment table doesn't have verified_by, but keeping for compatibility
+     * Get status (alias for payment_status).
      */
-    public function verifier(): BelongsTo
+    public function getStatusAttribute()
     {
-        // payment table doesn't have verified_by field, return null relationship
-        return $this->belongsTo(User::class, 'verified_by')->whereRaw('1 = 0');
+        return $this->payment_status;
+    }
+
+    /**
+     * Get amount (alias for total_amount).
+     */
+    public function getAmountAttribute()
+    {
+        return $this->total_amount;
     }
 }
