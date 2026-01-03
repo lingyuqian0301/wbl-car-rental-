@@ -257,6 +257,25 @@
             background-color: var(--primary-dark-orange);
         }
 
+        .availability-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-ready {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .status-rented {
+            background-color: #ef4444;
+            color: white;
+        }
+
         /* Filter Styles */
         /* Filter Section */
         .filter-section {
@@ -461,10 +480,10 @@
 
     @auth
         @php
-            $currentCustomer = \App\Models\Customer::where('user_id', auth()->id())->first();
+            $currentCustomer = \App\Models\Customer::where('userID', auth()->user()->userID)->first();
             
-            $wallet = $currentCustomer ? \Illuminate\Support\Facades\DB::table('walletaccount')->where('customerID', $currentCustomer->customerID)->first() : null;
-            $loyalty = $currentCustomer ? \Illuminate\Support\Facades\DB::table('loyaltycard')->where('customerID', $currentCustomer->customerID)->first() : null;
+            $wallet = $currentCustomer ? \Illuminate\Support\Facades\DB::table('WalletAccount')->where('customerID', $currentCustomer->customerID)->first() : null;
+            $loyalty = $currentCustomer ? \Illuminate\Support\Facades\DB::table('LoyaltyCard')->where('customerID', $currentCustomer->customerID)->first() : null;
             
             // Read columns directly
             $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
@@ -592,7 +611,7 @@
                     </div>
 
                     <div class="car-content">
-                        <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
+
                         <p class="car-type">{{ $car->type }}</p>
                         <div class="car-specs">
                             <p><span class="spec-icon">⚙</span> {{ $car->transmission }}</p>
