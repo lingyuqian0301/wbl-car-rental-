@@ -105,7 +105,7 @@ class Booking extends Model
      */
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'customerID');
+        return $this->belongsTo(Customer::class, 'customerID', 'customerID');
     }
 
     /**

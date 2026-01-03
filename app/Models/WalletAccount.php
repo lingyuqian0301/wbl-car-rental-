@@ -54,45 +54,25 @@ class WalletAccount extends Model
     /**
      * Credit amount to wallet.
      */
-    public function credit(float $amount, string $description = null, string $referenceType = null, int $referenceId = null): WalletTransaction
+    public function credit(float $amount): void
     {
-        $this->virtual_balance += $amount;
-        $this->available_balance += $amount;
+        $this->wallet_balance = ($this->wallet_balance ?? 0) + $amount;
+        $this->wallet_lastUpdate_Date_Time = now();
         $this->save();
-
-        return WalletTransaction::create([
-            'walletAccountID' => $this->walletAccountID,
-            'transaction_type' => 'credit',
-            'amount' => $amount,
-            'description' => $description,
-            'reference_type' => $referenceType,
-            'reference_id' => $referenceId,
-            'transaction_date' => now(),
-        ]);
     }
 
     /**
      * Debit amount from wallet.
      */
-    public function debit(float $amount, string $description = null, string $referenceType = null, int $referenceId = null): WalletTransaction
+    public function debit(float $amount): void
     {
-        if ($this->available_balance < $amount) {
+        if (($this->wallet_balance ?? 0) < $amount) {
             throw new \Exception('Insufficient wallet balance');
         }
 
-        $this->virtual_balance -= $amount;
-        $this->available_balance -= $amount;
+        $this->wallet_balance = ($this->wallet_balance ?? 0) - $amount;
+        $this->wallet_lastUpdate_Date_Time = now();
         $this->save();
-
-        return WalletTransaction::create([
-            'walletAccountID' => $this->walletAccountID,
-            'transaction_type' => 'debit',
-            'amount' => $amount,
-            'description' => $description,
-            'reference_type' => $referenceType,
-            'reference_id' => $referenceId,
-            'transaction_date' => now(),
-        ]);
     }
 }
 
