@@ -507,7 +507,7 @@
             </div>
         </section>
     @endauth
-<section class="hero">
+    <section class="hero">
         <div class="hero-container">
             <h2>Experience the road like never before</h2>
             <p>Discover our premium car rental service with unbeatable rates and reliable vehicles</p>
@@ -579,9 +579,19 @@
             @forelse($cars as $car)
                 <div class="car-card">
                     @php
-                        $imageName = strtolower(str_replace(' ', '-', $car->vehicle_brand . '-' . $car->vehicle_model)) . '.png';
-                        $imagePath = public_path('images/cars/browse/' . $imageName);
-                    @endphp
+    $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
+
+    // Remove special characters
+    $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
+
+    // Remove trailing dashes
+    $imageName = trim($imageName, '-');
+
+    $imageName .= '.png';
+
+    $imagePath = public_path('images/cars/browse/' . $imageName);
+@endphp
+
 
                     <div class="car-image">
                         @if(file_exists($imagePath))
