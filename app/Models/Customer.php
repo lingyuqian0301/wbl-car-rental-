@@ -21,15 +21,12 @@ class Customer extends Model
         'address',
         'customer_license',
         'emergency_contact',
-        'booking_times',
         'userID',
     ];
 
     protected function casts(): array
     {
-        return [
-            'booking_times' => 'integer',
-        ];
+        return [];
     }
 
     /**

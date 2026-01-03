@@ -57,7 +57,7 @@ class RegisteredUserController extends Controller
             'address' => '',
             'customer_license' => '',
             'emergency_contact' => '',
-            'booking_times' => 0,
+            // Note: booking_times removed - let database use default value
         ]);
 
         // ---------------------------------------------------------

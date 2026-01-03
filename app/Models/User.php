@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -78,8 +79,17 @@ class User extends Authenticatable
 
     /**
      * Get the customer profile for the user.
+     * Using direct query to avoid Laravel's snake_case convention for foreign keys.
      */
-    public function customer()
+    public function getCustomerAttribute()
+    {
+        return Customer::where('userID', $this->userID)->first();
+    }
+
+    /**
+     * Get the customer relationship (for eager loading).
+     */
+    public function customerRelation()
     {
         return $this->hasOne(Customer::class, 'userID', 'userID');
     }
@@ -120,7 +130,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->admin()->exists();
+        return Admin::where('userID', $this->userID)->exists();
     }
 
     /**
@@ -128,7 +138,7 @@ class User extends Authenticatable
      */
     public function isCustomer(): bool
     {
-        return $this->customer()->exists();
+        return Customer::where('userID', $this->userID)->exists();
     }
 
     /**
@@ -136,6 +146,6 @@ class User extends Authenticatable
      */
     public function isStaff(): bool
     {
-        return $this->staff()->exists();
+        return Staff::where('userID', $this->userID)->exists();
     }
 }
