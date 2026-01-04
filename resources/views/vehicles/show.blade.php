@@ -799,11 +799,8 @@
     // The input field is fully editable and doesn't require map interaction
 
     // Vehicle rental price per day (for real-time display only)
-    const dailyRate = {
-        {
-            $vehicle - > rental_price
-        }
-    };
+     const dailyRate = {{ $vehicle->rental_price }};
+
 
 
 
