@@ -18,8 +18,8 @@ class VehicleController extends Controller
         }
 
         // Filter by car type
-        if ($request->filled('vehicle_type')) {
-            $query->where('vehicleType', $request->vehicle_type);
+        if ($request->filled('vehicleType')) {
+            $query->where('vehicleType', $request->vehicleType);
         }
 
         // 🔥 Date availability logic
@@ -37,6 +37,11 @@ class VehicleController extends Controller
             });
 
         }
+                $cars = $query->get();
+
+
+
+
         //         $request->validate([
 //         'brand' => 'required|string',
 //         'model' => 'required|string',
@@ -60,9 +65,20 @@ class VehicleController extends Controller
         //     return redirect()->back()->with('success', 'Car added successfully');
 //     }
 
-        $cars = $query->get();
+        $vehicleTypes = Vehicle::whereIn('isActive', [1, 'true'])
+    ->select('vehicleType')
+    ->distinct()
+    ->orderBy('vehicleType')
+    ->pluck('vehicleType');
+    $brands = Vehicle::whereIn('isActive', [1, 'true'])
+    ->select('vehicle_brand')
+    ->distinct()
+    ->orderBy('vehicle_brand')
+    ->pluck('vehicle_brand');
 
-        return view('welcome', compact('cars'));
+
+
+        return view('welcome', compact('cars', 'vehicleTypes', 'brands'));
     }
 
 
