@@ -35,30 +35,18 @@ class AuthenticatedSessionController extends Controller
         // 2. Regenerate session ID (Security standard)
         $request->session()->regenerate();
 
-        // 3. Get the intended URL (previous page before login)
-        $intendedUrl = $request->session()->pull('url.intended', null);
-
-        // 4. Check if the authenticated user is an Admin
+        // 3. Check if the authenticated user is an Admin - redirect directly to admin dashboard
         if ($request->user()->isAdmin()) {
-            // If there's an intended URL and it's not the admin dashboard, redirect there
-            if ($intendedUrl && !str_contains($intendedUrl, '/admin/dashboard')) {
-                return redirect($intendedUrl);
-            }
-            // Otherwise redirect to admin dashboard
             return redirect()->route('admin.dashboard');
         }
 
-        // 5. Check if the authenticated user is a Staff member
+        // 4. Check if the authenticated user is a Staff member - redirect directly to staff dashboard
         if ($request->user()->isStaff()) {
-            // If there's an intended URL and it's not the staff dashboard, redirect there
-            if ($intendedUrl && !str_contains($intendedUrl, '/staff/dashboard')) {
-                return redirect($intendedUrl);
-            }
-            // Otherwise redirect to staff dashboard
             return redirect()->route('staff.dashboard');
         }
 
-        // 6. If not Admin or Staff, redirect to intended URL or customer dashboard
+        // 5. If not Admin or Staff, redirect to intended URL or customer dashboard
+        $intendedUrl = $request->session()->pull('url.intended', null);
         if ($intendedUrl) {
             return redirect($intendedUrl);
         }

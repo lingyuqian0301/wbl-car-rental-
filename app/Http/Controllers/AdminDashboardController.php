@@ -34,7 +34,7 @@ class AdminDashboardController extends Controller
         ];
 
         $recentBookings = Booking::with(['vehicle', 'customer.user'])
-            ->orderByDesc('created_at')
+            ->orderByDesc('lastUpdateDate')
             ->take(5)
             ->get();
 

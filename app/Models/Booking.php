@@ -130,4 +130,36 @@ class Booking extends Model
     {
         $this->booking_status = $value;
     }
+
+    /**
+     * Get start_date (alias for rental_start_date).
+     */
+    public function getStartDateAttribute()
+    {
+        return $this->rental_start_date;
+    }
+
+    /**
+     * Get end_date (alias for rental_end_date).
+     */
+    public function getEndDateAttribute()
+    {
+        return $this->rental_end_date;
+    }
+
+    /**
+     * Get total_amount (alias for rental_amount).
+     */
+    public function getTotalAmountAttribute()
+    {
+        return $this->rental_amount;
+    }
+
+    /**
+     * Get the number of days for deposit calculation.
+     */
+    public function getNumberOfDays(): int
+    {
+        return $this->duration ?? 0;
+    }
 }

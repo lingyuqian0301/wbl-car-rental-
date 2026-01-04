@@ -33,7 +33,6 @@ class User extends Authenticatable
         'DOB',
         'age',
         'isActive',
-        'role',
     ];
 
     protected $hidden = [

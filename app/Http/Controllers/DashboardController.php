@@ -16,49 +16,50 @@ class DashboardController extends Controller
         $today = Carbon::today();
         
         // Get active bookings (bookings that are currently ongoing)
-        $activeBookings = Booking::where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
+        $activeBookings = Booking::where('rental_start_date', '<=', $today)
+            ->where('rental_end_date', '>=', $today)
             ->count();
 
         // Get total bookings count
         $totalBookings = Booking::count();
 
         // Get today's pickups and returns
-        $todayPickups = Booking::whereDate('start_date', $today)->count();
-        $todayReturns = Booking::whereDate('end_date', $today)->count();
+        $todayPickups = Booking::whereDate('rental_start_date', $today)->count();
+        $todayReturns = Booking::whereDate('rental_end_date', $today)->count();
 
         // Get payments data
-        $pendingPayments = Payment::where('status', 'pending')
-            ->with(['booking.user', 'booking.vehicle'])
-            ->latest()
+        $pendingPayments = Payment::where('payment_status', 'Pending')
+            ->with(['booking.customer.user', 'booking.vehicle'])
+            ->orderByDesc('payment_date')
             ->take(5)
             ->get();
             
-        $verifiedPayments = Payment::where('status', 'completed')
-            ->whereDate('updated_at', $today)
+        $verifiedPayments = Payment::where('payment_status', 'Verified')
+            ->whereDate('payment_date', $today)
             ->count();
 
         // Get recent bookings
-        $recentBookings = Booking::with(['user', 'vehicle'])
-            ->latest()
+        $recentBookings = Booking::with(['customer.user', 'vehicle'])
+            ->orderByDesc('lastUpdateDate')
             ->take(5)
             ->get();
 
         // Calculate revenue for the current month
-        $currentMonthRevenue = Payment::where('status', 'completed')
-            ->whereMonth('created_at', $today->month)
-            ->whereYear('created_at', $today->year)
-            ->sum('amount');
+        $currentMonthRevenue = Payment::where('payment_status', 'Verified')
+            ->whereMonth('payment_date', $today->month)
+            ->whereYear('payment_date', $today->year)
+            ->sum('total_amount');
 
         // Get vehicles data
         $totalVehicles = Vehicle::count();
-        $vehiclesInMaintenance = Vehicle::where('status', 'maintenance')->count();
+        $vehiclesInMaintenance = Vehicle::where('availability_status', 'maintenance')->count();
         
         // Get available vehicles count (not in maintenance and not booked)
-        $availableVehicles = Vehicle::where('status', '!=', 'maintenance')
+        $availableVehicles = Vehicle::where('availability_status', '!=', 'maintenance')
             ->whereDoesntHave('bookings', function($query) use ($today) {
-                $query->where('start_date', '<=', $today)
-                      ->where('end_date', '>=', $today);
+                $query->where('booking_status', '!=', 'Cancelled')
+                      ->where('rental_start_date', '<=', $today)
+                      ->where('rental_end_date', '>=', $today);
             })->count();
             
         $vehiclesRented = $totalVehicles - $availableVehicles - $vehiclesInMaintenance;
@@ -67,8 +68,8 @@ class DashboardController extends Controller
         $totalCustomers = User::count();
         
         // Get recent payments for the dashboard
-        $recentPayments = Payment::with(['booking.user', 'booking.vehicle'])
-            ->latest()
+        $recentPayments = Payment::with(['booking.customer.user', 'booking.vehicle'])
+            ->orderByDesc('payment_date')
             ->take(5)
             ->get();
             
@@ -76,10 +77,10 @@ class DashboardController extends Controller
         $monthlyRevenue = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            $revenue = Payment::where('status', 'completed')
-                ->whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
-                ->sum('amount');
+            $revenue = Payment::where('payment_status', 'Verified')
+                ->whereMonth('payment_date', $date->month)
+                ->whereYear('payment_date', $date->year)
+                ->sum('total_amount');
                 
             $monthlyRevenue[] = [
                 'label' => $date->format('M Y'),

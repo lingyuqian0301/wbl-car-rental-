@@ -167,14 +167,14 @@
                             <tbody>
                                 @foreach($pendingPayments as $payment)
                                     <tr>
-                                        <td>#{{ $payment->id }}</td>
-                                        <td>#{{ $payment->booking_id }}</td>
-                                        <td>{{ $payment->booking->user->name }}</td>
-                                        <td>{{ $payment->booking->vehicle->full_model }}</td>
-                                        <td class="fw-semibold text-danger">RM {{ number_format($payment->amount, 2) }}</td>
+                                        <td>#{{ $payment->paymentID }}</td>
+                                        <td>#{{ $payment->bookingID }}</td>
+                                        <td>{{ $payment->booking->customer->user->name ?? 'Unknown' }}</td>
+                                        <td>{{ $payment->booking->vehicle->full_model ?? 'N/A' }}</td>
+                                        <td class="fw-semibold text-danger">RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }}</td>
                                         <td>{{ $payment->payment_date?->format('d M Y') }}</td>
                                         <td class="text-end">
-                                            <a href="{{ route('staff.payments.show', $payment->id) }}" class="btn btn-outline-danger btn-sm pill-btn">
+                                            <a href="{{ route('staff.payments.show', $payment->paymentID) }}" class="btn btn-outline-danger btn-sm pill-btn">
                                                 Verify
                                             </a>
                                         </td>
@@ -203,11 +203,11 @@
                         @forelse($recentBookings as $booking)
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
-                                    <p class="mb-0 fw-semibold">#{{ $booking->id }} · {{ $booking->vehicle->full_model }}</p>
-                                    <small class="text-muted">{{ $booking->user->name }} · {{ $booking->start_date->format('d M') }} - {{ $booking->end_date->format('d M Y') }}</small>
+                                    <p class="mb-0 fw-semibold">#{{ $booking->bookingID }} · {{ $booking->vehicle->full_model ?? 'N/A' }}</p>
+                                    <small class="text-muted">{{ $booking->customer->user->name ?? 'Unknown' }} · {{ $booking->start_date->format('d M') }} - {{ $booking->end_date->format('d M Y') }}</small>
                                 </div>
-                                <span class="badge {{ $booking->status === 'Confirmed' ? 'bg-success' : ($booking->status === 'Pending' ? 'bg-warning text-dark' : ($booking->status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
-                                    {{ $booking->status }}
+                                <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
+                                    {{ $booking->booking_status }}
                                 </span>
                             </div>
                         @empty
@@ -226,11 +226,11 @@
                         @forelse($recentPayments as $payment)
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
-                                    <p class="mb-0 fw-semibold">RM {{ number_format($payment->amount, 2) }} — {{ $payment->booking->vehicle->full_model }}</p>
-                                    <small class="text-muted">#{{ $payment->id }} · {{ $payment->booking->user->name }} · {{ $payment->payment_date?->format('d M Y') }}</small>
+                                    <p class="mb-0 fw-semibold">RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }} — {{ $payment->booking->vehicle->full_model ?? 'N/A' }}</p>
+                                    <small class="text-muted">#{{ $payment->paymentID }} · {{ $payment->booking->customer->user->name ?? 'Unknown' }} · {{ $payment->payment_date?->format('d M Y') }}</small>
                                 </div>
-                                <span class="badge {{ $payment->status === 'Verified' ? 'bg-success' : ($payment->status === 'Pending' ? 'bg-warning text-dark' : 'bg-danger') }}">
-                                    {{ $payment->status }}
+                                <span class="badge {{ ($payment->payment_status ?? $payment->status) === 'Verified' ? 'bg-success' : (($payment->payment_status ?? $payment->status) === 'Pending' ? 'bg-warning text-dark' : 'bg-danger') }}">
+                                    {{ $payment->payment_status ?? $payment->status }}
                                 </span>
                             </div>
                         @empty

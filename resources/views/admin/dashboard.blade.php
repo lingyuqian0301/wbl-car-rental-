@@ -223,7 +223,7 @@
                                         <td>#{{ $payment->bookingID }}</td>
                                         <td>{{ $payment->booking->customer->user->name ?? 'Unknown' }}</td>
                                         <td>{{ $payment->booking->vehicle->full_model ?? 'N/A' }}</td>
-                                        <td class="fw-semibold text-danger">RM {{ number_format($payment->amount, 2) }}</td>
+                                        <td class="fw-semibold text-danger">RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }}</td>
                                         <td>{{ $payment->payment_date?->format('d M Y') }}</td>
                                         <td class="text-end">
                                             <a href="{{ route('admin.payments.show', $payment->paymentID) }}" class="btn btn-outline-danger btn-sm pill-btn">
@@ -278,11 +278,11 @@
                         @forelse($recentPayments as $payment)
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div>
-                                    <p class="mb-0 fw-semibold">RM {{ number_format($payment->amount, 2) }} — {{ $payment->booking->vehicle->full_model ?? 'N/A' }}</p>
+                                    <p class="mb-0 fw-semibold">RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }} — {{ $payment->booking->vehicle->full_model ?? 'N/A' }}</p>
                                     <small class="text-muted">#{{ $payment->paymentID }} · {{ $payment->booking->customer->user->name ?? 'Unknown' }} · {{ $payment->payment_date?->format('d M Y') }}</small>
                                 </div>
-                                <span class="badge {{ $payment->status === 'Verified' ? 'bg-success' : ($payment->status === 'Pending' ? 'bg-warning text-dark' : 'bg-danger') }}">
-                                    {{ $payment->status }}
+                                <span class="badge {{ ($payment->payment_status ?? $payment->status) === 'Verified' ? 'bg-success' : (($payment->payment_status ?? $payment->status) === 'Pending' ? 'bg-warning text-dark' : 'bg-danger') }}">
+                                    {{ $payment->payment_status ?? $payment->status }}
                                 </span>
                             </div>
                         @empty

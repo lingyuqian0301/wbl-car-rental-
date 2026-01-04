@@ -29,10 +29,10 @@ class VehicleController extends Controller
             $endDate = $request->end_date;
 
             $query->whereDoesntHave('bookings', function ($q) use ($startDate, $endDate) {
-                $q->where('booking_status', '!=', 'cancelled')
+                $q->where('booking_status', '!=', 'Cancelled')
                     ->where(function ($overlap) use ($startDate, $endDate) {
-                        $overlap->where('start_date', '<=', $endDate)
-                            ->where('end_date', '>=', $startDate);
+                        $overlap->where('rental_start_date', '<=', $endDate)
+                            ->where('rental_end_date', '>=', $startDate);
                     });
             });
 

@@ -79,7 +79,7 @@
     </small>
 </td>
 
-    <td>RM {{ number_format($payment->amount, 2) }}</td>
+    <td>RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }}</td>
     <td>{{ $payment->payment_type }}</td>
 
     <td>
@@ -87,8 +87,8 @@
     </td>
 
     <td>
-        <span class="badge {{ $payment->status == 'Verified' ? 'bg-success' : 'bg-warning' }} text-dark">
-            {{ $payment->status }}
+        <span class="badge {{ ($payment->payment_status ?? $payment->status) == 'Verified' ? 'bg-success' : 'bg-warning' }} text-dark">
+            {{ $payment->payment_status ?? $payment->status }}
         </span>
     </td>
 

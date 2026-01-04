@@ -52,9 +52,9 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <div>{{ $booking->start_date->format('M d, Y') }}</div>
                                                 <div class="text-xs text-gray-400">to {{ $booking->end_date->format('M d, Y') }}</div>
-                                                <div class="text-xs text-gray-400">{{ $booking->duration_days }} days</div>
+                                                <div class="text-xs text-gray-400">{{ $booking->duration ?? $booking->getNumberOfDays() }} days</div>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RM {{ number_format($booking->total_price, 2) }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 @if($booking->status == 'Pending')
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
@@ -68,9 +68,9 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 @php
-                                                    $verifiedPayment = $booking->payments->where('status', 'Verified')->first();
-                                                    $pendingPayment = $booking->payments->where('status', 'Pending')->first();
-                                                    $rejectedPayment = $booking->payments->where('status', 'Rejected')->first();
+                                                    $verifiedPayment = $booking->payments->where('payment_status', 'Verified')->first();
+                                                    $pendingPayment = $booking->payments->where('payment_status', 'Pending')->first();
+                                                    $rejectedPayment = $booking->payments->where('payment_status', 'Rejected')->first();
                                                 @endphp
                                                 @if($verifiedPayment)
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Verified</span>

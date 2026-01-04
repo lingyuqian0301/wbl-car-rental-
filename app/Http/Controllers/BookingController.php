@@ -29,7 +29,7 @@ class BookingController extends Controller
     public function index()
     {
         try {
-            $customer = \App\Models\Customer::where('user_id', auth()->id())->first();
+            $customer = \App\Models\Customer::where('userID', auth()->user()->userID)->first();
 
             if (!$customer) {
                 // Not an error, just an empty state
@@ -81,12 +81,12 @@ class BookingController extends Controller
 
         // 1. Check if the booking belongs to the logged-in user
         // We traverse: Booking -> Customer -> User ID
-        if ($booking->customer && $booking->customer->user_id === Auth::id()) {
+        if ($booking->customer && $booking->customer->userID === Auth::user()->userID) {
             $isAuthorized = true;
         }
 
         // 2. Allow Admins to view any booking (Optional but recommended)
-        if (Auth::user()->role === 'admin' || Auth::user()->role === 'staff') {
+        if (Auth::user()->isAdmin() || Auth::user()->isStaff()) {
             $isAuthorized = true;
         }
 
@@ -98,7 +98,7 @@ class BookingController extends Controller
             $booking->load(['vehicle', 'payments.verifier']);
 
             $hasVerifiedPayment = $booking->payments()
-                ->where('status', 'Verified')
+                ->where('payment_status', 'Verified')
                 ->exists();
 
             return view('bookings.show', [
@@ -131,8 +131,8 @@ class BookingController extends Controller
         $conflictingBooking = Booking::where('vehicleID', $vehicleID)
             ->where('booking_status', '!=', 'Cancelled') // Ignore cancelled ones
             ->where(function ($q) use ($request) {
-                $q->where('start_date', '<=', $request->end_date)
-                  ->where('end_date', '>=', $request->start_date);
+                $q->where('rental_start_date', '<=', $request->end_date)
+                  ->where('rental_end_date', '>=', $request->start_date);
             })
             ->first(); // Get the actual record instead of just 'exists()'
 
@@ -140,7 +140,7 @@ class BookingController extends Controller
         if ($conflictingBooking) {
             
             // CHECK: Is it MY booking?
-            $currentCustomer = Customer::where('user_id', Auth::id())->first();
+            $currentCustomer = Customer::where('userID', Auth::user()->userID)->first();
             
             if ($currentCustomer && $conflictingBooking->customerID == $currentCustomer->customerID) {
                 // CASE A: You blocked yourself (Ghost Booking)
@@ -181,14 +181,13 @@ class BookingController extends Controller
         // Prepare booking data
         $bookingData = [
             'vehicleID'      => $vehicleID,
-            'start_date'     => $request->start_date,
-            'end_date'       => $request->end_date,
+            'rental_start_date' => $request->start_date,
+            'rental_end_date'   => $request->end_date,
             'pickup_point'   => $request->pickup_point,
             'return_point'   => $request->return_point,
-            'duration_days'  => $duration,
+            'duration'       => $duration,
             'addOns_item'    => implode(',', $addons),
-            'addOns_charge'  => $addonsCharge,
-            'total_amount'   => $totalAmount,
+            'rental_amount'  => $totalAmount,
             'booking_status' => 'Pending',
         ];
 
@@ -221,23 +220,23 @@ class BookingController extends Controller
                     $addonDetails[] = [
                         'name'  => $addonNames[$addon],
                         'price' => $addonPrices[$addon],
-                        'total' => $addonPrices[$addon] * $bookingData['duration_days']
+                        'total' => $addonPrices[$addon] * $bookingData['duration']
                     ];
                 }
             }
 
             $tempBooking = new Booking([
-                'duration_days' => $bookingData['duration_days'],
-                'number_of_days' => $bookingData['duration_days'],
-                'total_amount' => $bookingData['total_amount'],
+                'duration' => $bookingData['duration'],
+                'rental_amount' => $bookingData['rental_amount'],
             ]);
             
             $depositAmount = $this->paymentService->calculateDeposit($tempBooking);
 
             // Handle potential missing wallet gracefully
-            $walletAccount = $user->walletAccount; 
-            $walletBalance = $walletAccount ? $walletAccount->available_balance : 0;
-            $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet($user->id, $depositAmount);
+            $customer = $user->customer;
+            $walletAccount = $customer ? $customer->walletAccount : null;
+            $walletBalance = $walletAccount ? $walletAccount->wallet_balance : 0;
+            $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet($user->userID, $depositAmount);
 
             return view('bookings.confirm', [
                 'bookingData' => $bookingData,
@@ -271,57 +270,48 @@ class BookingController extends Controller
             DB::beginTransaction(); // Start Transaction (Safety Net)
 
             // 2. Get Customer
-            $customer = Customer::where('user_id', Auth::id())->first();
+            $customer = Customer::where('userID', Auth::user()->userID)->first();
 
             if (!$customer) {
                 throw new \Exception('Customer profile not found for this user.');
             }
 
             // 3. Create Booking
+            $duration = Carbon::parse($request->start_date)
+                ->diffInDays(Carbon::parse($request->end_date)) + 1;
+            
             $booking = new Booking();
             $booking->customerID = $customer->customerID;
             $booking->vehicleID  = $request->vehicle_id;
-            $booking->start_date = $request->start_date;
-            $booking->end_date   = $request->end_date;
+            $booking->rental_start_date = $request->start_date;
+            $booking->rental_end_date   = $request->end_date;
+            $booking->duration = $duration;
             $booking->pickup_point = $request->pickup_point;
             $booking->return_point = $request->return_point;
-            $booking->total_amount = $request->total_amount;
+            $booking->rental_amount = $request->total_amount;
             $booking->booking_status = 'Pending';
-            $booking->creationDate   = now();
+            $booking->lastUpdateDate = now();
             
             if (!$booking->save()) {
                 throw new \Exception('Failed to save booking record.');
             }
 
             // 4. Update Wallet (Robust Logic)
-            $wallet = DB::table('walletaccount')
-                        ->where('customerID', $customer->customerID)
-                        ->first();
+            $wallet = \App\Models\WalletAccount::where('customerID', $customer->customerID)->first();
 
             if ($wallet) {
                 // Update existing wallet
-                // Try-Catch inside here in case column is missing
-                try {
-                     DB::table('walletaccount')
-                        ->where('walletAccountID', $wallet->walletAccountID)
-                        ->update([
-                            'outstanding_amount' => $wallet->outstanding_amount + $booking->total_amount,
-                            'last_update_datetime' => now()
-                        ]);
-                } catch (\Illuminate\Database\QueryException $qe) {
-                    // Specific catch for missing column "outstanding_amount"
-                    Log::warning("Wallet Update Failed (Column Missing?): " . $qe->getMessage());
-                    // We continue anyway so the Booking is not lost!
-                }
+                $wallet->outstanding_amount = ($wallet->outstanding_amount ?? 0) + $booking->rental_amount;
+                $wallet->wallet_lastUpdate_Date_Time = now();
+                $wallet->save();
             } else {
                 // Create new wallet
-                DB::table('walletaccount')->insert([
+                \App\Models\WalletAccount::create([
                     'customerID'         => $customer->customerID,
-                    'user_id'            => Auth::id(),
-                    'available_balance'  => 0.00,
-                    'outstanding_amount' => $booking->total_amount,
+                    'wallet_balance'     => 0.00,
+                    'outstanding_amount' => $booking->rental_amount,
                     'wallet_status'      => 'Active',
-                    'last_update_datetime' => now()
+                    'wallet_lastUpdate_Date_Time' => now()
                 ]);
             }
 
@@ -347,11 +337,11 @@ class BookingController extends Controller
                               ->with(['vehicle', 'customer', 'payments'])
                               ->firstOrFail();
 
-            if (!$booking->customer || $booking->customer->user_id !== auth()->id()) {
+            if (!$booking->customer || $booking->customer->userID !== auth()->user()->userID) {
                 abort(403, 'Unauthorized access to this invoice.');
             }
 
-            $verifiedPayment = $booking->payments->where('status', 'Verified')->first();
+            $verifiedPayment = $booking->payments->where('payment_status', 'Verified')->first();
             if (!$verifiedPayment) {
                 // User Friendly: Redirect back with message instead of crashing
                 return back()->with('error', 'Invoice is not available until your payment is verified by Admin.');

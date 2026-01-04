@@ -22,12 +22,12 @@
                 <div class="card-header d-flex justify-content-between align-items-center p-3">
                     <h5 class="mb-0">Payment Details #{{ $payment->paymentID }}</h5>
                     <div>
-                        @if($payment->status == 'Verified')
+                        @if($payment->payment_status == 'Verified' || $payment->status == 'Verified')
                             <span class="badge bg-success fs-6">Verified</span>
-                        @elseif($payment->status == 'Pending')
+                        @elseif($payment->payment_status == 'Pending' || $payment->status == 'Pending')
                             <span class="badge bg-warning text-dark fs-6">Pending Review</span>
                         @else
-                            <span class="badge bg-danger fs-6">{{ $payment->status }}</span>
+                            <span class="badge bg-danger fs-6">{{ $payment->payment_status ?? $payment->status }}</span>
                         @endif
                     </div>
                 </div>
@@ -40,7 +40,7 @@
                             <ul class="list-group list-group-flush mb-4">
                                 <li class="list-group-item d-flex justify-content-between px-0">
                                     <span>Customer:</span>
-                                    <strong>{{ $payment->booking->customer->fullname ?? 'Unknown' }}</strong>
+                                    <strong>{{ $payment->booking->customer->user->name ?? 'Unknown' }}</strong>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between px-0">
                                     <span>Vehicle:</span>
@@ -63,13 +63,13 @@
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Paid (This Receipt):</span>
-                                    <strong class="text-success">- RM {{ number_format($payment->amount, 2) }}</strong>
+                                    <strong class="text-success">- RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }}</strong>
                                 </div>
                                 <hr class="my-2">
                                 <div class="d-flex justify-content-between">
                                     <span class="fw-bold text-danger">Outstanding Balance:</span>
                                     <strong class="text-danger fs-5">
-                                        RM {{ number_format($payment->booking->total_amount - $payment->amount, 2) }}
+                                        RM {{ number_format(($payment->booking->total_amount ?? $payment->booking->rental_amount) - ($payment->total_amount ?? $payment->amount), 2) }}
                                     </strong>
                                 </div>
                             </div>
@@ -105,13 +105,13 @@
                 <div class="card-footer bg-white p-3 border-top">
                     <div class="d-flex justify-content-end gap-2">
                         
-                        @if($payment->status == 'Verified')
+                        @if($payment->payment_status == 'Verified' || $payment->status == 'Verified')
                             <a href="{{ route('admin.payments.invoice', $payment->paymentID) }}" class="btn btn-primary">
                                 📄 Download Invoice
                             </a>
                             <button class="btn btn-secondary" disabled>Already Verified</button>
                         
-                        @elseif($payment->status == 'Pending')
+                        @elseif($payment->payment_status == 'Pending' || $payment->status == 'Pending')
                             <form action="{{ route('admin.payments.reject', $payment->paymentID) }}" method="POST" onsubmit="return confirm('Are you sure you want to REJECT this payment?');">
                                 @csrf
                                 <button type="submit" class="btn btn-outline-danger">
@@ -119,7 +119,7 @@
                                 </button>
                             </form>
 
-                            <form action="{{ route('admin.payments.approve', $payment->paymentID) }}" method="POST" onsubmit="return confirm('Confirm payment of RM {{ $payment->amount }}? This will update the wallet.');">
+                            <form action="{{ route('admin.payments.approve', $payment->paymentID) }}" method="POST" onsubmit="return confirm('Confirm payment of RM {{ $payment->total_amount ?? $payment->amount }}? This will update the wallet.');">
                                 @csrf
                                 <button type="submit" class="btn btn-success px-4">
                                     &#10003; Verify & Approve

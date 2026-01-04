@@ -26,7 +26,7 @@ class PaymentService
         }
 
         // Long Term (≥ 15 Days): Deposit = 100% of the Rental Price
-        return (float) ($booking->total_amount ?? $booking->total_price ?? 0);
+        return (float) ($booking->rental_amount ?? 0);
     }
 
     /**
@@ -43,9 +43,7 @@ class PaymentService
 
         // Find the deposit payment for this booking
         $depositPayment = Payment::where('bookingID', $booking->bookingID)
-            ->where('payment_purpose', 'booking_deposit')
-            ->where('status', 'Verified')
-            ->where('deposit_returned', false)
+            ->where('payment_status', 'Verified')
             ->first();
 
         if (!$depositPayment) {
@@ -61,40 +59,23 @@ class PaymentService
             return false;
         }
 
-        // Get or create wallet account for the user
-        // Try to find by user_id first, then customerID
-        $walletAccount = null;
-        if ($booking->user) {
-            $walletAccount = WalletAccount::where('user_id', $booking->user->id)->first();
-        }
-        if (!$walletAccount && $booking->customerID) {
-            $walletAccount = WalletAccount::where('customerID', $booking->customerID)->first();
-        }
+        // Get or create wallet account for the customer
+        $walletAccount = WalletAccount::where('customerID', $booking->customerID)->first();
 
         if (!$walletAccount) {
             $walletAccount = WalletAccount::create([
                 'customerID' => $booking->customerID,
-                'user_id' => $booking->user ? $booking->user->id : null,
-                'virtual_balance' => 0.00,
-                'available_balance' => 0.00,
-                'hold_amount' => 0.00,
-                'status' => 'active',
-                'created_date' => now(),
+                'wallet_balance' => 0.00,
+                'outstanding_amount' => 0.00,
+                'wallet_status' => 'Active',
+                'wallet_lastUpdate_Date_Time' => now(),
             ]);
         }
 
         // Credit the deposit amount to wallet
-        $walletAccount->credit(
-            $depositPayment->amount,
-            "Deposit refund from booking #{$booking->id}",
-            'booking',
-            $booking->id
-        );
-
-        // Mark deposit as processed (but not returned to bank)
-        $depositPayment->update([
-            'deposit_returned' => false, // Keep as false since it's in wallet
-        ]);
+        $walletAccount->wallet_balance = ($walletAccount->wallet_balance ?? 0) + $depositPayment->total_amount;
+        $walletAccount->wallet_lastUpdate_Date_Time = now();
+        $walletAccount->save();
 
         Log::info("Deposit transferred to wallet for booking {$booking->id}");
 
@@ -110,13 +91,18 @@ class PaymentService
      */
     public function canSkipDepositWithWallet(int $userId, float $requiredDeposit): bool
     {
-        $walletAccount = WalletAccount::where('user_id', $userId)->first();
+        $user = \App\Models\User::find($userId);
+        if (!$user || !$user->customer) {
+            return false;
+        }
+        
+        $walletAccount = $user->customer->walletAccount;
 
         if (!$walletAccount) {
             return false;
         }
 
-        return $walletAccount->available_balance >= $requiredDeposit;
+        return ($walletAccount->wallet_balance ?? 0) >= $requiredDeposit;
     }
 
     /**
@@ -128,43 +114,33 @@ class PaymentService
      */
     public function payDepositFromWallet(Booking $booking, float $depositAmount): ?Payment
     {
-        // Try to find wallet account by user_id or customerID
-        $walletAccount = null;
-        if ($booking->user) {
-            $walletAccount = WalletAccount::where('user_id', $booking->user->id)->first();
-        }
-        if (!$walletAccount && $booking->customerID) {
-            $walletAccount = WalletAccount::where('customerID', $booking->customerID)->first();
-        }
+        // Find wallet account by customerID
+        $walletAccount = WalletAccount::where('customerID', $booking->customerID)->first();
 
         if (!$walletAccount) {
             return null; // No wallet account found
         }
 
-        if ($walletAccount->available_balance < $depositAmount) {
+        if (($walletAccount->wallet_balance ?? 0) < $depositAmount) {
             return null;
         }
 
         // Debit from wallet
-        $walletAccount->debit(
-            $depositAmount,
-            "Deposit payment for booking #{$booking->id}",
-            'booking',
-            $booking->id
-        );
+        $walletAccount->wallet_balance = ($walletAccount->wallet_balance ?? 0) - $depositAmount;
+        $walletAccount->wallet_lastUpdate_Date_Time = now();
+        $walletAccount->save();
 
         // Create payment record
         $payment = Payment::create([
             'bookingID' => $booking->bookingID,
-            'amount' => $depositAmount,
-            'payment_type' => $request->input('payment_type', 'Deposit'),
-            'payment_purpose' => 'booking_deposit',
-            'status' => 'Verified', // Auto-verified since it's from wallet
-            'receiptURL' => null,
-            'deposit_returned' => false,
-            'keep_deposit' => false,
+            'total_amount' => $depositAmount,
+            'payment_bank_name' => 'Wallet',
+            'payment_bank_account_no' => '',
+            'payment_status' => 'Verified', // Auto-verified since it's from wallet
             'payment_date' => now(),
             'isPayment_complete' => true,
+            'payment_isVerify' => true,
+            'latest_Update_Date_Time' => now(),
         ]);
 
         return $payment;
