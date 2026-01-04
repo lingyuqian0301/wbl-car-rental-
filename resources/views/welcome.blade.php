@@ -579,9 +579,14 @@
             @forelse($cars as $car)
                 <div class="car-card">
                     @php
-                        $imageName = strtolower(str_replace(' ', '-', $car->vehicle_brand . '-' . $car->vehicle_model)) . '.png';
-                        $imagePath = public_path('images/cars/browse/' . $imageName);
-                    @endphp
+    $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
+    $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
+    $imageName = trim($imageName, '-');
+    $imageName .= '.png';
+
+    $imagePath = public_path('images/cars/browse/' . $imageName);
+@endphp
+
 
                     <div class="car-image">
                         @if(file_exists($imagePath))
