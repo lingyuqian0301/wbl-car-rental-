@@ -12,7 +12,7 @@ use App\Models\Vehicle;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log; // Added for logging errors
 
 class BookingController extends Controller
 {
@@ -32,6 +32,7 @@ class BookingController extends Controller
             $customer = \App\Models\Customer::where('userID', auth()->user()->userID)->first();
 
             if (!$customer) {
+                // Not an error, just an empty state
                 return view('bookings.index', ['bookings' => collect([])]);
             }
 
@@ -40,18 +41,21 @@ class BookingController extends Controller
                         ->orderBy('bookingID', 'desc')
                         ->paginate(10);
 
-            // Determine overall status for the dashboard
+            // Log payment data for debugging
+            foreach ($bookings as $booking) {
+                Log::info('Booking ID: ' . $booking->bookingID);
+                Log::info('Payments: ' . $booking->payments->toJson());
+            }
+
+            // Update status logic to handle bookings without payments explicitly
             $status = 'Completed';
             if ($bookings->isNotEmpty()) {
                 $firstBooking = $bookings->first();
-                // FIX: Use 'payment_status' instead of 'status'
-                if ($firstBooking->payments->where('payment_status', 'Pending')->isNotEmpty() ||
-                    $firstBooking->payments->where('payment_status', 'Rejected')->isNotEmpty()) {
+                if ($firstBooking->payments->where('status', 'Pending')->isNotEmpty() || $firstBooking->payments->where('status', 'Rejected')->isNotEmpty()) {
                     $status = 'Pending';
-                // FIX: Use 'booking_status' instead of 'status'
-                } elseif ($firstBooking->booking_status === 'Confirmed') {
+                } elseif ($firstBooking->status === 'Confirmed') {
                     $status = 'Confirmed';
-                } elseif ($firstBooking->booking_status === 'Cancelled') {
+                } elseif ($firstBooking->status === 'Cancelled') {
                     $status = 'Cancelled';
                 }
             }
@@ -63,7 +67,7 @@ class BookingController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error fetching bookings: ' . $e->getMessage());
-            return redirect()->route('home')->with('error', 'Unable to load bookings.');
+            return redirect()->route('home')->with('error', 'Unable to load bookings. Please try again later.');
         }
     }
 
@@ -71,27 +75,28 @@ class BookingController extends Controller
      * Display the specified booking.
      */
     public function show(Booking $booking): View
-    {
+        {
+        // --- START OF FIX ---
         $isAuthorized = false;
 
         // 1. Check if the booking belongs to the logged-in user
+        // We traverse: Booking -> Customer -> User ID
         if ($booking->customer && $booking->customer->userID === Auth::user()->userID) {
             $isAuthorized = true;
         }
 
-        // 2. Allow Admins/Staff
+        // 2. Allow Admins to view any booking (Optional but recommended)
         if (Auth::user()->isAdmin() || Auth::user()->isStaff()) {
             $isAuthorized = true;
         }
 
-        if (!$isAuthorized) {
-            abort(403, 'You are not authorized to view this booking.');
-        }
+    if (!$isAuthorized) {
+        abort(403, 'You are not authorized to view this booking.');
+    }
 
         try {
-            $booking->load(['vehicle', 'payments']);
+            $booking->load(['vehicle', 'payments.verifier']);
 
-            // FIX: Use 'payment_status'
             $hasVerifiedPayment = $booking->payments()
                 ->where('payment_status', 'Verified')
                 ->exists();
@@ -106,9 +111,11 @@ class BookingController extends Controller
         }
     }
 
-    public function store(Request $request, $vehicleID)
+   public function store(Request $request, $vehicleID)
     {
+        // Check if user is authenticated
         if (!Auth::check()) {
+            // Store the intended URL so we can redirect back after login
             $request->session()->put('url.intended', url()->previous());
             return redirect()->route('login')->with('error', 'Please sign in to proceed with booking.');
         }
@@ -120,51 +127,67 @@ class BookingController extends Controller
             'return_point'  => 'required|string|max:100',
         ]);
 
+        // Ensure 'start_date' and 'end_date' exist before proceeding
         if (!$request->filled('start_date') || !$request->filled('end_date')) {
             return back()->withErrors(['error' => 'Start date and end date are required.']);
         }
 
-        // 1. Check Conflicts (Using Correct Column Names)
+        // 1. Find the Conflicting Booking (if any)
         $conflictingBooking = Booking::where('vehicleID', $vehicleID)
-            ->where('booking_status', '!=', 'Cancelled')
+            ->where('booking_status', '!=', 'Cancelled') // Ignore cancelled ones
             ->where(function ($q) use ($request) {
-                // Assuming DB columns are rental_start_date/rental_end_date
                 $q->where('rental_start_date', '<=', $request->end_date)
                   ->where('rental_end_date', '>=', $request->start_date);
             })
-            ->first();
+            ->first(); // Get the actual record instead of just 'exists()'
 
+        // 2. Analyze the Conflict
         if ($conflictingBooking) {
+            
+            // CHECK: Is it MY booking?
             $currentCustomer = Customer::where('userID', Auth::user()->userID)->first();
+            
             if ($currentCustomer && $conflictingBooking->customerID == $currentCustomer->customerID) {
+                // CASE A: You blocked yourself (Ghost Booking)
                 return redirect()->route('bookings.index')
-                    ->with('error', 'You already have a PENDING booking for these dates!');
+                    ->with('error', 'You already have a PENDING booking for these dates! Please pay for booking #' . $conflictingBooking->bookingID . ' or cancel it to make a new one.');
             } else {
-                return back()->withErrors('Vehicle is unavailable for these dates.');
+                // CASE B: Someone else booked it
+                return back()->withErrors('Vehicle is unavailable for these dates. It is currently being booked by another customer.');
             }
         }
 
-        // 2. Calculate Costs
-        $duration = Carbon::parse($request->start_date)->diffInDays(Carbon::parse($request->end_date)) + 1;
+        // --- If no conflict, proceed as normal ---
+
+        // Duration (inclusive)
+        $duration = Carbon::parse($request->start_date)
+            ->diffInDays(Carbon::parse($request->end_date)) + 1;
+
+        // Vehicle price
         $vehicle = Vehicle::findOrFail($vehicleID);
-        $vehiclePrice = $vehicle->rental_price; // or price_per_day depending on your DB
+        $vehiclePrice = $vehicle->rental_price;
 
         // Add-ons
         $addons = $request->addons ?? [];
-        $addonPrices = ['gps' => 10, 'child_seat' => 15, 'insurance' => 30];
+        $addonPrices = [
+            'gps'        => 10,
+            'child_seat' => 15,
+            'insurance'  => 30,
+        ];
+
         $addonsPerDay = 0;
         foreach ($addons as $addon) {
             $addonsPerDay += $addonPrices[$addon] ?? 0;
         }
 
-        $totalAmount = ($vehiclePrice + $addonsPerDay) * $duration;
+        $addonsCharge = $addonsPerDay * $duration;
+        $totalAmount  = ($vehiclePrice + $addonsPerDay) * $duration;
 
-        // 3. Prepare Session Data
-        // FIX: CHANGED KEYS to 'start_date' and 'end_date' so confirm() can find them!
+        // Prepare booking data
         $bookingData = [
             'vehicleID'      => $vehicleID,
-            'start_date'     => $request->start_date, // Fixed Key
-            'end_date'       => $request->end_date,   // Fixed Key
+            'rental_start_date' => $request->start_date,
+            'rental_end_date'   => $request->end_date,
             'pickup_point'   => $request->pickup_point,
             'return_point'   => $request->return_point,
             'duration'       => $duration,
@@ -183,83 +206,137 @@ class BookingController extends Controller
         try {
             $bookingData = session('booking_data');
 
-            // 1. Safety Check (Now passes because keys match)
-            if (!$bookingData || !isset($bookingData['vehicleID']) || !isset($bookingData['start_date'])) {
-                return redirect()->route('home')->with('error', 'Session expired. Please select your vehicle again.');
+            if (!$bookingData) {
+                return redirect('/')->with('error', 'Session expired. Please start your booking again.');
             }
 
             $vehicle = Vehicle::findOrFail($bookingData['vehicleID']);
             $user = Auth::user();
 
-            // 2. Add-ons
             $addonsArray = !empty($bookingData['addOns_item']) ? explode(',', $bookingData['addOns_item']) : [];
             $addonDetails = [];
+            
+            // Hardcoded prices (Best practice: Move to DB or Config later)
             $addonPrices = ['gps' => 10, 'child_seat' => 15, 'insurance' => 30];
-            $addonNames = ['gps' => 'GPS Navigation', 'child_seat' => 'Child Seat', 'insurance' => 'Full Insurance'];
+            $addonNames = ['gps' => 'GPS Navigation', 'child_seat' => 'Child Seat', 'insurance' => 'Full Insurance Coverage'];
 
             foreach ($addonsArray as $addon) {
                 if (isset($addonPrices[$addon])) {
                     $addonDetails[] = [
                         'name'  => $addonNames[$addon],
                         'price' => $addonPrices[$addon],
-                        'total' => $addonPrices[$addon] * ($bookingData['duration'] ?? 1)
+                        'total' => $addonPrices[$addon] * $bookingData['duration']
                     ];
                 }
             }
 
-            // 3. Deposit Calculation
             $tempBooking = new Booking([
-                'duration' => $bookingData['duration'] ?? 1,
-                'rental_amount' => $bookingData['rental_amount'] ?? 0,
+                'duration' => $bookingData['duration'],
+                'rental_amount' => $bookingData['rental_amount'],
             ]);
+            
             $depositAmount = $this->paymentService->calculateDeposit($tempBooking);
 
-            // 4. Wallet Check (Using 'outstanding_amount')
+            // Handle potential missing wallet gracefully
             $customer = $user->customer;
             $walletAccount = $customer ? $customer->walletAccount : null;
-
-            // Note: If you want to show Available Balance, logic might be different depending on your app rules.
-            // Assuming we just pass the object or 0.
-            $walletBalance = 0; // Or fetch 'wallet_balance' if you added it back, or just use 0 to be safe.
-
+            $walletBalance = $walletAccount ? $walletAccount->wallet_balance : 0;
             $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet($user->userID, $depositAmount);
 
             return view('bookings.confirm', [
-                'bookingData'    => $bookingData,
-                'vehicle'        => $vehicle,
-                'addons'         => $addonDetails,
-                'depositAmount'  => $depositAmount,
-                'walletBalance'  => $walletBalance,
+                'bookingData' => $bookingData,
+                'vehicle'     => $vehicle,
+                'addons'      => $addonDetails,
+                'depositAmount' => $depositAmount,
+                'walletBalance' => $walletBalance,
                 'canSkipDeposit' => $canSkipDeposit,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Confirmation Page Error: ' . $e->getMessage());
-            return redirect()->route('home')->with('error', 'Error loading confirmation page.');
+            return redirect('/')->with('error', 'Error loading confirmation page. Please try again.');
         }
     }
 
     public function finalize(Request $request)
     {
-        $request->validate([
-            'vehicle_id' => 'required|integer',
-            'start_date' => 'required|date',
-            'end_date'   => 'required|date|after_or_equal:start_date',
-            'pickup_point' => 'required|string',
-            'return_point' => 'required|string',
-            'total_amount' => 'required|numeric',
+        // Direct file debug - this will always work
+        $debugLog = storage_path('logs/finalize_debug.txt');
+        file_put_contents($debugLog, date('Y-m-d H:i:s') . " - Finalize started\n", FILE_APPEND);
+        file_put_contents($debugLog, "Request data: " . json_encode($request->all()) . "\n", FILE_APPEND);
+        
+        // Log incoming request for debugging
+        Log::info('Finalize booking called', [
+            'method' => $request->method(),
+            'has_vehicle_id' => $request->has('vehicle_id'),
+            'vehicle_id' => $request->input('vehicle_id'),
+            'start_date' => $request->input('start_date'),
+            'end_date' => $request->input('end_date'),
         ]);
-
+        
+        // 1. Validation
         try {
-            DB::beginTransaction();
+            $request->validate([
+                'vehicle_id' => 'required|integer',
+                'start_date' => 'required|date',
+                'end_date'   => 'required|date|after_or_equal:start_date',
+                'pickup_point' => 'required|string',
+                'return_point' => 'required|string',
+                'total_amount' => 'required|numeric',
+            ]);
+            file_put_contents($debugLog, "Validation passed\n", FILE_APPEND);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            file_put_contents($debugLog, "Validation failed: " . json_encode($e->errors()) . "\n", FILE_APPEND);
+            throw $e;
+        }
 
-            $customer = Customer::where('userID', Auth::user()->userID)->first();
+        // Wrap the entire transaction in a Try-Catch block
+        try {
+            DB::beginTransaction(); // Start Transaction (Safety Net)
+            file_put_contents($debugLog, "Transaction started\n", FILE_APPEND);
+
+            // 2. Get Customer
+            $userID = Auth::user()->userID;
+            file_put_contents($debugLog, "Looking for customer with userID: $userID\n", FILE_APPEND);
+            
+            $customer = Customer::where('userID', $userID)->first();
+            file_put_contents($debugLog, "Customer found: " . ($customer ? "Yes (ID: {$customer->customerID})" : "No") . "\n", FILE_APPEND);
+
             if (!$customer) {
-                throw new \Exception('Customer profile not found.');
+                file_put_contents($debugLog, "ERROR: Customer not found!\n", FILE_APPEND);
+                throw new \Exception('Customer profile not found for this user.');
             }
 
-            $duration = Carbon::parse($request->start_date)->diffInDays(Carbon::parse($request->end_date)) + 1;
-
+            // 3. Create Booking
+            $duration = Carbon::parse($request->start_date)
+                ->diffInDays(Carbon::parse($request->end_date)) + 1;
+            
+            // Get addons from request or session
+            $addons = $request->input('addons', []);
+            $addonsArray = [];
+            if (!empty($addons) && is_array($addons)) {
+                foreach ($addons as $addon) {
+                    if (isset($addon['name'])) {
+                        $addonName = strtolower(str_replace(' ', '_', $addon['name']));
+                        if (str_contains($addonName, 'gps')) {
+                            $addonsArray[] = 'gps';
+                        } elseif (str_contains($addonName, 'child')) {
+                            $addonsArray[] = 'child_seat';
+                        } elseif (str_contains($addonName, 'insurance')) {
+                            $addonsArray[] = 'insurance';
+                        }
+                    }
+                }
+            }
+            
+            // Get addons from session if not in request
+            $bookingData = session('booking_data', []);
+            if (empty($addonsArray) && !empty($bookingData['addOns_item'])) {
+                $addonsArray = explode(',', $bookingData['addOns_item']);
+            }
+            
+            file_put_contents($debugLog, "Creating booking...\n", FILE_APPEND);
+            
             $booking = new Booking();
             $booking->customerID = $customer->customerID;
             $booking->vehicleID  = $request->vehicle_id;
@@ -269,64 +346,103 @@ class BookingController extends Controller
             $booking->pickup_point = $request->pickup_point;
             $booking->return_point = $request->return_point;
             $booking->rental_amount = $request->total_amount;
-            // FIX: Using 'total_amount' if that is the column name in DB, otherwise use 'rental_amount'
-            // Your DB has 'rental_amount' on Booking table and 'total_amount' on Payment table.
-            // Keeping 'rental_amount' here as per your Booking Model.
-
+            $booking->addOns_item = !empty($addonsArray) ? implode(',', $addonsArray) : null;
             $booking->booking_status = 'Pending';
             $booking->lastUpdateDate = now();
-
-            if (!$booking->save()) {
-                throw new \Exception('Failed to save booking record.');
+            
+            file_put_contents($debugLog, "Booking data: " . json_encode($booking->toArray()) . "\n", FILE_APPEND);
+            
+            try {
+                $saved = $booking->save();
+                file_put_contents($debugLog, "Booking saved: " . ($saved ? "Yes (ID: {$booking->bookingID})" : "No") . "\n", FILE_APPEND);
+                if (!$saved) {
+                    throw new \Exception('Failed to save booking record.');
+                }
+            } catch (\Exception $saveError) {
+                file_put_contents($debugLog, "Booking save error: " . $saveError->getMessage() . "\n", FILE_APPEND);
+                throw $saveError;
             }
+            
+            // Clear booking session data after successful save
+            session()->forget('booking_data');
 
-            // Update Wallet Outstanding
+            // 4. Update Wallet (Robust Logic)
+            file_put_contents($debugLog, "Updating wallet...\n", FILE_APPEND);
             $wallet = \App\Models\WalletAccount::where('customerID', $customer->customerID)->first();
+
             if ($wallet) {
+                // Update existing wallet
                 $wallet->outstanding_amount = ($wallet->outstanding_amount ?? 0) + $booking->rental_amount;
-                $wallet->save(); // removed wallet_lastUpdate_Date_Time if column missing, else keep it
+                $wallet->wallet_lastUpdate_Date_Time = now();
+                $wallet->save();
+                file_put_contents($debugLog, "Wallet updated\n", FILE_APPEND);
             } else {
+                // Create new wallet
                 \App\Models\WalletAccount::create([
                     'customerID'         => $customer->customerID,
+                    'wallet_balance'     => 0.00,
                     'outstanding_amount' => $booking->rental_amount,
-                    // removed wallet_balance, wallet_status if they don't exist in new DB
+                    'wallet_status'      => 'Active',
+                    'wallet_lastUpdate_Date_Time' => now()
                 ]);
+                file_put_contents($debugLog, "New wallet created\n", FILE_APPEND);
             }
 
-            DB::commit();
+            DB::commit(); // Save everything if successful
+            file_put_contents($debugLog, "Transaction committed successfully!\n", FILE_APPEND);
 
+            // 5. Success Redirect
+            $redirectUrl = route('payments.create', ['booking' => $booking->bookingID]);
+            file_put_contents($debugLog, "Redirecting to: $redirectUrl\n", FILE_APPEND);
+            
             return redirect()->route('payments.create', ['booking' => $booking->bookingID])
-                             ->with('success', 'Booking submitted! Please make payment.');
+                             ->with('success', 'Booking submitted successfully! Please proceed to payment.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
+            file_put_contents($debugLog, "VALIDATION ERROR: " . json_encode($e->errors()) . "\n", FILE_APPEND);
+            Log::error('Finalize Booking Validation Error: ' . $e->getMessage());
+            return redirect()->route('booking.confirm')
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack(); // Undo everything if error occurs
+            file_put_contents($debugLog, "EXCEPTION: " . $e->getMessage() . "\n", FILE_APPEND);
+            file_put_contents($debugLog, "Stack trace: " . $e->getTraceAsString() . "\n", FILE_APPEND);
             Log::error('Finalize Booking Error: ' . $e->getMessage());
-            return back()->with('error', 'System Error: Unable to complete booking.');
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Redirect to confirm page with error, not back (which might cause loop)
+            return redirect()->route('booking.confirm')
+                ->with('error', 'System Error: Unable to complete booking. Please try again or contact support.');
         }
     }
 
     public function downloadInvoice($id)
     {
         try {
-            $booking = Booking::where('bookingID', $id)
-                            ->with(['vehicle', 'customer', 'payments'])
-                            ->firstOrFail();
+            $booking = \App\Models\Booking::where('bookingID', $id)
+                              ->with(['vehicle', 'customer', 'payments'])
+                              ->firstOrFail();
 
             if (!$booking->customer || $booking->customer->userID !== auth()->user()->userID) {
-                abort(403);
+                abort(403, 'Unauthorized access to this invoice.');
             }
 
-            // FIX: Use 'payment_status'
             $verifiedPayment = $booking->payments->where('payment_status', 'Verified')->first();
             if (!$verifiedPayment) {
-                return back()->with('error', 'Invoice not available until payment is verified.');
+                // User Friendly: Redirect back with message instead of crashing
+                return back()->with('error', 'Invoice is not available until your payment is verified by Admin.');
             }
 
             $pdf = Pdf::loadView('pdf.invoice', compact('booking'));
             return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return back()->with('error', 'Invoice not found.');
+        } catch (\Exception $e) {
+            Log::error('Invoice Download Error: ' . $e->getMessage());
+            return back()->with('error', 'Unable to generate invoice at this time.');
         }
     }
 }

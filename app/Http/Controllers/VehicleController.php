@@ -17,9 +17,9 @@ $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
             $query->where('vehicle_brand', $request->brand);
         }
 
-        // Filter by car type
-        if ($request->filled('vehicleType')) {
-            $query->where('vehicleType', $request->vehicleType);
+        // Filter by car type (column is vehicleType not vehicle_type)
+        if ($request->filled('vehicle_type')) {
+            $query->where('vehicleType', $request->vehicle_type);
         }
 
         // 🔥 Date availability logic
@@ -37,11 +37,6 @@ $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
             });
 
         }
-                $cars = $query->get();
-
-
-
-
         //         $request->validate([
 //         'brand' => 'required|string',
 //         'model' => 'required|string',
@@ -65,18 +60,22 @@ $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
         //     return redirect()->back()->with('success', 'Car added successfully');
 //     }
 
+        $cars = $query->get();
+
+        // Get unique vehicle types and brands for filters
         $vehicleTypes = Vehicle::whereIn('isActive', [1, 'true'])
-    ->select('vehicleType')
-    ->distinct()
-    ->orderBy('vehicleType')
-    ->pluck('vehicleType');
-    $brands = Vehicle::whereIn('isActive', [1, 'true'])
-    ->select('vehicle_brand')
-    ->distinct()
-    ->orderBy('vehicle_brand')
-    ->pluck('vehicle_brand');
+            ->whereNotNull('vehicleType')
+            ->distinct()
+            ->pluck('vehicleType')
+            ->filter()
+            ->values();
 
-
+        $brands = Vehicle::whereIn('isActive', [1, 'true'])
+            ->whereNotNull('vehicle_brand')
+            ->distinct()
+            ->pluck('vehicle_brand')
+            ->filter()
+            ->values();
 
         return view('welcome', compact('cars', 'vehicleTypes', 'brands'));
     }

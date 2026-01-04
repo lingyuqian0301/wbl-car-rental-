@@ -88,20 +88,18 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
-            background: white;
+            background: var(--bg-light);
             overflow-y: auto;
-        }
-
-        .branded-section {
-            display: none;
-            position: relative;
-            overflow: hidden;
         }
 
         .register-wrapper {
             width: 100%;
-            max-width: 440px;
-            padding: 20px 0;
+            max-width: 500px;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin: 20px 0;
         }
 
         /* Input Styles */
@@ -476,13 +474,6 @@
 
         /* Responsive */
         @media (min-width: 1024px) {
-            .register-section {
-                width: 45%;
-            }
-            .branded-section {
-                display: block;
-                width: 55%;
-            }
             .register-wrapper {
                 padding: 48px;
             }
@@ -510,12 +501,13 @@
         <div class="register-section">
             <div class="register-wrapper animate-fade-in-up">
                 <!-- Brand Header -->
-                <div class="logo-container">
+                <div class="logo-container" style="text-align: center; margin-bottom: 32px;">
+                    <a href="/" style="text-decoration: none;">
                         <div class="logo-box">
                             <span class="logo-text">HASTA Travel</span>
                         </div>
                     </a>
-                </div>
+                </div>
 
                 <!-- Form Title -->
                 <div class="form-title animate-fade-in" style="animation-delay: 0.2s;">
@@ -590,6 +582,50 @@
                         <x-input-error :messages="$errors->get('email')" class="error-message" />
                     </div>
 
+                    <!-- Matric Number -->
+                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.55s;">
+                        <div class="input-icon">
+                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="matric_number"
+                            name="matric_number"
+                            class="input-field"
+                            placeholder="Matric Number (e.g., A21EC0001)"
+                            value="{{ old('matric_number') }}"
+                            autocomplete="off"
+                        />
+                        <x-input-error :messages="$errors->get('matric_number')" class="error-message" />
+                    </div>
+
+                    <!-- Program -->
+                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.58s;">
+                        <div class="input-icon">
+                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                        </div>
+                        <select
+                            id="program"
+                            name="program"
+                            class="input-field"
+                            style="padding-left: 48px; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"%2364748b\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"/></svg>'); background-repeat: no-repeat; background-position: right 16px center;"
+                        >
+                            <option value="">-- Select Program --</option>
+                            @foreach(config('utm.faculties') as $facultyCode => $faculty)
+                                <optgroup label="{{ $faculty['name'] }}">
+                                    @foreach($faculty['programs'] as $programCode)
+                                        <option value="{{ $programCode }}" {{ old('program') == $programCode ? 'selected' : '' }}>{{ $programCode }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('program')" class="error-message" />
+                    </div>
+
                     <!-- Password -->
                     <div class="input-wrapper animate-fade-in" style="animation-delay: 0.6s;">
                         <div class="input-icon">
@@ -656,64 +692,6 @@
                         <a href="#">Privacy Policy</a>
                         <span>•</span>
                         <a href="#">Terms</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Section - Branded Experience -->
-        <div class="branded-section">
-            <!-- Background Image -->
-            <div style="position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'); background-size: cover; background-position: center;"></div>
-            <div class="gradient-overlay"></div>
-            <div class="branded-content">
-                <div class="animate-fade-in">
-                    <h2>
-                        Quick Registration<br/>
-                        <span>with IC Scanning</span>
-                    </h2>
-                    <p>Simply upload your IC or Matric card and we'll automatically fill in your details. Fast, secure, and hassle-free registration.</p>
-                </div>
-
-                <div>
-                    <div class="feature-card animate-fade-in" style="animation-delay: 0.2s;">
-                        <div class="feature-icon">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                        <div class="feature-text">
-                            <h3>Instant Data Extraction</h3>
-                            <p>Automatically extract your details from IC/Matric card</p>
-                        </div>
-                    </div>
-
-                    <div class="feature-card animate-fade-in" style="animation-delay: 0.3s;">
-                        <div class="feature-icon">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                            </svg>
-                        </div>
-                        <div class="feature-text">
-                            <h3>Secure & Private</h3>
-                            <p>Your data is encrypted and never shared with third parties</p>
-                        </div>
-                    </div>
-
-                    <div class="feature-card animate-fade-in" style="animation-delay: 0.4s;">
-                        <div class="feature-icon">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="feature-text">
-                            <h3>Save Time</h3>
-                            <p>Register in seconds instead of minutes with manual entry</p>
-                        </div>
-                    </div>
-
-                    <div class="contact-banner animate-fade-in" style="animation-delay: 0.5s;">
-                        <p>Need assistance? Contact us at <span>+60-11-10-900-700</span></p>
                     </div>
                 </div>
             </div>

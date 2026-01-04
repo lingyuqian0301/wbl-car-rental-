@@ -2,6 +2,38 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\AdminDashboardController;
+
+// API endpoint for getting programs by faculty (for dynamic dropdown)
+Route::get('/api/programs/{facultyCode}', function ($facultyCode) {
+    $faculties = config('utm.faculties');
+    if (!isset($faculties[$facultyCode])) {
+        return response()->json([]);
+    }
+    return response()->json($faculties[$facultyCode]['programs']);
+});
+
+// API endpoint for getting all faculties
+Route::get('/api/faculties', function () {
+    $result = [];
+    foreach (config('utm.faculties') as $code => $data) {
+        $result[] = ['code' => $code, 'name' => $data['name']];
+    }
+    return response()->json($result);
+});
+
+// API endpoint for getting all colleges
+Route::get('/api/colleges', function () {
+    $result = [];
+    foreach (config('utm.colleges') as $code => $name) {
+        $result[] = ['code' => $code, 'name' => $name];
+    }
+    return response()->json($result);
+});
+
+// API endpoint for getting all states
+Route::get('/api/states', function () {
+    return response()->json(config('utm.states'));
+});
 use App\Http\Controllers\AdminVehicleController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\AdminTopbarCalendarController;
@@ -111,6 +143,13 @@ Route::middleware('auth')->group(function () {
     // Booking Routes (Customer) - Require authentication
     Route::get('/booking/confirm', [BookingController::class, 'confirm'])->name('booking.confirm');
     Route::post('/booking/finalize', [BookingController::class, 'finalize'])->name('booking.finalize');
+    
+    // Debug route - catch GET requests to finalize (should only be accessed via POST)
+    Route::get('/booking/finalize', function () {
+        // Log that GET was received (shouldn't happen if form is POST)
+        file_put_contents(storage_path('logs/route_debug.txt'), date('Y-m-d H:i:s') . " - GET request to /booking/finalize\n", FILE_APPEND);
+        return redirect()->route('booking.confirm')->with('error', 'Form submitted as GET instead of POST. Please try again.');
+    });
 
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
