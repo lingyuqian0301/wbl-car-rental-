@@ -159,11 +159,11 @@
                                                 {{-- FIX: Using 'payment_status' --}}
                                                 @if($payment->payment_status == 'Pending')
                                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                                                @elseif($payment->payment_status == 'Verified')
-                                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Verified</span>
-                                                @else
-                                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>
-                                                @endif
+                                             @elseif($payment->payment_status == 'Verified' || $payment->payment_status == 'Full')
+                                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Verified</span>
+                                            @else
+                                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>
+                                            @endif
                                             </div>
                                         </div>
                                     @endforeach

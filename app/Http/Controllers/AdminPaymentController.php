@@ -237,9 +237,9 @@ public function show($id)
         $payment = Payment::where('paymentID', $id)->firstOrFail();
 
         $payment->update([
-            'status' => 'Rejected',
-            'verified_by' => Auth::id(),
-            'rejected_reason' => 'Receipt rejected by Admin. Please upload a clear copy.',
+            'payment_status' => 'Rejected',
+            // 'verified_by' => Auth::id(),
+            // 'rejected_reason' => 'Receipt rejected by Admin. Please upload a clear copy.',
         ]);
 
         return redirect()

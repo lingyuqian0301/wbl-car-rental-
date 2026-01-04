@@ -56,11 +56,11 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                @if($booking->status == 'Pending')
+                                                @if($booking->booking_status == 'Pending')
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                                                @elseif($booking->status == 'Confirmed')
+                                                @elseif($booking->booking_status == 'Confirmed')
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Confirmed</span>
-                                                @elseif($booking->status == 'Cancelled')
+                                                @elseif($booking->booking_status == 'Cancelled')
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Cancelled</span>
                                                 @else
                                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Completed</span>
@@ -68,7 +68,7 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 @php
-                                                    $verifiedPayment = $booking->payments->where('payment_status', 'Verified')->first();
+                                                     $verifiedPayment = $booking->payments->where('payment_status', 'Verified')->first();
                                                     $pendingPayment = $booking->payments->where('payment_status', 'Pending')->first();
                                                     $rejectedPayment = $booking->payments->where('payment_status', 'Rejected')->first();
                                                 @endphp
