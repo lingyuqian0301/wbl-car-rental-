@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SystemLog extends Model
 {
@@ -24,5 +25,13 @@ class SystemLog extends Model
         return [
             'timestamp' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the user who performed this action.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'userID', 'userID');
     }
 }

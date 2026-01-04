@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Insurance extends Model
 {
@@ -25,5 +26,13 @@ class Insurance extends Model
         return [
             'ins_expirydate' => 'date',
         ];
+    }
+
+    /**
+     * Get the vehicle document.
+     */
+    public function document(): BelongsTo
+    {
+        return $this->belongsTo(VehicleDocument::class, 'documentID', 'documentID');
     }
 }

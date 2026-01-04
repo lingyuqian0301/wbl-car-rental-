@@ -4,36 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class VehicleDocument extends Model
 {
     protected $table = 'vehicledocument';
-    protected $primaryKey = 'maintenanceID';
+    protected $primaryKey = 'documentID';
     public $incrementing = true;
     protected $keyType = 'int';
     public $timestamps = false;
 
     protected $fillable = [
-        'mileage',
-        'service_date',
-        'service_type',
-        'next_due_date',
-        'cost',
-        'service_center',
-        'description',
+        'upload_date',
+        'verification_date',
+        'fileURL',
         'vehicleID',
-        'staffID',
-        'document_type',
-        'leasing_document_url',
     ];
 
     protected function casts(): array
     {
         return [
-            'mileage' => 'integer',
-            'service_date' => 'date',
-            'next_due_date' => 'date',
-            'cost' => 'decimal:2',
+            'upload_date' => 'date',
+            'verification_date' => 'date',
         ];
     }
 
@@ -46,10 +38,34 @@ class VehicleDocument extends Model
     }
 
     /**
-     * Get the staff member who handled this.
+     * Get the road tax for this document.
      */
-    public function staff(): BelongsTo
+    public function roadTax(): HasOne
     {
-        return $this->belongsTo(Staff::class, 'staffID', 'staffID');
+        return $this->hasOne(Roadtax::class, 'documentID', 'documentID');
+    }
+
+    /**
+     * Get the grant document.
+     */
+    public function grantDoc(): HasOne
+    {
+        return $this->hasOne(GrantDoc::class, 'documentID', 'documentID');
+    }
+
+    /**
+     * Get the insurance.
+     */
+    public function insurance(): HasOne
+    {
+        return $this->hasOne(Insurance::class, 'documentID', 'documentID');
+    }
+
+    /**
+     * Get the car images.
+     */
+    public function carImg(): HasOne
+    {
+        return $this->hasOne(Car_Img::class, 'documentID', 'documentID');
     }
 }
