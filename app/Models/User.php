@@ -2,88 +2,96 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    // Use 'user' table (singular) to match database
+    protected $table = 'user';
+    
+    // Use userID as primary key to match database structure
+    protected $primaryKey = 'userID';
+    public $incrementing = true;
+    protected $keyType = 'int';
+
+    // Disable timestamps since they're stored as integers, not timestamps
+    public $timestamps = false;
+
     protected $fillable = [
-        'name',
-        'email',
+        'username',
         'password',
+        'email',
+        'phone',
+        'name',
+        'lastLogin',
+        'dateRegistered',
+        'DOB',
+        'age',
+        'isActive',
         'role',
-        'matric_number',
-        'identification_card',
-        'college',
-        'faculty',
-        'program',
-        'address',
-        'city',
-        'region',
-        'postcode',
-        'state',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'lastLogin' => 'datetime',
+            'dateRegistered' => 'datetime',
+            'DOB' => 'date',
+            'age' => 'integer',
+            'isActive' => 'boolean',
+            'role' => 'integer',
+            // Remove 'password' => 'hashed' to handle legacy passwords
         ];
     }
 
     /**
-     * Get the bookings for the user.
+     * Get id attribute (maps from userID for compatibility).
      */
-    public function bookings(): HasMany
+    public function getIdAttribute()
     {
-        return $this->hasMany(Booking::class);
+        return $this->userID;
     }
 
     /**
-     * Get the wallet account for the user.
+     * Set id attribute (maps to userID for compatibility).
      */
-    public function walletAccount()
+    public function setIdAttribute($value)
     {
-        return $this->hasOne(\App\Models\WalletAccount::class);
+        $this->attributes['userID'] = $value;
     }
 
     /**
-     * Get or create wallet account for the user.
+     * Get the customer record for this user.
      */
-    public function getOrCreateWalletAccount(): \App\Models\WalletAccount
+    public function customer(): HasOne
     {
-        return $this->walletAccount ?? \App\Models\WalletAccount::create([
-            'user_id' => $this->id,
-            'virtual_balance' => 0.00,
-            'available_balance' => 0.00,
-        ]);
+        return $this->hasOne(Customer::class, 'userID', 'userID');
+    }
+
+    /**
+     * Get the admin record for this user.
+     */
+    public function admin(): HasOne
+    {
+        return $this->hasOne(Admin::class, 'userID', 'userID');
+    }
+
+    /**
+     * Get the staff record for this user.
+     */
+    public function staff(): HasOne
+    {
+        return $this->hasOne(Staff::class, 'userID', 'userID');
     }
 
     /**
@@ -91,7 +99,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->admin()->exists() || $this->role == 1 || $this->role === 'admin';
     }
 
     /**
@@ -99,7 +107,7 @@ class User extends Authenticatable
      */
     public function isCustomer(): bool
     {
-        return $this->role === 'customer';
+        return $this->customer()->exists() || $this->role == 0 || $this->role === 'customer';
     }
 
     /**
@@ -107,6 +115,6 @@ class User extends Authenticatable
      */
     public function isStaff(): bool
     {
-        return $this->role === 'staff';
+        return $this->staff()->exists() || $this->role == 2 || $this->role === 'staff';
     }
 }

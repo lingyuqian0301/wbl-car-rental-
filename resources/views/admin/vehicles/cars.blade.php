@@ -3,32 +3,32 @@
 @section('title', 'Cars')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h4 mb-0">Cars</h1>
-        <a href="#" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-            <i class="bi bi-plus-circle"></i> Add Category
-        </a>
-    </div>
+<div class="container-fluid py-2">
+    <x-admin-page-header 
+        title="Cars Management" 
+        description="Manage all car vehicles"
+        :stats="[
+            ['label' => 'Total Cars', 'value' => $totalCars, 'icon' => 'bi-car-front'],
+            ['label' => 'Available', 'value' => $totalAvailable, 'icon' => 'bi-check-circle'],
+            ['label' => 'Rented', 'value' => $totalRented, 'icon' => 'bi-calendar-check']
+        ]"
+        :date="$today"
+    >
+        <x-slot name="actions">
+            <a href="#" class="btn btn-light text-danger pill-btn" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="bi bi-plus-circle me-1"></i> Add Category
+            </a>
+        </x-slot>
+    </x-admin-page-header>
 
     <div class="card mb-3">
         <div class="card-body">
             <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label small">Filter by Category</label>
-                    <select name="category" class="form-select form-select-sm">
-                        <option value="all" {{ request('category') === 'all' ? 'selected' : '' }}>All Categories</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>
-                                {{ $cat->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-6">
+                <div class="col-md-10">
                     <label class="form-label small">Search</label>
                     <input type="text"
                            name="search"
-                           value="{{ request('search') }}"
+                           value="{{ $search }}"
                            class="form-control form-control-sm"
                            placeholder="Search by brand / model / plate">
                 </div>
@@ -43,44 +43,50 @@
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Vehicle list</span>
+            <span class="fw-semibold">Cars List ({{ $cars->total() }})</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-sm mb-0 align-middle">
                     <thead class="table-light">
                     <tr>
-                        <th>#</th>
-                        <th>Vehicle</th>
-                        <th>Category</th>
-                        <th>Plate</th>
-                        <th>Daily rate</th>
+                        <th>Vehicle ID</th>
+                        <th>Brand</th>
+                        <th>Model</th>
+                        <th>Plate Number</th>
+                        <th>Seating</th>
+                        <th>Transmission</th>
+                        <th>Car Type</th>
+                        <th>Rental Price</th>
                         <th>Status</th>
                         <th></th>
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse($vehicles as $vehicle)
+                    @forelse($cars as $car)
                         <tr>
-                            <td>{{ $vehicle->id }}</td>
-                            <td>{{ $vehicle->full_model }}</td>
+                            <td>{{ $car->vehicleID }}</td>
+                            <td>{{ $car->vehicle_brand ?? 'N/A' }}</td>
+                            <td>{{ $car->vehicle_model ?? 'N/A' }}</td>
+                            <td>{{ $car->plate_number ?? 'N/A' }}</td>
+                            <td>{{ $car->seating_capacity ?? 'N/A' }}</td>
+                            <td>{{ $car->transmission ?? 'N/A' }}</td>
+                            <td>{{ $car->car_type ?? 'N/A' }}</td>
+                            <td>RM {{ number_format($car->rental_price ?? 0, 2) }}</td>
                             <td>
-                                <span class="badge bg-info">{{ $vehicle->category->name ?? 'Uncategorized' }}</span>
-                            </td>
-                            <td>{{ $vehicle->registration_number }}</td>
-                            <td>RM {{ number_format($vehicle->daily_rate, 2) }}</td>
-                            <td>
-                                <span class="badge bg-secondary">{{ $vehicle->status }}</span>
+                                <span class="badge {{ $car->availability_status === 'available' ? 'bg-success' : ($car->availability_status === 'rented' ? 'bg-warning' : 'bg-secondary') }}">
+                                    {{ ucfirst($car->availability_status ?? 'Unknown') }}
+                                </span>
                             </td>
                             <td class="text-end">
-                                <a href="{{ route('admin.vehicles.show', $vehicle) }}" class="btn btn-sm btn-outline-danger">
+                                <a href="{{ route('admin.vehicles.show', $car->vehicleID) }}" class="btn btn-sm btn-outline-danger">
                                     Details
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-3">No vehicles found.</td>
+                            <td colspan="10" class="text-center text-muted py-3">No cars found.</td>
                         </tr>
                     @endforelse
                     </tbody>
@@ -88,11 +94,9 @@
             </div>
         </div>
 
-        @if($vehicles instanceof \Illuminate\Pagination\AbstractPaginator)
-            <div class="card-footer">
-                {{ $vehicles->withQueryString()->links() }}
-            </div>
-        @endif
+        <div class="card-footer">
+            {{ $cars->withQueryString()->links() }}
+        </div>
     </div>
 
     <!-- Add Category Modal -->

@@ -6,116 +6,113 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Booking extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     use HasFactory;
 
-    // Support both booking (singular) and bookings (plural) tables
-    protected $table = 'booking'; // Use singular table name from hastatravel.sql
-
-    protected $primaryKey = 'bookingID'; // Use bookingID from hastatravel.sql
+    protected $table = 'booking';
+    protected $primaryKey = 'bookingID';
     public $incrementing = true;
     protected $keyType = 'int';
-
-    public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
-        'customerID',
-        'vehicleID',
-        'start_date',
-        'end_date',
-        'duration_days',
-        'number_of_days',
-        'total_amount',
-        'booking_status',
-        'keep_deposit',
+        'lastUpdateDate',
+        'rental_start_date',
+        'rental_end_date',
+        'duration',
+        'deposit_amount',
+        'rental_amount',
         'pickup_point',
         'return_point',
         'addOns_item',
-        'addOns_charge',
-        'late_return_fees',
-        'damage_fee',
-        'cancellation_type',
-        'creationDate',
-        'status_update_date_time',
-        'staffID',
+        'booking_status',
+        'customerID',
+        'vehicleID',
+        'staff_served',
     ];
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+
     protected function casts(): array
     {
         return [
-            'start_date' => 'date',
-            'end_date' => 'date',
-            'total_amount' => 'decimal:2',
-            'addOns_charge' => 'decimal:2',
-            'late_return_fees' => 'decimal:2',
-            'damage_fee' => 'decimal:2',
-            'keep_deposit' => 'boolean',
-            'creationDate' => 'datetime',
-            'status_update_date_time' => 'datetime',
+            'lastUpdateDate' => 'datetime',
+            'rental_start_date' => 'date',
+            'rental_end_date' => 'date',
+            'duration' => 'integer',
+            'deposit_amount' => 'decimal:2',
+            'rental_amount' => 'decimal:2',
         ];
     }
 
     /**
-     * Get the user that owns the booking.
-     * Note: booking table uses customerID, but we'll support user_id for Laravel users
+     * Get the customer that owns this booking.
      */
-    public function user(): BelongsTo
+    public function customer(): BelongsTo
     {
-        // Try to find user by customerID first, then fallback to user_id if exists
-        if ($this->customerID) {
-            // You may need to create a Customer model that links to User
-            return $this->belongsTo(User::class, 'customerID');
-        }
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Customer::class, 'customerID', 'customerID');
     }
 
     /**
-     * Get the vehicle for the booking.
+     * Get the vehicle for this booking.
      */
     public function vehicle(): BelongsTo
     {
+        // Try to find in cars table first
+        $car = \App\Models\Car::find($this->vehicleID);
+        if ($car) {
+            return $this->belongsTo(\App\Models\Car::class, 'vehicleID', 'vehicleID');
+        }
+        
+        // Try motorcycles table
+        $motorcycle = \App\Models\Motorcycle::find($this->vehicleID);
+        if ($motorcycle) {
+            return $this->belongsTo(\App\Models\Motorcycle::class, 'vehicleID', 'vehicleID');
+        }
+        
+        // Fallback to Vehicle table if exists
         return $this->belongsTo(Vehicle::class, 'vehicleID', 'vehicleID');
     }
 
     /**
-     * Get the payments for the booking.
+     * Get the payments for this booking.
      */
-    public function customer()
-    {
-        return $this->belongsTo(Customer::class, 'customerID');
-    }
-
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'bookingID', 'bookingID');
     }
 
     /**
-     * Get the number of days for deposit calculation.
+     * Get the additional charges for this booking.
      */
-    public function getNumberOfDays(): int
+    public function additionalCharges(): HasOne
     {
-        return $this->number_of_days ?? $this->duration_days ?? 0;
+        return $this->hasOne(AdditionalCharge::class, 'bookingID', 'bookingID');
     }
 
     /**
-     * Get total price (alias for total_amount).
+     * Get the invoice for this booking.
+     */
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class, 'bookingID', 'bookingID');
+    }
+
+    /**
+     * Get the review for this booking.
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class, 'bookingID', 'bookingID');
+    }
+
+    /**
+     * Get total price (deposit + rental amount).
      */
     public function getTotalPriceAttribute()
     {
-        return $this->total_amount;
+        return ($this->deposit_amount ?? 0) + ($this->rental_amount ?? 0);
     }
 
     /**

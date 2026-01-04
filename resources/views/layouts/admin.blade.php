@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Dashboard') - Hasta Admin</title>
+    <title>@yield('title', 'Admin Dashboard') - Hasta Travel</title>
     <link rel="icon" type="image/jpeg" href="{{ asset('image/favicon.jpg') }}">
 
     <!-- Bootstrap 5 + Icons -->
@@ -44,6 +44,7 @@
             overflow-y: auto;
             z-index: 1000;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            padding-top: 0;
         }
 
         .admin-sidebar::-webkit-scrollbar {
@@ -60,22 +61,7 @@
         }
 
         .sidebar-header {
-            padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar-header h4 {
-            font-size: 1rem;
-            font-weight: 700;
-            margin: 0;
-            color: white;
-        }
-
-        .sidebar-header p {
-            font-size: 0.75rem;
-            opacity: 0.9;
-            margin: 5px 0 0 0;
+            display: none;
         }
 
         .sidebar-menu {
@@ -171,7 +157,7 @@
             height: var(--topbar-height);
             background: white;
             border-bottom: 2px solid var(--admin-red);
-            z-index: 999;
+            z-index: 998;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -183,6 +169,25 @@
             display: flex;
             align-items: center;
             gap: 20px;
+        }
+
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            margin-right: 30px;
+        }
+
+        .topbar-logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--admin-red);
+            margin: 0;
+        }
+
+        .topbar-logo span {
+            color: #6b7280;
+            margin-left: 0.5rem;
+            font-weight: 400;
         }
 
         .topbar-link {
@@ -315,10 +320,6 @@
 <body>
     <!-- Sidebar -->
     <aside class="admin-sidebar">
-        <div class="sidebar-header">
-            <h4><i class="bi bi-shield-check"></i> Admin Panel</h4>
-            <p>Hasta Car Rental</p>
-        </div>
         <nav class="sidebar-menu">
             <!-- Main -->
             <div class="menu-item has-submenu {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
@@ -340,14 +341,14 @@
                     <span>Bookings</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-list-ul"></i> Reservation</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.bookings.reservations') ? 'active' : '' }}">
+                        <a href="{{ route('admin.bookings.reservations') }}"><i class="bi bi-list-ul"></i> Reservation</a>
                     </div>
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-calendar3"></i> Calendar</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.bookings.calendar') ? 'active' : '' }}">
+                        <a href="{{ route('admin.bookings.calendar') }}"><i class="bi bi-calendar3"></i> Calendar</a>
                     </div>
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-x-circle"></i> Cancellation</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.bookings.cancellation') ? 'active' : '' }}">
+                        <a href="{{ route('admin.bookings.cancellation') }}"><i class="bi bi-x-circle"></i> Cancellation</a>
                     </div>
                 </div>
             </div>
@@ -359,11 +360,11 @@
                     <span>Manage</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-person"></i> Client</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.manage.client') ? 'active' : '' }}">
+                        <a href="{{ route('admin.manage.client') }}"><i class="bi bi-person"></i> Client</a>
                     </div>
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-building"></i> Leasing</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.leasing.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.leasing.owner') }}"><i class="bi bi-building"></i> Leasing</a>
                     </div>
                 </div>
             </div>
@@ -395,7 +396,7 @@
                 </a>
                 <div class="submenu">
                     <div class="submenu-item {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
-                        <a href="#"><i class="bi bi-file-earmark-text"></i> Invoices</a>
+                        <a href="{{ route('admin.invoices.index') }}"><i class="bi bi-file-earmark-text"></i> Invoices</a>
                     </div>
                     <div class="submenu-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
                         <a href="{{ route('admin.payments.index') }}"><i class="bi bi-credit-card"></i> Payment</a>
@@ -410,14 +411,14 @@
                     <span>Reports</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-calendar-range"></i> Rentals</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.reports.rentals') ? 'active' : '' }}">
+                        <a href="{{ route('admin.reports.rentals') }}"><i class="bi bi-calendar-range"></i> Rentals</a>
                     </div>
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-bar-chart"></i> Charts</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.reports.charts') ? 'active' : '' }}">
+                        <a href="{{ route('admin.reports.charts') }}"><i class="bi bi-bar-chart"></i> Charts</a>
                     </div>
-                    <div class="submenu-item">
-                        <a href="#"><i class="bi bi-cash-stack"></i> Finance</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.reports.finance') ? 'active' : '' }}">
+                        <a href="{{ route('admin.reports.finance') }}"><i class="bi bi-cash-stack"></i> Finance</a>
                     </div>
                 </div>
             </div>
@@ -427,21 +428,36 @@
     <!-- Top Bar -->
     <header class="admin-topbar">
         <div class="topbar-left">
+            <div class="topbar-logo">
+                <h1>HASTA</h1>
+                <span>Travel</span>
+            </div>
             <a href="{{ route('admin.dashboard') }}" class="topbar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                 <i class="bi bi-graph-up-arrow"></i> Latest
             </a>
-            <a href="{{ route('dashboard') }}" class="topbar-link">
+            <a href="{{ route('dashboard') }}" class="topbar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i class="bi bi-person-circle"></i> Customer
             </a>
-            <a href="#" class="topbar-link">
+            <a href="{{ route('admin.topbar-calendar.index') }}" class="topbar-link {{ request()->routeIs('admin.topbar-calendar.*') ? 'active' : '' }}">
                 <i class="bi bi-calendar-event"></i> Calendar
             </a>
         </div>
         <div class="topbar-right">
-            <button class="notification-btn" type="button">
-                <i class="bi bi-bell"></i>
-                <span class="notification-badge">3</span>
-            </button>
+            <div class="dropdown">
+                <button class="notification-btn" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-bell"></i>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+                    <li><h6 class="dropdown-header">Notifications</h6></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li id="notificationList">
+                        <div class="px-3 py-2 text-muted text-center">Loading...</div>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-center" href="{{ route('admin.notifications.index') }}">View All Notifications</a></li>
+                </ul>
+            </div>
             <div class="profile-dropdown">
                 <button class="profile-btn" type="button" id="profileDropdown" data-bs-toggle="dropdown">
                     <div class="profile-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
@@ -469,6 +485,54 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Load notification count and list
+        function loadNotifications() {
+            fetch('{{ route("admin.notifications.unread-count") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('notificationBadge');
+                    if (badge) {
+                        badge.textContent = data.count || 0;
+                        badge.style.display = data.count > 0 ? 'flex' : 'none';
+                    }
+                });
+
+            fetch('{{ route("admin.notifications.dropdown-list") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('notificationList');
+                    const badge = document.getElementById('notificationBadge');
+                    const unreadCount = parseInt(badge?.textContent || 0);
+                    
+                    if (list) {
+                        if (data.notifications && data.notifications.length > 0) {
+                            list.innerHTML = data.notifications.map(notif => `
+                                <a class="dropdown-item ${!notif.is_read ? 'bg-light' : ''}" href="{{ route('admin.notifications.index') }}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <small>${notif.message || notif.type}</small>
+                                        <small class="text-muted">${notif.created_at}</small>
+                                    </div>
+                                </a>
+                            `).join('');
+                        } else {
+                            if (unreadCount === 0) {
+                                list.innerHTML = '<div class="px-3 py-2 text-muted text-center">No new notifications</div>';
+                            } else {
+                                list.innerHTML = '<div class="px-3 py-2 text-muted text-center">No notifications</div>';
+                            }
+                        }
+                    }
+                });
+        }
+
+        // Load on page load
+        document.addEventListener('DOMContentLoaded', loadNotifications);
+
+        // Refresh every 30 seconds
+        setInterval(loadNotifications, 30000);
+    </script>
 
     @yield('scripts')
 </body>

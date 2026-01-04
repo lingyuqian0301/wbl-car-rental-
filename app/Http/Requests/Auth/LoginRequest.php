@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -41,7 +43,9 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $user = User::where('email', $this->email)->first();
+
+        if (!$user || !$this->validatePassword($user, $this->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -49,7 +53,52 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Rehash plain text passwords to bcrypt for security
+        if (!$this->isBcryptHash($user->password)) {
+            $user->password = Hash::make($this->password);
+            $user->save();
+        }
+
+        Auth::login($user, $this->boolean('remember'));
+
         RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Validate password against user's stored password (handles both bcrypt and plain text)
+     */
+    protected function validatePassword(User $user, string $password): bool
+    {
+        $storedPassword = $user->password;
+
+        // Try bcrypt first
+        try {
+            if (Hash::check($password, $storedPassword)) {
+                return true;
+            }
+        } catch (\RuntimeException $e) {
+            // Password is not bcrypt format, continue to plain text check
+        }
+
+        // Check plain text (for legacy passwords)
+        if ($storedPassword === $password) {
+            return true;
+        }
+
+        // Check MD5 hash (for legacy passwords)
+        if ($storedPassword === md5($password)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if password is bcrypt hash
+     */
+    protected function isBcryptHash(string $hash): bool
+    {
+        return strlen($hash) === 60 && str_starts_with($hash, '$2y$');
     }
 
     /**

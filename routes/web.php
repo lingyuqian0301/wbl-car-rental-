@@ -4,6 +4,19 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminVehicleController;
 use App\Http\Controllers\AdminPaymentController;
+use App\Http\Controllers\AdminTopbarCalendarController;
+use App\Http\Controllers\AdminReservationController;
+use App\Http\Controllers\AdminCalendarController;
+use App\Http\Controllers\AdminCancellationController;
+use App\Http\Controllers\AdminCustomerController;
+use App\Http\Controllers\AdminInvoiceController;
+use App\Http\Controllers\AdminRentalReportController;
+use App\Http\Controllers\AdminChartsController;
+use App\Http\Controllers\AdminFinanceController;
+use App\Http\Controllers\AdminLeasingController;
+use App\Http\Controllers\AdminNotificationController;
+use App\Http\Controllers\AdminVoucherController;
+use App\Http\Controllers\StaffDashboardController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
@@ -135,6 +148,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/generate/{bookingId}', [InvoiceController::class, 'generatePDF'])->name('generate');
     });
 
+    // Staff-only routes
+    Route::middleware('staff')->group(function () {
+        Route::get('/staff/dashboard', StaffDashboardController::class)->name('staff.dashboard');
+    });
+
     // Admin-only routes
     Route::middleware('admin')->group(function () {
         Route::get('/admin/dashboard', AdminDashboardController::class)->name('admin.dashboard');
@@ -147,11 +165,85 @@ Route::middleware('auth')->group(function () {
             Route::post('/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('reject');
         });
 
+        Route::prefix('admin/notifications')->name('admin.notifications.')->group(function () {
+            Route::get('/', [AdminNotificationController::class, 'index'])->name('index');
+            Route::post('/{notification}/mark-as-read', [AdminNotificationController::class, 'markAsRead'])->name('mark-as-read');
+            Route::post('/mark-all-as-read', [AdminNotificationController::class, 'markAllAsRead'])->name('mark-all-as-read');
+            Route::get('/unread-count', [AdminNotificationController::class, 'getUnreadCount'])->name('unread-count');
+            Route::get('/dropdown-list', [AdminNotificationController::class, 'getDropdownList'])->name('dropdown-list');
+        });
+
         Route::prefix('admin/vehicles')->name('admin.vehicles.')->group(function () {
             Route::get('/cars', [AdminVehicleController::class, 'cars'])->name('cars');
             Route::get('/motorcycles', [AdminVehicleController::class, 'motorcycles'])->name('motorcycles');
             Route::get('/others', [AdminVehicleController::class, 'others'])->name('others');
             Route::get('/{vehicle}', [AdminVehicleController::class, 'show'])->name('show');
+        });
+
+        Route::prefix('admin/topbar-calendar')->name('admin.topbar-calendar.')->group(function () {
+            Route::get('/', [AdminTopbarCalendarController::class, 'index'])->name('index');
+            Route::post('/bookings/{booking}/mark-as-read', [AdminTopbarCalendarController::class, 'markAsRead'])->name('bookings.mark-as-read');
+            Route::post('/bookings/{booking}/mark-as-served', [AdminTopbarCalendarController::class, 'markAsServed'])->name('bookings.mark-as-served');
+            Route::post('/bookings/{booking}/confirm', [AdminTopbarCalendarController::class, 'confirmBooking'])->name('bookings.confirm');
+            Route::post('/bookings/{booking}/complete', [AdminTopbarCalendarController::class, 'completeBooking'])->name('bookings.complete');
+            Route::post('/bookings/{booking}/send-balance-reminder', [AdminTopbarCalendarController::class, 'sendBalanceReminder'])->name('bookings.send-balance-reminder');
+        });
+
+        Route::prefix('admin/bookings')->name('admin.bookings.')->group(function () {
+            Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations');
+            Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
+            Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
+        });
+
+        Route::prefix('admin/manage')->name('admin.manage.')->group(function () {
+            Route::get('/client', [AdminCustomerController::class, 'index'])->name('client');
+        });
+
+        Route::prefix('admin/customers')->name('admin.customers.')->group(function () {
+            Route::get('/create', [AdminCustomerController::class, 'create'])->name('create');
+            Route::post('/', [AdminCustomerController::class, 'store'])->name('store');
+            Route::post('/delete-selected', [AdminCustomerController::class, 'deleteSelected'])->name('delete-selected');
+        });
+
+        Route::prefix('admin/leasing')->name('admin.leasing.')->group(function () {
+            Route::get('/owner', [AdminLeasingController::class, 'ownerIndex'])->name('owner');
+            Route::get('/owner/create', [AdminLeasingController::class, 'ownerCreate'])->name('owner.create');
+            Route::post('/owner', [AdminLeasingController::class, 'ownerStore'])->name('owner.store');
+            Route::get('/owner/{owner}', [AdminLeasingController::class, 'ownerShow'])->name('owner.show');
+            Route::get('/owner/{owner}/edit', [AdminLeasingController::class, 'ownerEdit'])->name('owner.edit');
+            Route::put('/owner/{owner}', [AdminLeasingController::class, 'ownerUpdate'])->name('owner.update');
+            Route::delete('/owner/{owner}', [AdminLeasingController::class, 'ownerDestroy'])->name('owner.destroy');
+            Route::get('/vehicle', [AdminLeasingController::class, 'vehicleIndex'])->name('vehicle');
+        });
+
+        Route::prefix('admin/invoices')->name('admin.invoices.')->group(function () {
+            Route::get('/', [AdminInvoiceController::class, 'index'])->name('index');
+        });
+
+        Route::prefix('admin/vouchers')->name('admin.vouchers.')->group(function () {
+            Route::get('/', [AdminVoucherController::class, 'index'])->name('index');
+            Route::post('/', [AdminVoucherController::class, 'store'])->name('store');
+            Route::get('/{voucher}/edit-data', [AdminVoucherController::class, 'editData'])->name('edit-data');
+            Route::put('/{voucher}', [AdminVoucherController::class, 'update'])->name('update');
+            Route::delete('/{voucher}', [AdminVoucherController::class, 'destroy'])->name('destroy');
+            Route::get('/{voucher}/used-customers', [AdminVoucherController::class, 'showUsedCustomers'])->name('used-customers');
+        });
+
+        Route::prefix('admin/reports')->name('admin.reports.')->group(function () {
+            Route::get('/rentals', [AdminRentalReportController::class, 'index'])->name('rentals');
+            Route::get('/rentals/export-pdf', [AdminRentalReportController::class, 'exportPDF'])->name('rentals.export-pdf');
+            Route::get('/charts', [AdminChartsController::class, 'index'])->name('charts');
+            Route::get('/charts/export-pdf', [AdminChartsController::class, 'exportPdf'])->name('charts.export-pdf');
+            Route::get('/finance', [AdminFinanceController::class, 'index'])->name('finance');
+        });
+
+        Route::prefix('admin/vouchers')->name('admin.vouchers.')->group(function () {
+            Route::get('/', [AdminVoucherController::class, 'index'])->name('index');
+            Route::post('/', [AdminVoucherController::class, 'store'])->name('store');
+            Route::put('/{voucher}', [AdminVoucherController::class, 'update'])->name('update');
+            Route::delete('/{voucher}', [AdminVoucherController::class, 'destroy'])->name('destroy');
+            Route::get('/{voucher}/edit-data', [AdminVoucherController::class, 'editData'])->name('edit-data');
+            Route::get('/{voucher}/used-customers', [AdminVoucherController::class, 'showUsedCustomers'])->name('used-customers');
         });
     });
 });

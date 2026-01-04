@@ -69,22 +69,18 @@
             <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
                 <div>
                     <div class="d-flex align-items-center gap-3">
-                        <div class="metric-icon bg-white text-danger" style="background: #fff; color: var(--hasta-red); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25);">
-                            <i class="bi bi-speedometer2"></i>
-                        </div>
                         <div>
-                            <h1 class="h3 mb-1 fw-bold">Hasta Admin Control</h1>
-                            <p class="mb-0 opacity-75">Car rental booking intelligence at a glance</p>
+                            <h1 class="h3 mb-1 fw-bold">Hasta Admin Dashboard</h1>
                         </div>
                     </div>
                     <p class="mb-0 mt-3 fw-semibold">Snapshot for {{ $today->format('d M Y') }}</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <a href="{{ route('admin.payments.index') }}" class="btn btn-light text-danger pill-btn">
-                        <i class="bi bi-shield-check me-1"></i> Verify Payments
+                        <i class="bi bi-credit-card me-1"></i> Verify Payments
                     </a>
-                    <a href="{{ route('dashboard') }}" class="btn btn-outline-light text-white pill-btn">
-                        <i class="bi bi-arrow-left-circle me-1"></i> Back to user view
+                    <a href="{{ route('admin.bookings.reservations') }}" class="btn btn-outline-light text-white pill-btn">
+                        <i class="bi bi-calendar-check me-1"></i> Verify Booking
                     </a>
                 </div>
             </div>
@@ -147,7 +143,7 @@
             <div class="col-lg-8">
                 <div class="card h-100">
                     <div class="card-header card-header-red d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold">Revenue Trend (last 6 months)</span>
+                        <span class="fw-semibold">Revenue Trend (last 3 months)</span>
                         <i class="bi bi-graph-up"></i>
                     </div>
                     <div class="card-body">
@@ -201,7 +197,7 @@
         <div class="card mb-4">
             <div class="card-header card-header-red d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">Payments awaiting verification</span>
-                <a href="{{ route('admin.payments.index') }}" class="btn btn-light btn-sm pill-btn">
+                <a href="{{ route('admin.payments.index', ['payment_status' => 'Pending']) }}" class="btn btn-light btn-sm pill-btn">
                     Review all
                 </a>
             </div>
@@ -297,10 +293,63 @@
             </div>
         </div>
 
+        <!-- Upcoming Bookings to Serve -->
+        <div class="card mb-4">
+            <div class="card-header card-header-red d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Upcoming Bookings to Serve (Next 3 Days)</span>
+                <a href="{{ route('admin.bookings.reservations') }}" class="btn btn-light btn-sm pill-btn">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                @if($upcomingBookingsToServe->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Customer</th>
+                                    <th>Vehicle</th>
+                                    <th>Pickup Date</th>
+                                    <th>Return Date</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($upcomingBookingsToServe as $booking)
+                                    <tr>
+                                        <td>#{{ $booking->bookingID }}</td>
+                                        <td>{{ $booking->customer->user->name ?? 'Unknown' }}</td>
+                                        <td>{{ $booking->vehicle->vehicle_brand ?? 'N/A' }} {{ $booking->vehicle->vehicle_model ?? '' }}</td>
+                                        <td>{{ $booking->rental_start_date?->format('d M Y') ?? 'N/A' }}</td>
+                                        <td>{{ $booking->rental_end_date?->format('d M Y') ?? 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge badge-soft">
+                                                {{ $booking->booking_status ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{{ route('admin.bookings.reservations') }}?booking_id={{ $booking->bookingID }}" class="btn btn-outline-danger btn-sm pill-btn">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="alert alert-light border-0 text-muted mb-0">
+                        No upcoming bookings in the next 3 days.
+                    </div>
+                @endif
+            </div>
+        </div>
+
         <!-- Footer -->
         <div class="d-flex justify-content-between align-items-center py-3 text-muted-small">
-            <span>Hasta Admin · Redline dashboard</span>
-            <span>Need help? Visit Payment Verification to action items.</span>
+            <span>Hasta Travel Vehicle Rental System · Admin dashboard</span>
         </div>
     </div>
 @endsection

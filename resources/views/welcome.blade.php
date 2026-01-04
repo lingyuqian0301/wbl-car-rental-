@@ -461,7 +461,7 @@
 
     @auth
         @php
-            $currentCustomer = \App\Models\Customer::where('user_id', auth()->id())->first();
+            $currentCustomer = \App\Models\Customer::where('userID', auth()->id())->first();
             
             $wallet = $currentCustomer ? \Illuminate\Support\Facades\DB::table('walletaccount')->where('customerID', $currentCustomer->customerID)->first() : null;
             $loyalty = $currentCustomer ? \Illuminate\Support\Facades\DB::table('loyaltycard')->where('customerID', $currentCustomer->customerID)->first() : null;

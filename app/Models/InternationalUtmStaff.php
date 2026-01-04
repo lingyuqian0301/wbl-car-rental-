@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class InternationalUtmStaff extends Model
+{
+    protected $table = 'international_utmstaff';
+    protected $primaryKey = 'customerID';
+    public $incrementing = false;
+    protected $keyType = 'int';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'customerID',
+        'staff_number',
+    ];
+
+    /**
+     * Get the customer that owns this international UTM staff record.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customerID', 'customerID');
+    }
+}

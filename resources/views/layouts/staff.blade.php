@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Hasta Staff Dashboard</title>
+    <title>@yield('title', 'Staff Dashboard') - Hasta Travel</title>
 
     <!-- Bootstrap 5 + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -81,8 +81,11 @@
                             <i class="bi bi-speedometer2"></i>
                         </div>
                         <div>
-                            <h1 class="h3 mb-1 fw-bold">Hasta Staff Control</h1>
-                            <p class="mb-0 opacity-75">Car rental booking management</p>
+                            <h1 class="h3 mb-1 fw-bold">
+                                <span style="color: #fff; font-weight: 700;">HASTA</span>
+                                <span style="color: rgba(255,255,255,0.8); font-weight: 400; margin-left: 0.5rem;">Travel</span>
+                            </h1>
+                            <p class="mb-0 opacity-75">Staff Dashboard - Car rental booking management</p>
                         </div>
                     </div>
                     <p class="mb-0 mt-3 fw-semibold">Snapshot for {{ $today->format('d M Y') }}</p>
@@ -240,7 +243,7 @@
 
         <!-- Footer -->
         <div class="d-flex justify-content-between align-items-center py-3 text-muted-small">
-            <span>Hasta Staff · Redline dashboard</span>
+            <span>Hasta Travel · Staff Dashboard</span>
             <span>Need help? Visit Payment Verification to action items.</span>
         </div>
     </div>

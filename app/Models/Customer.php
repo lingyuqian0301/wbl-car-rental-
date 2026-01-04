@@ -3,27 +3,120 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Customer extends Model
 {
     protected $table = 'customer';
  protected $primaryKey = 'customerID';
+    public $incrementing = true;
+    protected $keyType = 'int';
+    public $timestamps = false;
 
     protected $fillable = [
-        'user_id',
-        'fullname',
-        'email',
-        'registration_date',
-        'customer_type',
+        'phone_number',
+        'address',
+        'customer_license',
+        'emergency_contact',
+        'booking_times',
+        'userID',
     ];
 
-    public $timestamps = false; // since your table has no created_at/updated_at
+    /**
+     * Get the user that owns this customer.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'userID', 'id');
+    }
 
-    //
-    public function user()
+    /**
+     * Get the local record for this customer.
+     */
+    public function local(): HasOne
+    {
+        return $this->hasOne(Local::class, 'customerID');
+    }
+
+    /**
+     * Get the local student record for this customer.
+     */
+    public function localStudent(): HasOne
+    {
+        return $this->hasOne(LocalStudent::class, 'customerID');
+    }
+
+    /**
+     * Get the local UTM staff record for this customer.
+     */
+    public function localUtmStaff(): HasOne
+    {
+        return $this->hasOne(LocalUtmStaff::class, 'customerID');
+    }
+
+    /**
+     * Get the international record for this customer.
+     */
+    public function international(): HasOne
+    {
+        return $this->hasOne(International::class, 'customerID');
+    }
+
+    /**
+     * Get the international student record for this customer.
+     */
+    public function internationalStudent(): HasOne
+    {
+        return $this->hasOne(InternationalStudent::class, 'customerID');
+    }
+
+    /**
+     * Get the international UTM staff record for this customer.
+     */
+    public function internationalUtmStaff(): HasOne
+    {
+        return $this->hasOne(InternationalUtmStaff::class, 'customerID');
+    }
+
+    /**
+     * Get the student detail record for this customer.
+     */
+    public function studentDetail(): HasOne
+    {
+        return $this->hasOne(StudentDetail::class, 'customerID');
+    }
+
+    /**
+     * Get the bookings for this customer.
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'customerID');
+    }
+
+    /**
+     * Get the wallet account for this customer.
+     */
+    public function walletAccount(): HasOne
 {
-    return $this->belongsTo(User::class);
+        return $this->hasOne(WalletAccount::class, 'customerID');
+    }
+
+    /**
+     * Get the loyalty card for this customer.
+     */
+    public function loyaltyCard(): HasOne
+    {
+        return $this->hasOne(LoyaltyCard::class, 'customerID');
 }
 
-
+    /**
+     * Get browse history for this customer.
+     */
+    public function browseHistory(): HasMany
+    {
+        return $this->hasMany(BrowseHistory::class, 'customerID');
+    }
 }

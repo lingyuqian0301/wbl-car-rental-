@@ -1,49 +1,21 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Payment Verification - {{ config('app.name', 'Hasta Travel') }}</title>
+@extends('layouts.admin')
 
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --hasta-maroon: #800020;
-            --hasta-white: #ffffff;
-        }
-        .bg-maroon {
-            background-color: var(--hasta-maroon);
-        }
-        .text-maroon {
-            color: var(--hasta-maroon);
-        }
-        .btn-maroon {
-            background-color: var(--hasta-maroon);
-            border-color: var(--hasta-maroon);
-            color: var(--hasta-white);
-        }
-        .btn-maroon:hover {
-            background-color: #600018;
-            border-color: #600018;
-            color: var(--hasta-white);
-        }
-        .card-header-maroon {
-            background-color: var(--hasta-maroon);
-            color: var(--hasta-white);
-        }
-    </style>
-</head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="row">
-            <div class="col-12">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="text-maroon">Payment Verification</h1>
-                    <a href="{{ route('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
-                </div>
+@section('title', 'Payment Verification')
+
+@section('content')
+<div class="container-fluid py-2">
+    <x-admin-page-header 
+        title="Payment Verification" 
+        description="Verify and manage all payment transactions"
+        :stats="[
+            ['label' => 'Total Payments', 'value' => $totalPayments, 'icon' => 'bi-credit-card'],
+            ['label' => 'Pending', 'value' => $totalPending, 'icon' => 'bi-clock'],
+            ['label' => 'Verified', 'value' => $totalVerified, 'icon' => 'bi-check-circle'],
+            ['label' => 'Full Payment', 'value' => $totalFullPayment, 'icon' => 'bi-currency-dollar'],
+            ['label' => 'Payments Today', 'value' => $totalToday, 'icon' => 'bi-calendar-day']
+        ]"
+        :date="$today"
+    />
 
                 <!-- Success/Error Messages -->
                 @if(session('success'))
@@ -143,12 +115,6 @@
                         @endif
                     </div>
                 </div>
-            </div>
-        </div>
     </div>
-
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+@endsection
 

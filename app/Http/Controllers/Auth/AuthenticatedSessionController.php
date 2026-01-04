@@ -48,7 +48,17 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        // 5. If not Admin, redirect to intended URL or standard dashboard
+        // 5. Check if the authenticated user is a Staff member
+        if ($request->user()->isStaff()) {
+            // If there's an intended URL and it's not the staff dashboard, redirect there
+            if ($intendedUrl && !str_contains($intendedUrl, '/staff/dashboard')) {
+                return redirect($intendedUrl);
+            }
+            // Otherwise redirect to staff dashboard
+            return redirect()->route('staff.dashboard');
+        }
+
+        // 6. If not Admin or Staff, redirect to intended URL or customer dashboard
         if ($intendedUrl) {
             return redirect($intendedUrl);
         }
@@ -70,3 +80,4 @@ class AuthenticatedSessionController extends Controller
         return redirect('/');
     }
 }
+

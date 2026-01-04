@@ -22,14 +22,38 @@ class AdminPaymentController extends Controller
     /**
      * Display a listing of all payments.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $payments = Payment::with(['booking.customer', 'booking.vehicle'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $query = Payment::with(['booking.customer', 'booking.vehicle']);
+        
+        // Filter by payment_status if provided
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+        
+        $payments = $query->orderBy('created_at', 'desc')
+            ->paginate(15)->withQueryString();
+
+        // Summary stats for header
+        $today = Carbon::today();
+        $totalPayments = Payment::count();
+        $totalPending = Payment::where('payment_status', 'Pending')->count();
+        $totalVerified = Payment::where('payment_status', 'Verified')->count();
+        $totalFullPayment = Payment::where('payment_status', 'Verified')
+            ->whereHas('booking', function($q) {
+                $q->whereRaw('(SELECT COALESCE(SUM(amount), 0) FROM payment WHERE payment.bookingID = booking.bookingID AND payment_status = "Verified") >= booking.rental_amount + booking.deposit_amount');
+            })
+            ->count();
+        $totalToday = Payment::whereDate('payment_date', $today)->count();
 
         return view('admin.payments.index', [
             'payments' => $payments,
+            'totalPayments' => $totalPayments,
+            'totalPending' => $totalPending,
+            'totalVerified' => $totalVerified,
+            'totalFullPayment' => $totalFullPayment,
+            'totalToday' => $totalToday,
+            'today' => $today,
         ]);
     }
 public function show($id)

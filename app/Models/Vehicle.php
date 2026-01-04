@@ -8,71 +8,68 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vehicle extends Model
 {
-    // 1. Link to the 'cars' table
-    protected $table = 'cars';
-
-    // 2. Define the Primary Key
+    protected $table = 'vehicle';
     protected $primaryKey = 'vehicleID';
-
-    // 3. Key Settings
     public $incrementing = true;
     protected $keyType = 'int';
+    public $timestamps = false;
 
-    // 4. Mass Assignable Fields
     protected $fillable = [
-        'brand',
-        'model',
-        'registration_number',
-        'daily_rate',
-        'status',
-        'description',
-        'item_category_id',
+        'vehicleID',
+        'plate_number',
+        'availability_status',
+        'created_date',
+        'vehicle_brand',
+        'vehicle_model',
+        'manufacturing_year',
+        'color',
+        'engineCapacity',
+        'vehicleType',
+        'rental_price',
+        'isActive',
+        'ownerID',
     ];
 
     protected function casts(): array
     {
         return [
-            'daily_rate' => 'decimal:2',
+            'created_date' => 'date',
+            'manufacturing_year' => 'integer',
+            'engineCapacity' => 'decimal:2',
+            'rental_price' => 'decimal:2',
+            'isActive' => 'boolean',
         ];
     }
 
-    // --- ACCESSORS (The Fix for "N/A") ---
-
-    // This allows the View to use $vehicle->vehicle_brand
-    public function getVehicleBrandAttribute()
+    /**
+     * Get the owner of this vehicle.
+     */
+    public function owner(): BelongsTo
     {
-        return $this->attributes['brand'] ?? $this->attributes['vehicle_brand'] ?? 'Unknown Brand';
+        return $this->belongsTo(OwnerCar::class, 'ownerID', 'ownerID');
     }
 
-    // This allows the View to use $vehicle->vehicle_model
-    public function getVehicleModelAttribute()
-    {
-        return $this->attributes['model'] ?? $this->attributes['vehicle_model'] ?? 'Unknown Model';
-    }
-
-    // This allows the View to use $vehicle->plate_number
-    public function getPlateNumberAttribute()
-    {
-        return $this->attributes['registration_number'] ?? $this->attributes['plate_number'] ?? 'No Plate';
-    }
-
-    // This allows the View to use $vehicle->full_model
-    public function getFullModelAttribute()
-    {
-        $brand = $this->vehicle_brand ?? $this->brand ?? 'Unknown';
-        $model = $this->vehicle_model ?? $this->model ?? 'Unknown';
-        return $brand . ' ' . $model;
-    }
-
-    // --- RELATIONSHIPS ---
-
+    /**
+     * Get the bookings for the vehicle.
+     */
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'vehicleID', 'vehicleID');
     }
 
-    public function category(): BelongsTo
+    /**
+     * Get the car details for this vehicle (if it's a car).
+     */
+    public function car()
     {
-        return $this->belongsTo(ItemCategory::class, 'item_category_id');
+        return $this->hasOne(Car::class, 'vehicleID', 'vehicleID');
+    }
+
+    /**
+     * Get the motorcycle details for this vehicle (if it's a motorcycle).
+     */
+    public function motorcycle()
+    {
+        return $this->hasOne(Motorcycle::class, 'vehicleID', 'vehicleID');
     }
 }
