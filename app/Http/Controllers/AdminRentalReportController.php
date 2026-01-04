@@ -84,13 +84,19 @@ class AdminRentalReportController extends Controller
             $query->where('vehicleID', $vehicleId);
         }
         if ($vehicleBrand) {
-            // Will filter in view
+            $query->whereHas('vehicle', function($vQuery) use ($vehicleBrand) {
+                $vQuery->where('vehicle_brand', 'like', "%{$vehicleBrand}%");
+            });
         }
         if ($vehicleModel) {
-            // Will filter in view
+            $query->whereHas('vehicle', function($vQuery) use ($vehicleModel) {
+                $vQuery->where('vehicle_model', 'like', "%{$vehicleModel}%");
+            });
         }
         if ($plateNo) {
-            // Will filter in view
+            $query->whereHas('vehicle', function($vQuery) use ($plateNo) {
+                $vQuery->where('plate_number', 'like', "%{$plateNo}%");
+            });
         }
 
         $bookings = $query->orderBy('rental_start_date', 'desc')->get();
@@ -109,7 +115,7 @@ class AdminRentalReportController extends Controller
                 }
             }
 
-            // Vehicle details filter - use whereHas in query if possible, but also filter here for brand/model
+            // Vehicle details filter - already filtered in query, but keep as backup check
             if ($vehicleBrand && (!$vehicle || stripos($vehicle->vehicle_brand ?? '', $vehicleBrand) === false)) {
                 return false;
             }

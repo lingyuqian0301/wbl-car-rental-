@@ -32,17 +32,17 @@ class AdminPaymentController extends Controller
         // Filter by payment status (Full, Deposit, Balance)
         if ($filterPaymentStatus) {
             if ($filterPaymentStatus === 'Full') {
-                // Full payment: payment_status is 'Full' or isPayment_complete is true
+                // Full payment: payment_status is 'Full' OR isPayment_complete is true
                 $query->where(function($q) {
                     $q->where('payment_status', 'Full')
                       ->orWhere('isPayment_complete', true);
                 });
             } elseif ($filterPaymentStatus === 'Deposit') {
-                // Deposit: isPayment_complete is false and payment exists
+                // Deposit: payments where isPayment_complete is false (deposit payments)
                 $query->where('isPayment_complete', false)
                       ->where('payment_status', '!=', 'Full');
             } elseif ($filterPaymentStatus === 'Balance') {
-                // Balance: payments that are verified but not complete (partial payments)
+                // Balance: verified payments that are not complete (balance/partial payments)
                 $query->where('payment_status', 'Verified')
                       ->where('isPayment_complete', false);
             }
