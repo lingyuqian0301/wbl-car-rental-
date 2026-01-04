@@ -451,6 +451,7 @@
     }
 
     .breakdown-item {
+        
         display: flex;
         justify-content: space-between;
         margin-bottom: 0.8rem;
@@ -458,6 +459,12 @@
         border-bottom: 1px solid var(--border-color);
         font-size: 0.95rem;
     }
+    
+.deposit-item {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
 
     .breakdown-item:last-child {
         border-bottom: none;
@@ -538,27 +545,58 @@
                 @endif
             </div>
             <!-- Vehicle Specifications -->
-            <div class="specs-section">
-                <h3>Vehicle Specifications</h3>
-                <div class="specs">
-                    <div class="spec">
-                        <div class="spec-label">⚙ Transmission</div>
-                        <div class="spec-value">{{ optional($vehicle->car)->transmission ?? 'N/A' }}</div>
-                    </div>
-                    <div class="spec">
-                        <div class="spec-label">🪑 Seating Capacity</div>
-                        <div class="spec-value">{{ optional($vehicle->car)->seating_capacity }} Seats</div>
-                    </div>
-                    <div class="spec">
-                        <div class="spec-label">🎨 Color</div>
-                        <div class="spec-value">{{ $vehicle->color }}</div>
-                    </div>
-                    <div class="spec">
-                        <div class="spec-label">📄 Plate Number</div>
-                        <div class="spec-value">{{ $vehicle->plate_number }}</div>
-                    </div>
+ <div class="specs-section">
+    <h3>Vehicle Specifications</h3>
+
+    <div class="specs">
+
+        {{-- Car --}}
+        @if ($vehicle->vehicleType === 'Car' && $vehicle->car)
+            <div class="spec">
+                <div class="spec-label">Transmission</div>
+                <div class="spec-value">{{ $vehicle->car->transmission }}</div>
+            </div>
+
+            <div class="spec">
+                <div class="spec-label">Seating Capacity</div>
+                <div class="spec-value">
+                    {{ $vehicle->car->seating_capacity }} persons
                 </div>
             </div>
+        @endif
+
+        {{-- Motorcycle --}}
+        @if ($vehicle->vehicleType === 'Motorcycle' && $vehicle->motorcycle)
+            <div class="spec">
+                <div class="spec-label">Motor Type</div>
+                <div class="spec-value">
+                    {{ $vehicle->motorcycle->motor_type }}
+                </div>
+            </div>
+
+            <div class="spec">
+                <div class="spec-label">Engine Capacity</div>
+                <div class="spec-value">
+                    {{ $vehicle->engineCapacity }} cc
+                </div>
+            </div>
+        @endif
+
+        {{-- Common --}}
+        <div class="spec">
+            <div class="spec-label">Color</div>
+            <div class="spec-value">{{ $vehicle->color ?? 'N/A' }}</div>
+        </div>
+
+        <div class="spec">
+            <div class="spec-label">Plate Number</div>
+            <div class="spec-value">{{ $vehicle->plate_number }}</div>
+        </div>
+
+    </div>
+</div>
+
+
 
         </div>
 
@@ -648,6 +686,12 @@
                     </div>
 
                     <div id="addonsBreakdown"></div>
+
+                  <div class="breakdown-item deposit-item">
+    <span class="breakdown-label">Deposit (Refundable):</span>
+    <span class="breakdown-value">RM <span id="depositAmount">50.00</span></span>
+</div>
+
 
                     <div class="breakdown-item total">
                         <span class="breakdown-label">Total Price:</span>
@@ -800,6 +844,8 @@
 
     // Vehicle rental price per day (for real-time display only)
      const dailyRate = {{ $vehicle->rental_price }};
+     const depositAmount = 50;
+
 
 
 
@@ -856,7 +902,7 @@
         const basePrice = durationDays > 0 ? dailyRate * durationDays : 0;
         let addonsTotal = 0;
         let addonsDetails = [];
-
+        
         addonCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
                 const addonValue = checkbox.value;
@@ -872,10 +918,13 @@
             }
         });
 
-        const totalPrice = basePrice + addonsTotal;
+const totalPrice = basePrice + addonsTotal + depositAmount;
 
         // Update UI display
+
         document.getElementById('durationDays').textContent = durationDays > 0 ? durationDays : '-';
+        document.getElementById('depositAmount').textContent = depositAmount.toFixed(2);
+
         document.getElementById('basePriceBreakdown').textContent = basePrice.toFixed(2);
         document.getElementById('totalPriceBreakdown').textContent = totalPrice.toFixed(2);
 

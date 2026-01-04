@@ -11,7 +11,7 @@ class VehicleController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Vehicle::whereIn('isActive', [1, 'true']);
+$query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
         // Filter by brand
         if ($request->filled('brand')) {
             $query->where('vehicle_brand', $request->brand);

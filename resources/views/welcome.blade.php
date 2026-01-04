@@ -176,7 +176,7 @@
         min-height: 48px;
         font-size: 1.25rem;
         font-weight: 700;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.1rem;
         color: #1f2937;
         line-height: 1.3;
     }
@@ -186,6 +186,15 @@
         margin-bottom: 0.75rem;
         font-size: 0.9rem;
     }
+    /* .car-content h4 {
+    margin-bottom: 0;
+}
+
+.car-type {
+    margin-top: 0;
+    margin-bottom: 0.4rem;
+} */
+
 
     .car-image img {
         width: 100%;
@@ -403,6 +412,55 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
     }
+/* ===== Spec Badges ===== */
+.car-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.spec-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+/* Transmission styles */
+.spec-badge.transmission {
+    background-color: #eef2ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+}
+
+/* Seating styles */
+.spec-badge.seat {
+    background-color: #ecfeff;
+    color: #155e75;
+    border-color: #a5f3fc;
+}
+
+/* Color badge */
+.spec-badge.color {
+    background-color: #f8fafc;
+}
+
+.spec-badge .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid #d1d5db;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+
     
     </style>
 </head>
@@ -577,12 +635,30 @@
 
                 <div class="car-content">
                     <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
-                    <p class="car-type">{{ $car->type }}</p>
+                    <p class="car-type">{{ $car->vehicleType }}</p>
                     <div class="car-specs">
-                        <p><span class="spec-icon">⚙</span> {{ $car->transmission }}</p>
-                        <p><span class="color-dot" style="background-color: {{ $car->color ?? '#cccccc' }};"></span>
-                            {{ $car->color ?? 'N/A' }}</p>
-                    </div>
+
+    {{-- Transmission + Seats (only if this vehicle has a car record) --}}
+    @if ($car->car)
+        <span class="spec-badge transmission">
+            {{ $car->car->transmission ?? 'N/A' }}
+        </span>
+
+        <span class="spec-badge seat">
+            {{ $car->car->seating_capacity ?? 'N/A' }} seats
+        </span>
+    @endif
+
+    {{-- Color (all vehicles) --}}
+    <span class="spec-badge color">
+        <span class="dot"
+              style="background-color: {{ $car->color ?? '#cccccc' }}">
+        </span>
+        {{ $car->color ?? 'N/A' }}
+    </span>
+
+</div>
+
                     <p class="car-price">RM {{ $car->rental_price }} <span>/day</span></p>
                     <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">Book Now</a>
                 </div>
