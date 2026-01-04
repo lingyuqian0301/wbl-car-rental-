@@ -62,7 +62,22 @@ class VehicleController extends Controller
 
         $cars = $query->get();
 
-        return view('welcome', compact('cars'));
+        // Get unique vehicle types and brands for filters
+        $vehicleTypes = Vehicle::whereIn('isActive', [1, 'true'])
+            ->whereNotNull('vehicleType')
+            ->distinct()
+            ->pluck('vehicleType')
+            ->filter()
+            ->values();
+
+        $brands = Vehicle::whereIn('isActive', [1, 'true'])
+            ->whereNotNull('vehicle_brand')
+            ->distinct()
+            ->pluck('vehicle_brand')
+            ->filter()
+            ->values();
+
+        return view('welcome', compact('cars', 'vehicleTypes', 'brands'));
     }
 
 
