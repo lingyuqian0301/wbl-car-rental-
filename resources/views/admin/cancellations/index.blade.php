@@ -43,7 +43,7 @@
     }
     .filter-row {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 10px;
         align-items: end;
     }
@@ -67,6 +67,10 @@
         padding: 4px 12px;
         font-size: 0.85rem;
     }
+    .btn-email {
+        padding: 4px 12px;
+        font-size: 0.85rem;
+    }
 </style>
 @endpush
 
@@ -84,41 +88,68 @@
         :date="$today"
     />
 
-    <!-- Filters -->
+    <!-- Search and Filters -->
     <div class="filter-card">
-        <form method="GET" action="{{ route('admin.bookings.cancellation') }}" class="filter-row">
-            <div>
-                <label class="form-label small fw-semibold">Date From</label>
-                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom }}">
+        <form method="GET" action="{{ route('admin.bookings.cancellation') }}" class="row g-3">
+            <!-- Search -->
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Search (Booking ID / Customer Name)</label>
+                <input type="text" name="search" class="form-control form-control-sm" 
+                       value="{{ $search }}" placeholder="Enter booking ID or customer name">
             </div>
-            <div>
-                <label class="form-label small fw-semibold">Date To</label>
-                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo }}">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Refund Status</label>
-                <select name="refund_status" class="form-select form-select-sm">
-                    <option value="">All Status</option>
-                    <option value="Pending" {{ $refundStatus === 'Pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="Processing" {{ $refundStatus === 'Processing' ? 'selected' : '' }}>Processing</option>
-                    <option value="Completed" {{ $refundStatus === 'Completed' ? 'selected' : '' }}>Completed</option>
-                    <option value="Rejected" {{ $refundStatus === 'Rejected' ? 'selected' : '' }}>Rejected</option>
+            
+            <!-- Sort -->
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Sort By</label>
+                <select name="sort_by" class="form-select form-select-sm">
+                    <option value="date_desc" {{ $sortBy === 'date_desc' ? 'selected' : '' }}>Request Date (Desc)</option>
+                    <option value="booking_asc" {{ $sortBy === 'booking_asc' ? 'selected' : '' }}>Booking ID (Asc)</option>
                 </select>
             </div>
-            <div>
-                <button type="submit" class="btn btn-danger btn-sm w-100">
-                    <i class="bi bi-funnel"></i> Apply Filters
-                </button>
+            
+            <!-- Refund Status Filter -->
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Refund Status</label>
+                <select name="refund_status" class="form-select form-select-sm" id="refund_status_filter">
+                    <option value="">All Status</option>
+                    <option value="request" {{ $refundStatus === 'request' ? 'selected' : '' }}>Request</option>
+                    <option value="refunding" {{ $refundStatus === 'refunding' ? 'selected' : '' }}>Refunding</option>
+                    <option value="cancelled" {{ $refundStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    <option value="rejected" {{ $refundStatus === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                </select>
             </div>
-            @if($dateFrom || $dateTo || $refundStatus)
-            <div>
-                <a href="{{ route('admin.cancellations.index') }}" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-x-circle"></i> Clear
-                </a>
+            
+            <!-- Handled By Filter -->
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Handled By</label>
+                <select name="handled_by" class="form-select form-select-sm" id="handled_by_filter">
+                    <option value="">All</option>
+                    <option value="unassigned" {{ $handledBy === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
+                    @foreach($staffUsers as $staffUser)
+                        <option value="{{ $staffUser->userID }}" {{ $handledBy == $staffUser->userID ? 'selected' : '' }}>
+                            {{ $staffUser->name }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
-            @endif
+            
+            <!-- Buttons -->
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger btn-sm flex-fill">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    @if($search || $refundStatus || $handledBy)
+                    <a href="{{ route('admin.bookings.cancellation') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x-circle"></i>
+                    </a>
+                    @endif
+                </div>
+            </div>
         </form>
     </div>
+    <br>
 
     <!-- Cancellations Table -->
     <div class="cancellation-table">
@@ -132,61 +163,69 @@
                         <th>Booking ID</th>
                         <th>Date</th>
                         <th>Customer Name</th>
+                        <th>Vehicle Plate</th>
                         <th>Payment Price</th>
                         <th>Account No</th>
                         <th>Account Type</th>
                         <th>Receipts</th>
                         <th>Refund Status</th>
                         <th>Handled By</th>
-                        <th>Actions</th>
+                        <th>Email</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($cancellations as $booking)
                         @php
-                            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
+                            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
                             $payments = $booking->payments()->where('payment_status', 'Verified')->get();
+                            $vehiclePlate = $booking->vehicle->plate_number ?? 'N/A';
+                            $customerEmail = $booking->customer->user->email ?? null;
+                            
+                            // Map booking_status to display status
+                            $statusDisplay = [
+                                'request cancelling' => 'Request',
+                                'refunding' => 'Refunding',
+                                'Cancelled' => 'Cancelled',
+                                'cancelled' => 'Cancelled',
+                            ];
+                            $currentStatus = $statusDisplay[$booking->booking_status] ?? $booking->booking_status;
                         @endphp
                         <tr>
                             <td>
-                                <strong>#{{ $booking->id }}</strong>
+                                <strong>#{{ $booking->bookingID }}</strong>
                             </td>
                             <td>
-                                @if($booking->cancelled_at)
-                                    @if($booking->cancelled_at instanceof \Carbon\Carbon)
-                                        {{ $booking->cancelled_at->format('d M Y') }}
-                                    @else
-                                        {{ \Carbon\Carbon::parse($booking->cancelled_at)->format('d M Y') }}
-                                    @endif
-                                @elseif($booking->updated_at)
-                                    {{ \Carbon\Carbon::parse($booking->updated_at)->format('d M Y') }}
-                                    <div class="small text-muted">(Updated)</div>
+                                @if($booking->lastUpdateDate)
+                                    {{ \Carbon\Carbon::parse($booking->lastUpdateDate)->format('d M Y') }}
                                 @else
                                     <span class="text-muted">N/A</span>
                                 @endif
                             </td>
                             <td>
-                                {{ $booking->user->name ?? 'Unknown Customer' }}
-                                <div class="small text-muted">{{ $booking->user->email ?? '' }}</div>
+                                {{ $booking->customer->user->name ?? 'Unknown Customer' }}
+                                <div class="small text-muted">{{ $customerEmail ?? '' }}</div>
+                            </td>
+                            <td>
+                                <strong>{{ $vehiclePlate }}</strong>
                             </td>
                             <td>
                                 <strong>RM {{ number_format($totalPaid, 2) }}</strong>
                                 <div class="small text-muted">Total: RM {{ number_format($booking->total_price, 2) }}</div>
                             </td>
                             <td>
-                                {{ $booking->user->account_no ?? 'N/A' }}
+                                {{ $booking->customer->user->phone ?? 'N/A' }}
                             </td>
                             <td>
-                                {{ $booking->user->account_type ?? 'N/A' }}
+                                N/A
                             </td>
                             <td>
                                 @if($payments->count() > 0)
                                     <div class="d-flex flex-column gap-1">
                                         @foreach($payments as $payment)
-                                            @if($payment->proof_of_payment)
+                                            @if($payment->transaction_reference)
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success btn-update-cancellation" 
-                                                        onclick="showReceipt('{{ \Illuminate\Support\Facades\Storage::url($payment->proof_of_payment) }}')">
+                                                        onclick="showReceipt('{{ $payment->transaction_reference }}')">
                                                     <i class="bi bi-receipt"></i> Receipt {{ $loop->iteration }}
                                                 </button>
                                             @endif
@@ -197,47 +236,43 @@
                                 @endif
                             </td>
                             <td>
-                                @if($booking->refund_status)
-                                    <span class="badge badge-status {{ $booking->refund_status === 'Completed' ? 'bg-success' : ($booking->refund_status === 'Processing' ? 'bg-info' : ($booking->refund_status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark')) }}">
-                                        {{ $booking->refund_status }}
-                                    </span>
-                                    @if($booking->refund_reason)
-                                        <div class="small text-muted mt-1" title="{{ $booking->refund_reason }}">
-                                            {{ Str::limit($booking->refund_reason, 30) }}
-                                        </div>
-                                    @endif
-                                @else
-                                    <span class="badge badge-status bg-secondary">Not Set</span>
-                                @endif
+                                <select class="form-select form-select-sm refund-status-select" 
+                                        data-booking-id="{{ $booking->bookingID }}"
+                                        onchange="updateRefundStatus({{ $booking->bookingID }}, this.value)">
+                                    <option value="request" {{ $booking->booking_status === 'request cancelling' ? 'selected' : '' }}>Request</option>
+                                    <option value="refunding" {{ $booking->booking_status === 'refunding' ? 'selected' : '' }}>Refunding</option>
+                                    <option value="cancelled" {{ in_array($booking->booking_status, ['Cancelled', 'cancelled']) ? 'selected' : '' }}>Cancelled</option>
+                                    <option value="rejected" {{ $booking->booking_status === 'Cancelled' && $currentStatus === 'Rejected' ? 'selected' : '' }}>Rejected</option>
+                                </select>
                             </td>
                             <td>
-                                @if($booking->refund_processed_by)
-                                    <div>{{ $booking->refundProcessedByUser->name ?? 'Unknown' }}</div>
-                                    <div class="small text-muted">
-                                        @if($booking->refund_processed_at)
-                                            {{ \Carbon\Carbon::parse($booking->refund_processed_at)->format('d M Y') }}
-                                        @endif
-                                    </div>
-                                @else
-                                    <span class="text-muted small">Not processed</span>
-                                @endif
-                                @if($booking->cancelled_by)
-                                    <div class="small text-muted mt-1">
-                                        Cancelled by: {{ $booking->cancelledByUser->name ?? 'Unknown' }}
-                                    </div>
-                                @endif
+                                <select class="form-select form-select-sm handled-by-select" 
+                                        data-booking-id="{{ $booking->bookingID }}"
+                                        onchange="updateHandledBy({{ $booking->bookingID }}, this.value)">
+                                    <option value="">Unassigned</option>
+                                    @foreach($staffUsers as $staffUser)
+                                        <option value="{{ $staffUser->userID }}" {{ $booking->staff_served == $staffUser->userID ? 'selected' : '' }}>
+                                            {{ $staffUser->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </td>
                             <td>
-                                <button type="button" 
-                                        class="btn btn-sm btn-danger btn-update-cancellation" 
-                                        onclick="openUpdateModal({{ $booking->id }}, '{{ $booking->refund_status ?? '' }}', '{{ addslashes($booking->refund_reason ?? '') }}')">
-                                    <i class="bi bi-pencil"></i> Update
-                                </button>
+                                @if($customerEmail)
+                                    <button type="button" 
+                                            class="btn btn-sm btn-primary btn-email" 
+                                            onclick="sendEmail({{ $booking->bookingID }})"
+                                            title="Send email to {{ $customerEmail }}">
+                                        <i class="bi bi-envelope"></i> Email
+                                    </button>
+                                @else
+                                    <span class="text-muted small">No email</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
+                            <td colspan="11" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-3 mb-0">No cancellations found</p>
                             </td>
@@ -256,41 +291,6 @@
     </div>
 </div>
 
-<!-- Update Cancellation Modal -->
-<div class="modal fade" id="updateCancellationModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-pencil"></i> Update Cancellation Status</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="updateCancellationForm" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Refund Status <span class="text-danger">*</span></label>
-                        <select name="refund_status" id="refund_status" class="form-select" required>
-                            <option value="Pending">Pending</option>
-                            <option value="Processing">Processing</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Rejected">Rejected</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Reason/Notes</label>
-                        <textarea name="refund_reason" id="refund_reason" class="form-control" rows="3" placeholder="Enter reason for rejection or notes..."></textarea>
-                        <small class="text-muted">Required if status is "Rejected"</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Update Status</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- Receipt Modal -->
 <div class="modal fade" id="receiptModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -300,7 +300,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="receiptImage" src="" alt="Payment Receipt" class="img-fluid" style="max-height: 70vh;">
+                <p id="receiptText"></p>
             </div>
         </div>
     </div>
@@ -308,45 +308,71 @@
 
 @push('scripts')
 <script>
-    function openUpdateModal(bookingId, currentStatus, currentReason) {
-        const form = document.getElementById('updateCancellationForm');
-        form.action = `{{ url('/admin/cancellations') }}/${bookingId}/update`;
-        
-        document.getElementById('refund_status').value = currentStatus || 'Pending';
-        document.getElementById('refund_reason').value = currentReason || '';
-        
-        const modal = new bootstrap.Modal(document.getElementById('updateCancellationModal'));
-        modal.show();
-    }
-
-    // Get CSRF token from meta tag
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
 
-    function showReceipt(imageUrl) {
-        document.getElementById('receiptImage').src = imageUrl;
-        const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
-        modal.show();
+    function updateRefundStatus(bookingId, status) {
+        fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                refund_status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to update status');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the status.');
+            location.reload();
+        });
     }
 
-    // Form validation and AJAX submission
-    document.getElementById('updateCancellationForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const status = document.getElementById('refund_status').value;
-        const reason = document.getElementById('refund_reason').value;
-        
-        if (status === 'Rejected' && !reason.trim()) {
-            alert('Please provide a reason for rejection.');
-            return false;
+    function updateHandledBy(bookingId, staffId) {
+        fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                handled_by: staffId || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success - no need to reload, just show a subtle notification
+            } else {
+                alert(data.message || 'Failed to update handled by');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating handled by.');
+            location.reload();
+        });
+    }
+
+    function sendEmail(bookingId) {
+        if (!confirm('Send cancellation notification email to customer?')) {
+            return;
         }
 
-        const form = this;
-        const formData = new FormData(form);
-        const url = form.action;
-
-        fetch(url, {
+        fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/send-email`, {
             method: 'POST',
-            body: formData,
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json',
@@ -355,23 +381,22 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('updateCancellationModal')).hide();
-                location.reload();
+                alert('Email sent successfully!');
             } else {
-                alert(data.message || 'An error occurred.');
+                alert(data.message || 'Failed to send email');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while updating the cancellation status.');
+            alert('An error occurred while sending email.');
         });
-    });
+    }
+
+    function showReceipt(reference) {
+        document.getElementById('receiptText').textContent = 'Receipt Reference: ' + reference;
+        const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
+        modal.show();
+    }
 </script>
 @endpush
 @endsection
-
-
-
-
-
-

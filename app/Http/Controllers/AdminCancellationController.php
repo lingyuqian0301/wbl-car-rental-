@@ -13,61 +13,87 @@ class AdminCancellationController extends Controller
 {
     public function index(Request $request): View
     {
-        // Get only cancelled bookings
-        $query = Booking::with(['user', 'payments', 'cancelledByUser', 'refundProcessedByUser'])
-            ->where('booking_status', 'Cancelled');
+        // Get bookings with cancellation-related statuses: request cancelling, refunding, and cancelled
+        $query = Booking::with(['customer.user', 'vehicle', 'payments'])
+            ->whereIn('booking_status', ['request cancelling', 'refunding', 'Cancelled', 'cancelled']);
 
-        // Filter by date range if provided (use cancelled_at or updated_at as fallback)
-        if ($request->filled('date_from')) {
-            $query->where(function($q) use ($request) {
-                $q->whereNotNull('cancelled_at')
-                  ->whereDate('cancelled_at', '>=', $request->date_from)
-                  ->orWhere(function($q2) use ($request) {
-                      $q2->whereNull('cancelled_at')
-                         ->whereDate('updated_at', '>=', $request->date_from);
-                  });
-            });
-        }
-        if ($request->filled('date_to')) {
-            $query->where(function($q) use ($request) {
-                $q->whereNotNull('cancelled_at')
-                  ->whereDate('cancelled_at', '<=', $request->date_to)
-                  ->orWhere(function($q2) use ($request) {
-                      $q2->whereNull('cancelled_at')
-                         ->whereDate('updated_at', '<=', $request->date_to);
+        // Search by booking ID or customer name
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('bookingID', 'like', "%{$search}%")
+                  ->orWhereHas('customer.user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
                   });
             });
         }
 
         // Filter by refund status
         if ($request->filled('refund_status')) {
-            $query->where('refund_status', $request->refund_status);
+            // Map refund_status filter to booking_status values
+            $statusMap = [
+                'request' => 'request cancelling',
+                'refunding' => 'refunding',
+                'cancelled' => ['Cancelled', 'cancelled'],
+                'rejected' => ['Cancelled', 'cancelled'],
+            ];
+            
+            if (isset($statusMap[$request->refund_status])) {
+                $statusValue = $statusMap[$request->refund_status];
+                if (is_array($statusValue)) {
+                    $query->whereIn('booking_status', $statusValue);
+                } else {
+                    $query->where('booking_status', $statusValue);
+                }
+            }
         }
 
-        // Sort by cancellation date (latest first), fallback to updated_at
-        $query->orderByRaw('COALESCE(cancelled_at, updated_at) DESC');
+        // Filter by handled by (staff_served)
+        if ($request->filled('handled_by')) {
+            if ($request->handled_by === 'unassigned') {
+                $query->whereNull('staff_served');
+            } else {
+                $query->where('staff_served', $request->handled_by);
+            }
+        }
+
+        // Sort functionality
+        $sortBy = $request->get('sort_by', 'date_desc');
+        switch ($sortBy) {
+            case 'booking_asc':
+                $query->orderBy('bookingID', 'ASC');
+                break;
+            case 'date_desc':
+                $query->orderBy('lastUpdateDate', 'DESC');
+                break;
+            default:
+                $query->orderBy('lastUpdateDate', 'DESC');
+        }
 
         $cancellations = $query->paginate(20)->withQueryString();
 
         // Summary stats for header
         $today = \Carbon\Carbon::today();
-        $totalCancellations = Booking::where('booking_status', 'Cancelled')->count();
-        $pendingRefunds = Booking::where('booking_status', 'Cancelled')
-            ->where('refund_status', 'Pending')
+        $cancellationStatuses = ['request cancelling', 'refunding', 'Cancelled', 'cancelled'];
+        $totalCancellations = Booking::whereIn('booking_status', $cancellationStatuses)->count();
+        $pendingRefunds = Booking::where('booking_status', 'request cancelling')->count();
+        $completedRefunds = Booking::whereIn('booking_status', ['Cancelled', 'cancelled'])->count();
+        $cancellationsToday = Booking::whereIn('booking_status', $cancellationStatuses)
+            ->whereDate('lastUpdateDate', $today)
             ->count();
-        $completedRefunds = Booking::where('booking_status', 'Cancelled')
-            ->where('refund_status', 'Completed')
-            ->count();
-        $cancellationsToday = Booking::where('booking_status', 'Cancelled')
-            ->whereDate('updated_at', $today)
-            ->count();
+
+        // Get all staff for handled by dropdown
+        $staffUsers = \App\Models\User::whereHas('staff')->with('staff')->get();
 
         $viewName = str_starts_with(Route::currentRouteName(), 'staff.') ? 'staff.cancellations.index' : 'admin.cancellations.index';
         return view($viewName, [
             'cancellations' => $cancellations,
-            'dateFrom' => $request->get('date_from'),
-            'dateTo' => $request->get('date_to'),
+            'search' => $request->get('search'),
+            'sortBy' => $request->get('sort_by', 'date_desc'),
             'refundStatus' => $request->get('refund_status'),
+            'handledBy' => $request->get('handled_by'),
+            'staffUsers' => $staffUsers,
             'totalCancellations' => $totalCancellations,
             'pendingRefunds' => $pendingRefunds,
             'completedRefunds' => $completedRefunds,
@@ -78,32 +104,84 @@ class AdminCancellationController extends Controller
 
     public function updateCancellation(Request $request, Booking $booking): JsonResponse
     {
-        $request->validate([
-            'refund_status' => 'required|in:Pending,Processing,Completed,Rejected',
-            'refund_reason' => 'required_if:refund_status,Rejected|nullable|string|max:1000',
-        ]);
-
         $updateData = [
-            'refund_status' => $request->refund_status,
-            'refund_processed_by' => Auth::id(),
-            'refund_processed_at' => now(),
+            'lastUpdateDate' => now(),
         ];
 
-        if ($request->filled('refund_reason')) {
-            $updateData['refund_reason'] = $request->refund_reason;
-        } elseif ($request->refund_status === 'Rejected') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Reason is required when status is Rejected.',
-            ], 422);
+        // Update refund status if provided
+        if ($request->filled('refund_status')) {
+            $request->validate([
+                'refund_status' => 'required|in:request,refunding,cancelled,rejected',
+                'refund_reason' => 'required_if:refund_status,rejected|nullable|string|max:1000',
+            ]);
+
+            // Map refund_status to booking_status
+            $statusMap = [
+                'request' => 'request cancelling',
+                'refunding' => 'refunding',
+                'cancelled' => 'Cancelled',
+                'rejected' => 'Cancelled',
+            ];
+
+            $updateData['booking_status'] = $statusMap[$request->refund_status] ?? $booking->booking_status;
+
+            if ($request->filled('refund_reason')) {
+                // Store refund reason in a note or comment field if available
+                // For now, we'll just update the status
+            } elseif ($request->refund_status === 'rejected') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Reason is required when status is Rejected.',
+                ], 422);
+            }
+        }
+
+        // Update handled by (staff_served) if provided
+        if ($request->has('handled_by')) {
+            if ($request->handled_by) {
+                $request->validate([
+                    'handled_by' => 'exists:user,userID',
+                ]);
+                $updateData['staff_served'] = $request->handled_by;
+            } else {
+                $updateData['staff_served'] = null;
+            }
         }
 
         $booking->update($updateData);
 
         return response()->json([
             'success' => true,
-            'message' => 'Cancellation status updated successfully.',
+            'message' => 'Cancellation updated successfully.',
         ]);
+    }
+
+    public function sendEmail(Request $request, Booking $booking): JsonResponse
+    {
+        try {
+            $customer = $booking->customer->user;
+            
+            if (!$customer || !$customer->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer email not found.',
+                ], 404);
+            }
+
+            // Create cancellation email
+            \Illuminate\Support\Facades\Mail::to($customer->email)
+                ->send(new \App\Mail\CancellationNotificationMail($booking));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email sent successfully to ' . $customer->email,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
 

@@ -15,67 +15,91 @@ class AdminCustomerController extends Controller
     public function index(Request $request): View
     {
         $query = Customer::withCount('bookings')
-            ->with(['bookings' => function($q) {
-                $q->orderBy('rental_start_date', 'desc')->limit(1);
-            }]);
+            ->with([
+                'user',
+                'local',
+                'international',
+                'studentDetail',
+                'localStudent',
+                'internationalStudent',
+                'localUtmStaff',
+                'internationalUtmStaff',
+                'bookings' => function($q) {
+                    $q->orderBy('rental_start_date', 'desc')->limit(1);
+                }
+            ]);
 
-        // Search
+        // Search by ID, name, email, phone, matric no
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('fullname', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('matric_number', 'like', "%{$search}%")
-                  ->orWhere('customerID', 'like', "%{$search}%");
+                $q->where('customerID', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('studentDetail', function($sdQuery) use ($search) {
+                      $sdQuery->where('matric_number', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('localStudent', function($lsQuery) use ($search) {
+                      $lsQuery->where('matric_number', 'like', "%{$search}%");
+                  });
             });
         }
 
-        // Additional filters
-        if ($request->filled('customer_id')) {
-            $query->where('customerID', $request->customer_id);
-        }
-
-        if ($request->filled('customer_name')) {
-            $query->where('fullname', 'like', "%{$request->customer_name}%");
-        }
-
-        if ($request->filled('vehicle_id')) {
-            $query->whereHas('bookings', function($q) use ($request) {
-                $q->where('vehicleID', $request->vehicle_id);
+        // Filter by faculty (from studentdetails table)
+        if ($request->filled('faculty')) {
+            $query->whereHas('studentDetail', function($q) use ($request) {
+                $q->where('faculty', $request->faculty);
             });
         }
 
-        // Note: faculty and college are in studentdetails table, not customer table
-        // Filters removed as they don't exist in customer table
+        // Filter by college (from studentdetails table)
+        if ($request->filled('college')) {
+            $query->whereHas('studentDetail', function($q) use ($request) {
+                $q->where('college', $request->college);
+            });
+        }
 
+        // Filter by booking count
         if ($request->filled('booking_count')) {
             $query->having('bookings_count', '>=', $request->booking_count);
         }
 
-        if ($request->filled('booking_date_from')) {
-            $query->whereHas('bookings', function($q) use ($request) {
-                $q->where(function($q2) use ($request) {
-                    $q2->where('rental_start_date', '>=', $request->booking_date_from)
-                       ->orWhere('start_date', '>=', $request->booking_date_from);
-                });
-            });
-        }
-
-        if ($request->filled('booking_date_to')) {
-            $query->whereHas('bookings', function($q) use ($request) {
-                $q->where(function($q2) use ($request) {
-                    $q2->where('rental_start_date', '<=', $request->booking_date_to)
-                       ->orWhere('start_date', '<=', $request->booking_date_to);
-                });
-            });
-        }
-
-        if ($request->filled('blacklist_status')) {
-            if ($request->blacklist_status === 'blacklisted') {
+        // Filter by customer status
+        if ($request->filled('customer_status')) {
+            if ($request->customer_status === 'blacklisted') {
                 $query->where('customer_status', 'blacklist');
-            } elseif ($request->blacklist_status === 'active') {
+            } elseif ($request->customer_status === 'active') {
                 $query->where('customer_status', 'active');
+            } elseif ($request->customer_status === 'deleted') {
+                $query->where('customer_status', 'deleted');
+            }
+        }
+
+        // Filter by customer nation (international/local)
+        if ($request->filled('customer_nation')) {
+            if ($request->customer_nation === 'local') {
+                $query->whereHas('local');
+            } elseif ($request->customer_nation === 'international') {
+                $query->whereHas('international');
+            }
+        }
+
+        // Filter by customer type (student/staff)
+        if ($request->filled('customer_type')) {
+            if ($request->customer_type === 'student') {
+                $query->where(function($q) {
+                    $q->whereHas('studentDetail')
+                      ->orWhereHas('localStudent')
+                      ->orWhereHas('internationalStudent');
+                });
+            } elseif ($request->customer_type === 'staff') {
+                $query->where(function($q) {
+                    $q->whereHas('localUtmStaff')
+                      ->orWhereHas('internationalUtmStaff');
+                });
             }
         }
 
@@ -83,30 +107,38 @@ class AdminCustomerController extends Controller
         $sortBy = $request->get('sort_by', 'name_asc');
         switch ($sortBy) {
             case 'name_asc':
-                $query->orderBy('fullname', 'asc');
+                $query->leftJoin('user', 'customer.userID', '=', 'user.userID')
+                      ->orderBy('user.name', 'ASC')
+                      ->select('customer.*');
                 break;
             case 'name_desc':
-                $query->orderBy('fullname', 'desc');
+                $query->leftJoin('user', 'customer.userID', '=', 'user.userID')
+                      ->orderBy('user.name', 'DESC')
+                      ->select('customer.*');
                 break;
             case 'latest_booking':
-                $query->orderByRaw('(SELECT MAX(COALESCE(rental_start_date, start_date)) FROM booking WHERE booking.user_id = customer.customerID) DESC');
+                $query->orderByRaw('(SELECT MAX(COALESCE(rental_start_date, start_date)) FROM booking WHERE booking.customerID = customer.customerID) DESC');
                 break;
             case 'highest_rental':
                 $query->orderBy('bookings_count', 'desc');
                 break;
             default:
-                $query->orderBy('fullname', 'asc');
+                $query->leftJoin('user', 'customer.userID', '=', 'user.userID')
+                      ->orderBy('user.name', 'ASC')
+                      ->select('customer.*');
         }
 
         $customers = $query->paginate(20)->withQueryString();
 
-        // Note: faculty and college are in studentdetails table, not customer table
-        $faculties = collect([]);
-        $colleges = collect([]);
+        // Get unique faculties and colleges from studentdetails
+        $faculties = \App\Models\StudentDetail::distinct()->pluck('faculty')->filter()->sort()->values();
+        $colleges = \App\Models\StudentDetail::distinct()->pluck('college')->filter()->sort()->values();
 
         // Summary stats for header
         $totalCustomers = Customer::count();
-        $totalCustomersToday = Customer::whereDate('dateRegistered', now())->count();
+        $totalCustomersToday = Customer::whereHas('user', function($q) {
+            $q->whereDate('dateRegistered', now());
+        })->count();
         $customersWithBookings = Customer::has('bookings')->count();
 
         $viewName = str_starts_with(Route::currentRouteName(), 'staff.') ? 'staff.customers.index' : 'admin.customers.index';
@@ -118,6 +150,14 @@ class AdminCustomerController extends Controller
             'totalCustomersToday' => $totalCustomersToday,
             'customersWithBookings' => $customersWithBookings,
             'today' => \Carbon\Carbon::today(),
+            'search' => $request->get('search'),
+            'sortBy' => $request->get('sort_by', 'name_asc'),
+            'faculty' => $request->get('faculty'),
+            'college' => $request->get('college'),
+            'bookingCount' => $request->get('booking_count'),
+            'customerStatus' => $request->get('customer_status'),
+            'customerNation' => $request->get('customer_nation'),
+            'customerType' => $request->get('customer_type'),
         ]);
     }
 
@@ -255,6 +295,188 @@ class AdminCustomerController extends Controller
 
         return redirect()->route('admin.customers.index')
             ->with('success', count($selectedIds) . ' customer(s) deleted successfully.');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        // Apply same filters as index
+        $query = $this->buildQuery($request);
+        $customers = $query->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.customers.export-pdf', [
+            'customers' => $customers,
+            'filters' => $request->all(),
+        ]);
+
+        return $pdf->download('customers-export-' . date('Y-m-d') . '.pdf');
+    }
+
+    public function exportExcel(Request $request)
+    {
+        // Apply same filters as index
+        $query = $this->buildQuery($request);
+        $customers = $query->get();
+
+        $data = $customers->map(function($customer) {
+            return [
+                'Customer ID' => $customer->customerID,
+                'Name' => $customer->user->name ?? 'N/A',
+                'Email' => $customer->user->email ?? 'N/A',
+                'Phone' => $customer->user->phone ?? 'N/A',
+                'Matric Number' => $customer->studentDetail->matric_number ?? $customer->localStudent->matric_number ?? 'N/A',
+                'Address' => $customer->address ?? 'N/A',
+                'State/Country' => $customer->local->stateOfOrigin ?? $customer->international->countryOfOrigin ?? 'N/A',
+                'IC/Passport' => $customer->local->ic_no ?? $customer->international->passport_no ?? 'N/A',
+                'Emergency Contact' => $customer->emergency_contact ?? 'N/A',
+                'License' => $customer->customer_license ?? 'N/A',
+                'College' => $customer->studentDetail->college ?? 'N/A',
+                'Faculty' => $customer->studentDetail->faculty ?? 'N/A',
+                'Programme' => $customer->studentDetail->programme ?? 'N/A',
+                'Year of Study' => $customer->studentDetail->yearOfStudy ?? 'N/A',
+                'Booking Count' => $customer->bookings_count ?? 0,
+                'Latest Booking' => $customer->bookings->first()?->rental_start_date?->format('Y-m-d') ?? 'N/A',
+                'Status' => $customer->customer_status ?? 'active',
+                'Is Active' => ($customer->user->isActive ?? false) ? 'Yes' : 'No',
+            ];
+        });
+
+        $filename = 'customers-export-' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            
+            // Add headers
+            if ($data->isNotEmpty()) {
+                fputcsv($file, array_keys($data->first()));
+            }
+            
+            // Add data
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function buildQuery(Request $request)
+    {
+        $query = Customer::withCount('bookings')
+            ->with([
+                'user',
+                'local',
+                'international',
+                'studentDetail',
+                'localStudent',
+                'internationalStudent',
+                'localUtmStaff',
+                'internationalUtmStaff',
+                'bookings' => function($q) {
+                    $q->orderBy('rental_start_date', 'desc')->limit(1);
+                }
+            ]);
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('customerID', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('studentDetail', function($sdQuery) use ($search) {
+                      $sdQuery->where('matric_number', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('localStudent', function($lsQuery) use ($search) {
+                      $lsQuery->where('matric_number', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Filters
+        if ($request->filled('faculty')) {
+            $query->whereHas('studentDetail', function($q) use ($request) {
+                $q->where('faculty', $request->faculty);
+            });
+        }
+
+        if ($request->filled('college')) {
+            $query->whereHas('studentDetail', function($q) use ($request) {
+                $q->where('college', $request->college);
+            });
+        }
+
+        if ($request->filled('booking_count')) {
+            $query->having('bookings_count', '>=', $request->booking_count);
+        }
+
+        if ($request->filled('customer_status')) {
+            if ($request->customer_status === 'blacklisted') {
+                $query->where('customer_status', 'blacklist');
+            } elseif ($request->customer_status === 'active') {
+                $query->where('customer_status', 'active');
+            } elseif ($request->customer_status === 'deleted') {
+                $query->where('customer_status', 'deleted');
+            }
+        }
+
+        if ($request->filled('customer_nation')) {
+            if ($request->customer_nation === 'local') {
+                $query->whereHas('local');
+            } elseif ($request->customer_nation === 'international') {
+                $query->whereHas('international');
+            }
+        }
+
+        if ($request->filled('customer_type')) {
+            if ($request->customer_type === 'student') {
+                $query->where(function($q) {
+                    $q->whereHas('studentDetail')
+                      ->orWhereHas('localStudent')
+                      ->orWhereHas('internationalStudent');
+                });
+            } elseif ($request->customer_type === 'staff') {
+                $query->where(function($q) {
+                    $q->whereHas('localUtmStaff')
+                      ->orWhereHas('internationalUtmStaff');
+                });
+            }
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'name_asc');
+        switch ($sortBy) {
+            case 'name_asc':
+                $query->leftJoin('user', 'customer.userID', '=', 'user.userID')
+                      ->orderBy('user.name', 'ASC')
+                      ->select('customer.*');
+                break;
+            case 'name_desc':
+                $query->leftJoin('user', 'customer.userID', '=', 'user.userID')
+                      ->orderBy('user.name', 'DESC')
+                      ->select('customer.*');
+                break;
+            case 'latest_booking':
+                $query->orderByRaw('(SELECT MAX(COALESCE(rental_start_date, start_date)) FROM booking WHERE booking.customerID = customer.customerID) DESC');
+                break;
+            case 'highest_rental':
+                $query->orderBy('bookings_count', 'desc');
+                break;
+            default:
+                $query->leftJoin('user', 'customer.userID', '=', 'user.userID')
+                      ->orderBy('user.name', 'ASC')
+                      ->select('customer.*');
+        }
+
+        return $query;
     }
 }
 

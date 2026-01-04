@@ -18,6 +18,12 @@
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $activeTab === 'vehicle' ? 'active' : '' }}" 
+               href="{{ route('admin.vehicles.others', ['tab' => 'vehicle']) }}">
+                <i class="bi bi-car-front"></i> Vehicle
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'voucher' ? 'active' : '' }}" 
                href="{{ route('admin.vehicles.others', ['tab' => 'voucher']) }}">
                 <i class="bi bi-ticket-perforated"></i> Voucher
@@ -33,7 +39,9 @@
 
     <!-- Tab Content -->
     <div class="tab-content">
-        @if($activeTab === 'voucher')
+        @if($activeTab === 'vehicle')
+            @include('admin.vehicles.vehicle-list')
+        @elseif($activeTab === 'voucher')
             @include('admin.vouchers.index')
         @elseif($activeTab === 'reward')
             <div class="card">

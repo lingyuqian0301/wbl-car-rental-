@@ -4,73 +4,13 @@
 
 @push('styles')
 <style>
-    .filter-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 20px;
-        margin-bottom: 25px;
-    }
-    .reservation-table {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-    .table-header {
-        background: var(--admin-red);
-        color: white;
-        padding: 15px 20px;
-        font-weight: 600;
-    }
-    .table thead th {
-        background: var(--admin-red-light);
-        color: var(--admin-red-dark);
-        font-weight: 600;
-        border-bottom: 2px solid var(--admin-red);
-        padding: 12px;
-        font-size: 0.9rem;
-    }
-    .table tbody td {
-        padding: 12px;
-        vertical-align: middle;
-    }
-    .badge-status {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-    .btn-view-receipt {
-        padding: 4px 12px;
-        font-size: 0.85rem;
-    }
-    .filter-row {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        align-items: end;
-    }
-    .filter-row > div {
-        min-width: 0;
-    }
-    .filter-row .form-label {
+    .reservation-info-text {
         font-size: 0.75rem;
-        margin-bottom: 4px;
+        color: #6b7280;
+        line-height: 1.4;
     }
-    .filter-row .form-control,
-    .filter-row .form-select {
-        font-size: 0.85rem;
-        padding: 4px 8px;
-    }
-    .filter-row .btn {
-        font-size: 0.85rem;
-        padding: 4px 12px;
-    }
-    .action-buttons {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
+    .reservation-info-text div {
+        margin-bottom: 2px;
     }
 </style>
 @endpush
@@ -89,233 +29,334 @@
         :date="$today"
     />
 
-    <!-- Filters -->
-    <div class="filter-card">
-        <form method="GET" action="{{ route('admin.bookings.reservations') }}" class="filter-row">
-            <div>
-                <label class="form-label small fw-semibold">Date From</label>
-                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom }}">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Date To</label>
-                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo }}">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle</label>
-                <select name="vehicle_id" class="form-select form-select-sm">
-                    <option value="all" {{ $selectedVehicle === 'all' ? 'selected' : '' }}>All Vehicles</option>
-                    <optgroup label="Cars">
-                        @foreach($cars as $car)
-                            <option value="car_{{ $car->vehicleID }}" {{ $selectedVehicle == 'car_' . $car->vehicleID ? 'selected' : '' }}>
-                                {{ $car->full_model }} ({{ $car->plate_number ?? $car->plate_no ?? 'N/A' }})
-                            </option>
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    <!-- Search and Filters -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="GET" action="{{ route('admin.bookings.reservations') }}" class="row g-3">
+                <!-- Search -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Search</label>
+                    <input type="text" name="search" value="{{ $search }}" 
+                           class="form-control form-control-sm" 
+                           placeholder="Customer Name, Booking ID">
+                </div>
+                
+                <!-- Vehicle Brand Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Vehicle Brand</label>
+                    <select name="filter_brand" class="form-select form-select-sm">
+                        <option value="">All Brands</option>
+                        @foreach($brands as $brand)
+                            <option value="{{ $brand }}" {{ $filterBrand === $brand ? 'selected' : '' }}>{{ $brand }}</option>
                         @endforeach
-                    </optgroup>
-                    <optgroup label="Motorcycles">
-                        @foreach($motorcycles as $motorcycle)
-                            <option value="motorcycle_{{ $motorcycle->id }}" {{ $selectedVehicle == 'motorcycle_' . $motorcycle->id ? 'selected' : '' }}>
-                                {{ $motorcycle->full_model }} ({{ $motorcycle->plate_number ?? $motorcycle->plate_no ?? 'N/A' }})
-                            </option>
+                    </select>
+                </div>
+                
+                <!-- Vehicle Model Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Vehicle Model</label>
+                    <select name="filter_model" class="form-select form-select-sm">
+                        <option value="">All Models</option>
+                        @foreach($models as $model)
+                            <option value="{{ $model }}" {{ $filterModel === $model ? 'selected' : '' }}>{{ $model }}</option>
                         @endforeach
-                    </optgroup>
-                </select>
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Sort By</label>
-                <select name="sort_by" class="form-select form-select-sm">
-                    <option value="latest" {{ $sortBy === 'latest' ? 'selected' : '' }}>Latest Booking</option>
-                    <option value="oldest" {{ $sortBy === 'oldest' ? 'selected' : '' }}>Oldest Booking</option>
-                    <option value="start_date_asc" {{ $sortBy === 'start_date_asc' ? 'selected' : '' }}>Start Date (Ascending)</option>
-                    <option value="start_date_desc" {{ $sortBy === 'start_date_desc' ? 'selected' : '' }}>Start Date (Descending)</option>
-                </select>
-            </div>
-            <div>
-                <button type="submit" class="btn btn-danger btn-sm w-100">
-                    <i class="bi bi-funnel"></i> Apply Filters
-                </button>
-            </div>
-            @if($dateFrom || $dateTo || $selectedVehicle !== 'all' || $sortBy !== 'latest')
-            <div>
-                <a href="{{ route('admin.bookings.reservations') }}" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-x-circle"></i> Clear
-                </a>
-            </div>
-            @endif
-        </form>
+                    </select>
+                </div>
+                
+                <!-- Plate No Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Plate No</label>
+                    <select name="filter_plate_no" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($plateNumbers as $plate)
+                            <option value="{{ $plate }}" {{ $filterPlateNo === $plate ? 'selected' : '' }}>{{ $plate }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Pickup Date Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Pickup Date</label>
+                    <input type="date" name="filter_pickup_date" value="{{ $filterPickupDate }}" 
+                           class="form-control form-control-sm">
+                </div>
+                
+                <!-- Return Date Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Return Date</label>
+                    <input type="date" name="filter_return_date" value="{{ $filterReturnDate }}" 
+                           class="form-control form-control-sm">
+                </div>
+                
+                <!-- Duration Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Duration</label>
+                    <select name="filter_duration" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($durations as $duration)
+                            <option value="{{ $duration }}" {{ $filterDuration == $duration ? 'selected' : '' }}>{{ $duration }} days</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Served By Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Served By</label>
+                    <select name="filter_served_by" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($staffUsers as $staff)
+                            <option value="{{ $staff->userID }}" {{ $filterServedBy == $staff->userID ? 'selected' : '' }}>{{ $staff->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Booking Status Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Booking Status</label>
+                    <select name="filter_booking_status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($bookingStatuses as $status)
+                            <option value="{{ $status }}" {{ $filterBookingStatus === $status ? 'selected' : '' }}>{{ $status }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="bi bi-search me-1"></i> Apply Filters
+                    </button>
+                    <a href="{{ route('admin.bookings.reservations') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Reservations Table -->
-    <div class="reservation-table">
-        <div class="table-header">
-            <i class="bi bi-calendar-check"></i> All Reservations ({{ $bookings->total() }})
+    <div class="card">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Reservations</h5>
+            <span class="badge bg-light text-dark">{{ $bookings->total() }} total</span>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Booking ID</th>
-                        <th>Customer Name</th>
-                        <th>Vehicle</th>
-                        <th>Plate No</th>
-                        <th>Payment Price</th>
-                        <th>Invoice</th>
-                        <th>Payment Receipt</th>
-                        <th>Payment Status</th>
-                        <th>Pickup Detail</th>
-                        <th>Return Detail</th>
-                        <th>Booking Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($bookings as $booking)
-                        @php
-                            $vehicle = $booking->vehicle;
-                            $latestPayment = $booking->payments()->orderBy('payment_date', 'desc')->first();
-                            $hasReceipt = $latestPayment && $latestPayment->proof_of_payment;
-                        @endphp
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <td>
-                                <strong>#{{ $booking->id }}</strong>
-                            </td>
-                            <td>
-                                {{ $booking->user->name ?? 'Unknown Customer' }}
-                            </td>
-                            <td>
-                                @if($vehicle)
-                                    <div>{{ $vehicle->full_model ?? ($vehicle->brand ?? '') . ' ' . ($vehicle->model ?? '') }}</div>
-                                    <small class="text-muted">{{ $vehicle->vehicle_brand ?? '' }} {{ $vehicle->vehicle_model ?? '' }}</small>
-                                @else
-                                    <span class="text-muted">Vehicle not found</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($vehicle)
-                                    {{ $vehicle->plate_number ?? $vehicle->plate_no ?? 'N/A' }}
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </td>
-                            <td>
-                                @php
-                                    $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
-                                @endphp
-                                <strong>RM {{ number_format($totalPaid, 2) }}</strong>
-                                <div class="small text-muted">Total: RM {{ number_format($booking->total_price, 2) }}</div>
-                            </td>
-                            <td>
-                                <a href="{{ route('invoices.generate', $booking->bookingID) }}" 
-                                   class="btn btn-sm btn-outline-primary btn-view-receipt" 
-                                   target="_blank">
-                                    <i class="bi bi-file-earmark-pdf"></i> View Invoice
-                                </a>
-                            </td>
-                            <td>
-                                @if($hasReceipt)
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-success btn-view-receipt" 
-                                            onclick="showReceipt('{{ \Illuminate\Support\Facades\Storage::url($latestPayment->proof_of_payment) }}')">
-                                        <i class="bi bi-receipt"></i> View Receipt
-                                    </button>
-                                @else
-                                    <span class="text-muted small">No receipt</span>
-                                @endif
-                            </td>
-                            <td>
-                                @php
-                                    $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
-                                    $paymentStatus = $totalPaid >= $booking->total_price ? 'Fully Paid' : ($totalPaid > 0 ? 'Deposit Only' : 'Unpaid');
-                                @endphp
-                                <select class="form-select form-select-sm payment-status-select" 
-                                        data-booking-id="{{ $booking->id }}"
-                                        data-original-value="{{ $paymentStatus }}"
-                                        style="min-width: 120px;">
-                                    <option value="Unpaid" {{ $paymentStatus === 'Unpaid' ? 'selected' : '' }}>Unpaid</option>
-                                    <option value="Deposit Only" {{ $paymentStatus === 'Deposit Only' ? 'selected' : '' }}>Deposit Only</option>
-                                    <option value="Fully Paid" {{ $paymentStatus === 'Fully Paid' ? 'selected' : '' }}>Fully Paid</option>
-                                </select>
-                                <div class="small text-muted mt-1">
-                                    {{ $latestPayment->payment_type ?? 'N/A' }}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="small">
-                                    <div><strong>Date:</strong> 
-                                        @if($booking->start_date)
-                                            @if($booking->start_date instanceof \Carbon\Carbon)
-                                                {{ $booking->start_date->format('d M Y') }}
-                                            @else
-                                                {{ \Carbon\Carbon::parse($booking->start_date)->format('d M Y') }}
-                                            @endif
-                                        @else
-                                            N/A
-                                        @endif
-                                    </div>
-                                    @if($booking->pickup_time)
-                                        <div><strong>Time:</strong> {{ $booking->pickup_time }}</div>
-                                    @endif
-                                    @if($booking->pickup_location)
-                                        <div><strong>Location:</strong> {{ $booking->pickup_location }}</div>
-                                    @endif
-                                </div>
-                            </td>
-                            <td>
-                                <div class="small">
-                                    <div><strong>Date:</strong> 
-                                        @if($booking->end_date)
-                                            @if($booking->end_date instanceof \Carbon\Carbon)
-                                                {{ $booking->end_date->format('d M Y') }}
-                                            @else
-                                                {{ \Carbon\Carbon::parse($booking->end_date)->format('d M Y') }}
-                                            @endif
-                                        @else
-                                            N/A
-                                        @endif
-                                    </div>
-                                    @if($booking->return_time)
-                                        <div><strong>Time:</strong> {{ $booking->return_time }}</div>
-                                    @endif
-                                    @if($booking->return_location)
-                                        <div><strong>Location:</strong> {{ $booking->return_location }}</div>
-                                    @endif
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge badge-status {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
-                                    {{ $booking->booking_status }}
-                                </span>
-                            </td>
+                            <th>Booking ID</th>
+                            <th>Customer Name</th>
+                            <th>Vehicle Plate No</th>
+                            <th>Payment Price</th>
+                            <th>Invoice No</th>
+                            <th>Payment ID</th>
+                            <th>Payment Status</th>
+                            <th>Pickup Detail</th>
+                            <th>Return Detail</th>
+                            <th>Booking Status</th>
+                            <th>Served By</th>
+                            <th>Actions</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                <p class="mt-3 mb-0">No reservations found</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($bookings as $booking)
+                            @php
+                                $customer = $booking->customer;
+                                $user = $customer->user ?? null;
+                                $vehicle = $booking->vehicle;
+                                $latestPayment = $booking->payments()->orderBy('payment_date', 'desc')->first();
+                                $invoice = $booking->invoice;
+                                
+                                // Calculate payment status
+                                $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+                                $totalAmount = $booking->deposit_amount + $booking->rental_amount;
+                                $paymentStatus = 'Deposit';
+                                if ($totalPaid >= $totalAmount) {
+                                    $paymentStatus = 'Full';
+                                } elseif ($totalPaid > 0) {
+                                    $paymentStatus = 'Deposit';
+                                } else {
+                                    $paymentStatus = 'Unpaid';
+                                }
+                                
+                                // Check if refunded
+                                if ($booking->booking_status === 'Cancelled' || $booking->booking_status === 'Refunding') {
+                                    $refundedPayments = $booking->payments()->where('payment_status', 'Refunded')->sum('total_amount');
+                                    if ($refundedPayments > 0) {
+                                        $paymentStatus = 'Refunded';
+                                    }
+                                }
+                                
+                                $staffServed = $booking->staff_served ? \App\Models\User::find($booking->staff_served) : null;
+                            @endphp
+                            <tr>
+                                <td><strong>#{{ $booking->bookingID }}</strong></td>
+                                <td>{{ $user->name ?? 'Unknown' }}</td>
+                                <td>
+                                    <strong>{{ $vehicle->plate_number ?? 'N/A' }}</strong>
+                                    <div class="reservation-info-text">
+                                        <div><strong>Model:</strong> {{ $vehicle->vehicle_model ?? 'N/A' }}</div>
+                                        <div><strong>Brand:</strong> {{ $vehicle->vehicle_brand ?? 'N/A' }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>RM {{ number_format($totalAmount, 2) }}</strong>
+                                    <div class="reservation-info-text">
+                                        <div>Paid: RM {{ number_format($totalPaid, 2) }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($invoice)
+                                        <strong>{{ $invoice->invoice_number ?? 'N/A' }}</strong>
+                                        <div class="reservation-info-text">
+                                            <div>
+                                                <a href="{{ route('invoices.generate', $booking->bookingID) }}" 
+                                                   target="_blank" class="text-primary">
+                                                    <i class="bi bi-file-pdf"></i> View Invoice
+                                                </a>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">No invoice</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($latestPayment)
+                                        <strong>{{ $latestPayment->paymentID ?? 'N/A' }}</strong>
+                                        <div class="reservation-info-text">
+                                            <div>
+                                                @if($latestPayment->transaction_reference)
+                                                    <a href="{{ asset('storage/' . $latestPayment->transaction_reference) }}" 
+                                                       target="_blank" class="text-primary">
+                                                        <i class="bi bi-image"></i> View Receipt
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted">No receipt</span>
+                                                @endif
+                                            </div>
+                                            <div><strong>Date:</strong> {{ $latestPayment->payment_date ? \Carbon\Carbon::parse($latestPayment->payment_date)->format('d M Y') : 'N/A' }}</div>
+                                            <div><strong>Time:</strong> {{ $latestPayment->payment_date ? \Carbon\Carbon::parse($latestPayment->payment_date)->format('H:i') : 'N/A' }}</div>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">No payment</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge {{ $paymentStatus === 'Full' ? 'bg-success' : ($paymentStatus === 'Deposit' ? 'bg-warning text-dark' : ($paymentStatus === 'Refunded' ? 'bg-info' : 'bg-secondary')) }}">
+                                        {{ $paymentStatus }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="reservation-info-text">
+                                        <div><strong>Date:</strong> {{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</div>
+                                        <div><strong>Time:</strong> {{ $booking->pickup_time ?? 'N/A' }}</div>
+                                        <div><strong>Location:</strong> {{ $booking->pickup_point ?? $booking->pickup_location ?? 'N/A' }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="reservation-info-text">
+                                        <div><strong>Date:</strong> {{ $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A' }}</div>
+                                        <div><strong>Time:</strong> {{ $booking->return_time ?? 'N/A' }}</div>
+                                        <div><strong>Location:</strong> {{ $booking->return_point ?? $booking->return_location ?? 'N/A' }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm booking-status-select" 
+                                            data-booking-id="{{ $booking->bookingID }}"
+                                            data-current-status="{{ $booking->booking_status }}">
+                                        @foreach($bookingStatuses as $status)
+                                            <option value="{{ $status }}" {{ $booking->booking_status === $status ? 'selected' : '' }}>
+                                                {{ $status }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm served-by-select" 
+                                            data-booking-id="{{ $booking->bookingID }}"
+                                            data-current-served="{{ $booking->staff_served }}">
+                                        <option value="">Not Assigned</option>
+                                        @foreach($staffUsers as $staff)
+                                            <option value="{{ $staff->userID }}" {{ $booking->staff_served == $staff->userID ? 'selected' : '' }}>
+                                                {{ $staff->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1 flex-column">
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                onclick="viewReview({{ $booking->bookingID }})" 
+                                                title="View Review">
+                                            <i class="bi bi-star"></i> Review
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                onclick="viewVehicleCondition({{ $booking->bookingID }})" 
+                                                title="View Vehicle Condition">
+                                            <i class="bi bi-clipboard-check"></i> Condition
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="12" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No reservations found.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
-        
-        <!-- Pagination -->
         @if($bookings->hasPages())
-            <div class="p-3 border-top">
+            <div class="card-footer">
                 {{ $bookings->links() }}
             </div>
         @endif
     </div>
 </div>
 
-<!-- Receipt Modal -->
-<div class="modal fade" id="receiptModal" tabindex="-1">
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-receipt"></i> Payment Receipt</h5>
+                <h5 class="modal-title">Customer Review</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center">
-                <img id="receiptImage" src="" alt="Payment Receipt" class="img-fluid" style="max-height: 70vh;">
+            <div class="modal-body" id="reviewContent">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vehicle Condition Modal -->
+<div class="modal fade" id="vehicleConditionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Vehicle Condition Form</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="vehicleConditionContent">
+                Loading...
             </div>
         </div>
     </div>
@@ -323,42 +364,102 @@
 
 @push('scripts')
 <script>
-    function showReceipt(imageUrl) {
-        document.getElementById('receiptImage').src = imageUrl;
-        const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
-        modal.show();
-    }
-
-    // Handle payment status change
-    document.querySelectorAll('.payment-status-select').forEach(select => {
-        // Store original value on load
-        select.dataset.originalValue = select.value;
-        
+    // Update Booking Status
+    document.querySelectorAll('.booking-status-select').forEach(select => {
         select.addEventListener('change', function() {
-            const bookingId = this.dataset.bookingId;
-            const newStatus = this.value;
-            const originalValue = this.dataset.originalValue;
+            let bookingId = this.dataset.bookingId;
+            let newStatus = this.value;
+            let oldStatus = this.dataset.currentStatus;
             
-            // Show confirmation
-            if (confirm(`Update payment status display to "${newStatus}"?\n\nNote: This is a display status. Actual payment status is calculated from verified payments.`)) {
-                // Store the new value as original for next change
-                this.dataset.originalValue = newStatus;
-                
-                // Optional: Make AJAX call to save preference if needed
-                // fetch(`/admin/reservations/${bookingId}/update-payment-status`, {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                //     },
-                //     body: JSON.stringify({ payment_status: newStatus })
-                // });
-            } else {
-                // Revert selection
-                this.value = originalValue;
+            if (oldStatus === newStatus) {
+                return;
             }
+            
+            if (!confirm(`Are you sure you want to change booking status from "${oldStatus}" to "${newStatus}"?`)) {
+                this.value = oldStatus;
+                return;
+            }
+            
+            fetch(`/admin/bookings/reservations/${bookingId}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    booking_status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.dataset.currentStatus = newStatus;
+                    location.reload();
+                } else {
+                    alert('Failed to update booking status.');
+                    this.value = oldStatus;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating booking status.');
+                this.value = oldStatus;
+            });
         });
     });
+
+    // Update Served By
+    document.querySelectorAll('.served-by-select').forEach(select => {
+        select.addEventListener('change', function() {
+            let bookingId = this.dataset.bookingId;
+            let newServedBy = this.value;
+            let oldServedBy = this.dataset.currentServed;
+            
+            if (oldServedBy == newServedBy) {
+                return;
+            }
+            
+            fetch(`/admin/bookings/reservations/${bookingId}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    staff_served: newServedBy || null
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.dataset.currentServed = newServedBy;
+                    location.reload();
+                } else {
+                    alert('Failed to update served by.');
+                    this.value = oldServedBy;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating served by.');
+                this.value = oldServedBy;
+            });
+        });
+    });
+
+    // View Review
+    function viewReview(bookingId) {
+        // TODO: Implement review form view
+        document.getElementById('reviewContent').innerHTML = '<p>Review form for booking #' + bookingId + ' will be displayed here.</p>';
+        new bootstrap.Modal(document.getElementById('reviewModal')).show();
+    }
+
+    // View Vehicle Condition
+    function viewVehicleCondition(bookingId) {
+        // TODO: Implement vehicle condition form view
+        document.getElementById('vehicleConditionContent').innerHTML = '<p>Pickup and return vehicle condition form for booking #' + bookingId + ' will be displayed here.</p>';
+        new bootstrap.Modal(document.getElementById('vehicleConditionModal')).show();
+    }
 </script>
 @endpush
 @endsection

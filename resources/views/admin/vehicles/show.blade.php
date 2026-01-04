@@ -7,10 +7,7 @@
         <div>
             <h1 class="h4 mb-1">{{ $vehicle->full_model }}</h1>
             <div class="text-muted small">
-                Plate: {{ $vehicle->registration_number }} · Status: <span class="badge bg-secondary">{{ $vehicle->status }}</span>
-                @if($vehicle->category)
-                    · Category: <span class="badge bg-info">{{ $vehicle->category->name }}</span>
-                @endif
+                Plate: {{ $vehicle->plate_number ?? 'N/A' }} · Status: <span class="badge bg-secondary">{{ $vehicle->availability_status ?? 'Unknown' }}</span>
             </div>
         </div>
         <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">
@@ -76,12 +73,6 @@
                                 <dd class="col-7">
                                     <span class="badge bg-secondary">{{ $vehicle->status }}</span>
                                 </dd>
-                                @if($vehicle->category)
-                                    <dt class="col-5">Category:</dt>
-                                    <dd class="col-7">
-                                        <span class="badge bg-info">{{ $vehicle->category->name }}</span>
-                                    </dd>
-                                @endif
                                 @if($vehicle->description)
                                     <dt class="col-5">Description:</dt>
                                     <dd class="col-7">{{ $vehicle->description }}</dd>

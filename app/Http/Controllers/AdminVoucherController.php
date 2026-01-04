@@ -38,8 +38,8 @@ class AdminVoucherController extends Controller
                 // Check if expiry_date column exists before using it
                 if (\Schema::hasColumn('voucher', 'expiry_date')) {
                     $query->where(function($q) {
-                        $q->whereNull('expiry_date')
-                          ->orWhere('expiry_date', '>=', Carbon::today());
+                          $q->whereNull('expiry_date')
+                            ->orWhere('expiry_date', '>=', Carbon::today());
                     });
                 }
                 // Check if num_valid and num_applied columns exist before using them
@@ -52,8 +52,8 @@ class AdminVoucherController extends Controller
                     // Check if expiry_date column exists before using it
                     if (\Schema::hasColumn('voucher', 'expiry_date')) {
                         $q->orWhere(function($q2) {
-                            $q2->whereNotNull('expiry_date')
-                               ->where('expiry_date', '<', Carbon::today());
+                          $q2->whereNotNull('expiry_date')
+                             ->where('expiry_date', '<', Carbon::today());
                         });
                     }
                     // Check if num_valid and num_applied columns exist before using them
@@ -95,7 +95,7 @@ class AdminVoucherController extends Controller
         $vouchers->getCollection()->transform(function ($voucher) {
             // Check if num_valid and num_applied columns exist
             if (isset($voucher->num_valid) && isset($voucher->num_applied)) {
-                $voucher->num_left = $voucher->num_valid - $voucher->num_applied;
+            $voucher->num_left = $voucher->num_valid - $voucher->num_applied;
             } else {
                 $voucher->num_left = 0;
             }
@@ -162,7 +162,7 @@ class AdminVoucherController extends Controller
         unset($validated['isActive']); // Remove isActive, we use voucher_isActive
         // Only set num_applied if the column exists
         if (\Schema::hasColumn('voucher', 'num_applied')) {
-            $validated['num_applied'] = 0;
+        $validated['num_applied'] = 0;
         }
 
         Voucher::create($validated);
@@ -200,9 +200,9 @@ class AdminVoucherController extends Controller
         if (\Schema::hasColumn('voucher', 'num_valid') && \Schema::hasColumn('voucher', 'num_applied')) {
             $currentApplied = $voucher->num_applied ?? 0;
             if (isset($validated['num_valid']) && $validated['num_valid'] < $currentApplied) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Number of valid vouchers cannot be less than the number of applied vouchers.');
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Number of valid vouchers cannot be less than the number of applied vouchers.');
             }
         }
 

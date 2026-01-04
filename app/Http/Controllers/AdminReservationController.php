@@ -13,67 +13,88 @@ class AdminReservationController extends Controller
 {
     public function index(Request $request): View
     {
-        $dateFrom = $request->get('date_from');
-        $dateTo = $request->get('date_to');
-        $vehicleId = $request->get('vehicle_id', 'all');
-        $sortBy = $request->get('sort_by', 'latest');
+        $search = $request->get('search');
+        $filterBrand = $request->get('filter_brand');
+        $filterModel = $request->get('filter_model');
+        $filterPlateNo = $request->get('filter_plate_no');
+        $filterPickupDate = $request->get('filter_pickup_date');
+        $filterReturnDate = $request->get('filter_return_date');
+        $filterDuration = $request->get('filter_duration');
+        $filterServedBy = $request->get('filter_served_by');
+        $filterBookingStatus = $request->get('filter_booking_status');
 
-        $query = Booking::with(['user', 'payments']);
+        $query = Booking::with(['customer.user', 'vehicle', 'payments', 'invoice']);
 
-        // Filter by date range
-        if ($dateFrom) {
-            $query->where('rental_start_date', '>=', $dateFrom);
-        }
-        if ($dateTo) {
-            $query->where('rental_end_date', '<=', $dateTo);
-        }
-
-        // Filter by vehicle
-        if ($vehicleId !== 'all') {
-            if (str_starts_with($vehicleId, 'car_')) {
-                $carId = str_replace('car_', '', $vehicleId);
-                $query->where('vehicleID', $carId);
-            } elseif (str_starts_with($vehicleId, 'motorcycle_')) {
-                $motorcycleId = str_replace('motorcycle_', '', $vehicleId);
-                $query->where('vehicleID', $motorcycleId);
-            } else {
-                $query->where('vehicleID', $vehicleId);
-            }
+        // Search by customer name or booking ID
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('bookingID', 'like', "%{$search}%")
+                  ->orWhereHas('customer', function($customerQuery) use ($search) {
+                      $customerQuery->whereHas('user', function($userQuery) use ($search) {
+                          $userQuery->where('name', 'like', "%{$search}%");
+                      });
+                  });
+            });
         }
 
-        // Sort by
-        switch ($sortBy) {
-            case 'latest':
-                $query->orderBy('creationDate', 'desc');
-                break;
-            case 'oldest':
-                $query->orderBy('creationDate', 'asc');
-                break;
-            case 'start_date_asc':
-                $query->orderBy('rental_start_date', 'asc');
-                break;
-            case 'start_date_desc':
-                $query->orderBy('rental_start_date', 'desc');
-                break;
-            default:
-                $query->orderBy('creationDate', 'desc');
+        // Filter by vehicle brand
+        if ($filterBrand) {
+            $query->whereHas('vehicle', function($vQuery) use ($filterBrand) {
+                $vQuery->where('vehicle_brand', $filterBrand);
+            });
         }
+
+        // Filter by vehicle model
+        if ($filterModel) {
+            $query->whereHas('vehicle', function($vQuery) use ($filterModel) {
+                $vQuery->where('vehicle_model', $filterModel);
+            });
+        }
+
+        // Filter by plate number
+        if ($filterPlateNo) {
+            $query->whereHas('vehicle', function($vQuery) use ($filterPlateNo) {
+                $vQuery->where('plate_number', 'like', "%{$filterPlateNo}%");
+            });
+        }
+
+        // Filter by pickup date
+        if ($filterPickupDate) {
+            $query->whereDate('rental_start_date', $filterPickupDate);
+        }
+
+        // Filter by return date
+        if ($filterReturnDate) {
+            $query->whereDate('rental_end_date', $filterReturnDate);
+        }
+
+        // Filter by duration
+        if ($filterDuration) {
+            $query->where('duration', $filterDuration);
+        }
+
+        // Filter by served by (staff_served)
+        if ($filterServedBy) {
+            $query->where('staff_served', $filterServedBy);
+        }
+
+        // Filter by booking status
+        if ($filterBookingStatus) {
+            $query->where('booking_status', $filterBookingStatus);
+        }
+
+        // Default sort by booking ID desc
+        $query->orderBy('bookingID', 'desc');
 
         $bookings = $query->paginate(20)->withQueryString();
 
-        // Get all vehicles for filter - join with vehicle table
-        $cars = Car::with('vehicle')
-            ->join('vehicle', 'car.vehicleID', '=', 'vehicle.vehicleID')
-            ->select('car.*', 'vehicle.vehicle_brand', 'vehicle.vehicle_model', 'vehicle.plate_number')
-            ->orderBy('vehicle.vehicle_brand')
-            ->orderBy('vehicle.vehicle_model')
-            ->get();
-        $motorcycles = Motorcycle::with('vehicle')
-            ->join('vehicle', 'motorcycle.vehicleID', '=', 'vehicle.vehicleID')
-            ->select('motorcycle.*', 'vehicle.vehicle_brand', 'vehicle.vehicle_model', 'vehicle.plate_number')
-            ->orderBy('vehicle.vehicle_brand')
-            ->orderBy('vehicle.vehicle_model')
-            ->get();
+        // Get unique values for filters
+        $brands = \App\Models\Vehicle::distinct()->pluck('vehicle_brand')->filter()->sort()->values();
+        $models = \App\Models\Vehicle::distinct()->pluck('vehicle_model')->filter()->sort()->values();
+        $plateNumbers = \App\Models\Vehicle::distinct()->pluck('plate_number')->filter()->sort()->values();
+        $durations = Booking::distinct()->pluck('duration')->filter()->sort()->values();
+        $staffUsers = \App\Models\User::where('role', 'staff')->orWhere('role', 'admin')->get();
+        $bookingStatuses = ['Pending', 'Confirmed', 'Request Cancellation', 'Refunding', 'Cancelled', 'Done'];
 
         // Summary stats for header
         $today = Carbon::today();
@@ -84,12 +105,21 @@ class AdminReservationController extends Controller
 
         return view('admin.reservations.index', [
             'bookings' => $bookings,
-            'dateFrom' => $dateFrom,
-            'dateTo' => $dateTo,
-            'selectedVehicle' => $vehicleId,
-            'sortBy' => $sortBy,
-            'cars' => $cars,
-            'motorcycles' => $motorcycles,
+            'search' => $search,
+            'filterBrand' => $filterBrand,
+            'filterModel' => $filterModel,
+            'filterPlateNo' => $filterPlateNo,
+            'filterPickupDate' => $filterPickupDate,
+            'filterReturnDate' => $filterReturnDate,
+            'filterDuration' => $filterDuration,
+            'filterServedBy' => $filterServedBy,
+            'filterBookingStatus' => $filterBookingStatus,
+            'brands' => $brands,
+            'models' => $models,
+            'plateNumbers' => $plateNumbers,
+            'durations' => $durations,
+            'staffUsers' => $staffUsers,
+            'bookingStatuses' => $bookingStatuses,
             'totalBookings' => $totalBookings,
             'totalPending' => $totalPending,
             'totalConfirmed' => $totalConfirmed,
@@ -98,19 +128,23 @@ class AdminReservationController extends Controller
         ]);
     }
 
-    public function updatePaymentStatus(Request $request, Booking $booking)
+    public function updateBookingStatus(Request $request, Booking $booking)
     {
         $request->validate([
-            'payment_status' => 'required|in:Unpaid,Deposit Only,Fully Paid',
+            'booking_status' => 'required|string',
+            'staff_served' => 'nullable|integer',
         ]);
 
-        // This is a display status, not stored in database
-        // The actual payment status is calculated from payments
-        // We could store this as a note or flag if needed
-        
+        $booking->update([
+            'booking_status' => $request->booking_status,
+            'staff_served' => $request->staff_served ?? $booking->staff_served,
+            'lastUpdateDate' => Carbon::now(),
+        ]);
+
         return response()->json([
             'success' => true,
-            'message' => 'Payment status display updated.',
+            'message' => 'Booking status updated successfully.',
         ]);
     }
+
 }

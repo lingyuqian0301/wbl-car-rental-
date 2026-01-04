@@ -2,6 +2,69 @@
 
 @section('title', 'Cars')
 
+@push('styles')
+<style>
+    .pagination .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .status-btn {
+        min-width: 100px;
+        font-weight: 500;
+    }
+    .status-available {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .status-available:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+        color: white;
+    }
+    .status-rented {
+        background-color: #ffc107;
+        color: #000;
+        border-color: #ffc107;
+    }
+    .status-rented:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+        color: #000;
+    }
+    .status-maintenance {
+        background-color: #17a2b8;
+        color: white;
+        border-color: #17a2b8;
+    }
+    .status-maintenance:hover {
+        background-color: #138496;
+        border-color: #117a8b;
+        color: white;
+    }
+    .status-unavailable {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
+    .status-unavailable:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+        color: white;
+    }
+    .status-unknown {
+        background-color: #dc3545;
+        color: white;
+        border-color: #dc3545;
+    }
+    .status-unknown:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+        color: white;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid py-2">
     <x-admin-page-header 
@@ -13,43 +76,159 @@
             ['label' => 'Rented', 'value' => $totalRented, 'icon' => 'bi-calendar-check']
         ]"
         :date="$today"
-    >
-        <x-slot name="actions">
-            <a href="#" class="btn btn-light text-danger pill-btn" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                <i class="bi bi-plus-circle me-1"></i> Add Category
-            </a>
-        </x-slot>
-    </x-admin-page-header>
+    />
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    <!-- Action Buttons - Right Top Corner -->
+    <div class="d-flex justify-content-end mb-3">
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.vehicles.cars.create') }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-plus-circle me-1"></i> Create New
+            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-download me-1"></i> Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ route('admin.vehicles.cars.export-pdf', request()->query()) }}">
+                        <i class="bi bi-file-pdf me-2"></i> Export PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ route('admin.vehicles.cars.export-excel', request()->query()) }}">
+                        <i class="bi bi-file-excel me-2"></i> Export Excel
+                    </a></li>
+                </ul>
+            </div>
+            <button class="btn btn-sm btn-light text-danger" onclick="deleteSelected()">
+                <i class="bi bi-trash me-1"></i> Delete
+            </button>
+        </div>
+    </div>
+
+    <!-- Search, Sort and Filters -->
     <div class="card mb-3">
         <div class="card-body">
-            <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-10">
-                    <label class="form-label small">Search</label>
-                    <input type="text"
-                           name="search"
-                           value="{{ $search }}"
-                           class="form-control form-control-sm"
-                           placeholder="Search by brand / model / plate">
+            <form method="GET" action="{{ route('admin.vehicles.cars') }}" class="row g-3">
+                <!-- Search -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Search</label>
+                    <input type="text" name="search" value="{{ $search }}" 
+                           class="form-control form-control-sm" 
+                           placeholder="Brand, Model, Plate Number">
                 </div>
+                
+                <!-- Sort -->
                 <div class="col-md-2">
-                    <button class="btn btn-sm btn-danger w-100" type="submit">
-                        <i class="bi bi-search"></i> Filter
+                    <label class="form-label small fw-semibold">Sort By</label>
+                    <select name="sort_by" class="form-select form-select-sm">
+                        <option value="vehicle_id_asc" {{ $sortBy === 'vehicle_id_asc' ? 'selected' : '' }}>Vehicle ID (Asc)</option>
+                        <option value="vehicle_id_desc" {{ $sortBy === 'vehicle_id_desc' ? 'selected' : '' }}>Vehicle ID (Desc)</option>
+                        <option value="brand_asc" {{ $sortBy === 'brand_asc' ? 'selected' : '' }}>Brand (A-Z)</option>
+                        <option value="brand_desc" {{ $sortBy === 'brand_desc' ? 'selected' : '' }}>Brand (Z-A)</option>
+                        <option value="model_asc" {{ $sortBy === 'model_asc' ? 'selected' : '' }}>Model (A-Z)</option>
+                        <option value="model_desc" {{ $sortBy === 'model_desc' ? 'selected' : '' }}>Model (Z-A)</option>
+                    </select>
+                </div>
+                
+                <!-- Filters -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Brand</label>
+                    <select name="filter_brand" class="form-select form-select-sm">
+                        <option value="">All Brands</option>
+                        @foreach($brands as $brand)
+                            <option value="{{ $brand }}" {{ $filterBrand === $brand ? 'selected' : '' }}>{{ $brand }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Model</label>
+                    <select name="filter_model" class="form-select form-select-sm">
+                        <option value="">All Models</option>
+                        @foreach($models as $model)
+                            <option value="{{ $model }}" {{ $filterModel === $model ? 'selected' : '' }}>{{ $model }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-1">
+                    <label class="form-label small fw-semibold">Seating</label>
+                    <select name="filter_seating" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($seatings as $seating)
+                            <option value="{{ $seating }}" {{ $filterSeating == $seating ? 'selected' : '' }}>{{ $seating }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Transmission</label>
+                    <select name="filter_transmission" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($transmissions as $transmission)
+                            <option value="{{ $transmission }}" {{ $filterTransmission === $transmission ? 'selected' : '' }}>{{ $transmission }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Car Type</label>
+                    <select name="filter_car_type" class="form-select form-select-sm">
+                        <option value="">All Types</option>
+                        @foreach($carTypes as $carType)
+                            <option value="{{ $carType }}" {{ $filterCarType === $carType ? 'selected' : '' }}>{{ $carType }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Status</label>
+                    <select name="filter_status" class="form-select form-select-sm">
+                        <option value="">All Status</option>
+                        @foreach($statuses as $status)
+                            <option value="{{ $status }}" {{ $filterStatus === $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="bi bi-search me-1"></i> Apply Filters
                     </button>
+                    <a href="{{ route('admin.vehicles.cars') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Clear
+                    </a>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Cars List -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Cars List ({{ $cars->total() }})</span>
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Cars</h5>
+            <span class="badge bg-light text-dark">{{ $cars->total() }} total</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-sm mb-0 align-middle">
+                <table class="table table-hover mb-0">
                     <thead class="table-light">
                     <tr>
+                        <th width="30">
+                            <input type="checkbox" id="selectAll">
+                        </th>
                         <th>Vehicle ID</th>
                         <th>Brand</th>
                         <th>Model</th>
@@ -59,13 +238,16 @@
                         <th>Car Type</th>
                         <th>Rental Price</th>
                         <th>Status</th>
-                        <th></th>
+                        <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>
                     @forelse($cars as $car)
                         <tr>
-                            <td>{{ $car->vehicleID }}</td>
+                            <td>
+                                <input type="checkbox" class="car-checkbox" value="{{ $car->vehicleID }}">
+                            </td>
+                            <td><strong>#{{ $car->vehicleID }}</strong></td>
                             <td>{{ $car->vehicle_brand ?? 'N/A' }}</td>
                             <td>{{ $car->vehicle_model ?? 'N/A' }}</td>
                             <td>{{ $car->plate_number ?? 'N/A' }}</td>
@@ -74,58 +256,160 @@
                             <td>{{ $car->car_type ?? 'N/A' }}</td>
                             <td>RM {{ number_format($car->rental_price ?? 0, 2) }}</td>
                             <td>
-                                <span class="badge {{ $car->availability_status === 'available' ? 'bg-success' : ($car->availability_status === 'rented' ? 'bg-warning' : 'bg-secondary') }}">
+                                <button type="button" 
+                                        class="btn btn-sm status-btn status-{{ $car->availability_status ?? 'unknown' }}"
+                                        data-vehicle-id="{{ $car->vehicleID }}"
+                                        data-current-status="{{ $car->availability_status ?? 'unknown' }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#statusChangeModal"
+                                        onclick="openStatusModal(this)">
                                     {{ ucfirst($car->availability_status ?? 'Unknown') }}
-                                </span>
+                                </button>
                             </td>
-                            <td class="text-end">
-                                <a href="{{ route('admin.vehicles.show', $car->vehicleID) }}" class="btn btn-sm btn-outline-danger">
-                                    Details
+                            <td>
+                                <a href="{{ route('admin.vehicles.cars.edit', $car->vehicleID) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Edit Car">
+                                    <i class="bi bi-pencil"></i> Edit
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center text-muted py-3">No cars found.</td>
+                            <td colspan="11" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No cars found.
+                            </td>
                         </tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-
-        <div class="card-footer">
-            {{ $cars->withQueryString()->links() }}
-        </div>
+        @if($cars->hasPages())
+            <div class="card-footer">
+                {{ $cars->withQueryString()->links() }}
+            </div>
+        @endif
     </div>
+</div>
 
-    <!-- Add Category Modal -->
-    <div class="modal fade" id="addCategoryModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add New Category</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="#">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Category Name</label>
-                            <input type="text" name="name" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control" rows="3"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger">Add Category</button>
-                    </div>
-                </form>
+<!-- Status Update Confirmation Modal -->
+<div class="modal fade" id="statusChangeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Current Status: <strong id="currentStatusText"></strong></p>
+                <label class="form-label">Select New Status:</label>
+                <select class="form-select" id="newStatusSelect">
+                    @foreach($statuses as $status)
+                        <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmStatusChange">Confirm Change</button>
             </div>
         </div>
     </div>
-@endsection
+</div>
 
+@push('scripts')
+<script>
+    // Select All Checkbox
+    document.getElementById('selectAll')?.addEventListener('change', function() {
+        document.querySelectorAll('.car-checkbox').forEach(cb => {
+            cb.checked = this.checked;
+        });
+    });
+
+    // Status Change with Confirmation
+    let pendingStatusChange = null;
+
+    function openStatusModal(button) {
+        let vehicleId = button.dataset.vehicleId;
+        let currentStatus = button.dataset.currentStatus;
+        
+        document.getElementById('currentStatusText').textContent = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+        document.getElementById('newStatusSelect').value = currentStatus;
+        
+        pendingStatusChange = {
+            button: button,
+            vehicleId: vehicleId,
+            oldStatus: currentStatus
+        };
+    }
+
+    document.getElementById('confirmStatusChange')?.addEventListener('click', function() {
+        if (!pendingStatusChange) return;
+        
+        let newStatus = document.getElementById('newStatusSelect').value;
+        
+        if (pendingStatusChange.oldStatus === newStatus) {
+            bootstrap.Modal.getInstance(document.getElementById('statusChangeModal')).hide();
+            return;
+        }
+        
+        fetch(`/admin/vehicles/${pendingStatusChange.vehicleId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                availability_status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update button
+                let btn = pendingStatusChange.button;
+                btn.dataset.currentStatus = newStatus;
+                btn.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                btn.className = `btn btn-sm status-btn status-${newStatus}`;
+                
+                bootstrap.Modal.getInstance(document.getElementById('statusChangeModal')).hide();
+            } else {
+                alert('Failed to update status.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating status.');
+        });
+        
+        pendingStatusChange = null;
+    });
+
+    // Delete Selected
+    function deleteSelected() {
+        let selected = Array.from(document.querySelectorAll('.car-checkbox:checked')).map(cb => cb.value);
+        if (selected.length === 0) {
+            alert('Please select at least one car to delete.');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to delete ${selected.length} car(s)?\n\nNote: Cars with existing bookings cannot be deleted.`)) {
+            return;
+        }
+        
+        // Delete each selected car
+        selected.forEach(vehicleId => {
+            fetch(`/admin/vehicles/cars/${vehicleId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+        });
+        
+        setTimeout(() => location.reload(), 500);
+    }
+</script>
+@endpush
+@endsection

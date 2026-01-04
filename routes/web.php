@@ -177,6 +177,24 @@ Route::middleware('auth')->group(function () {
             Route::get('/cars', [AdminVehicleController::class, 'cars'])->name('cars');
             Route::get('/motorcycles', [AdminVehicleController::class, 'motorcycles'])->name('motorcycles');
             Route::get('/others', [AdminVehicleController::class, 'others'])->name('others');
+            Route::get('/cars/create', [AdminVehicleController::class, 'createCar'])->name('cars.create');
+            Route::post('/cars', [AdminVehicleController::class, 'storeCar'])->name('cars.store');
+            Route::get('/motorcycles/create', [AdminVehicleController::class, 'createMotorcycle'])->name('motorcycles.create');
+            Route::post('/motorcycles', [AdminVehicleController::class, 'storeMotorcycle'])->name('motorcycles.store');
+            Route::get('/cars/{vehicle}/edit', [AdminVehicleController::class, 'editCar'])->name('cars.edit');
+            Route::put('/cars/{vehicle}', [AdminVehicleController::class, 'updateCar'])->name('cars.update');
+            Route::get('/motorcycles/{vehicle}/edit', [AdminVehicleController::class, 'editMotorcycle'])->name('motorcycles.edit');
+            Route::put('/motorcycles/{vehicle}', [AdminVehicleController::class, 'updateMotorcycle'])->name('motorcycles.update');
+            Route::post('/{vehicle}/status', [AdminVehicleController::class, 'updateStatus'])->name('status.update');
+            Route::delete('/cars/{vehicle}', [AdminVehicleController::class, 'destroyCar'])->name('cars.destroy');
+            Route::delete('/motorcycles/{vehicle}', [AdminVehicleController::class, 'destroyMotorcycle'])->name('motorcycles.destroy');
+            Route::get('/cars/export-pdf', [AdminVehicleController::class, 'exportCarsPdf'])->name('cars.export-pdf');
+            Route::get('/cars/export-excel', [AdminVehicleController::class, 'exportCarsExcel'])->name('cars.export-excel');
+            Route::get('/motorcycles/export-pdf', [AdminVehicleController::class, 'exportMotorcyclesPdf'])->name('motorcycles.export-pdf');
+            Route::get('/motorcycles/export-excel', [AdminVehicleController::class, 'exportMotorcyclesExcel'])->name('motorcycles.export-excel');
+            Route::get('/export-all-pdf', [AdminVehicleController::class, 'exportAllPdf'])->name('export-all-pdf');
+            Route::get('/export-all-excel', [AdminVehicleController::class, 'exportAllExcel'])->name('export-all-excel');
+            Route::delete('/{vehicle}', [AdminVehicleController::class, 'destroy'])->name('destroy');
             Route::get('/{vehicle}', [AdminVehicleController::class, 'show'])->name('show');
         });
 
@@ -191,8 +209,11 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('admin/bookings')->name('admin.bookings.')->group(function () {
             Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations');
+            Route::post('/reservations/{booking}/update-status', [AdminReservationController::class, 'updateBookingStatus'])->name('reservations.update-status');
             Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
             Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
+            Route::post('/cancellation/{booking}/update', [AdminCancellationController::class, 'updateCancellation'])->name('cancellation.update');
+            Route::post('/cancellation/{booking}/send-email', [AdminCancellationController::class, 'sendEmail'])->name('cancellation.send-email');
         });
 
         Route::prefix('admin/manage')->name('admin.manage.')->group(function () {
@@ -203,6 +224,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/create', [AdminCustomerController::class, 'create'])->name('create');
             Route::post('/', [AdminCustomerController::class, 'store'])->name('store');
             Route::post('/delete-selected', [AdminCustomerController::class, 'deleteSelected'])->name('delete-selected');
+            Route::get('/export-pdf', [AdminCustomerController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/export-excel', [AdminCustomerController::class, 'exportExcel'])->name('export-excel');
         });
 
         Route::prefix('admin/leasing')->name('admin.leasing.')->group(function () {
