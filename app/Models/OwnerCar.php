@@ -49,9 +49,9 @@ class OwnerCar extends Model
     /**
      * Get the cars owned by this owner.
      */
-    public function cars()
+    public function vehicles(): HasMany
     {
-        return $this->hasMany(Car::class, 'ownerID', 'ownerID');
+        return $this->hasMany(Vehicle::class, 'ownerID', 'ownerID');
     }
 
     /**

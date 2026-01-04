@@ -60,8 +60,10 @@ class AdminRentalReportController extends Controller
 
         // Booking status filter
         if ($bookingStatus === 'done') {
-            $query->where('booking_status', 'Done')
+            $query->where(function($q) {
+                $q->where('booking_status', 'Done')
                   ->orWhere('booking_status', 'Completed');
+            });
         } elseif ($bookingStatus === 'upcoming') {
             $query->whereIn('booking_status', ['Pending', 'Confirmed'])
                   ->where('rental_start_date', '>=', Carbon::today());

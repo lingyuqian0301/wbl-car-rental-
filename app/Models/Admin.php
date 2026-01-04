@@ -23,6 +23,14 @@ class Admin extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'userID', 'id');
+        return $this->belongsTo(User::class, 'userID', 'userID');
+    }
+
+    /**
+     * Get the person details for this admin.
+     */
+    public function personDetails(): BelongsTo
+    {
+        return $this->belongsTo(PersonDetails::class, 'ic_no', 'ic_no');
     }
 }

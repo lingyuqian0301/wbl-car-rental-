@@ -19,10 +19,18 @@ class LocalStudent extends Model
     ];
 
     /**
-     * Get the customer that owns this local student record.
+     * Get the local customer record.
      */
-    public function customer(): BelongsTo
+    public function local(): BelongsTo
     {
-        return $this->belongsTo(Customer::class, 'customerID', 'customerID');
+        return $this->belongsTo(Local::class, 'customerID', 'customerID');
+    }
+
+    /**
+     * Get the student details.
+     */
+    public function studentDetails(): BelongsTo
+    {
+        return $this->belongsTo(StudentDetails::class, 'matric_number', 'matric_number');
     }
 }

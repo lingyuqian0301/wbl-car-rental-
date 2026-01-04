@@ -19,10 +19,18 @@ class InternationalStudent extends Model
     ];
 
     /**
-     * Get the customer that owns this international student record.
+     * Get the international customer record.
      */
-    public function customer(): BelongsTo
+    public function international(): BelongsTo
     {
-        return $this->belongsTo(Customer::class, 'customerID', 'customerID');
+        return $this->belongsTo(International::class, 'customerID', 'customerID');
+    }
+
+    /**
+     * Get the student details.
+     */
+    public function studentDetails(): BelongsTo
+    {
+        return $this->belongsTo(StudentDetails::class, 'matric_number', 'matric_number');
     }
 }

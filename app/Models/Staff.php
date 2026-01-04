@@ -24,15 +24,15 @@ class Staff extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'userID', 'id');
+        return $this->belongsTo(User::class, 'userID', 'userID');
     }
 
     /**
-     * Get the staff detail for this staff.
+     * Get the person details for this staff.
      */
-    public function staffDetail(): HasOne
+    public function personDetails(): BelongsTo
     {
-        return $this->hasOne(StaffDetail::class, 'staffID');
+        return $this->belongsTo(PersonDetails::class, 'ic_no', 'ic_no');
     }
 
     /**
@@ -40,7 +40,7 @@ class Staff extends Model
      */
     public function staffIt(): HasOne
     {
-        return $this->hasOne(StaffIt::class, 'staffID');
+        return $this->hasOne(StaffIT::class, 'staffID', 'staffID');
     }
 
     /**
@@ -48,6 +48,14 @@ class Staff extends Model
      */
     public function runner(): HasOne
     {
-        return $this->hasOne(Runner::class, 'staffID');
+        return $this->hasOne(Runner::class, 'staffID', 'staffID');
+    }
+
+    /**
+     * Get vehicle maintenance records handled by this staff.
+     */
+    public function vehicleMaintenance()
+    {
+        return $this->hasMany(VehicleMaintenance::class, 'staffID', 'staffID');
     }
 }

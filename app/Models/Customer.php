@@ -37,7 +37,7 @@ class Customer extends Model
      */
     public function local(): HasOne
     {
-        return $this->hasOne(Local::class, 'customerID');
+        return $this->hasOne(Local::class, 'customerID', 'customerID');
     }
 
     /**
@@ -45,7 +45,7 @@ class Customer extends Model
      */
     public function localStudent(): HasOne
     {
-        return $this->hasOne(LocalStudent::class, 'customerID');
+        return $this->hasOne(LocalStudent::class, 'customerID', 'customerID');
     }
 
     /**
@@ -53,7 +53,7 @@ class Customer extends Model
      */
     public function localUtmStaff(): HasOne
     {
-        return $this->hasOne(LocalUtmStaff::class, 'customerID');
+        return $this->hasOne(Local_UTMStaff::class, 'customerID', 'customerID');
     }
 
     /**
@@ -61,7 +61,7 @@ class Customer extends Model
      */
     public function international(): HasOne
     {
-        return $this->hasOne(International::class, 'customerID');
+        return $this->hasOne(International::class, 'customerID', 'customerID');
     }
 
     /**
@@ -69,7 +69,7 @@ class Customer extends Model
      */
     public function internationalStudent(): HasOne
     {
-        return $this->hasOne(InternationalStudent::class, 'customerID');
+        return $this->hasOne(InternationalStudent::class, 'customerID', 'customerID');
     }
 
     /**
@@ -77,15 +77,7 @@ class Customer extends Model
      */
     public function internationalUtmStaff(): HasOne
     {
-        return $this->hasOne(InternationalUtmStaff::class, 'customerID');
-    }
-
-    /**
-     * Get the student detail record for this customer.
-     */
-    public function studentDetail(): HasOne
-    {
-        return $this->hasOne(StudentDetail::class, 'customerID');
+        return $this->hasOne(International_UTMStaff::class, 'customerID', 'customerID');
     }
 
     /**
@@ -93,15 +85,15 @@ class Customer extends Model
      */
     public function bookings(): HasMany
     {
-        return $this->hasMany(Booking::class, 'customerID');
+        return $this->hasMany(Booking::class, 'customerID', 'customerID');
     }
 
     /**
      * Get the wallet account for this customer.
      */
     public function walletAccount(): HasOne
-{
-        return $this->hasOne(WalletAccount::class, 'customerID');
+    {
+        return $this->hasOne(WalletAccount::class, 'customerID', 'customerID');
     }
 
     /**
@@ -109,14 +101,22 @@ class Customer extends Model
      */
     public function loyaltyCard(): HasOne
     {
-        return $this->hasOne(LoyaltyCard::class, 'customerID');
-}
+        return $this->hasOne(LoyaltyCard::class, 'customerID', 'customerID');
+    }
 
     /**
      * Get browse history for this customer.
      */
     public function browseHistory(): HasMany
     {
-        return $this->hasMany(BrowseHistory::class, 'customerID');
+        return $this->hasMany(BrowseHistory::class, 'customerID', 'customerID');
+    }
+
+    /**
+     * Get the route key for the model (for route model binding).
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'customerID';
     }
 }

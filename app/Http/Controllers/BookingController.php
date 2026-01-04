@@ -127,6 +127,11 @@ class BookingController extends Controller
             'return_point'  => 'required|string|max:100',
         ]);
 
+        // Ensure 'start_date' and 'end_date' exist before proceeding
+        if (!$request->filled('start_date') || !$request->filled('end_date')) {
+            return back()->withErrors(['error' => 'Start date and end date are required.']);
+        }
+
         // 1. Find the Conflicting Booking (if any)
         $conflictingBooking = Booking::where('vehicleID', $vehicleID)
             ->where('booking_status', '!=', 'Cancelled') // Ignore cancelled ones

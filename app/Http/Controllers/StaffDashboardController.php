@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
-use App\Models\Car;
-use App\Models\Motorcycle;
+use App\Models\Vehicle;
 use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\View\View;
@@ -21,14 +20,11 @@ class StaffDashboardController extends Controller
             'completedBookings' => Booking::where('booking_status', 'Completed')->count(),
             'pendingPayments' => Payment::where('payment_status', 'Pending')->count(),
             'verifiedPayments' => Payment::where('payment_status', 'Verified')->count(),
-            // No revenue metrics for staff
-            'availability_status' => Car::where('availability_status', 'Available')->count() + 
-                                   Motorcycle::where('availability_status', 'Available')->count(), 
-            'vehiclesRented' => Car::where('availability_status', 'Rented')->count() + 
-                                Motorcycle::where('availability_status', 'Rented')->count(),
-            'vehiclesMaintenance' => Car::where('availability_status', 'Maintenance')->count() + 
-                                     Motorcycle::where('availability_status', 'Maintenance')->count(),
-            'fleetTotal' => Car::count() + Motorcycle::count(),
+            // Vehicle metrics from Vehicle table
+            'availability_status' => Vehicle::where('availability_status', 'Available')->count(), 
+            'vehiclesRented' => Vehicle::where('availability_status', 'Rented')->count(),
+            'vehiclesMaintenance' => Vehicle::where('availability_status', 'Maintenance')->count(),
+            'fleetTotal' => Vehicle::count(),
             'doneBookings' => Booking::where('booking_status', 'Completed')
                 ->where('rental_end_date', '<', $today)
                 ->count(),
@@ -43,17 +39,17 @@ class StaffDashboardController extends Controller
                 ->count(),
         ];
 
-        $recentBookings = Booking::with(['user'])
-            ->orderByDesc('creationDate')
+        $recentBookings = Booking::with(['customer.user', 'vehicle'])
+            ->orderByDesc('lastUpdateDate')
             ->take(5)
             ->get();
 
-        $recentPayments = Payment::with(['booking.user'])
+        $recentPayments = Payment::with(['booking.customer.user'])
             ->orderBy('payment_date', 'desc')
             ->take(5)
             ->get();
 
-        $pendingPayments = Payment::with(['booking.user'])
+        $pendingPayments = Payment::with(['booking.customer.user'])
             ->where('payment_status', 'Pending')
             ->orderBy('payment_date', 'desc')
             ->take(5)

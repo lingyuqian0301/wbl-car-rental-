@@ -59,19 +59,6 @@ class Booking extends Model
      */
     public function vehicle(): BelongsTo
     {
-        // Try to find in cars table first
-        $car = \App\Models\Car::find($this->vehicleID);
-        if ($car) {
-            return $this->belongsTo(\App\Models\Car::class, 'vehicleID', 'vehicleID');
-        }
-        
-        // Try motorcycles table
-        $motorcycle = \App\Models\Motorcycle::find($this->vehicleID);
-        if ($motorcycle) {
-            return $this->belongsTo(\App\Models\Motorcycle::class, 'vehicleID', 'vehicleID');
-        }
-        
-        // Fallback to Vehicle table if exists
         return $this->belongsTo(Vehicle::class, 'vehicleID', 'vehicleID');
     }
 
@@ -88,7 +75,7 @@ class Booking extends Model
      */
     public function additionalCharges(): HasOne
     {
-        return $this->hasOne(AdditionalCharge::class, 'bookingID', 'bookingID');
+        return $this->hasOne(AdditionalCharges::class, 'bookingID', 'bookingID');
     }
 
     /**
@@ -161,5 +148,13 @@ class Booking extends Model
     public function getNumberOfDays(): int
     {
         return $this->duration ?? 0;
+    }
+
+    /**
+     * Get the route key for the model (for route model binding).
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'bookingID';
     }
 }
