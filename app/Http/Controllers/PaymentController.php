@@ -84,7 +84,7 @@ class PaymentController extends Controller
 
         // --- FIX: DETERMINE CORRECT AMOUNT ---
         $depositAmount = $this->paymentService->calculateDeposit($booking);
-        
+
         $finalAmount = $depositAmount; // Default to deposit
         if ($request->input('payment_type') === 'Full Payment') {
             $finalAmount = $booking->rental_amount;
@@ -170,7 +170,7 @@ class PaymentController extends Controller
             'total_amount'          => $finalAmount,
             'payment_bank_name'     => $request->bank_name,
             'payment_bank_account_no' => $request->bank_account_number,
-            'transaction_reference' => $request->transaction_reference, 
+            'transaction_reference' => $request->transaction_reference,
             'payment_status'        => 'Pending',
             'payment_date'          => now(),
             'isPayment_complete'    => false,
@@ -251,7 +251,7 @@ class PaymentController extends Controller
         $file = $request->file('receipt_image');
         $fileName = time() . '_' . $file->getClientOriginalName();
         $uploadPath = public_path('uploads/payments');
-        
+
         if (!file_exists($uploadPath)) {
             mkdir($uploadPath, 0755, true);
         }
