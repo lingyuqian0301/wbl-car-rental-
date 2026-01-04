@@ -1,6 +1,6 @@
     <header>
         <style>
-                    /* Header Styles */
+        /* Header Styles */
         header {
             background-color: #ffffff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -62,7 +62,8 @@
         .header-btn:hover {
             background-color: var(--primary-dark-orange);
         }
-               :root {
+
+        :root {
             --primary-orange: #dc2626;
             --primary-dark-orange: #991b1b;
             --success-green: #059669;
@@ -72,34 +73,36 @@
             --bg-light: #f8fafc;
             --error-red: #dc2626;
         }
-
         </style>
         <div class="header-container">
             <div class="logo">
-                <h1 >HASTA</h1>
-                <span>Travel</span>
+                <a href="{{ route('home') }}" class="logo" style="text-decoration: none;">
+                    <h1>HASTA</h1>
+                    <span>Travel</span>
+                </a>
+
             </div>
             <nav>
-                <a href="{{ route('home') }}">Home</a>
                 @auth
-                    <a href="{{ route('bookings.index') }}">View Bookings</a>
-                    <a href="#">Wallet Transaction</a>
-                    <a href="#">Loyalty Card</a>
+                <a href="{{ route('bookings.index') }}">View Bookings</a>
+                <a href="#">Wallet Transaction</a>
+                <a href="#">Loyalty Card</a>
                 @if(Auth::user()->isAdmin())
-                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                        {{ __('Admin Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.payments.index')" :active="request()->routeIs('admin.payments.*')">
-                        {{ __('Payment Verification') }}
-                    </x-nav-link>
-                @endif                  
+                <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                    {{ __('Admin Dashboard') }}
+                </x-nav-link>
+                <x-nav-link :href="route('admin.payments.index')" :active="request()->routeIs('admin.payments.*')">
+                    {{ __('Payment Verification') }}
+                </x-nav-link>
+                @endif
                 @endauth
             </nav>
             <div>
                 @auth
-                    <a href="{{ route('profile.edit') }}" class="header-btn">{{ Auth::user()->name }}</a>
+                <a href="{{ route('profile.edit') }}" class="header-btn">{{ Auth::user()->name }}</a>
                 @else
-                    <a href="{{ route('login') }}?redirect={{ urlencode(request()->fullUrl()) }}" class="header-btn">Login</a>
+                <a href="{{ route('login') }}?redirect={{ urlencode(request()->fullUrl()) }}"
+                    class="header-btn">Login</a>
                 @endauth
             </div>
         </div>
