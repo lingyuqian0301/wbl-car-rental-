@@ -26,28 +26,62 @@ class AdminPaymentController extends Controller
     {
         $query = Payment::with(['booking.customer', 'booking.vehicle']);
         
-        // Filter by payment_status if provided
-        if ($request->filled('payment_status')) {
-            $query->where('payment_status', $request->payment_status);
+        $filterPaymentStatus = $request->get('filter_payment_status');
+        $filterBookingStatus = $request->get('filter_booking_status');
+        
+        // Filter by payment status (Full, Deposit, Balance)
+        if ($filterPaymentStatus) {
+            if ($filterPaymentStatus === 'Full') {
+                // Full payment: payment_status is 'Full' or isPayment_complete is true
+                $query->where(function($q) {
+                    $q->where('payment_status', 'Full')
+                      ->orWhere('isPayment_complete', true);
+                });
+            } elseif ($filterPaymentStatus === 'Deposit') {
+                // Deposit: isPayment_complete is false and payment exists
+                $query->where('isPayment_complete', false)
+                      ->where('payment_status', '!=', 'Full');
+            } elseif ($filterPaymentStatus === 'Balance') {
+                // Balance: payments that are verified but not complete (partial payments)
+                $query->where('payment_status', 'Verified')
+                      ->where('isPayment_complete', false);
+            }
         }
         
-        $payments = $query->orderBy('created_at', 'desc')
-            ->paginate(15)->withQueryString();
+        // Filter by booking status
+        if ($filterBookingStatus) {
+            $query->whereHas('booking', function($q) use ($filterBookingStatus) {
+                $q->where('booking_status', $filterBookingStatus);
+            });
+        }
+        
+        // Sort by payment date desc (default)
+        $payments = $query->orderBy('payment_date', 'desc')
+            ->orderBy('paymentID', 'desc')
+            ->paginate(20)->withQueryString();
 
         // Summary stats for header
         $today = Carbon::today();
         $totalPayments = Payment::count();
         $totalPending = Payment::where('payment_status', 'Pending')->count();
         $totalVerified = Payment::where('payment_status', 'Verified')->count();
-        $totalFullPayment = Payment::where('payment_status', 'Verified')
-            ->whereHas('booking', function($q) {
-                $q->whereRaw('(SELECT COALESCE(SUM(amount), 0) FROM payment WHERE payment.bookingID = booking.bookingID AND payment_status = "Verified") >= booking.rental_amount + booking.deposit_amount');
-            })
-            ->count();
+        $totalFullPayment = Payment::where('payment_status', 'Full')
+            ->orWhere(function($q) {
+                $q->where('payment_status', 'Verified')
+                  ->whereHas('booking', function($bookingQuery) {
+                      $bookingQuery->whereRaw('(SELECT COALESCE(SUM(total_amount), 0) FROM payment WHERE payment.bookingID = booking.bookingID AND payment_status IN ("Verified", "Full")) >= booking.rental_amount + booking.deposit_amount');
+                  });
+            })->count();
         $totalToday = Payment::whereDate('payment_date', $today)->count();
+        
+        // Get booking statuses for filter
+        $bookingStatuses = Booking::distinct()->pluck('booking_status')->filter()->sort()->values();
 
         return view('admin.payments.index', [
             'payments' => $payments,
+            'filterPaymentStatus' => $filterPaymentStatus,
+            'filterBookingStatus' => $filterBookingStatus,
+            'bookingStatuses' => $bookingStatuses,
             'totalPayments' => $totalPayments,
             'totalPending' => $totalPending,
             'totalVerified' => $totalVerified,
@@ -156,7 +190,8 @@ public function approve($id): RedirectResponse
             if ($wallet) {
                 // 1. Deduct from Outstanding
                 // We use MAX(0, ...) to ensure it never goes negative
-                $newOutstanding = max(0, $wallet->outstanding_amount - $payment->amount);
+                $paymentAmount = $payment->total_amount ?? $payment->amount ?? 0;
+                $newOutstanding = max(0, $wallet->outstanding_amount - $paymentAmount);
 
                 \Illuminate\Support\Facades\DB::table('walletaccount')
                     ->where('walletAccountID', $wallet->walletAccountID)
@@ -167,7 +202,7 @@ public function approve($id): RedirectResponse
 
                 // 2. Record Transaction
                 \Illuminate\Support\Facades\DB::table('wallettransaction')->insert([
-                    'amount'           => $payment->amount,
+                    'amount'           => $paymentAmount,
                     'transaction_type' => 'Payment Verified',
                     'description'      => 'Payment verified for Booking #' . $booking->bookingID,
                     'reference_type'   => 'Booking',
@@ -212,6 +247,53 @@ public function approve($id): RedirectResponse
         return redirect()
             ->route('admin.payments.index')
             ->with('success', 'Payment rejected. Customer has been notified.');
+    }
+
+    /**
+     * Update payment verification status.
+     */
+    public function updateVerify(Request $request, $id): RedirectResponse
+    {
+        $payment = Payment::findOrFail($id);
+        $booking = $payment->booking;
+        
+        $isVerify = $request->input('payment_isVerify') == '1' || $request->input('payment_isVerify') === true;
+        
+        // Calculate if this is a full payment
+        $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+        $paidAmount = $payment->total_amount ?? 0;
+        $isFullPayment = $paidAmount >= $totalRequired;
+        
+        $updateData = [
+            'payment_isVerify' => $isVerify,
+            'latest_Update_Date_Time' => Carbon::now(),
+        ];
+        
+        // Add verify_by if field exists
+        if (Schema::hasColumn('payment', 'verify_by')) {
+            $updateData['verify_by'] = $isVerify ? Auth::id() : null;
+        }
+        
+        // If payment is verified and it's a full payment, update payment status and booking status
+        if ($isVerify && $isFullPayment) {
+            $updateData['payment_status'] = 'Full';
+            $updateData['isPayment_complete'] = true;
+            
+            // Update booking status to Confirmed
+            $booking->update(['booking_status' => 'Confirmed']);
+        } elseif ($isVerify) {
+            // If verified but not full payment, set status to Verified
+            $updateData['payment_status'] = 'Verified';
+        } else {
+            // If unverified, set status back to Pending
+            $updateData['payment_status'] = 'Pending';
+            $updateData['isPayment_complete'] = false;
+        }
+        
+        $payment->update($updateData);
+        
+        return redirect()->route('admin.payments.index')
+            ->with('success', 'Payment verification status updated successfully.');
     }
 
     /**

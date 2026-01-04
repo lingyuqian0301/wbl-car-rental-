@@ -163,6 +163,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{payment}', [AdminPaymentController::class, 'show'])->name('show');
             Route::post('/{payment}/approve', [AdminPaymentController::class, 'approve'])->name('approve');
             Route::post('/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('reject');
+            Route::put('/{payment}/update-verify', [AdminPaymentController::class, 'updateVerify'])->name('update-verify');
         });
 
         Route::prefix('admin/notifications')->name('admin.notifications.')->group(function () {
@@ -196,6 +197,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/export-all-excel', [AdminVehicleController::class, 'exportAllExcel'])->name('export-all-excel');
             Route::delete('/{vehicle}', [AdminVehicleController::class, 'destroy'])->name('destroy');
             Route::get('/{vehicle}', [AdminVehicleController::class, 'show'])->name('show');
+            Route::post('/{vehicle}/maintenance', [AdminVehicleController::class, 'storeMaintenance'])->name('maintenance.store');
+            Route::delete('/maintenance/{maintenance}', [AdminVehicleController::class, 'destroyMaintenance'])->name('maintenance.destroy');
+            Route::post('/{vehicle}/documents', [AdminVehicleController::class, 'storeDocument'])->name('documents.store');
+            Route::delete('/documents/{document}', [AdminVehicleController::class, 'destroyDocument'])->name('documents.destroy');
+            Route::post('/{vehicle}/photos', [AdminVehicleController::class, 'storePhoto'])->name('photos.store');
         });
 
         Route::prefix('admin/topbar-calendar')->name('admin.topbar-calendar.')->group(function () {

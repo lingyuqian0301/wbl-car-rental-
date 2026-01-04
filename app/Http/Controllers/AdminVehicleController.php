@@ -6,10 +6,13 @@ use App\Models\ItemCategory;
 use App\Models\Vehicle;
 use App\Models\Voucher;
 use App\Models\VoucherUsage;
+use App\Models\AdminNotification;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class AdminVehicleController extends Controller
@@ -420,11 +423,188 @@ class AdminVehicleController extends Controller
 
     public function show(Vehicle $vehicle): View
     {
-        $vehicle->load(['bookings.user']);
+        $vehicle->load([
+            'bookings.customer.user',
+            'car',
+            'motorcycle',
+            'owner.personDetails',
+            'maintenances' => function($query) {
+                $query->orderBy('service_date', 'desc');
+            },
+            'documents'
+        ]);
+
+        // Check for due services and create notifications
+        $this->checkServiceReminders($vehicle);
+
+        // Get booked dates for calendar
+        $bookedDates = [];
+        foreach($vehicle->bookings as $booking) {
+            if ($booking->rental_start_date && $booking->rental_end_date) {
+                $start = Carbon::parse($booking->rental_start_date);
+                $end = Carbon::parse($booking->rental_end_date);
+                $current = $start->copy();
+                while ($current <= $end) {
+                    $bookedDates[] = $current->format('Y-m-d');
+                    $current->addDay();
+                }
+            }
+        }
 
         return view('admin.vehicles.show', [
             'vehicle' => $vehicle,
+            'bookedDates' => $bookedDates,
         ]);
+    }
+
+    private function checkServiceReminders(Vehicle $vehicle)
+    {
+        $dueServices = $vehicle->maintenances()
+            ->whereNotNull('next_due_date')
+            ->where('next_due_date', '<=', Carbon::today()->addDays(7))
+            ->where('next_due_date', '>=', Carbon::today())
+            ->get();
+
+        foreach ($dueServices as $maintenance) {
+            // Check if notification already exists for this maintenance
+            $existingNotification = AdminNotification::where('type', 'service_reminder')
+                ->whereRaw("JSON_EXTRACT(data, '$.maintenance_id') = ?", [$maintenance->maintenanceID])
+                ->where('is_read', false)
+                ->first();
+
+            if (!$existingNotification) {
+                $this->createServiceReminderNotification($vehicle, $maintenance, Carbon::parse($maintenance->next_due_date));
+            }
+        }
+    }
+
+    public function storeMaintenance(Request $request, Vehicle $vehicle)
+    {
+        $validated = $request->validate([
+            'service_date' => 'required|date',
+            'service_type' => 'required|string|max:50',
+            'description' => 'nullable|string',
+            'mileage' => 'nullable|integer|min:0',
+            'cost' => 'required|numeric|min:0',
+            'next_due_date' => 'nullable|date',
+            'service_center' => 'nullable|string|max:100',
+        ]);
+
+        $maintenance = \App\Models\VehicleMaintenance::create([
+            'vehicleID' => $vehicle->vehicleID,
+            'service_date' => $validated['service_date'],
+            'service_type' => $validated['service_type'],
+            'description' => $validated['description'] ?? null,
+            'mileage' => $validated['mileage'] ?? null,
+            'cost' => $validated['cost'],
+            'next_due_date' => $validated['next_due_date'] ?? null,
+            'service_center' => $validated['service_center'] ?? null,
+            'staffID' => Auth::user()->userID ?? null,
+        ]);
+
+        // Create notification for staff/admin if next_due_date is within 7 days
+        if ($validated['next_due_date']) {
+            $nextDue = Carbon::parse($validated['next_due_date']);
+            $daysUntilDue = Carbon::today()->diffInDays($nextDue, false);
+            
+            if ($daysUntilDue <= 7 && $daysUntilDue >= 0) {
+                $this->createServiceReminderNotification($vehicle, $maintenance, $nextDue);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Maintenance record added successfully.');
+    }
+
+    private function createServiceReminderNotification(Vehicle $vehicle, $maintenance, $dueDate)
+    {
+        $message = "Service reminder: {$vehicle->vehicle_brand} {$vehicle->vehicle_model} ({$vehicle->plate_number}) - {$maintenance->service_type} due on " . $dueDate->format('d M Y');
+        
+        // Create notification for all admin users
+        AdminNotification::create([
+            'type' => 'service_reminder',
+            'notifiable_type' => 'admin',
+            'notifiable_id' => null,
+            'user_id' => Auth::id(),
+            'message' => $message,
+            'data' => [
+                'vehicle_id' => $vehicle->vehicleID,
+                'maintenance_id' => $maintenance->maintenanceID,
+                'due_date' => $dueDate->toDateString(),
+            ],
+            'is_read' => false,
+        ]);
+    }
+
+    public function destroyMaintenance(\App\Models\VehicleMaintenance $maintenance)
+    {
+        $maintenance->delete();
+        return redirect()->back()->with('success', 'Maintenance record deleted successfully.');
+    }
+
+    public function storeDocument(Request $request, Vehicle $vehicle)
+    {
+        $validated = $request->validate([
+            'document_type' => 'required|string|in:insurance,grant,roadtax,contract',
+            'file' => 'required|image|max:5120', // 5MB max
+        ]);
+
+        $file = $request->file('file');
+        $fileName = time() . '_' . $file->getClientOriginalName();
+        $filePath = $file->storeAs('vehicle_documents', $fileName, 'public');
+
+        // Check if document type column exists, if not use a different approach
+        $documentData = [
+            'vehicleID' => $vehicle->vehicleID,
+            'fileURL' => $filePath,
+            'upload_date' => Carbon::today(),
+        ];
+
+        // Add document_type if column exists
+        if (Schema::hasColumn('VehicleDocument', 'document_type')) {
+            $documentData['document_type'] = $validated['document_type'];
+        }
+
+        $document = \App\Models\VehicleDocument::create($documentData);
+
+        return redirect()->back()->with('success', 'Document uploaded successfully.');
+    }
+
+    public function storePhoto(Request $request, Vehicle $vehicle)
+    {
+        $validated = $request->validate([
+            'photo' => 'required|image|max:5120', // 5MB max
+            'photo_type' => 'nullable|string|max:50',
+            'description' => 'nullable|string',
+        ]);
+
+        $file = $request->file('photo');
+        $fileName = time() . '_' . $file->getClientOriginalName();
+        $filePath = $file->storeAs('vehicle_photos', $fileName, 'public');
+
+        // Store photo using VehicleDocument with document_type = 'photo'
+        $documentData = [
+            'vehicleID' => $vehicle->vehicleID,
+            'fileURL' => $filePath,
+            'upload_date' => Carbon::today(),
+        ];
+
+        // Add document_type if column exists
+        if (Schema::hasColumn('VehicleDocument', 'document_type')) {
+            $documentData['document_type'] = 'photo';
+        }
+
+        $document = \App\Models\VehicleDocument::create($documentData);
+
+        return redirect()->back()->with('success', 'Photo uploaded successfully.');
+    }
+
+    public function destroyDocument(\App\Models\VehicleDocument $document)
+    {
+        if ($document->fileURL && \Storage::disk('public')->exists($document->fileURL)) {
+            \Storage::disk('public')->delete($document->fileURL);
+        }
+        $document->delete();
+        return redirect()->back()->with('success', 'Document deleted successfully.');
     }
 
     public function createCar(): View

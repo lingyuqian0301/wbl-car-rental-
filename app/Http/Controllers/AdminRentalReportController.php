@@ -19,12 +19,12 @@ class AdminRentalReportController extends Controller
     public function index(Request $request): View
     {
         // Get filter parameters
-        $dateRange = $request->get('date_range', 'all'); // 'daily', 'monthly', 'yearly', 'all'
+        $dateRange = $request->get('date_range', 'all'); // 'daily', 'weekly', 'monthly', 'custom', 'all'
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
-        $vehicleType = $request->get('vehicle_type', 'all'); // 'all', 'car', 'motorcycle'
-        $bookingStatus = $request->get('booking_status', 'all'); // 'all', 'done', 'coming', 'cancelled'
-        $paymentStatus = $request->get('payment_status', 'all'); // 'all', 'deposit', 'full'
+        $vehicleType = $request->get('vehicle_type', 'all'); // 'all', 'car', 'motor', 'motorcycle'
+        $bookingStatus = $request->get('booking_status', 'all'); // 'all', 'done', 'upcoming', 'cancelled'
+        $paymentStatus = $request->get('payment_status', 'all'); // 'all', 'deposit', 'fully', 'refunded'
         $customerId = $request->get('customer_id');
         $customerName = $request->get('customer_name');
         $vehicleId = $request->get('vehicle_id');
@@ -32,30 +32,37 @@ class AdminRentalReportController extends Controller
         $vehicleModel = $request->get('vehicle_model');
         $plateNo = $request->get('plate_no');
 
-        $query = Booking::with(['user', 'payments']);
+        $query = Booking::with(['customer.user', 'vehicle', 'payments']);
 
         // Date range filter
         if ($dateRange === 'daily') {
             $query->whereDate('rental_start_date', Carbon::today());
+        } elseif ($dateRange === 'weekly') {
+            $startOfWeek = Carbon::now()->startOfWeek();
+            $endOfWeek = Carbon::now()->endOfWeek();
+            $query->whereBetween('rental_start_date', [$startOfWeek, $endOfWeek]);
         } elseif ($dateRange === 'monthly') {
             $query->whereMonth('rental_start_date', Carbon::now()->month)
                   ->whereYear('rental_start_date', Carbon::now()->year);
-        } elseif ($dateRange === 'yearly') {
-            $query->whereYear('rental_start_date', Carbon::now()->year);
+        } elseif ($dateRange === 'custom' && $dateFrom && $dateTo) {
+            $query->whereBetween('rental_start_date', [$dateFrom, $dateTo]);
         } elseif ($dateFrom && $dateTo) {
+            // Also allow custom range even without 'custom' selected
             $query->whereBetween('rental_start_date', [$dateFrom, $dateTo]);
         }
 
-        // Vehicle type filter
-        if ($vehicleType !== 'all') {
-            // This will be handled by checking vehicle type in the view
-            // We'll filter after getting results
+        // Vehicle type filter - handled in PHP filter below
+        // Support both 'motor' and 'motorcycle' for compatibility
+        $vehicleTypeFilter = $vehicleType;
+        if ($vehicleType === 'motor') {
+            $vehicleTypeFilter = 'motorcycle';
         }
 
         // Booking status filter
         if ($bookingStatus === 'done') {
-            $query->where('booking_status', 'Completed');
-        } elseif ($bookingStatus === 'coming') {
+            $query->where('booking_status', 'Done')
+                  ->orWhere('booking_status', 'Completed');
+        } elseif ($bookingStatus === 'upcoming') {
             $query->whereIn('booking_status', ['Pending', 'Confirmed'])
                   ->where('rental_start_date', '>=', Carbon::today());
         } elseif ($bookingStatus === 'cancelled') {
@@ -64,10 +71,10 @@ class AdminRentalReportController extends Controller
 
         // Customer filter
         if ($customerId) {
-            $query->where('user_id', $customerId);
+            $query->where('customerID', $customerId);
         }
         if ($customerName) {
-            $query->whereHas('user', function($q) use ($customerName) {
+            $query->whereHas('customer.user', function($q) use ($customerName) {
                 $q->where('name', 'like', "%{$customerName}%");
             });
         }
@@ -89,7 +96,7 @@ class AdminRentalReportController extends Controller
         $bookings = $query->orderBy('rental_start_date', 'desc')->get();
 
         // Filter by vehicle type, payment status, and vehicle details in PHP
-        $filteredBookings = $bookings->filter(function($booking) use ($vehicleType, $paymentStatus, $vehicleBrand, $vehicleModel, $plateNo) {
+        $filteredBookings = $bookings->filter(function($booking) use ($vehicleType, $vehicleTypeFilter, $paymentStatus, $vehicleBrand, $vehicleModel, $plateNo) {
             $vehicle = $booking->vehicle;
             
             // Vehicle type filter
@@ -97,12 +104,12 @@ class AdminRentalReportController extends Controller
                 if ($vehicleType === 'car' && !($vehicle instanceof Car)) {
                     return false;
                 }
-                if ($vehicleType === 'motorcycle' && !($vehicle instanceof Motorcycle)) {
+                if (($vehicleType === 'motor' || $vehicleTypeFilter === 'motorcycle') && !($vehicle instanceof Motorcycle)) {
                     return false;
                 }
             }
 
-            // Vehicle details filter
+            // Vehicle details filter - use whereHas in query if possible, but also filter here for brand/model
             if ($vehicleBrand && (!$vehicle || stripos($vehicle->vehicle_brand ?? '', $vehicleBrand) === false)) {
                 return false;
             }
@@ -115,12 +122,25 @@ class AdminRentalReportController extends Controller
 
             // Payment status filter
             if ($paymentStatus !== 'all') {
-                $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
-                if ($paymentStatus === 'deposit' && ($totalPaid >= $booking->total_price || $totalPaid == 0)) {
-                    return false;
-                }
-                if ($paymentStatus === 'full' && $totalPaid < $booking->total_price) {
-                    return false;
+                $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                $totalPaid = $booking->payments()->whereIn('payment_status', ['Verified', 'Full'])->sum('total_amount');
+                $refundedAmount = $booking->payments()->where('payment_status', 'Refunded')->sum('total_amount');
+                
+                if ($paymentStatus === 'deposit') {
+                    // Deposit: has payments but not full
+                    if ($totalPaid >= $totalRequired || $totalPaid == 0) {
+                        return false;
+                    }
+                } elseif ($paymentStatus === 'fully') {
+                    // Fully paid
+                    if ($totalPaid < $totalRequired) {
+                        return false;
+                    }
+                } elseif ($paymentStatus === 'refunded') {
+                    // Refunded: has refunded payments
+                    if ($refundedAmount <= 0) {
+                        return false;
+                    }
                 }
             }
 
@@ -194,23 +214,30 @@ class AdminRentalReportController extends Controller
         $vehicleModel = $request->get('vehicle_model');
         $plateNo = $request->get('plate_no');
 
-        $query = Booking::with(['user', 'payments']);
+        $query = Booking::with(['customer.user', 'vehicle', 'payments']);
 
         // Apply same filters as index
         if ($dateRange === 'daily') {
             $query->whereDate('rental_start_date', Carbon::today());
+        } elseif ($dateRange === 'weekly') {
+            $startOfWeek = Carbon::now()->startOfWeek();
+            $endOfWeek = Carbon::now()->endOfWeek();
+            $query->whereBetween('rental_start_date', [$startOfWeek, $endOfWeek]);
         } elseif ($dateRange === 'monthly') {
             $query->whereMonth('rental_start_date', Carbon::now()->month)
                   ->whereYear('rental_start_date', Carbon::now()->year);
-        } elseif ($dateRange === 'yearly') {
-            $query->whereYear('rental_start_date', Carbon::now()->year);
+        } elseif ($dateRange === 'custom' && $dateFrom && $dateTo) {
+            $query->whereBetween('rental_start_date', [$dateFrom, $dateTo]);
         } elseif ($dateFrom && $dateTo) {
             $query->whereBetween('rental_start_date', [$dateFrom, $dateTo]);
         }
 
         if ($bookingStatus === 'done') {
-            $query->where('booking_status', 'Completed');
-        } elseif ($bookingStatus === 'coming') {
+            $query->where(function($q) {
+                $q->where('booking_status', 'Done')
+                  ->orWhere('booking_status', 'Completed');
+            });
+        } elseif ($bookingStatus === 'upcoming') {
             $query->whereIn('booking_status', ['Pending', 'Confirmed'])
                   ->where('rental_start_date', '>=', Carbon::today());
         } elseif ($bookingStatus === 'cancelled') {
@@ -218,36 +245,70 @@ class AdminRentalReportController extends Controller
         }
 
         if ($customerId) {
-            $query->where('user_id', $customerId);
+            $query->where('customerID', $customerId);
         }
         if ($customerName) {
-            $query->whereHas('user', function($q) use ($customerName) {
+            $query->whereHas('customer.user', function($q) use ($customerName) {
                 $q->where('name', 'like', "%{$customerName}%");
             });
         }
         if ($vehicleId) {
             $query->where('vehicleID', $vehicleId);
         }
+        if ($vehicleBrand) {
+            $query->whereHas('vehicle', function($vQuery) use ($vehicleBrand) {
+                $vQuery->where('vehicle_brand', 'like', "%{$vehicleBrand}%");
+            });
+        }
+        if ($vehicleModel) {
+            $query->whereHas('vehicle', function($vQuery) use ($vehicleModel) {
+                $vQuery->where('vehicle_model', 'like', "%{$vehicleModel}%");
+            });
+        }
+        if ($plateNo) {
+            $query->whereHas('vehicle', function($vQuery) use ($plateNo) {
+                $vQuery->where('plate_number', 'like', "%{$plateNo}%");
+            });
+        }
+        if ($vehicleBrand) {
+            $query->whereHas('vehicle', function($vQuery) use ($vehicleBrand) {
+                $vQuery->where('vehicle_brand', 'like', "%{$vehicleBrand}%");
+            });
+        }
+        if ($vehicleModel) {
+            $query->whereHas('vehicle', function($vQuery) use ($vehicleModel) {
+                $vQuery->where('vehicle_model', 'like', "%{$vehicleModel}%");
+            });
+        }
+        if ($plateNo) {
+            $query->whereHas('vehicle', function($vQuery) use ($plateNo) {
+                $vQuery->where('plate_number', 'like', "%{$plateNo}%");
+            });
+        }
 
         $bookings = $query->orderBy('rental_start_date', 'desc')->get();
 
         // Apply same filters
-        $filteredBookings = $bookings->filter(function($booking) use ($vehicleType, $paymentStatus, $vehicleBrand, $vehicleModel, $plateNo) {
+        $filteredBookings = $bookings->filter(function($booking) use ($vehicleType, $vehicleTypeFilter, $paymentStatus) {
             $vehicle = $booking->vehicle;
             
             if ($vehicleType !== 'all') {
                 if ($vehicleType === 'car' && !($vehicle instanceof Car)) return false;
-                if ($vehicleType === 'motorcycle' && !($vehicle instanceof Motorcycle)) return false;
+                if (($vehicleType === 'motor' || $vehicleTypeFilter === 'motorcycle') && !($vehicle instanceof Motorcycle)) return false;
             }
 
-            if ($vehicleBrand && (!$vehicle || stripos($vehicle->vehicle_brand ?? '', $vehicleBrand) === false)) return false;
-            if ($vehicleModel && (!$vehicle || stripos($vehicle->vehicle_model ?? '', $vehicleModel) === false)) return false;
-            if ($plateNo && (!$vehicle || stripos($vehicle->plate_number ?? $vehicle->plate_no ?? '', $plateNo) === false)) return false;
-
             if ($paymentStatus !== 'all') {
-                $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
-                if ($paymentStatus === 'deposit' && ($totalPaid >= $booking->total_price || $totalPaid == 0)) return false;
-                if ($paymentStatus === 'full' && $totalPaid < $booking->total_price) return false;
+                $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                $totalPaid = $booking->payments()->whereIn('payment_status', ['Verified', 'Full'])->sum('total_amount');
+                $refundedAmount = $booking->payments()->where('payment_status', 'Refunded')->sum('total_amount');
+                
+                if ($paymentStatus === 'deposit') {
+                    if ($totalPaid >= $totalRequired || $totalPaid == 0) return false;
+                } elseif ($paymentStatus === 'fully') {
+                    if ($totalPaid < $totalRequired) return false;
+                } elseif ($paymentStatus === 'refunded') {
+                    if ($refundedAmount <= 0) return false;
+                }
             }
 
             return true;

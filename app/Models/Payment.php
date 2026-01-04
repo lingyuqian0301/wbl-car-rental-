@@ -23,6 +23,7 @@ class Payment extends Model
         'isPayment_complete',
         'payment_isVerify',
         'latest_Update_Date_Time',
+        'verify_by',
         'bookingID',
     ];
 

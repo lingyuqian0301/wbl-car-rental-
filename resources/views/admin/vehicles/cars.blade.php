@@ -267,10 +267,16 @@
                                 </button>
                             </td>
                             <td>
-                                <a href="{{ route('admin.vehicles.cars.edit', $car->vehicleID) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="Edit Car">
-                                    <i class="bi bi-pencil"></i> Edit
-                                </a>
+                                <div class="d-flex gap-1">
+                                    <a href="{{ route('admin.vehicles.show', $car->vehicleID) }}" 
+                                       class="btn btn-sm btn-outline-info" title="View Car Details">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <a href="{{ route('admin.vehicles.cars.edit', $car->vehicleID) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Edit Car">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @empty

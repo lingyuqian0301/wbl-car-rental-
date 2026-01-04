@@ -72,4 +72,20 @@ class Vehicle extends Model
     {
         return $this->hasOne(Motorcycle::class, 'vehicleID', 'vehicleID');
     }
+
+    /**
+     * Get the maintenance records for this vehicle.
+     */
+    public function maintenances(): HasMany
+    {
+        return $this->hasMany(VehicleMaintenance::class, 'vehicleID', 'vehicleID');
+    }
+
+    /**
+     * Get the documents for this vehicle.
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(VehicleDocument::class, 'vehicleID', 'vehicleID');
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OwnerCar extends Model
 {
@@ -38,10 +39,26 @@ class OwnerCar extends Model
     }
 
     /**
+     * Get the person details for this owner (to get name).
+     */
+    public function personDetails(): BelongsTo
+    {
+        return $this->belongsTo(PersonDetails::class, 'ic_no', 'ic_no');
+    }
+
+    /**
      * Get the cars owned by this owner.
      */
     public function cars()
     {
         return $this->hasMany(Car::class, 'ownerID', 'ownerID');
+    }
+
+    /**
+     * Get owner name from PersonDetails.
+     */
+    public function getOwnerNameAttribute()
+    {
+        return $this->personDetails->fullname ?? 'N/A';
     }
 }

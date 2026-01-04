@@ -37,7 +37,7 @@
     }
     .filter-row {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 10px;
         align-items: end;
     }
@@ -48,6 +48,7 @@
         font-size: 0.75rem;
         margin-bottom: 4px;
     }
+    .filter-row .form-control,
     .filter-row .form-select {
         font-size: 0.85rem;
         padding: 4px 8px;
@@ -56,9 +57,13 @@
         font-size: 0.85rem;
         padding: 4px 12px;
     }
-    .btn-generate {
-        padding: 4px 12px;
-        font-size: 0.85rem;
+    .invoice-info-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        line-height: 1.4;
+    }
+    .invoice-info-text div {
+        margin-bottom: 2px;
     }
 </style>
 @endpush
@@ -67,7 +72,7 @@
 <div class="container-fluid py-2">
     <x-admin-page-header 
         title="Invoices" 
-        description="View and generate invoices for fully paid bookings"
+        description="View and manage all invoices"
         :stats="[
             ['label' => 'Total Invoices', 'value' => $totalInvoices, 'icon' => 'bi-file-earmark-text'],
             ['label' => 'Total Bookings', 'value' => $totalBookings, 'icon' => 'bi-calendar'],
@@ -91,29 +96,45 @@
         </div>
     @endif
 
-    <!-- Filters -->
+    <!-- Filters and Sort -->
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.invoices.index') }}" class="filter-row">
             <div>
-                <label class="form-label small fw-semibold">Booking Date</label>
-                <select name="sort_booking_date" class="form-select form-select-sm">
-                    <option value="desc" {{ $sortBookingDate === 'desc' ? 'selected' : '' }}>Descending</option>
-                    <option value="asc" {{ $sortBookingDate === 'asc' ? 'selected' : '' }}>Ascending</option>
+                <label class="form-label small fw-semibold">Sort by Invoice No</label>
+                <select name="sort_invoice_no" class="form-select form-select-sm">
+                    <option value="asc" {{ $sortInvoiceNo === 'asc' ? 'selected' : '' }}>Ascending</option>
+                    <option value="desc" {{ $sortInvoiceNo === 'desc' ? 'selected' : '' }}>Descending</option>
                 </select>
             </div>
             <div>
-                <label class="form-label small fw-semibold">Invoice ID</label>
-                <select name="sort_invoice_id" class="form-select form-select-sm">
-                    <option value="desc" {{ $sortInvoiceId === 'desc' ? 'selected' : '' }}>Descending</option>
-                    <option value="asc" {{ $sortInvoiceId === 'asc' ? 'selected' : '' }}>Ascending</option>
+                <label class="form-label small fw-semibold">Sort by Issue Date</label>
+                <select name="sort_issue_date" class="form-select form-select-sm">
+                    <option value="desc" {{ $sortIssueDate === 'desc' ? 'selected' : '' }}>Descending</option>
+                    <option value="asc" {{ $sortIssueDate === 'asc' ? 'selected' : '' }}>Ascending</option>
                 </select>
+            </div>
+            <div>
+                <label class="form-label small fw-semibold">Issue Date From</label>
+                <input type="date" name="issue_date_from" class="form-control form-control-sm" value="{{ $issueDateFrom }}">
+            </div>
+            <div>
+                <label class="form-label small fw-semibold">Issue Date To</label>
+                <input type="date" name="issue_date_to" class="form-control form-control-sm" value="{{ $issueDateTo }}">
+            </div>
+            <div>
+                <label class="form-label small fw-semibold">Pickup Date From</label>
+                <input type="date" name="pickup_date_from" class="form-control form-control-sm" value="{{ $pickupDateFrom }}">
+            </div>
+            <div>
+                <label class="form-label small fw-semibold">Pickup Date To</label>
+                <input type="date" name="pickup_date_to" class="form-control form-control-sm" value="{{ $pickupDateTo }}">
             </div>
             <div>
                 <button type="submit" class="btn btn-danger btn-sm w-100">
                     <i class="bi bi-funnel"></i> Apply Filters
                 </button>
             </div>
-            @if($sortBookingDate !== 'desc' || $sortInvoiceId !== 'desc')
+            @if($issueDateFrom || $issueDateTo || $pickupDateFrom || $pickupDateTo || $sortInvoiceNo !== 'asc' || $sortIssueDate !== 'desc')
             <div>
                 <a href="{{ route('admin.invoices.index') }}" class="btn btn-outline-secondary btn-sm w-100">
                     <i class="bi bi-x-circle"></i> Clear
@@ -132,88 +153,101 @@
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Booking ID</th>
-                        <th>Customer ID</th>
+                        <th>Invoice ID</th>
                         <th>Customer Name</th>
                         <th>Booking Date</th>
-                        <th>Car Model</th>
-                        <th>Car Type</th>
+                        <th>Invoice Picture</th>
                         <th>Car Plate No</th>
-                        <th>Invoice</th>
+                        <th>Total Payment Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($bookings as $booking)
                         @php
+                            $invoice = $booking->invoice;
+                            $customer = $booking->customer;
+                            $user = $customer->user ?? null;
                             $vehicle = $booking->vehicle;
-                            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
-                            $isFullyPaid = $totalPaid >= $booking->total_price;
+                            $additionalCharges = $booking->additionalCharges;
+                            
+                            // Calculate total payment amount
+                            $totalPaid = $booking->payments()
+                                ->where('payment_status', 'Verified')
+                                ->sum('total_amount');
+                            
+                            $depositAmount = $booking->deposit_amount ?? 0;
+                            $rentalAmount = $booking->rental_amount ?? 0;
+                            $additionalChargesTotal = $additionalCharges ? ($additionalCharges->total_extra_charge ?? 0) : 0;
+                            $totalPaymentAmount = $depositAmount + $rentalAmount + $additionalChargesTotal;
                         @endphp
                         <tr>
                             <td>
-                                <strong>#{{ $booking->bookingID ?? $booking->id }}</strong>
+                                <strong>#{{ $invoice->invoiceID ?? 'N/A' }}</strong>
+                                <div class="invoice-info-text">
+                                    Booking ID: #{{ $booking->bookingID }}
+                                </div>
                             </td>
                             <td>
-                                #{{ $booking->user->id ?? 'N/A' }}
-                            </td>
-                            <td>
-                                {{ $booking->user->name ?? 'Unknown Customer' }}
+                                {{ $user->name ?? 'Unknown Customer' }}
                             </td>
                             <td>
                                 @if($booking->rental_start_date)
-                                    @if($booking->rental_start_date instanceof \Carbon\Carbon)
-                                        {{ $booking->rental_start_date->format('d M Y') }}
-                                    @else
-                                        {{ \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') }}
-                                    @endif
+                                    {{ \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') }}
                                 @else
                                     <span class="text-muted">N/A</span>
                                 @endif
                             </td>
                             <td>
-                                @if($vehicle)
-                                    {{ $vehicle->full_model ?? ($vehicle->vehicle_brand ?? '') . ' ' . ($vehicle->vehicle_model ?? '') }}
-                                @else
-                                    <span class="text-muted">Vehicle not found</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($vehicle)
-                                    @if($vehicle instanceof \App\Models\Car)
-                                        {{ $vehicle->car_type ?? 'Car' }}
-                                    @elseif($vehicle instanceof \App\Models\Motorcycle)
-                                        {{ $vehicle->motor_type ?? 'Motorcycle' }}
-                                    @else
-                                        {{ $vehicle->vehicle_type ?? 'Vehicle' }}
-                                    @endif
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($vehicle)
-                                    {{ $vehicle->plate_number ?? $vehicle->plate_no ?? 'N/A' }}
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($isFullyPaid)
-                                    <a href="{{ route('invoices.generate', $booking->bookingID ?? $booking->id) }}" 
-                                       class="btn btn-sm btn-danger btn-generate" 
-                                       target="_blank">
-                                        <i class="bi bi-file-earmark-pdf"></i> Generate Invoice
+                                @if($invoice)
+                                    <a href="{{ route('invoices.generate', $booking->bookingID) }}" 
+                                       class="btn btn-sm btn-danger" 
+                                       target="_blank"
+                                       title="View Invoice PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i> View Invoice
                                     </a>
                                 @else
-                                    <span class="text-muted small">Payment pending</span>
+                                    <span class="text-muted small">No invoice</span>
                                 @endif
+                            </td>
+                            <td>
+                                @if($vehicle)
+                                    <strong>{{ $vehicle->plate_number ?? 'N/A' }}</strong>
+                                    <div class="invoice-info-text">
+                                        {{ ($vehicle->vehicle_brand ?? '') . ' ' . ($vehicle->vehicle_model ?? '') }}
+                                    </div>
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
+                            <td>
+                                <strong>RM {{ number_format($totalPaymentAmount, 2) }}</strong>
+                                <div class="invoice-info-text">
+                                    <div>Deposit: RM {{ number_format($depositAmount, 2) }}</div>
+                                    <div>Rental: RM {{ number_format($rentalAmount, 2) }}</div>
+                                    @if($additionalChargesTotal > 0)
+                                        <div>Additional Charges: RM {{ number_format($additionalChargesTotal, 2) }}</div>
+                                        @if($additionalCharges)
+                                            <div class="mt-1">
+                                                @if($additionalCharges->addOns_charge > 0)
+                                                    <small>Add-ons: RM {{ number_format($additionalCharges->addOns_charge, 2) }}</small><br>
+                                                @endif
+                                                @if($additionalCharges->late_return_fee > 0)
+                                                    <small>Late Return: RM {{ number_format($additionalCharges->late_return_fee, 2) }}</small><br>
+                                                @endif
+                                                @if($additionalCharges->damage_fee > 0)
+                                                    <small>Damage: RM {{ number_format($additionalCharges->damage_fee, 2) }}</small>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                <p class="mt-3 mb-0">No invoices available. Invoices are only generated for bookings with full payment verified.</p>
+                                <p class="mt-3 mb-0">No invoices available.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -227,13 +261,6 @@
                 {{ $bookings->links() }}
             </div>
         @endif
-        </div>
     </div>
 </div>
 @endsection
-
-
-
-
-
-

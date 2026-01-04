@@ -12,23 +12,59 @@ class AdminInvoiceController extends Controller
 {
     public function index(Request $request): View
     {
-        $sortBookingDate = $request->get('sort_booking_date', 'desc');
-        $sortInvoiceId = $request->get('sort_invoice_id', 'desc');
+        $sortInvoiceNo = $request->get('sort_invoice_no', 'asc');
+        $sortIssueDate = $request->get('sort_issue_date', 'desc');
+        $issueDateFrom = $request->get('issue_date_from');
+        $issueDateTo = $request->get('issue_date_to');
+        $pickupDateFrom = $request->get('pickup_date_from');
+        $pickupDateTo = $request->get('pickup_date_to');
 
-        $query = Booking::with(['user', 'vehicle', 'payments', 'invoice']);
+        $query = Booking::with([
+            'customer.user', 
+            'vehicle.car', 
+            'vehicle.motorcycle', 
+            'payments', 
+            'invoice',
+            'additionalCharges'
+        ])->whereHas('invoice'); // Only show bookings with invoices
 
-        // Sort by booking date
-        if ($sortBookingDate === 'asc') {
-            $query->orderBy('rental_start_date', 'asc');
-        } else {
-            $query->orderBy('rental_start_date', 'desc');
+        // Filter by issue date range
+        if ($issueDateFrom) {
+            $query->whereHas('invoice', function($q) use ($issueDateFrom) {
+                $q->whereDate('issue_date', '>=', $issueDateFrom);
+            });
+        }
+        if ($issueDateTo) {
+            $query->whereHas('invoice', function($q) use ($issueDateTo) {
+                $q->whereDate('issue_date', '<=', $issueDateTo);
+            });
         }
 
-        // Sort by invoice ID (if invoice exists)
-        if ($sortInvoiceId === 'asc') {
-            $query->orderByRaw('(SELECT invoiceID FROM invoice WHERE invoice.bookingID = booking.bookingID) ASC');
+        // Filter by pickup date range
+        if ($pickupDateFrom) {
+            $query->whereDate('rental_start_date', '>=', $pickupDateFrom);
+        }
+        if ($pickupDateTo) {
+            $query->whereDate('rental_start_date', '<=', $pickupDateTo);
+        }
+
+        // Join with invoice table for sorting
+        $query->leftJoin('invoice', 'invoice.bookingID', '=', 'booking.bookingID')
+              ->select('booking.*')
+              ->distinct();
+
+        // Sort by invoice number
+        if ($sortInvoiceNo === 'asc') {
+            $query->orderBy('invoice.invoice_number', 'asc');
         } else {
-            $query->orderByRaw('(SELECT invoiceID FROM invoice WHERE invoice.bookingID = booking.bookingID) DESC');
+            $query->orderBy('invoice.invoice_number', 'desc');
+        }
+
+        // Sort by issue date (secondary sort)
+        if ($sortIssueDate === 'asc') {
+            $query->orderBy('invoice.issue_date', 'asc');
+        } else {
+            $query->orderBy('invoice.issue_date', 'desc');
         }
 
         $bookings = $query->paginate(20)->withQueryString();
@@ -36,13 +72,19 @@ class AdminInvoiceController extends Controller
         // Summary stats for header
         $today = Carbon::today();
         $totalInvoices = Invoice::count();
-        $totalBookings = Booking::count();
-        $totalToday = Booking::whereDate('rental_start_date', $today)->count();
+        $totalBookings = Booking::whereHas('invoice')->count();
+        $totalToday = Booking::whereHas('invoice')
+            ->whereDate('rental_start_date', $today)
+            ->count();
 
         return view('admin.invoices.index', [
             'bookings' => $bookings,
-            'sortBookingDate' => $sortBookingDate,
-            'sortInvoiceId' => $sortInvoiceId,
+            'sortInvoiceNo' => $sortInvoiceNo,
+            'sortIssueDate' => $sortIssueDate,
+            'issueDateFrom' => $issueDateFrom,
+            'issueDateTo' => $issueDateTo,
+            'pickupDateFrom' => $pickupDateFrom,
+            'pickupDateTo' => $pickupDateTo,
             'totalInvoices' => $totalInvoices,
             'totalBookings' => $totalBookings,
             'totalToday' => $totalToday,

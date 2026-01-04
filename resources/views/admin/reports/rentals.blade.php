@@ -83,27 +83,28 @@
         <form method="GET" action="{{ route('admin.reports.rentals') }}" class="filter-row">
             <div>
                 <label class="form-label small fw-semibold">Date Range</label>
-                <select name="date_range" class="form-select form-select-sm">
+                <select name="date_range" class="form-select form-select-sm" id="date_range_select">
                     <option value="all" {{ $dateRange === 'all' ? 'selected' : '' }}>All</option>
                     <option value="daily" {{ $dateRange === 'daily' ? 'selected' : '' }}>Daily</option>
-                    <option value="monthly" {{ $dateRange === 'monthly' ? 'selected' : '' }}>Monthly</option>
-                    <option value="yearly" {{ $dateRange === 'yearly' ? 'selected' : '' }}>Yearly</option>
+                    <option value="weekly" {{ $dateRange === 'weekly' ? 'selected' : '' }}>Weekly Range</option>
+                    <option value="monthly" {{ $dateRange === 'monthly' ? 'selected' : '' }}>Monthly Range</option>
+                    <option value="custom" {{ ($dateRange === 'custom' || ($dateFrom && $dateTo && $dateRange !== 'daily' && $dateRange !== 'weekly' && $dateRange !== 'monthly')) ? 'selected' : '' }}>Custom Date Range</option>
                 </select>
             </div>
             <div>
                 <label class="form-label small fw-semibold">Date From</label>
-                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom }}">
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom }}" id="date_from_input">
             </div>
             <div>
                 <label class="form-label small fw-semibold">Date To</label>
-                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo }}">
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo }}" id="date_to_input">
             </div>
             <div>
                 <label class="form-label small fw-semibold">Vehicle Type</label>
                 <select name="vehicle_type" class="form-select form-select-sm">
                     <option value="all" {{ $vehicleType === 'all' ? 'selected' : '' }}>All</option>
                     <option value="car" {{ $vehicleType === 'car' ? 'selected' : '' }}>Car</option>
-                    <option value="motorcycle" {{ $vehicleType === 'motorcycle' ? 'selected' : '' }}>Motorcycle</option>
+                    <option value="motor" {{ $vehicleType === 'motor' ? 'selected' : '' }}>Motor</option>
                 </select>
             </div>
             <div>
@@ -111,7 +112,7 @@
                 <select name="booking_status" class="form-select form-select-sm">
                     <option value="all" {{ $bookingStatus === 'all' ? 'selected' : '' }}>All</option>
                     <option value="done" {{ $bookingStatus === 'done' ? 'selected' : '' }}>Done</option>
-                    <option value="coming" {{ $bookingStatus === 'coming' ? 'selected' : '' }}>Coming</option>
+                    <option value="upcoming" {{ $bookingStatus === 'upcoming' ? 'selected' : '' }}>Upcoming</option>
                     <option value="cancelled" {{ $bookingStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
             </div>
@@ -120,7 +121,8 @@
                 <select name="payment_status" class="form-select form-select-sm">
                     <option value="all" {{ $paymentStatus === 'all' ? 'selected' : '' }}>All</option>
                     <option value="deposit" {{ $paymentStatus === 'deposit' ? 'selected' : '' }}>Deposit</option>
-                    <option value="full" {{ $paymentStatus === 'full' ? 'selected' : '' }}>Full</option>
+                    <option value="fully" {{ $paymentStatus === 'fully' ? 'selected' : '' }}>Fully</option>
+                    <option value="refunded" {{ $paymentStatus === 'refunded' ? 'selected' : '' }}>Refunded</option>
                 </select>
             </div>
             <div>
@@ -284,6 +286,35 @@
     function printReport() {
         window.print();
     }
+    
+    // Date range selector handling
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateRangeSelect = document.getElementById('date_range_select');
+        const dateFromInput = document.getElementById('date_from_input');
+        const dateToInput = document.getElementById('date_to_input');
+        
+        function updateDateInputs() {
+            const selectedRange = dateRangeSelect.value;
+            const dateFromDiv = dateFromInput ? dateFromInput.closest('div') : null;
+            const dateToDiv = dateToInput ? dateToInput.closest('div') : null;
+            
+            if (selectedRange === 'custom') {
+                if (dateFromDiv) dateFromDiv.style.display = 'block';
+                if (dateToDiv) dateToDiv.style.display = 'block';
+            } else if (selectedRange === 'all') {
+                if (dateFromDiv) dateFromDiv.style.display = 'none';
+                if (dateToDiv) dateToDiv.style.display = 'none';
+            } else {
+                if (dateFromDiv) dateFromDiv.style.display = 'none';
+                if (dateToDiv) dateToDiv.style.display = 'none';
+            }
+        }
+        
+        if (dateRangeSelect) {
+            dateRangeSelect.addEventListener('change', updateDateInputs);
+            updateDateInputs(); // Initial call
+        }
+    });
 </script>
 @endpush
 @endsection
