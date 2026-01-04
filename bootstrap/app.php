@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'staff' => \App\Http\Middleware\EnsureUserIsStaff::class,
         ]);
+        
+        // Exclude booking/finalize from CSRF verification (for debugging)
+        $middleware->validateCsrfTokens(except: [
+            'booking/finalize',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

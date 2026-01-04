@@ -88,13 +88,16 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
-            background: white;
+            background: var(--bg-light);
         }
 
-        .branded-section {
-            display: none;
-            position: relative;
-            overflow: hidden;
+        .login-wrapper {
+            width: 100%;
+            max-width: 440px;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         .logo-text {
@@ -105,11 +108,6 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             letter-spacing: -0.5px;
-        }
-
-        .login-wrapper {
-            width: 100%;
-            max-width: 440px;
         }
 
         /* Input Styles */
@@ -424,13 +422,6 @@
 
         /* Responsive */
         @media (min-width: 1024px) {
-            .login-section {
-                width: 45%;
-            }
-            .branded-section {
-                display: block;
-                width: 55%;
-            }
             .login-wrapper {
                 padding: 48px;
             }
@@ -458,12 +449,13 @@
         <div class="login-section">
             <div class="login-wrapper animate-fade-in-up">
                 <!-- Brand Header -->
-                <div class="logo-container">
+                <div class="logo-container" style="text-align: center; margin-bottom: 32px;">
+                    <a href="/" style="text-decoration: none;">
                         <div class="logo-box">
                             <span class="logo-text">HASTA Travel</span>
                         </div>
                     </a>
-                </div>
+                </div>
 
                 <!-- Form Title -->
                 <div class="form-title animate-fade-in" style="animation-delay: 0.2s;">
@@ -553,64 +545,6 @@
                         <a href="#">Privacy Policy</a>
                         <span>•</span>
                         <a href="#">Terms</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Section - Branded Experience -->
-        <div class="branded-section">
-            <!-- Background Image -->
-            <div style="position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'); background-size: cover; background-position: center;"></div>
-            <div class="gradient-overlay"></div>
-            <div class="branded-content">
-                <div class="animate-fade-in">
-                    <h2>
-                        Explore the World<br/>
-                        <span>with Confidence</span>
-                    </h2>
-                    <p>Your trusted partner for unforgettable travel experiences. We make your journey seamless, secure, and memorable.</p>
-                </div>
-
-                <div>
-                    <div class="feature-card animate-fade-in" style="animation-delay: 0.2s;">
-                        <div class="feature-icon">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="feature-text">
-                            <h3>24/7 Customer Support</h3>
-                            <p>Round-the-clock assistance whenever you need help</p>
-                        </div>
-                    </div>
-
-                    <div class="feature-card animate-fade-in" style="animation-delay: 0.3s;">
-                        <div class="feature-icon">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                            </svg>
-                        </div>
-                        <div class="feature-text">
-                            <h3>Best Price Guarantee</h3>
-                            <p>We match or beat any competitor's price</p>
-                        </div>
-                    </div>
-
-                    <div class="feature-card animate-fade-in" style="animation-delay: 0.4s;">
-                        <div class="feature-icon">
-                            <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="feature-text">
-                            <h3>Flexible Booking Options</h3>
-                            <p>Change or cancel your plans with ease</p>
-                        </div>
-                    </div>
-
-                    <div class="contact-banner animate-fade-in" style="animation-delay: 0.5s;">
-                        <p>Need assistance? Contact us at <span>+60-11-10-900-700</span></p>
                     </div>
                 </div>
             </div>

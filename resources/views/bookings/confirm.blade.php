@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Booking Confirmation - HASTA Travel</title>
     <style>
         * {
@@ -271,15 +272,34 @@
 
         <!-- Content -->
         <div class="content">
+            @if(session('error'))
+                <div style="background-color: #fee2e2; border: 1px solid #dc2626; color: #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>Error:</strong> {{ session('error') }}
+                </div>
+            @endif
+            
             @if ($errors->any())
-        <div style="background-color: #fee2e2; border: 1px solid #dc2626; color: #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <ul style="list-style-type: none;">
-                @foreach ($errors->all() as $error)
-                    <li>• {{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+                <div style="background-color: #fee2e2; border: 1px solid #dc2626; color: #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <ul style="list-style-type: none;">
+                        @foreach ($errors->all() as $error)
+                            <li>• {{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            
+            {{-- Debug: Show form action URL --}}
+            @if(config('app.debug'))
+                <div style="background-color: #e0f2fe; border: 1px solid #0284c7; color: #0369a1; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 12px;">
+                    <strong>Debug Info:</strong><br>
+                    Current URL: {{ request()->url() }}<br>
+                    Form Action (route helper): {{ route('booking.finalize') }}<br>
+                    Vehicle ID: {{ $vehicle->vehicleID ?? 'N/A' }}<br>
+                    Start Date: {{ $bookingData['rental_start_date'] ?? $bookingData['start_date'] ?? 'EMPTY' }}<br>
+                    End Date: {{ $bookingData['rental_end_date'] ?? $bookingData['end_date'] ?? 'EMPTY' }}<br>
+                    Total Amount: {{ $bookingData['rental_amount'] ?? $bookingData['total_amount'] ?? 'EMPTY' }}
+                </div>
+            @endif
             <!-- Customer Information -->
             <div class="section">
                 <h2>Customer Information</h2>
@@ -328,15 +348,15 @@
                 <div class="section-content">
                     <div class="info-row">
                         <span class="info-label">Pick-up Date:</span>
-                        <span class="info-value">{{ date('M d, Y', strtotime($bookingData['start_date'])) }}</span>
+                        <span class="info-value">{{ date('M d, Y', strtotime($bookingData['rental_start_date'] ?? $bookingData['start_date'] ?? '')) }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Return Date:</span>
-                        <span class="info-value">{{ date('M d, Y', strtotime($bookingData['end_date'])) }}</span>
+                        <span class="info-value">{{ date('M d, Y', strtotime($bookingData['rental_end_date'] ?? $bookingData['end_date'] ?? '')) }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Duration:</span>
-                        <span class="info-value">{{ $bookingData['duration_days'] }} day(s)</span>
+                        <span class="info-value">{{ $bookingData['duration'] ?? $bookingData['duration_days'] ?? 0 }} day(s)</span>
                     </div>
                 </div>
             </div>
@@ -374,19 +394,28 @@
             <!-- Price Summary -->
             <div class="price-summary">
                 <h2 style="border-bottom: 2px solid #dc2626; padding-bottom: 10px; margin-bottom: 20px;">Price Summary</h2>
+                @php
+                    $duration = $bookingData['duration'] ?? $bookingData['duration_days'] ?? 1;
+                    $addonsCharge = 0;
+                    foreach($addons as $addon) {
+                        $addonsCharge += $addon['total'] ?? 0;
+                    }
+                    $vehicleTotal = $vehicle->rental_price * $duration;
+                    $totalAmount = $bookingData['rental_amount'] ?? $bookingData['total_amount'] ?? ($vehicleTotal + $addonsCharge);
+                @endphp
                 <div class="price-row">
-                    <span class="price-label">Vehicle (RM {{ $vehicle->rental_price }} × {{ $bookingData['duration_days'] }} days)</span>
-                    <span class="price-value">RM {{ number_format($vehicle->rental_price * $bookingData['duration_days'], 2) }}</span>
+                    <span class="price-label">Vehicle (RM {{ $vehicle->rental_price }} × {{ $duration }} days)</span>
+                    <span class="price-value">RM {{ number_format($vehicleTotal, 2) }}</span>
                 </div>
                 @if(count($addons) > 0)
                 <div class="price-row">
                     <span class="price-label">Add-ons Total</span>
-                    <span class="price-value">RM {{ number_format($bookingData['addOns_charge'], 2) }}</span>
+                    <span class="price-value">RM {{ number_format($addonsCharge, 2) }}</span>
                 </div>
                 @endif
                 <div class="total-row">
                     <span class="total-label">Total Amount</span>
-                    <span class="total-value">RM {{ number_format($bookingData['total_amount'], 2) }}</span>
+                    <span class="total-value">RM {{ number_format($totalAmount, 2) }}</span>
                 </div>
             </div>
 
@@ -394,15 +423,14 @@
          <div class="actions">
     <button class="btn btn-cancel" type="button" onclick="history.back()">Cancel</button>
 
-    <form method="POST" action="{{ route('booking.finalize') }}" style="flex: 1;" id="confirmForm">
-        @csrf
-
-        <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicleID ?? $vehicle->id }}">
-        <input type="hidden" name="start_date" value="{{ $bookingData['start_date'] }}">
-        <input type="hidden" name="end_date" value="{{ $bookingData['end_date'] }}">
-        <input type="hidden" name="pickup_point" value="{{ $bookingData['pickup_point'] }}">
-        <input type="hidden" name="return_point" value="{{ $bookingData['return_point'] }}">
-        <input type="hidden" name="total_amount" value="{{ $bookingData['total_amount'] }}">
+    <form method="post" action="{{ route('booking.finalize') }}" style="flex: 1;" id="confirmForm" enctype="application/x-www-form-urlencoded">
+        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicleID ?? $vehicle->id ?? 0 }}">
+        <input type="hidden" name="start_date" value="{{ $bookingData['rental_start_date'] ?? $bookingData['start_date'] ?? now()->format('Y-m-d') }}">
+        <input type="hidden" name="end_date" value="{{ $bookingData['rental_end_date'] ?? $bookingData['end_date'] ?? now()->addDay()->format('Y-m-d') }}">
+        <input type="hidden" name="pickup_point" value="{{ $bookingData['pickup_point'] ?? 'Not specified' }}">
+        <input type="hidden" name="return_point" value="{{ $bookingData['return_point'] ?? 'Not specified' }}">
+        <input type="hidden" name="total_amount" value="{{ $bookingData['rental_amount'] ?? $bookingData['total_amount'] ?? 0 }}">
 
         @if(isset($addons))
             @foreach($addons as $index => $addon)
@@ -432,7 +460,7 @@
             // Show loading overlay when form is submitted
             document.getElementById('loadingOverlay').classList.add('active');
             document.getElementById('submitBtn').disabled = true;
-            // Allow form to submit naturally
+            // Form submits naturally as POST
         });
     </script>
 </body>

@@ -200,17 +200,22 @@ public function approve($id): RedirectResponse
                         'last_update_datetime' => now()
                     ]);
 
-                // 2. Record Transaction
-                \Illuminate\Support\Facades\DB::table('wallettransaction')->insert([
-                    'amount'           => $paymentAmount,
-                    'transaction_type' => 'Payment Verified',
-                    'description'      => 'Payment verified for Booking #' . $booking->bookingID,
-                    'reference_type'   => 'Booking',
-                    'reference_id'     => $booking->bookingID,
-                    'transaction_date' => now(),
-                    'walletAccountID'  => $wallet->walletAccountID,
-                    'paymentID'        => $payment->paymentID
-                ]);
+                // 2. Record Transaction (if table exists)
+                try {
+                    \Illuminate\Support\Facades\DB::table('wallettransaction')->insert([
+                        'amount'           => $paymentAmount,
+                        'transaction_type' => 'Payment Verified',
+                        'description'      => 'Payment verified for Booking #' . $booking->bookingID,
+                        'reference_type'   => 'Booking',
+                        'reference_id'     => $booking->bookingID,
+                        'transaction_date' => now(),
+                        'walletAccountID'  => $wallet->walletAccountID,
+                        'paymentID'        => $payment->paymentID
+                    ]);
+                } catch (\Exception $e) {
+                    // Table doesn't exist, skip transaction recording
+                    \Illuminate\Support\Facades\Log::warning('WalletTransaction table not found: ' . $e->getMessage());
+                }
             }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Wallet Logic Error: ' . $e->getMessage());

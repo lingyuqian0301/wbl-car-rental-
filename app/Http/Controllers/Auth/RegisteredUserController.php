@@ -4,12 +4,17 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Local;
+use App\Models\LocalStudent;
+use App\Models\StudentDetails;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
@@ -38,46 +43,86 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'matric_number' => ['nullable', 'string', 'max:50'],
+            'program' => ['nullable', 'string', 'max:50'],
         ]);
 
-        // 2. Create User Account
-        $user = User::create([
-            'username' => $request->email, // Use email as username for now
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'dateRegistered' => now(),
-            'isActive' => true,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        // 3. Create Customer Profile
-        $customer = Customer::create([
-            'userID' => $user->userID,
-            'phone_number' => $request->phone ?? '',
-            'address' => '',
-            'customer_license' => '',
-            'emergency_contact' => '',
-            // Note: booking_times removed - let database use default value
-        ]);
+            // 2. Create User Account
+            $user = User::create([
+                'username' => $request->email,
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'dateRegistered' => now(),
+                'isActive' => true,
+            ]);
 
-        // ---------------------------------------------------------
-        // 4. CREATE WALLET IMMEDIATELY (New Addition)
-        // ---------------------------------------------------------
-        // This guarantees every new user has a wallet from Day 1.
-        \App\Models\WalletAccount::create([
-            'customerID'         => $customer->customerID,
-            'wallet_balance'     => 0.00,
-            'outstanding_amount' => 0.00,
-            'wallet_status'      => 'Active',
-            'wallet_lastUpdate_Date_Time' => now()
-        ]);
-        // ---------------------------------------------------------
+            // 3. Create Customer Profile
+            $customer = Customer::create([
+                'userID' => $user->userID,
+                'phone_number' => '',
+                'address' => '',
+                'customer_license' => '',
+                'emergency_contact' => '',
+            ]);
 
-        // 5. Final Steps
-        event(new Registered($user));
+            // 4. Create Local record for the customer
+            $local = Local::create([
+                'customerID' => $customer->customerID,
+                'ic_no' => '',
+                'stateOfOrigin' => '',
+            ]);
 
-        Auth::login($user);
+            // 5. If matric_number is provided, create StudentDetails and LocalStudent
+            if ($request->filled('matric_number')) {
+                // Find faculty from program code
+                $faculty = '';
+                $program = $request->input('program', '');
+                foreach (config('utm.faculties') as $facultyCode => $facultyData) {
+                    if (in_array($program, $facultyData['programs'])) {
+                        $faculty = $facultyCode;
+                        break;
+                    }
+                }
 
-        return redirect('/');
+                // Create or update StudentDetails
+                $studentDetails = StudentDetails::firstOrNew(['matric_number' => $request->matric_number]);
+                $studentDetails->college = '';
+                $studentDetails->faculty = $faculty;
+                $studentDetails->programme = $program;
+                $studentDetails->save();
+
+                // Create LocalStudent link
+                LocalStudent::create([
+                    'customerID' => $customer->customerID,
+                    'matric_number' => $request->matric_number,
+                ]);
+            }
+
+            // 6. Create Wallet
+            \App\Models\WalletAccount::create([
+                'customerID'         => $customer->customerID,
+                'wallet_balance'     => 0.00,
+                'outstanding_amount' => 0.00,
+                'wallet_status'      => 'Active',
+                'wallet_lastUpdate_Date_Time' => now()
+            ]);
+
+            DB::commit();
+
+            // 7. Final Steps
+            event(new Registered($user));
+            Auth::login($user);
+
+            return redirect('/');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Registration error: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Registration failed. Please try again.'])->withInput();
+        }
     }
 }

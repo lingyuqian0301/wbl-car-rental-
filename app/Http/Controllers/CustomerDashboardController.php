@@ -24,11 +24,16 @@ class CustomerDashboardController extends Controller
 
     $transactions = [];
     if ($wallet) {
-        // Note: WalletTransaction model not in schema, using DB for now
-        $transactions = \Illuminate\Support\Facades\DB::table('wallettransaction')
-            ->where('walletAccountID', $wallet->walletAccountID)
-            ->orderBy('transaction_date', 'desc')
-            ->get();
+        // Check if wallettransaction table exists
+        try {
+            $transactions = \Illuminate\Support\Facades\DB::table('wallettransaction')
+                ->where('walletAccountID', $wallet->walletAccountID)
+                ->orderBy('transaction_date', 'desc')
+                ->get();
+        } catch (\Exception $e) {
+            // Table doesn't exist, return empty array
+            $transactions = [];
+        }
     }
 
     return view('customer.wallet', compact('outstanding', 'transactions'));

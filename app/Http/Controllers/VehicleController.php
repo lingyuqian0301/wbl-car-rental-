@@ -17,9 +17,9 @@ class VehicleController extends Controller
             $query->where('vehicle_brand', $request->brand);
         }
 
-        // Filter by car type
+        // Filter by car type (column is vehicleType not vehicle_type)
         if ($request->filled('vehicle_type')) {
-            $query->where('vehicle_type', $request->vehicle_type);
+            $query->where('vehicleType', $request->vehicle_type);
         }
 
         // 🔥 Date availability logic
