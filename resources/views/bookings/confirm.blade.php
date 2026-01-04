@@ -336,7 +336,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Duration:</span>
-                        <span class="info-value">{{ $bookingData['duration_days'] }} day(s)</span>
+                        <span class="info-value">{{ $bookingData['duration'] }} day(s)</span>
                     </div>
                 </div>
             </div>
@@ -375,8 +375,8 @@
             <div class="price-summary">
                 <h2 style="border-bottom: 2px solid #dc2626; padding-bottom: 10px; margin-bottom: 20px;">Price Summary</h2>
                 <div class="price-row">
-                    <span class="price-label">Vehicle (RM {{ $vehicle->rental_price }} × {{ $bookingData['duration_days'] }} days)</span>
-                    <span class="price-value">RM {{ number_format($vehicle->rental_price * $bookingData['duration_days'], 2) }}</span>
+                    <span class="price-label">Vehicle (RM {{ $vehicle->rental_price }} × {{ $bookingData['duration'] }} days)</span>
+                    <span class="price-value">RM {{ number_format($vehicle->rental_price * $bookingData['duration'], 2) }}</span>
                 </div>
                 @if(count($addons) > 0)
                 <div class="price-row">
@@ -386,7 +386,7 @@
                 @endif
                 <div class="total-row">
                     <span class="total-label">Total Amount</span>
-                    <span class="total-value">RM {{ number_format($bookingData['total_amount'], 2) }}</span>
+                    <span class="info-value">RM {{ number_format($bookingData['rental_amount'], 2) }}</span>
                 </div>
             </div>
 
@@ -402,7 +402,7 @@
         <input type="hidden" name="end_date" value="{{ $bookingData['end_date'] }}">
         <input type="hidden" name="pickup_point" value="{{ $bookingData['pickup_point'] }}">
         <input type="hidden" name="return_point" value="{{ $bookingData['return_point'] }}">
-        <input type="hidden" name="total_amount" value="{{ $bookingData['total_amount'] }}">
+        <input type="hidden" name="total_amount" value="{{ $bookingData['rental_amount'] }}">
 
         @if(isset($addons))
             @foreach($addons as $index => $addon)

@@ -40,7 +40,7 @@ Route::get('/fix-admin-password', function () {
 Route::get('/mail-preview', function () {
     // 1. Get the latest booking
     $booking = \App\Models\Booking::with(['customer', 'vehicle'])->latest()->first();
-    
+
     if (!$booking) return "No bookings found in database to preview.";
 
     // 2. Mock Invoice Data (So the PDF view doesn't crash)
@@ -63,7 +63,7 @@ Route::get('/mail-preview', function () {
 
 Route::get('/send-test', function () {
     $booking = \App\Models\Booking::with(['customer', 'vehicle'])->latest()->first();
-    
+
     if (!$booking) return "No booking found.";
 
     // Generate PDF
@@ -71,7 +71,7 @@ Route::get('/send-test', function () {
     $invoiceData->invoice_number = 'TEST-SEND';
     $invoiceData->issue_date = now();
     $invoiceData->totalAmount = $booking->total_price;
-    
+
     $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData'));
 
     // Send to YOUR email (Replace with your actual email)
@@ -84,7 +84,9 @@ Route::get('/', [VehicleController::class, 'index'])->name('home');
 Route::get('/vehicles/{id}', [VehicleController::class, 'show'])->name('vehicles.show');
 
 // Booking route - accessible to all, but requires auth in controller
-Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])->name('booking.store');
+Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
+    ->name('booking.store')
+    ->where('vehicleID', '[0-9]+');  // <--- ADD THIS LINE
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

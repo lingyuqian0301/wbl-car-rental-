@@ -8,31 +8,26 @@ use Illuminate\Support\Facades\Auth;
 
 class CustomerDashboardController extends Controller
 {
-   public function wallet()
-{
-    $user = Auth::user();
-    $customer = \App\Models\Customer::where('userID', $user->userID)->first();
+    public function wallet()
+    {
+        $user = Auth::user();
+        $customer = \App\Models\Customer::where('userID', $user->userID)->first();
 
-    if (!$customer) {
-        return redirect()->route('home')->with('error', 'Profile not found.');
+        if (!$customer) {
+            return redirect()->route('home')->with('error', 'Profile not found.');
+        }
+
+        $wallet = $customer->walletAccount;
+
+        // Just pass the raw value
+        $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
+
+        // FIXED: Removed the database query to 'wallettransaction'
+        // We set this to an empty array [] so the view doesn't crash.
+        $transactions = [];
+
+        return view('customer.wallet', compact('outstanding', 'transactions'));
     }
-
-    $wallet = $customer->walletAccount;
-    
-    // Just pass the raw value
-    $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
-
-    $transactions = [];
-    if ($wallet) {
-        // Note: WalletTransaction model not in schema, using DB for now
-        $transactions = \Illuminate\Support\Facades\DB::table('wallettransaction')
-            ->where('walletAccountID', $wallet->walletAccountID)
-            ->orderBy('transaction_date', 'desc')
-            ->get();
-    }
-
-    return view('customer.wallet', compact('outstanding', 'transactions'));
-}
 
     public function loyalty()
     {
@@ -46,9 +41,10 @@ class CustomerDashboardController extends Controller
         // Fetch Loyalty Card
         $card = $customer->loyaltyCard;
 
-        // Fetch Vouchers (if voucher table exists)
+        // Fetch Vouchers
         $vouchers = [];
-        // Note: Voucher table not in schema, but keeping for future use
+        // You can uncomment this if you want to show vouchers later:
+        // $vouchers = \App\Models\Voucher::where('customerID', $customer->customerID)->get();
 
         return view('customer.loyalty', compact('card', 'vouchers'));
     }
