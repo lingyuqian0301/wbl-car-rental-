@@ -8,84 +8,64 @@ use Illuminate\Http\Response;
 
 class InvoiceController extends Controller
 {
-    /**
-     * Generate and download invoice PDF for a booking.
-     *
-     * @param int $bookingId
-     * @return Response
-     */
     public function generatePDF(int $bookingId): Response
     {
+        // Load Booking with relations
+        // We load 'customer.user' because Name/Email are in the User table, Phone is in Customer table
         $booking = Booking::with(['customer.user', 'vehicle', 'payments', 'invoice'])
             ->findOrFail($bookingId);
 
-        // Check if payment is verified
+        // 1. CHECK PAYMENT STATUS (Using new DB column 'payment_status')
         $verifiedPayment = $booking->payments()
-            ->where('payment_status', 'Verified')
-            ->where('payment_isVerify', true)
-            ->first();
+            ->where('payment_status', 'Verified') // Matches db_new (1).sql
+            ->exists();
 
+        // If you want to block downloading before payment, uncomment this:
+        /*
         if (!$verifiedPayment) {
-            // US018: Exception flow - Payment not verified
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'error' => 'Receipt not available. Payment is currently being verified.'
-                ], 403);
-            }
-
-            return redirect()
-                ->route('bookings.show', $bookingId)
-                ->with('error', 'Receipt not available. Payment is currently being verified.');
+            return redirect()->back()->with('error', 'Payment not yet verified.');
         }
+        */
 
-        // Get customer and user info
+        // 2. GET CUSTOMER DETAILS
+        // In your new DB, phone is in 'customer', but name/email are likely in 'user'
         $customer = $booking->customer;
         $user = $customer ? $customer->user : null;
 
-        // Get voucher used for this booking
+        // 3. GET VOUCHER (If any)
         $voucher = \App\Models\Voucher::where('bookingID', $booking->bookingID)->first();
 
-        // Calculate payment summary
+        // 4. CALCULATE TOTALS (Using new DB column 'total_amount')
         $verifiedPayments = $booking->payments()
             ->where('payment_status', 'Verified')
-            ->where('payment_isVerify', true)
             ->get();
 
+        // FIX: db_new uses 'total_amount', not 'amount'
         $totalPaid = $verifiedPayments->sum('total_amount');
-        $depositAmount = $booking->deposit_amount ?? 0;
-        $rentalAmount = $booking->rental_amount ?? 0;
-        $balanceDue = max(0, ($depositAmount + $rentalAmount) - $totalPaid);
 
+        // Setup Booking Financials (Assuming these exist on your Booking table)
+        $depositAmount = $booking->deposit_amount ?? 0;
+        $rentalAmount  = $booking->rental_amount ?? ($booking->total_price - $depositAmount);
+
+        // Prepare data for PDF
         $data = [
-            'booking' => $booking,
-            'customer' => $customer,
-            'user' => $user,
-            'voucher' => $voucher,
+            'booking'       => $booking,
+            'customer'      => $customer,
+            'user'          => $user,
+            'voucher'       => $voucher,
             'depositAmount' => $depositAmount,
-            'rentalAmount' => $rentalAmount,
-            'totalPaid' => $totalPaid,
-            'balanceDue' => $balanceDue,
-            'invoiceData' => $booking->invoice,
-            'invoiceDate' => now(),
+            'rentalAmount'  => $rentalAmount,
+            'totalPaid'     => $totalPaid,
+            'invoiceData'   => $booking->invoice,
+            'invoiceDate'   => now(),
         ];
 
         try {
             $pdf = Pdf::loadView('pdf.invoice', $data);
-
-            return $pdf->download('invoice-booking-' . $bookingId . '.pdf');
+            return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');
         } catch (\Exception $e) {
-            // US018 & US019: Exception flow - PDF generation fails
-            \Log::error('PDF Generation Failed: ' . $e->getMessage());
-
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'error' => 'Unable to generate receipt. Please try again later.'
-                ], 500);
-            }
-
-            return redirect()
-                ->route('bookings.show', $bookingId)
-                ->with('error', 'Unable to generate receipt. Please try again later.');
+            \Log::error('PDF Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Unable to generate invoice.');
         }
     }
 }
