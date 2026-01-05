@@ -42,6 +42,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'ic_no' => ['required', 'string', 'max:20', 'unique:PersonDetails,ic_no'], // Validates IC is unique
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'matric_number' => ['nullable', 'string', 'max:50'],
             'program' => ['nullable', 'string', 'max:50'],
@@ -61,28 +62,36 @@ class RegisteredUserController extends Controller
             ]);
 
             // 3. Create Customer Profile
+            // We use $user->getKey() to automatically get the correct ID (id or userID)
             $customer = Customer::create([
-                'userID' => $user->userID,
+                'userID' => $user->getKey(), 
+                'fullname' => $request->name,
                 'phone_number' => '',
                 'address' => '',
                 'customer_license' => '',
                 'emergency_contact' => '',
             ]);
 
-            // 4. Create Local record for the customer
+            // 4. Create PersonDetails FIRST (Fixes Foreign Key Error)
+            \App\Models\PersonDetails::create([
+                'ic_no' => $request->ic_no,
+                'fullname' => $request->name,
+            ]);
+
+            // 5. Create Local record using the IC No
             $local = Local::create([
                 'customerID' => $customer->customerID,
-                'ic_no' => '',
+                'ic_no' => $request->ic_no,
                 'stateOfOrigin' => '',
             ]);
 
-            // 5. If matric_number is provided, create StudentDetails and LocalStudent
+            // 6. If matric_number is provided, create StudentDetails and LocalStudent
             if ($request->filled('matric_number')) {
                 // Find faculty from program code
                 $faculty = '';
                 $program = $request->input('program', '');
-                foreach (config('utm.faculties') as $facultyCode => $facultyData) {
-                    if (in_array($program, $facultyData['programs'])) {
+                foreach (config('utm.faculties', []) as $facultyCode => $facultyData) {
+                    if (in_array($program, $facultyData['programs'] ?? [])) {
                         $faculty = $facultyCode;
                         break;
                     }
@@ -102,7 +111,7 @@ class RegisteredUserController extends Controller
                 ]);
             }
 
-            // 6. Create Wallet
+            // 7. Create Wallet
             \App\Models\WalletAccount::create([
                 'customerID'         => $customer->customerID,
                 'wallet_balance'     => 0.00,
@@ -113,7 +122,7 @@ class RegisteredUserController extends Controller
 
             DB::commit();
 
-            // 7. Final Steps
+            // 8. Final Steps
             event(new Registered($user));
             Auth::login($user);
 
@@ -122,7 +131,10 @@ class RegisteredUserController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Registration error: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Registration failed. Please try again.'])->withInput();
+            
+            return back()->withErrors([
+                'error' => 'Registration failed: ' . $e->getMessage()
+            ])->withInput();
         }
     }
 }

@@ -14,8 +14,8 @@ class User extends Authenticatable
     // Use 'user' table (singular) to match database
     protected $table = 'user';
     
-    // Use userID as primary key to match database structure
-    protected $primaryKey = 'userID';
+    // FIX: Use 'id' because your migration created an 'id' column, not 'userID'
+    protected $primaryKey = 'userID'; 
     public $incrementing = true;
     protected $keyType = 'int';
 
@@ -56,19 +56,17 @@ class User extends Authenticatable
     /**
      * Get id attribute (maps from userID for compatibility).
      */
+/* DELETE OR COMMENT OUT THIS SECTION
     public function getIdAttribute()
     {
         return $this->userID;
     }
 
-    /**
-     * Set id attribute (maps to userID for compatibility).
-     */
     public function setIdAttribute($value)
     {
         $this->attributes['userID'] = $value;
     }
-
+    */
     /**
      * Get the customer record for this user.
      */
