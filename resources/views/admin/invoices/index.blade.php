@@ -81,7 +81,6 @@
         :date="$today"
     />
 
-    <!-- Success/Error Messages -->
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
@@ -96,7 +95,6 @@
         </div>
     @endif
 
-    <!-- Filters and Sort -->
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.invoices.index') }}" class="filter-row">
             <div>
@@ -144,7 +142,6 @@
         </form>
     </div>
 
-    <!-- Invoices Table -->
     <div class="invoice-table">
         <div class="table-header">
             <i class="bi bi-file-earmark-text"></i> All Invoices ({{ $bookings->total() }})
@@ -176,7 +173,10 @@
                                 ->sum('total_amount');
                             
                             $depositAmount = $booking->deposit_amount ?? 0;
-                            $rentalAmount = $booking->rental_amount ?? 0;
+                            
+                            // FIX: Added fallback to total_amount if rental_amount is missing
+                            $rentalAmount = $booking->rental_amount ?? $booking->total_amount ?? 0;
+                            
                             $additionalChargesTotal = $additionalCharges ? ($additionalCharges->total_extra_charge ?? 0) : 0;
                             $totalPaymentAmount = $depositAmount + $rentalAmount + $additionalChargesTotal;
                         @endphp
@@ -191,8 +191,9 @@
                                 {{ $user->name ?? 'Unknown Customer' }}
                             </td>
                             <td>
-                                @if($booking->rental_start_date)
-                                    {{ \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') }}
+                                {{-- FIX: Changed rental_start_date to start_date --}}
+                                @if($booking->start_date)
+                                    {{ \Carbon\Carbon::parse($booking->start_date)->format('d M Y') }}
                                 @else
                                     <span class="text-muted">N/A</span>
                                 @endif
@@ -255,7 +256,6 @@
             </table>
         </div>
         
-        <!-- Pagination -->
         @if($bookings->hasPages())
             <div class="p-3 border-top">
                 {{ $bookings->links() }}
