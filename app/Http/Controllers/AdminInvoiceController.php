@@ -20,13 +20,12 @@ class AdminInvoiceController extends Controller
         $pickupDateTo = $request->get('pickup_date_to');
 
         $query = Booking::with([
-            'customer.user', 
-            'vehicle.car', 
-            'vehicle.motorcycle', 
+            'customer',        // 'customer.user' might be redundant if customer model has user details
+            'vehicle',         // Simply 'vehicle' is usually enough
             'payments', 
             'invoice',
-            'additionalCharges'
-        ])->whereHas('invoice'); // Only show bookings with invoices
+            // 'additionalCharges' // Remove if this relationship doesn't exist yet
+        ])->whereHas('invoice'); // Only show bookings that HAVE an invoice
 
         // Filter by issue date range
         if ($issueDateFrom) {
@@ -40,12 +39,12 @@ class AdminInvoiceController extends Controller
             });
         }
 
-        // Filter by pickup date range
+        // Filter by pickup date range (FIXED: Changed 'rental_start_date' to 'start_date')
         if ($pickupDateFrom) {
-            $query->whereDate('rental_start_date', '>=', $pickupDateFrom);
+            $query->whereDate('start_date', '>=', $pickupDateFrom);
         }
         if ($pickupDateTo) {
-            $query->whereDate('rental_start_date', '<=', $pickupDateTo);
+            $query->whereDate('start_date', '<=', $pickupDateTo);
         }
 
         // Join with invoice table for sorting
@@ -73,8 +72,10 @@ class AdminInvoiceController extends Controller
         $today = Carbon::today();
         $totalInvoices = Invoice::count();
         $totalBookings = Booking::whereHas('invoice')->count();
+        
+        // FIXED: Changed 'rental_start_date' to 'start_date' here too
         $totalToday = Booking::whereHas('invoice')
-            ->whereDate('rental_start_date', $today)
+            ->whereDate('start_date', $today)
             ->count();
 
         return view('admin.invoices.index', [
@@ -92,4 +93,3 @@ class AdminInvoiceController extends Controller
         ]);
     }
 }
-
