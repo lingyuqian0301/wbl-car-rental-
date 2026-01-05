@@ -133,6 +133,7 @@
                         <th>Transaction Reference (Receipt)</th>
                         <th>Is Payment Complete</th>
                         <th>Payment is Verify</th>
+                        <th>Generate Invoice</th>
                         <th>Verify By</th>
                     </tr>
                 </thead>
@@ -245,6 +246,19 @@
                             </td>
                             <td>
                                 @php
+                                    $booking = $payment->booking;
+                                    $invoice = $booking->invoice ?? null;
+                                @endphp
+                                @if($payment->payment_isVerify || $payment->payment_status === 'Verified' || $payment->payment_status === 'Full')
+                                    <a href="{{ route('admin.payments.invoice', $payment->paymentID) }}" class="btn btn-sm btn-primary" target="_blank">
+                                        <i class="bi bi-file-pdf"></i> Generate Invoice
+                                    </a>
+                                @else
+                                    <span class="text-muted small">Verify first</span>
+                                @endif
+                            </td>
+                            <td>
+                                @php
                                     $verifiedBy = null;
                                     if (isset($payment->verify_by) && $payment->verify_by) {
                                         $verifiedBy = \App\Models\User::find($payment->verify_by);
@@ -259,7 +273,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
+                            <td colspan="11" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-3 mb-0">No payments available.</p>
                             </td>

@@ -1,30 +1,24 @@
 @extends('layouts.admin')
 
-@section('title', 'Create Customer')
+@section('title', 'Create Owner Leasing')
 
 @section('content')
+<div class="container-fluid py-2">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h4 mb-0"><i class="bi bi-person-plus"></i> Create Customer</h1>
-        <a href="{{ route('admin.manage.client') }}" class="btn btn-sm btn-outline-secondary">
+        <h1 class="h4 mb-0"><i class="bi bi-building"></i> Create Owner Leasing</h1>
+        <a href="{{ route('admin.leasing.index', ['tab' => 'owner']) }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Back to List
         </a>
     </div>
 
     <div class="card">
         <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">Customer Information</h5>
+            <h5 class="mb-0">Owner Information</h5>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ route('admin.customers.store') }}">
+            <form method="POST" action="{{ route('admin.leasing.owner.store') }}">
                 @csrf
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Matric Number</label>
-                        <input type="text" name="matric_number" class="form-control" value="{{ old('matric_number') }}">
-                        @error('matric_number')
-                            <div class="text-danger small">{{ $message }}</div>
-                        @enderror
-                    </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Full Name <span class="text-danger">*</span></label>
                         <input type="text" name="fullname" class="form-control" value="{{ old('fullname') }}" required>
@@ -33,16 +27,16 @@
                         @enderror
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">IC Number</label>
-                        <input type="text" name="ic_number" class="form-control" value="{{ old('ic_number') }}">
-                        @error('ic_number')
+                        <label class="form-label">IC Number <span class="text-danger">*</span></label>
+                        <input type="text" name="ic_no" class="form-control" value="{{ old('ic_no') }}" required>
+                        @error('ic_no')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Phone</label>
-                        <input type="text" name="phone" class="form-control" value="{{ old('phone') }}">
-                        @error('phone')
+                        <label class="form-label">Contact Number</label>
+                        <input type="text" name="contact_number" class="form-control" value="{{ old('contact_number') }}">
+                        @error('contact_number')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
@@ -54,23 +48,16 @@
                         @enderror
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">College</label>
-                        <input type="text" name="college" class="form-control" value="{{ old('college') }}">
-                        @error('college')
+                        <label class="form-label">Bank Name</label>
+                        <input type="text" name="bankname" class="form-control" value="{{ old('bankname') }}">
+                        @error('bankname')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Faculty</label>
-                        <input type="text" name="faculty" class="form-control" value="{{ old('faculty') }}">
-                        @error('faculty')
-                            <div class="text-danger small">{{ $message }}</div>
-                        @enderror
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Customer Type</label>
-                        <input type="text" name="customer_type" class="form-control" value="{{ old('customer_type') }}">
-                        @error('customer_type')
+                        <label class="form-label">Bank Account Number</label>
+                        <input type="text" name="bank_acc_number" class="form-control" value="{{ old('bank_acc_number') }}">
+                        @error('bank_acc_number')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
@@ -82,38 +69,37 @@
                         @enderror
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Emergency Contact</label>
-                        <input type="text" name="emergency_contact" class="form-control" value="{{ old('emergency_contact') }}">
-                        @error('emergency_contact')
+                        <label class="form-label">Leasing Price</label>
+                        <input type="number" name="leasing_price" class="form-control" step="0.01" value="{{ old('leasing_price') }}" placeholder="0.00">
+                        @error('leasing_price')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Country</label>
-                        <input type="text" name="country" class="form-control" value="{{ old('country') }}">
-                        @error('country')
+                        <label class="form-label">Leasing Due Date</label>
+                        <input type="date" name="leasing_due_date" class="form-control" value="{{ old('leasing_due_date') }}">
+                        @error('leasing_due_date')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Customer License</label>
-                        <input type="text" name="customer_license" class="form-control" value="{{ old('customer_license') }}">
-                        @error('customer_license')
+                        <label class="form-label">Status</label>
+                        <select name="isActive" class="form-select">
+                            <option value="1" {{ old('isActive', 1) == 1 ? 'selected' : '' }}>Active</option>
+                            <option value="0" {{ old('isActive') == 0 ? 'selected' : '' }}>Inactive</option>
+                        </select>
+                        @error('isActive')
                             <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ route('admin.manage.client') }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-danger">Create Customer</button>
+                    <a href="{{ route('admin.leasing.index', ['tab' => 'owner']) }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-danger">Create Owner</button>
                 </div>
             </form>
         </div>
     </div>
+</div>
 @endsection
-
-
-
-
-
 

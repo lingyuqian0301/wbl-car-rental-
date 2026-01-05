@@ -70,7 +70,7 @@
                 <div>
                     <div class="d-flex align-items-center gap-3">
                         <div>
-                            <h1 class="h3 mb-1 fw-bold">Hasta Admin Dashboard</h1>
+                            <h1 class="h3 mb-1 fw-bold">Hasta {{ isset($isStaff) && $isStaff ? 'Staff' : 'Admin' }} Dashboard</h1>
                         </div>
                     </div>
                     <p class="mb-0 mt-3 fw-semibold">Snapshot for {{ $today->format('d M Y') }}</p>
@@ -100,18 +100,20 @@
                     </div>
                 </div>
             </div>
+            @if(!isset($isStaff) || !$isStaff)
             <div class="col-12 col-md-6 col-xl-3">
                 <div class="card metric-card">
                     <div class="card-body d-flex gap-3 align-items-center">
                         <div class="metric-icon"><i class="bi bi-cash-coin"></i></div>
                         <div>
                             <p class="text-muted mb-1">Revenue (This Month)</p>
-                            <h3 class="fw-bold mb-0">RM {{ number_format($metrics['revenueThisMonth'], 2) }}</h3>
-                            <small class="text-muted-small">All-time RM {{ number_format($metrics['revenueAllTime'], 2) }}</small>
+                            <h3 class="fw-bold mb-0">RM {{ number_format($metrics['revenueThisMonth'] ?? 0, 2) }}</h3>
+                            <small class="text-muted-small">All-time RM {{ number_format($metrics['revenueAllTime'] ?? 0, 2) }}</small>
                         </div>
                     </div>
                 </div>
             </div>
+            @endif
             <div class="col-12 col-md-6 col-xl-3">
                 <div class="card metric-card">
                     <div class="card-body d-flex gap-3 align-items-center">
@@ -140,6 +142,7 @@
 
         <!-- Revenue trend + Fleet load -->
         <div class="row g-3 mb-4">
+            @if(!isset($isStaff) || !$isStaff)
             <div class="col-lg-8">
                 <div class="card h-100">
                     <div class="card-header card-header-red d-flex justify-content-between align-items-center">
@@ -148,7 +151,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row row-cols-2 row-cols-md-3 g-3">
-                            @foreach($monthlyRevenue as $point)
+                            @foreach($monthlyRevenue ?? [] as $point)
                                 <div class="col">
                                     <div class="p-3 border rounded-3 text-center h-100" style="border-color: #fde2e2;">
                                         <p class="mb-1 text-muted">{{ $point['label'] }}</p>
@@ -167,7 +170,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4">
+            @endif
+            <div class="{{ (!isset($isStaff) || !$isStaff) ? 'col-lg-4' : 'col-lg-12' }}">
                 <div class="card h-100">
                     <div class="card-header card-header-red d-flex justify-content-between align-items-center">
                         <span class="fw-semibold">Fleet Load</span>

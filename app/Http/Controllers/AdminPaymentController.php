@@ -255,6 +255,16 @@ class AdminPaymentController extends Controller
         $rentalAmount = $booking->rental_amount;
         $depositAmount = $booking->deposit_amount;
         $totalPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+        
+        // Create invoice record if it doesn't exist
+        $invoiceData = Invoice::firstOrCreate(
+            ['bookingID' => $booking->bookingID],
+            [
+                'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
+                'issue_date' => now(),
+                'totalAmount' => ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0),
+            ]
+        );
 
         $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData', 'rentalAmount', 'depositAmount', 'totalPaid'));
         return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');

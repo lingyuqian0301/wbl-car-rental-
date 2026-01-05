@@ -4,35 +4,51 @@
     <meta charset="utf-8">
     <title>Customers Export</title>
     <style>
+        @page {
+            margin: 15mm;
+            size: A4;
+        }
         body {
             font-family: Arial, sans-serif;
-            font-size: 12px;
+            font-size: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #000;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
+            font-size: 9px;
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 4px;
             text-align: left;
+            word-wrap: break-word;
         }
         th {
-            background-color: #b91c1c;
-            color: white;
+            background-color: #f2f2f2;
+            color: #000;
             font-weight: bold;
         }
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        .header {
+        .no-data {
             text-align: center;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            color: #b91c1c;
-            margin: 0;
+            padding: 20px;
+            color: #666;
         }
     </style>
 </head>
@@ -45,51 +61,48 @@
     <table>
         <thead>
             <tr>
-                <th>Customer ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Matric No</th>
-                <th>Address</th>
-                <th>State/Country</th>
-                <th>IC/Passport</th>
-                <th>Emergency Contact</th>
-                <th>License</th>
-                <th>College</th>
-                <th>Faculty</th>
-                <th>Programme</th>
-                <th>Year of Study</th>
-                <th>Booking Count</th>
-                <th>Latest Booking</th>
-                <th>Status</th>
-                <th>Is Active</th>
+                <th style="width: 5%;">ID</th>
+                <th style="width: 12%;">Name</th>
+                <th style="width: 10%;">Email</th>
+                <th style="width: 8%;">Phone</th>
+                <th style="width: 8%;">Matric/Staff No</th>
+                <th style="width: 10%;">Address</th>
+                <th style="width: 7%;">State/Country</th>
+                <th style="width: 8%;">IC/Passport</th>
+                <th style="width: 8%;">College</th>
+                <th style="width: 8%;">Faculty</th>
+                <th style="width: 5%;">Bookings</th>
+                <th style="width: 6%;">Status</th>
+                <th style="width: 5%;">Active</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($customers as $customer)
+            @forelse($customers as $customer)
                 <tr>
                     <td>#{{ $customer->customerID }}</td>
                     <td>{{ $customer->user->name ?? 'N/A' }}</td>
                     <td>{{ $customer->user->email ?? 'N/A' }}</td>
                     <td>{{ $customer->user->phone ?? $customer->phone_number ?? 'N/A' }}</td>
-                    <td>{{ $customer->studentDetail->matric_number ?? $customer->localStudent->matric_number ?? 'N/A' }}</td>
-                    <td>{{ $customer->address ?? 'N/A' }}</td>
+                    @php
+                        $localStudentDetails = $customer->localStudent->studentDetails ?? null;
+                        $internationalStudentDetails = $customer->internationalStudent->studentDetails ?? null;
+                    @endphp
+                    <td>{{ $customer->localStudent->matric_number ?? ($customer->internationalStudent->matric_number ?? ($customer->localUtmStaff->staffID ?? ($customer->internationalUtmStaff->staffID ?? 'N/A'))) }}</td>
+                    <td>{{ \Illuminate\Support\Str::limit($customer->address ?? 'N/A', 30) }}</td>
                     <td>{{ $customer->local->stateOfOrigin ?? $customer->international->countryOfOrigin ?? 'N/A' }}</td>
                     <td>{{ $customer->local->ic_no ?? $customer->international->passport_no ?? 'N/A' }}</td>
-                    <td>{{ $customer->emergency_contact ?? 'N/A' }}</td>
-                    <td>{{ $customer->customer_license ?? 'N/A' }}</td>
-                    <td>{{ $customer->studentDetail->college ?? 'N/A' }}</td>
-                    <td>{{ $customer->studentDetail->faculty ?? 'N/A' }}</td>
-                    <td>{{ $customer->studentDetail->programme ?? 'N/A' }}</td>
-                    <td>{{ $customer->studentDetail->yearOfStudy ?? 'N/A' }}</td>
+                    <td>{{ \Illuminate\Support\Str::limit($localStudentDetails->college ?? ($internationalStudentDetails->college ?? 'N/A'), 20) }}</td>
+                    <td>{{ \Illuminate\Support\Str::limit($localStudentDetails->faculty ?? ($internationalStudentDetails->faculty ?? 'N/A'), 20) }}</td>
                     <td>{{ $customer->bookings_count ?? 0 }}</td>
-                    <td>{{ $customer->bookings->first()?->rental_start_date?->format('d M Y') ?? 'N/A' }}</td>
                     <td>{{ $customer->customer_status ?? 'active' }}</td>
                     <td>{{ ($customer->user->isActive ?? false) ? 'Yes' : 'No' }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="13" class="no-data">No customers found</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 </body>
 </html>
-

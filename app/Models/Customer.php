@@ -16,12 +16,12 @@ class Customer extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'userID',
         'phone_number',
         'address',
         'customer_license',
         'emergency_contact',
         'booking_times',
-        'userID',
     ];
 
     /**
@@ -79,6 +79,16 @@ class Customer extends Model
     {
         return $this->hasOne(International_UTMStaff::class, 'customerID', 'customerID');
     }
+
+    /**
+     * Get the student detail record for this customer.
+     * NOTE: This relationship is commented out because the studentdetails table doesn't exist in the schema.
+     * Student information is accessed via LocalStudent->studentDetails or InternationalStudent->studentDetails
+     */
+    // public function studentDetail(): HasOne
+    // {
+    //     return $this->hasOne(StudentDetail::class, 'customerID', 'customerID');
+    // }
 
     /**
      * Get the bookings for this customer.

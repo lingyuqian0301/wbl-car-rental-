@@ -96,49 +96,53 @@
     @endif
 
     <div class="filter-card">
-        <form method="GET" action="{{ route('admin.invoices.index') }}" class="filter-row">
-            <div>
-                <label class="form-label small fw-semibold">Sort by Invoice No</label>
-                <select name="sort_invoice_no" class="form-select form-select-sm">
-                    <option value="asc" {{ $sortInvoiceNo === 'asc' ? 'selected' : '' }}>Ascending</option>
-                    <option value="desc" {{ $sortInvoiceNo === 'desc' ? 'selected' : '' }}>Descending</option>
-                </select>
+        <form method="GET" action="{{ route('admin.invoices.index') }}">
+            <div class="row g-2 mb-2">
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Sort by Invoice No</label>
+                    <select name="sort_invoice_no" class="form-select form-select-sm">
+                        <option value="asc" {{ $sortInvoiceNo === 'asc' ? 'selected' : '' }}>Ascending</option>
+                        <option value="desc" {{ $sortInvoiceNo === 'desc' ? 'selected' : '' }}>Descending</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Sort by Issue Date</label>
+                    <select name="sort_issue_date" class="form-select form-select-sm">
+                        <option value="desc" {{ $sortIssueDate === 'desc' ? 'selected' : '' }}>Descending</option>
+                        <option value="asc" {{ $sortIssueDate === 'asc' ? 'selected' : '' }}>Ascending</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Issue Date From</label>
+                    <input type="date" name="issue_date_from" class="form-control form-control-sm" value="{{ $issueDateFrom }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Issue Date To</label>
+                    <input type="date" name="issue_date_to" class="form-control form-control-sm" value="{{ $issueDateTo }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Pickup Date From</label>
+                    <input type="date" name="pickup_date_from" class="form-control form-control-sm" value="{{ $pickupDateFrom }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Pickup Date To</label>
+                    <input type="date" name="pickup_date_to" class="form-control form-control-sm" value="{{ $pickupDateTo }}">
+                </div>
             </div>
-            <div>
-                <label class="form-label small fw-semibold">Sort by Issue Date</label>
-                <select name="sort_issue_date" class="form-select form-select-sm">
-                    <option value="desc" {{ $sortIssueDate === 'desc' ? 'selected' : '' }}>Descending</option>
-                    <option value="asc" {{ $sortIssueDate === 'asc' ? 'selected' : '' }}>Ascending</option>
-                </select>
+            <div class="row g-2">
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-funnel"></i> Apply Filters
+                    </button>
+                </div>
+                @if($issueDateFrom || $issueDateTo || $pickupDateFrom || $pickupDateTo || $sortInvoiceNo !== 'asc' || $sortIssueDate !== 'desc')
+                <div class="col-md-auto">
+                    <a href="{{ route('admin.invoices.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+                @endif
             </div>
-            <div>
-                <label class="form-label small fw-semibold">Issue Date From</label>
-                <input type="date" name="issue_date_from" class="form-control form-control-sm" value="{{ $issueDateFrom }}">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Issue Date To</label>
-                <input type="date" name="issue_date_to" class="form-control form-control-sm" value="{{ $issueDateTo }}">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Pickup Date From</label>
-                <input type="date" name="pickup_date_from" class="form-control form-control-sm" value="{{ $pickupDateFrom }}">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Pickup Date To</label>
-                <input type="date" name="pickup_date_to" class="form-control form-control-sm" value="{{ $pickupDateTo }}">
-            </div>
-            <div>
-                <button type="submit" class="btn btn-danger btn-sm w-100">
-                    <i class="bi bi-funnel"></i> Apply Filters
-                </button>
-            </div>
-            @if($issueDateFrom || $issueDateTo || $pickupDateFrom || $pickupDateTo || $sortInvoiceNo !== 'asc' || $sortIssueDate !== 'desc')
-            <div>
-                <a href="{{ route('admin.invoices.index') }}" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-x-circle"></i> Clear
-                </a>
-            </div>
-            @endif
         </form>
     </div>
 

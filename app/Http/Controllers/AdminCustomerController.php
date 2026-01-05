@@ -7,6 +7,7 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -19,9 +20,8 @@ class AdminCustomerController extends Controller
                 'user',
                 'local',
                 'international',
-                'studentDetail',
-                'localStudent',
-                'internationalStudent',
+                'localStudent.studentDetails',
+                'internationalStudent.studentDetails',
                 'localUtmStaff',
                 'internationalUtmStaff',
                 'bookings' => function($q) {
@@ -39,9 +39,6 @@ class AdminCustomerController extends Controller
                                 ->orWhere('email', 'like', "%{$search}%")
                                 ->orWhere('phone', 'like', "%{$search}%");
                   })
-                  ->orWhereHas('studentDetail', function($sdQuery) use ($search) {
-                      $sdQuery->where('matric_number', 'like', "%{$search}%");
-                  })
                   ->orWhereHas('localStudent', function($lsQuery) use ($search) {
                       $lsQuery->where('matric_number', 'like', "%{$search}%");
                   });
@@ -50,15 +47,23 @@ class AdminCustomerController extends Controller
 
         // Filter by faculty (from studentdetails table)
         if ($request->filled('faculty')) {
-            $query->whereHas('studentDetail', function($q) use ($request) {
-                $q->where('faculty', $request->faculty);
+            $query->where(function($q) use ($request) {
+                $q->whereHas('localStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('faculty', $request->faculty);
+                })->orWhereHas('internationalStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('faculty', $request->faculty);
+                });
             });
         }
 
         // Filter by college (from studentdetails table)
         if ($request->filled('college')) {
-            $query->whereHas('studentDetail', function($q) use ($request) {
-                $q->where('college', $request->college);
+            $query->where(function($q) use ($request) {
+                $q->whereHas('localStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('college', $request->college);
+                })->orWhereHas('internationalStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('college', $request->college);
+                });
             });
         }
 
@@ -91,8 +96,7 @@ class AdminCustomerController extends Controller
         if ($request->filled('customer_type')) {
             if ($request->customer_type === 'student') {
                 $query->where(function($q) {
-                    $q->whereHas('studentDetail')
-                      ->orWhereHas('localStudent')
+                    $q->whereHas('localStudent')
                       ->orWhereHas('internationalStudent');
                 });
             } elseif ($request->customer_type === 'staff') {
@@ -130,9 +134,9 @@ class AdminCustomerController extends Controller
 
         $customers = $query->paginate(20)->withQueryString();
 
-        // Get unique faculties and colleges from studentdetails
-        $faculties = \App\Models\StudentDetail::distinct()->pluck('faculty')->filter()->sort()->values();
-        $colleges = \App\Models\StudentDetail::distinct()->pluck('college')->filter()->sort()->values();
+        // Get unique faculties and colleges from StudentDetails table
+        $faculties = \App\Models\StudentDetails::distinct()->pluck('faculty')->filter()->sort()->values();
+        $colleges = \App\Models\StudentDetails::distinct()->pluck('college')->filter()->sort()->values();
 
         // Summary stats for header
         $totalCustomers = Customer::count();
@@ -170,11 +174,12 @@ class AdminCustomerController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'matric_number' => 'nullable|string|max:255',
-            'fullname' => 'required|string|max:255',
-            'ic_number' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:user,email',
             'phone' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
+            'password' => 'required|string|min:8|confirmed',
+            'ic_number' => 'nullable|string|max:255',
+            'matric_number' => 'nullable|string|max:255',
             'college' => 'nullable|string|max:255',
             'faculty' => 'nullable|string|max:255',
             'customer_type' => 'nullable|string|max:255',
@@ -182,14 +187,49 @@ class AdminCustomerController extends Controller
             'emergency_contact' => 'nullable|string|max:255',
             'country' => 'nullable|string|max:255',
             'customer_license' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
         ]);
 
-        $validated['registration_date'] = $validated['registration_date'] ?? now();
+        DB::beginTransaction();
+        try {
+            // Create User first
+            $user = \App\Models\User::create([
+                'username' => $validated['email'],
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'dateRegistered' => $validated['registration_date'] ?? now(),
+                'isActive' => true,
+            ]);
 
-        Customer::create($validated);
+            // Create Customer
+            $customer = Customer::create([
+                'userID' => $user->userID,
+                'phone_number' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'customer_license' => $validated['customer_license'] ?? null,
+                'emergency_contact' => $validated['emergency_contact'] ?? null,
+            ]);
 
-        return redirect()->route('admin.customers.index')
+            // Create PersonDetails if IC number provided
+            if (!empty($validated['ic_number'])) {
+                \App\Models\PersonDetails::firstOrCreate(
+                    ['ic_no' => $validated['ic_number']],
+                    ['fullname' => $validated['name']]
+                );
+            }
+
+            DB::commit();
+
+        return redirect()->route('admin.manage.client')
             ->with('success', 'Customer created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create customer: ' . $e->getMessage());
+        }
     }
 
     public function show(Customer $customer): View
@@ -229,15 +269,15 @@ class AdminCustomerController extends Controller
 
         $customer->update($validated);
 
-        return redirect()->route('admin.customers.index')
-            ->with('success', 'Customer updated successfully.');
+            return redirect()->route('admin.manage.client')
+                ->with('success', 'Customer updated successfully.');
     }
 
     public function destroy(Customer $customer): RedirectResponse
     {
         // Check if customer has bookings
         if ($customer->bookings()->count() > 0) {
-            return redirect()->route('admin.customers.index')
+            return redirect()->route('admin.manage.client')
                 ->with('error', 'Cannot delete customer with existing bookings.');
         }
 
@@ -246,7 +286,7 @@ class AdminCustomerController extends Controller
             'customer_status' => 'deleted',
         ]);
 
-        return redirect()->route('admin.customers.index')
+        return redirect()->route('admin.manage.client')
             ->with('success', 'Customer marked as deleted successfully.');
     }
 
@@ -293,7 +333,7 @@ class AdminCustomerController extends Controller
 
         $customers->delete();
 
-        return redirect()->route('admin.customers.index')
+        return redirect()->route('admin.manage.client')
             ->with('success', count($selectedIds) . ' customer(s) deleted successfully.');
     }
 
@@ -318,21 +358,24 @@ class AdminCustomerController extends Controller
         $customers = $query->get();
 
         $data = $customers->map(function($customer) {
+            $localStudentDetails = $customer->localStudent->studentDetails ?? null;
+            $internationalStudentDetails = $customer->internationalStudent->studentDetails ?? null;
+            
             return [
                 'Customer ID' => $customer->customerID,
                 'Name' => $customer->user->name ?? 'N/A',
                 'Email' => $customer->user->email ?? 'N/A',
                 'Phone' => $customer->user->phone ?? 'N/A',
-                'Matric Number' => $customer->studentDetail->matric_number ?? $customer->localStudent->matric_number ?? 'N/A',
+                'Matric Number' => $customer->localStudent->matric_number ?? ($customer->internationalStudent->matric_number ?? 'N/A'),
                 'Address' => $customer->address ?? 'N/A',
                 'State/Country' => $customer->local->stateOfOrigin ?? $customer->international->countryOfOrigin ?? 'N/A',
                 'IC/Passport' => $customer->local->ic_no ?? $customer->international->passport_no ?? 'N/A',
                 'Emergency Contact' => $customer->emergency_contact ?? 'N/A',
                 'License' => $customer->customer_license ?? 'N/A',
-                'College' => $customer->studentDetail->college ?? 'N/A',
-                'Faculty' => $customer->studentDetail->faculty ?? 'N/A',
-                'Programme' => $customer->studentDetail->programme ?? 'N/A',
-                'Year of Study' => $customer->studentDetail->yearOfStudy ?? 'N/A',
+                'College' => $localStudentDetails->college ?? ($internationalStudentDetails->college ?? 'N/A'),
+                'Faculty' => $localStudentDetails->faculty ?? ($internationalStudentDetails->faculty ?? 'N/A'),
+                'Programme' => $localStudentDetails->programme ?? ($internationalStudentDetails->programme ?? 'N/A'),
+                'Year of Study' => $localStudentDetails->yearOfStudy ?? ($internationalStudentDetails->yearOfStudy ?? 'N/A'),
                 'Booking Count' => $customer->bookings_count ?? 0,
                 'Latest Booking' => $customer->bookings->first()?->rental_start_date?->format('Y-m-d') ?? 'N/A',
                 'Status' => $customer->customer_status ?? 'active',
@@ -372,9 +415,8 @@ class AdminCustomerController extends Controller
                 'user',
                 'local',
                 'international',
-                'studentDetail',
-                'localStudent',
-                'internationalStudent',
+                'localStudent.studentDetails',
+                'internationalStudent.studentDetails',
                 'localUtmStaff',
                 'internationalUtmStaff',
                 'bookings' => function($q) {
@@ -392,9 +434,6 @@ class AdminCustomerController extends Controller
                                 ->orWhere('email', 'like', "%{$search}%")
                                 ->orWhere('phone', 'like', "%{$search}%");
                   })
-                  ->orWhereHas('studentDetail', function($sdQuery) use ($search) {
-                      $sdQuery->where('matric_number', 'like', "%{$search}%");
-                  })
                   ->orWhereHas('localStudent', function($lsQuery) use ($search) {
                       $lsQuery->where('matric_number', 'like', "%{$search}%");
                   });
@@ -403,14 +442,22 @@ class AdminCustomerController extends Controller
 
         // Filters
         if ($request->filled('faculty')) {
-            $query->whereHas('studentDetail', function($q) use ($request) {
-                $q->where('faculty', $request->faculty);
+            $query->where(function($q) use ($request) {
+                $q->whereHas('localStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('faculty', $request->faculty);
+                })->orWhereHas('internationalStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('faculty', $request->faculty);
+                });
             });
         }
 
         if ($request->filled('college')) {
-            $query->whereHas('studentDetail', function($q) use ($request) {
-                $q->where('college', $request->college);
+            $query->where(function($q) use ($request) {
+                $q->whereHas('localStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('college', $request->college);
+                })->orWhereHas('internationalStudent.studentDetails', function($sdQuery) use ($request) {
+                    $sdQuery->where('college', $request->college);
+                });
             });
         }
 
@@ -439,8 +486,7 @@ class AdminCustomerController extends Controller
         if ($request->filled('customer_type')) {
             if ($request->customer_type === 'student') {
                 $query->where(function($q) {
-                    $q->whereHas('studentDetail')
-                      ->orWhereHas('localStudent')
+                    $q->whereHas('localStudent')
                       ->orWhereHas('internationalStudent');
                 });
             } elseif ($request->customer_type === 'staff') {

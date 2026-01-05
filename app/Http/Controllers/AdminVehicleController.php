@@ -545,7 +545,7 @@ class AdminVehicleController extends Controller
     {
         $validated = $request->validate([
             'document_type' => 'required|string|in:insurance,grant,roadtax,contract',
-            'file' => 'required|image|max:5120', // 5MB max
+            'file' => 'required|mimes:jpg,jpeg,png,gif,pdf|max:5120', // 5MB max, accepts images and PDFs
         ]);
 
         $file = $request->file('file');
@@ -1104,6 +1104,70 @@ class AdminVehicleController extends Controller
         $vehicle->delete();
 
         return redirect()->back()->with('success', 'Vehicle deleted successfully.');
+    }
+
+    public function updateOwner(Request $request, Vehicle $vehicle)
+    {
+        $validated = $request->validate([
+            'ic_no' => 'required|string|max:20',
+            'owner_name' => 'nullable|string|max:100',
+            'contact_number' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:100',
+            'bankname' => 'nullable|string|max:50',
+            'bank_acc_number' => 'nullable|string|max:30',
+            'registration_date' => 'nullable|date',
+            'leasing_price' => 'nullable|numeric|min:0',
+            'leasing_due_date' => 'nullable|date',
+            'isActive' => 'nullable|boolean',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Create or update PersonDetails
+            \App\Models\PersonDetails::updateOrCreate(
+                ['ic_no' => $validated['ic_no']],
+                ['fullname' => $validated['owner_name'] ?? 'Unknown']
+            );
+
+            // Get or create OwnerCar
+            $owner = \App\Models\OwnerCar::firstOrCreate(
+                ['ic_no' => $validated['ic_no']],
+                [
+                    'contact_number' => $validated['contact_number'] ?? null,
+                    'email' => $validated['email'] ?? null,
+                    'bankname' => $validated['bankname'] ?? null,
+                    'bank_acc_number' => $validated['bank_acc_number'] ?? null,
+                    'registration_date' => $validated['registration_date'] ?? now(),
+                    'leasing_price' => $validated['leasing_price'] ?? null,
+                    'leasing_due_date' => $validated['leasing_due_date'] ?? null,
+                    'isActive' => $request->has('isActive') ? ($validated['isActive'] ?? true) : true,
+                ]
+            );
+
+            // Update owner if it already exists
+            if ($owner->wasRecentlyCreated === false) {
+                $owner->update([
+                    'contact_number' => $validated['contact_number'] ?? $owner->contact_number,
+                    'email' => $validated['email'] ?? $owner->email,
+                    'bankname' => $validated['bankname'] ?? $owner->bankname,
+                    'bank_acc_number' => $validated['bank_acc_number'] ?? $owner->bank_acc_number,
+                    'registration_date' => $validated['registration_date'] ?? $owner->registration_date,
+                    'leasing_price' => $validated['leasing_price'] ?? $owner->leasing_price,
+                    'leasing_due_date' => $validated['leasing_due_date'] ?? $owner->leasing_due_date,
+                    'isActive' => $request->has('isActive') ? ($validated['isActive'] ?? true) : $owner->isActive,
+                ]);
+            }
+
+            // Update vehicle to link to owner
+            $vehicle->update(['ownerID' => $owner->ownerID]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Owner information updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Failed to update owner: ' . $e->getMessage());
+        }
     }
 
     protected function filteredVehicles(Request $request, $categoryId = null)

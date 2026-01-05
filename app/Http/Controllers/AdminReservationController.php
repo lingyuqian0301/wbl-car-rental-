@@ -93,7 +93,10 @@ class AdminReservationController extends Controller
         $models = \App\Models\Vehicle::distinct()->pluck('vehicle_model')->filter()->sort()->values();
         $plateNumbers = \App\Models\Vehicle::distinct()->pluck('plate_number')->filter()->sort()->values();
         $durations = Booking::distinct()->pluck('duration')->filter()->sort()->values();
-        $staffUsers = \App\Models\User::where('role', 'staff')->orWhere('role', 'admin')->get();
+        // Get users who are staff or admins (using relationships instead of role column)
+        $staffUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff')->orWhereHas('admin');
+        })->get();
         $bookingStatuses = ['Pending', 'Confirmed', 'Request Cancellation', 'Refunding', 'Cancelled', 'Done'];
 
         // Summary stats for header

@@ -4,17 +4,6 @@
 
 @section('content')
 <div class="container-fluid py-2">
-    <x-admin-page-header 
-        title="Other Management" 
-        description="Manage vouchers and rewards"
-    >
-        <x-slot name="actions">
-            <button type="button" class="btn btn-light text-danger pill-btn" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                <i class="bi bi-plus-circle me-1"></i> Add Category
-            </button>
-        </x-slot>
-    </x-admin-page-header>
-
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" role="presentation">
@@ -42,7 +31,7 @@
         @if($activeTab === 'vehicle')
             @include('admin.vehicles.vehicle-list')
         @elseif($activeTab === 'voucher')
-            @include('admin.vouchers.index')
+            @include('admin.vouchers.index', ['showHeader' => false])
         @elseif($activeTab === 'reward')
             <div class="card">
                 <div class="card-body text-center py-5">
