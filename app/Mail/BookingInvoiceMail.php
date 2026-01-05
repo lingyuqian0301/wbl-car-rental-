@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 
 class BookingInvoiceMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use SerializesModels;
 
     public $booking;
     public $pdf;
