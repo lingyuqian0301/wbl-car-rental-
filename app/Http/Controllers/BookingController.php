@@ -97,9 +97,9 @@ class BookingController extends Controller
         try {
             $booking->load(['vehicle', 'payments.verifier']);
 
-            $hasVerifiedPayment = $booking->payments()
+            $hasVerifiedPayment = $booking->payments
                 ->where('payment_status', 'Verified')
-                ->exists();
+                ->isNotEmpty();
 
             return view('bookings.show', [
                 'booking' => $booking,

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; // Import Log
 use Illuminate\View\View;
 
@@ -131,31 +132,75 @@ class PaymentController extends Controller
         }
 
         $depositAmount = $this->paymentService->calculateDeposit($booking);
+        $amountToPay = $depositAmount;
+        
         $wallet = $currentCustomer->walletAccount;
 
-        if (!$wallet || $wallet->wallet_balance < $depositAmount) {
+        if (!$wallet || $wallet->wallet_balance < $amountToPay) {
             return redirect()->back()->with('error', 'Insufficient wallet balance.');
         }
 
-        $wallet->wallet_balance -= $depositAmount;
-        $wallet->save();
+        // DB Transaction for safety
+        DB::beginTransaction();
+        try {
+            // 1. Deduct from Wallet
+            $wallet->wallet_balance -= $amountToPay;
+            // Also reduce outstanding amount as payment is made
+            $wallet->outstanding_amount = max(0, $wallet->outstanding_amount - $amountToPay);
+            $wallet->wallet_lastUpdate_Date_Time = now();
+            $wallet->save();
 
-        Payment::create([
-            'bookingID'               => $booking->bookingID,
-            'total_amount'            => $depositAmount,
-            'payment_bank_name'       => 'My Wallet',
-            'payment_bank_account_no' => 'WALLET-' . $currentCustomer->customerID,
-            'transaction_reference'   => 'WAL-' . time(),
-            'payment_status'          => 'Verified',
-            'payment_date'            => now(),
-            'isPayment_complete'      => true,
-            'payment_isVerify'        => true,
-            'latest_Update_Date_Time' => now(),
-        ]);
+            // 2. Create Payment Record
+            // Check if this payment completes the full rental amount
+            $isFullPayment = $amountToPay >= ($booking->rental_amount - 0.01);
 
-        $booking->update(['booking_status' => 'Confirmed']);
+            $payment = Payment::create([
+                'bookingID'               => $booking->bookingID,
+                'total_amount'            => $amountToPay,
+                'payment_bank_name'       => 'My Wallet',
+                'payment_bank_account_no' => 'WALLET-' . $currentCustomer->customerID,
+                'transaction_reference'   => 'WAL-' . time() . '-' . $booking->bookingID,
+                'payment_status'          => 'Verified', // Auto-verified
+                'payment_date'            => now(),
+                'isPayment_complete'      => $isFullPayment,
+                'payment_isVerify'        => true,
+                'latest_Update_Date_Time' => now(),
+            ]);
 
-        return redirect()->route('dashboard')
-            ->with('success', 'Deposit paid successfully from wallet!');
+            // 3. Create Wallet Transaction
+            \App\Models\WalletTransaction::create([
+                'walletAccountID'  => $wallet->walletAccountID,
+                'paymentID'        => $payment->paymentID,
+                'transaction_type' => 'Payment',
+                'amount'           => $amountToPay,
+                'transaction_date' => now(),
+                'description'      => 'Payment for Booking #' . $booking->bookingID,
+                'reference_type'   => 'Booking',
+                'reference_id'     => $booking->bookingID,
+            ]);
+
+            // 4. Update Booking
+            $booking->update(['booking_status' => 'Confirmed']);
+
+            // 5. Generate Invoice
+            \App\Models\Invoice::firstOrCreate(
+                ['bookingID' => $booking->bookingID],
+                [
+                    'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
+                    'issue_date'     => now(),
+                    'totalAmount'    => $booking->total_amount ?? $booking->rental_amount,
+                ]
+            );
+
+            DB::commit();
+
+            return redirect()->route('dashboard')
+                ->with('success', 'Deposit paid successfully from wallet! Booking confirmed.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Wallet Payment Failed: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Payment failed. Please try again.');
+        }
     }
 }

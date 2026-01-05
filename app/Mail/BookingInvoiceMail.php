@@ -16,7 +16,6 @@ class BookingInvoiceMail extends Mailable
     public $booking;
     public $pdf;
 
-    // Ensure we require both $booking AND $pdf
     public function __construct($booking, $pdf)
     {
         $this->booking = $booking;
@@ -26,18 +25,18 @@ class BookingInvoiceMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Hasta Travel Invoice - Booking #' . $this->booking->bookingID,
+            subject: 'Payment Verified - Invoice for Booking #' . $this->booking->bookingID,
         );
     }
 
     public function content(): Content
     {
-        return new Content(view: 'pdf.invoice');
+        // FIX: Use the simple email view we just created
+        return new Content(view: 'emails.invoice');
     }
 
     public function attachments(): array
     {
-        // Safety check: if $pdf is somehow missing (like in your preview route), don't crash.
         if (!$this->pdf) {
             return [];
         }

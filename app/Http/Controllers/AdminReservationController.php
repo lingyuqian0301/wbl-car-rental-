@@ -141,6 +141,17 @@ class AdminReservationController extends Controller
             'lastUpdateDate' => Carbon::now(),
         ]);
 
+        if ($request->booking_status === 'Confirmed') {
+            \App\Models\Invoice::firstOrCreate(
+                ['bookingID' => $booking->bookingID],
+                [
+                    'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
+                    'issue_date'     => now(),
+                    'totalAmount'    => $booking->total_amount,
+                ]
+            );
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Booking status updated successfully.',

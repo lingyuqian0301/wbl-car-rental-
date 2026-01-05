@@ -20,12 +20,11 @@ class AdminInvoiceController extends Controller
         $pickupDateTo = $request->get('pickup_date_to');
 
         $query = Booking::with([
-            'customer',        // 'customer.user' might be redundant if customer model has user details
-            'vehicle',         // Simply 'vehicle' is usually enough
+            'customer', 
+            'vehicle', 
             'payments', 
             'invoice',
-            // 'additionalCharges' // Remove if this relationship doesn't exist yet
-        ])->whereHas('invoice'); // Only show bookings that HAVE an invoice
+        ])->whereHas('invoice');
 
         // Filter by issue date range
         if ($issueDateFrom) {
@@ -39,12 +38,12 @@ class AdminInvoiceController extends Controller
             });
         }
 
-        // Filter by pickup date range (FIXED: Changed 'rental_start_date' to 'start_date')
+        // Filter by pickup date range (FIXED: Uses 'rental_start_date')
         if ($pickupDateFrom) {
-            $query->whereDate('start_date', '>=', $pickupDateFrom);
+            $query->whereDate('rental_start_date', '>=', $pickupDateFrom);
         }
         if ($pickupDateTo) {
-            $query->whereDate('start_date', '<=', $pickupDateTo);
+            $query->whereDate('rental_start_date', '<=', $pickupDateTo);
         }
 
         // Join with invoice table for sorting
@@ -73,9 +72,9 @@ class AdminInvoiceController extends Controller
         $totalInvoices = Invoice::count();
         $totalBookings = Booking::whereHas('invoice')->count();
         
-        // FIXED: Changed 'rental_start_date' to 'start_date' here too
+        // FIXED: Uses 'rental_start_date' here too
         $totalToday = Booking::whereHas('invoice')
-            ->whereDate('start_date', $today)
+            ->whereDate('rental_start_date', $today)
             ->count();
 
         return view('admin.invoices.index', [
