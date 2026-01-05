@@ -515,6 +515,23 @@
                     <p>Upload your IC/Matric card for quick registration</p>
                 </div>
 
+                @if ($errors->has('error'))
+                    <div class="animate-fade-in" style="background-color: #fee2e2; border: 1px solid #dc2626; color: #991b1b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                        <strong>Error:</strong> {{ $errors->first('error') }}
+                    </div>
+                @endif
+                
+                @if ($errors->any() && !$errors->has('error'))
+                     <div class="animate-fade-in" style="background-color: #fee2e2; border: 1px solid #dc2626; color: #991b1b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                        <ul style="list-style-type: disc; padding-left: 1.5rem;">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                <form method="POST" action="{{ route('register') }}" id="registerForm" enctype="multipart/form-data">
+
                 <!-- Register Form -->
                 <form method="POST" action="{{ route('register') }}" id="registerForm" enctype="multipart/form-data">
                     @csrf
@@ -543,7 +560,7 @@
                     </div>
 
                     <!-- Name -->
-                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.4s;">
+<div class="input-wrapper animate-fade-in" style="animation-delay: 0.4s;">
                         <div class="input-icon">
                             <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -560,6 +577,24 @@
                             autocomplete="name"
                         />
                         <x-input-error :messages="$errors->get('name')" class="error-message" />
+                    </div>
+
+                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.52s;">
+                        <div class="input-icon">
+                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="ic_no"
+                            name="ic_no"
+                            class="input-field"
+                            placeholder="IC Number (e.g. 990101011234)"
+                            value="{{ old('ic_no') }}"
+                            required
+                        />
+                        <x-input-error :messages="$errors->get('ic_no')" class="error-message" />
                     </div>
 
                     <!-- Email Address -->

@@ -16,12 +16,12 @@ class Customer extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'userID',
         'phone_number',
         'address',
         'customer_license',
         'emergency_contact',
         'booking_times',
-        'userID',
     ];
 
     /**
