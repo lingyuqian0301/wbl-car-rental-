@@ -196,6 +196,22 @@ class BookingController extends Controller
             'booking_status' => 'Pending',
         ];
 
+        $start = $request->start_date;
+$end   = $request->end_date;
+
+        $exists = Booking::where('vehicleID', $vehicleID)
+    ->where('booking_status', '!=', 'Cancelled')
+    ->where(function ($q) use ($start, $end) {
+        $q->where('rental_start_date', '<=', $end)
+          ->where('rental_end_date', '>=', $start);
+    })
+    ->exists();
+
+if ($exists) {
+    return back()->withErrors(['date' => 'Selected dates are unavailable']);
+}
+
+
         session(['booking_data' => $bookingData]);
 
         return redirect()->route('booking.confirm');

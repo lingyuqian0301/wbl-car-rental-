@@ -18,8 +18,8 @@ $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
         }
 
         // Filter by car type (column is vehicleType not vehicle_type)
-        if ($request->filled('vehicle_type')) {
-            $query->where('vehicleType', $request->vehicle_type);
+        if ($request->filled('vehicleType')) {
+            $query->where('vehicleType', $request->vehicleType);
         }
 
         // 🔥 Date availability logic
