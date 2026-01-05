@@ -61,6 +61,9 @@ $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
 //     }
 
         $cars = $query->get();
+        if ($request->filled('start_date') && $request->filled('end_date') && $cars->isEmpty()) {
+    session()->flash('unavailable', 'No vehicles available for the selected dates.');
+}
 
         // Get unique vehicle types and brands for filters
         $vehicleTypes = Vehicle::whereIn('isActive', [1, 'true'])
@@ -83,7 +86,8 @@ $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
 
     public function show($id)
     {
-        $vehicle = Vehicle::findOrFail($id);
+        $vehicle = Vehicle::with(['car', 'motorcycle'])->findOrFail($id);
+
 
         return view('vehicles.show', compact('vehicle'));
     }

@@ -551,36 +551,40 @@
     <div class="specs">
 
         {{-- Car --}}
-        @if ($vehicle->vehicleType === 'Car' && $vehicle->car)
-            <div class="spec">
-                <div class="spec-label">Transmission</div>
-                <div class="spec-value">{{ $vehicle->car->transmission }}</div>
-            </div>
+       {{-- Car specs --}}
+@if ($vehicle->car)
+    <div class="spec">
+        <div class="spec-label">Transmission</div>
+        <div class="spec-value">
+            {{ $vehicle->car->transmission ?? 'N/A' }}
+        </div>
+    </div>
 
-            <div class="spec">
-                <div class="spec-label">Seating Capacity</div>
-                <div class="spec-value">
-                    {{ $vehicle->car->seating_capacity }} persons
-                </div>
-            </div>
-        @endif
+    <div class="spec">
+        <div class="spec-label">Seating Capacity</div>
+        <div class="spec-value">
+            {{ $vehicle->car->seating_capacity ?? 'N/A' }} persons
+        </div>
+    </div>
+@endif
 
-        {{-- Motorcycle --}}
-        @if ($vehicle->vehicleType === 'Motorcycle' && $vehicle->motorcycle)
-            <div class="spec">
-                <div class="spec-label">Motor Type</div>
-                <div class="spec-value">
-                    {{ $vehicle->motorcycle->motor_type }}
-                </div>
-            </div>
+{{-- Motorcycle specs --}}
+@if ($vehicle->motorcycle)
+    <div class="spec">
+        <div class="spec-label">Motor Type</div>
+        <div class="spec-value">
+            {{ $vehicle->motorcycle->motor_type }}
+        </div>
+    </div>
 
-            <div class="spec">
-                <div class="spec-label">Engine Capacity</div>
-                <div class="spec-value">
-                    {{ $vehicle->engineCapacity }} cc
-                </div>
-            </div>
-        @endif
+    <div class="spec">
+        <div class="spec-label">Engine Capacity</div>
+        <div class="spec-value">
+            {{ $vehicle->engineCapacity }} cc
+        </div>
+    </div>
+@endif
+
 
         {{-- Common --}}
         <div class="spec">
