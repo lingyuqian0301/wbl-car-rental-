@@ -95,11 +95,21 @@ class AdminTopbarCalendarController extends Controller
             ->get();
 
         // Get all staff and admins for tick colors
-        $staffAndAdmins = DB::table('user')
-            ->whereIn('role', ['staff', 'admin'])
-            ->orderBy('name')
+      // NEW CODE (FIXED)
+        // Since 'role' column doesn't exist, we fetch Admins and Staff separately and merge them.
+        
+        $admins = DB::table('user')
+            ->join('admin', 'user.userID', '=', 'admin.userID')
+            ->select('user.*', DB::raw("'admin' as role")) // Manually add 'role' for the view
             ->get();
 
+        $staff = DB::table('user')
+            ->join('staff', 'user.userID', '=', 'staff.userID')
+            ->select('user.*', DB::raw("'staff' as role")) // Manually add 'role' for the view
+            ->get();
+
+        // Merge both lists and sort by name
+        $staffAndAdmins = $admins->merge($staff)->sortBy('name');
         $viewName = str_starts_with(Route::currentRouteName(), 'staff.') ? 'staff.topbar-calendar.index' : 'admin.topbar-calendar.index';
         return view($viewName, [
             'bookings' => $bookings,
