@@ -2,292 +2,247 @@
 
 @section('title', 'Finance Report')
 
-@push('styles')
-<style>
-    .filter-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 15px;
-        margin-bottom: 25px;
-    }
-    .summary-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 20px;
-        margin-bottom: 25px;
-    }
-    .summary-item {
-        padding: 15px;
-        border-bottom: 1px solid #eee;
-    }
-    .summary-item:last-child {
-        border-bottom: none;
-    }
-    .summary-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--admin-red);
-    }
-    .filter-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 10px;
-        align-items: end;
-    }
-    .filter-row .form-label {
-        font-size: 0.75rem;
-        margin-bottom: 4px;
-    }
-    .filter-row .form-control,
-    .filter-row .form-select {
-        font-size: 0.85rem;
-        padding: 4px 8px;
-    }
-    .data-table {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-    .table-header {
-        background: var(--admin-red);
-        color: white;
-        padding: 15px 20px;
-        font-weight: 600;
-    }
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-        .print-title {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-    }
-</style>
-@endpush
-
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <div>
-            <h2 class="mb-1"><i class="bi bi-cash-stack"></i> Finance Report</h2>
-            <p class="text-muted mb-0">View earnings, expenses, and profit analysis</p>
-        </div>
-        <div>
-            <button onclick="window.print()" class="btn btn-danger btn-sm">
-                <i class="bi bi-printer"></i> Print
-            </button>
-            <a href="{{ route('admin.reports.finance.export-pdf', request()->all()) }}" class="btn btn-danger btn-sm" target="_blank">
-                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+<div class="container-fluid py-2">
+    <!-- Dynamic Tabs -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $activeTab === 'expenses-profit' ? 'active' : '' }}" 
+               href="{{ route('admin.reports.finance', ['tab' => 'expenses-profit']) }}">
+                <i class="bi bi-calculator me-1"></i> Expenses and Profit
             </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $activeTab === 'monthly-income' ? 'active' : '' }}" 
+               href="{{ route('admin.reports.finance', ['tab' => 'monthly-income']) }}">
+                <i class="bi bi-calendar-month me-1"></i> Monthly Income
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $activeTab === 'daily-income' ? 'active' : '' }}" 
+               href="{{ route('admin.reports.finance', ['tab' => 'daily-income']) }}">
+                <i class="bi bi-calendar-day me-1"></i> Daily Income
+            </a>
+        </li>
+    </ul>
+
+    <!-- Expenses and Profit Tab -->
+    @if($activeTab === 'expenses-profit')
+        <x-admin-page-header 
+            title="Expenses and Profit" 
+            description="Vehicle-wise expenses and profit breakdown"
+            :stats="[
+                ['label' => 'Total Vehicles', 'value' => $vehicles->count() ?? 0, 'icon' => 'bi-car-front']
+            ]"
+        />
+
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        <!-- Filter -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'expenses-profit']) }}" class="d-flex gap-2 align-items-end">
+                    <div>
+                        <label class="form-label small">Vehicle Type</label>
+                        <select name="vehicle_type" class="form-select form-select-sm" style="width: 150px;">
+                            <option value="all" {{ ($vehicleType ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
+                            <option value="car" {{ ($vehicleType ?? 'all') === 'car' ? 'selected' : '' }}>Car</option>
+                            <option value="motor" {{ ($vehicleType ?? 'all') === 'motor' ? 'selected' : '' }}>Motor</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <div class="print-title" style="display: none;">
-        <h2>Finance Report</h2>
-        <p>Period: {{ $dateFrom }} to {{ $dateTo }}</p>
-    </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Vehicle ID</th>
+                                <th>Vehicle</th>
+                                <th>Plate Number</th>
+                                <th>Owner Leasing Price</th>
+                                <th>Expenses (Maintenance)</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($vehicles ?? [] as $vehicle)
+                                <tr>
+                                    <td>#{{ $vehicle['vehicleID'] }}</td>
+                                    <td>{{ $vehicle['vehicle'] }}</td>
+                                    <td>{{ $vehicle['plate_number'] ?? 'N/A' }}</td>
+                                    <td>RM {{ number_format($vehicle['leasing_price'], 2) }}</td>
+                                    <td>RM {{ number_format($vehicle['expenses'], 2) }}</td>
+                                    <td>
+                                        <span class="fw-bold {{ $vehicle['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                            RM {{ number_format($vehicle['profit'], 2) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">No vehicles found</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
 
-    <!-- Filters -->
-    <div class="filter-card no-print">
-        <form method="GET" action="{{ route('admin.reports.finance.index') }}" class="filter-row">
-            <div>
-                <label class="form-label small fw-semibold">Period Type</label>
-                <select name="period_type" id="period_type" class="form-select form-select-sm" onchange="updatePeriodFields()">
-                    <option value="daily" {{ $periodType === 'daily' ? 'selected' : '' }}>Daily</option>
-                    <option value="weekly" {{ $periodType === 'weekly' ? 'selected' : '' }}>Weekly</option>
-                    <option value="monthly" {{ $periodType === 'monthly' ? 'selected' : '' }}>Monthly</option>
-                    <option value="yearly" {{ $periodType === 'yearly' ? 'selected' : '' }}>Yearly</option>
-                </select>
-            </div>
-            <div id="daily_field" style="display: {{ $periodType === 'daily' ? 'block' : 'none' }};">
-                <label class="form-label small fw-semibold">Date</label>
-                <input type="date" name="selected_date" class="form-control form-control-sm" value="{{ $selectedDate }}">
-            </div>
-            <div id="weekly_fields" style="display: {{ $periodType === 'weekly' ? 'block' : 'none' }};">
-                <label class="form-label small fw-semibold">Week From</label>
-                <input type="date" name="week_from" class="form-control form-control-sm" value="{{ $weekFrom }}">
-            </div>
-            <div id="weekly_fields_to" style="display: {{ $periodType === 'weekly' ? 'block' : 'none' }};">
-                <label class="form-label small fw-semibold">Week To</label>
-                <input type="date" name="week_to" class="form-control form-control-sm" value="{{ $weekTo }}">
-            </div>
-            <div id="monthly_field" style="display: {{ $periodType === 'monthly' ? 'block' : 'none' }};">
-                <label class="form-label small fw-semibold">Month</label>
-                <input type="month" name="selected_month" class="form-control form-control-sm" value="{{ $selectedMonth }}">
-            </div>
-            <div id="yearly_field" style="display: {{ $periodType === 'yearly' ? 'block' : 'none' }};">
-                <label class="form-label small fw-semibold">Year</label>
-                <input type="number" name="selected_year" class="form-control form-control-sm" value="{{ $selectedYear }}" min="2020" max="2100">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle Type</label>
-                <select name="vehicle_type" class="form-select form-select-sm">
-                    <option value="all" {{ $vehicleType === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="car" {{ $vehicleType === 'car' ? 'selected' : '' }}>Car</option>
-                    <option value="motorcycle" {{ $vehicleType === 'motorcycle' ? 'selected' : '' }}>Motorcycle</option>
-                </select>
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle Brand</label>
-                <input type="text" name="vehicle_brand" class="form-control form-control-sm" value="{{ $vehicleBrand }}" placeholder="Brand">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle Model</label>
-                <input type="text" name="vehicle_model" class="form-control form-control-sm" value="{{ $vehicleModel }}" placeholder="Model">
-            </div>
-            <div>
-                <button type="submit" class="btn btn-danger btn-sm w-100">
-                    <i class="bi bi-funnel"></i> Apply Filters
+    <!-- Monthly Income Tab -->
+    @if($activeTab === 'monthly-income')
+        <x-admin-page-header 
+            title="Monthly Income" 
+            description="Monthly income breakdown for {{ $selectedYear ?? date('Y') }}"
+            :stats="[
+                ['label' => 'Year', 'value' => $selectedYear ?? date('Y'), 'icon' => 'bi-calendar-year'],
+                ['label' => 'Total Profit', 'value' => 'RM ' . number_format($yearTotalProfit ?? 0, 2), 'icon' => 'bi-cash-stack']
+            ]"
+        />
+
+        <div class="mb-3">
+            <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'monthly-income']) }}" class="d-flex gap-2 align-items-end">
+                <div>
+                    <label class="form-label small">Year</label>
+                    <input type="number" name="year" class="form-control form-control-sm" value="{{ $selectedYear ?? date('Y') }}" min="2020" max="2100" style="width: 120px;">
+                </div>
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="bi bi-funnel"></i> Filter
                 </button>
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
 
-    <!-- Summary -->
-    <div class="summary-card">
-        <h5 class="mb-3"><i class="bi bi-calculator"></i> Financial Summary</h5>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="summary-item">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>Total Earnings</strong>
-                            <div class="small text-muted">Deposit: RM {{ number_format($depositEarnings, 2) }}</div>
-                            <div class="small text-muted">Balance: RM {{ number_format($balanceEarnings, 2) }}</div>
-                            <div class="small text-muted">Full Payment: RM {{ number_format($fullPaymentEarnings, 2) }}</div>
-                        </div>
-                        <div class="summary-value text-success">RM {{ number_format($totalEarnings, 2) }}</div>
-                    </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Total No. of Rental</th>
+                                <th>Total Expenses</th>
+                                <th>Total Earning Amount</th>
+                                <th>Profit Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($months ?? [] as $month)
+                                <tr>
+                                    <td><strong>{{ $month['monthName'] }}</strong></td>
+                                    <td>{{ $month['totalRentals'] }}</td>
+                                    <td>RM {{ number_format($month['totalExpenses'], 2) }}</td>
+                                    <td>RM {{ number_format($month['totalEarnings'], 2) }}</td>
+                                    <td>
+                                        <span class="fw-bold {{ $month['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                            RM {{ number_format($month['profit'], 2) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">No data found</td>
+                                </tr>
+                            @endforelse
+                            <!-- Year Total Row -->
+                            @if(isset($months) && count($months) > 0)
+                                <tr class="table-info fw-bold">
+                                    <td><strong>Total (Year {{ $selectedYear ?? date('Y') }})</strong></td>
+                                    <td>{{ $yearTotalRentals ?? 0 }}</td>
+                                    <td>RM {{ number_format($yearTotalExpenses ?? 0, 2) }}</td>
+                                    <td>RM {{ number_format($yearTotalEarnings ?? 0, 2) }}</td>
+                                    <td>
+                                        <span class="{{ ($yearTotalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                            RM {{ number_format($yearTotalProfit ?? 0, 2) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="summary-item">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>Total Expenses</strong>
-                            <div class="small text-muted">Maintenance: RM {{ number_format($maintenanceExpenses ?? 0, 2) }}</div>
-                        </div>
-                        <div class="summary-value text-danger">RM {{ number_format($totalExpenses, 2) }}</div>
-                    </div>
+        </div>
+    @endif
+
+    <!-- Daily Income Tab -->
+    @if($activeTab === 'daily-income')
+        <x-admin-page-header 
+            title="Daily Income" 
+            description="Daily income breakdown for {{ \Carbon\Carbon::create($selectedYear ?? date('Y'), $selectedMonth ?? date('m'), 1)->format('F Y') }}"
+            :stats="[
+                ['label' => 'Month', 'value' => \Carbon\Carbon::create($selectedYear ?? date('Y'), $selectedMonth ?? date('m'), 1)->format('F Y'), 'icon' => 'bi-calendar-month']
+            ]"
+        />
+
+        <div class="mb-3">
+            <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'daily-income']) }}" class="d-flex gap-2 align-items-end">
+                <div>
+                    <label class="form-label small">Year</label>
+                    <input type="number" name="year" class="form-control form-control-sm" value="{{ $selectedYear ?? date('Y') }}" min="2020" max="2100" style="width: 120px;">
+                </div>
+                <div>
+                    <label class="form-label small">Month</label>
+                    <select name="month" class="form-select form-select-sm" style="width: 150px;">
+                        @for($m = 1; $m <= 12; $m++)
+                            <option value="{{ $m }}" {{ ($selectedMonth ?? date('m')) == $m ? 'selected' : '' }}>
+                                {{ \Carbon\Carbon::create(null, $m, 1)->format('F') }}
+                            </option>
+                        @endfor
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Total Rental Amount</th>
+                                <th>Total Expenses</th>
+                                <th>Total Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($days ?? [] as $day)
+                                <tr>
+                                    <td>{{ $day['dateFormatted'] }}</td>
+                                    <td>RM {{ number_format($day['totalRentalAmount'], 2) }}</td>
+                                    <td>RM {{ number_format($day['totalExpenses'], 2) }}</td>
+                                    <td>
+                                        <span class="fw-bold {{ $day['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                            RM {{ number_format($day['profit'], 2) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">No data found</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-        <div class="summary-item border-top border-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <strong class="fs-5">Net Profit</strong>
-                <div class="summary-value {{ $totalProfit >= 0 ? 'text-success' : 'text-danger' }}">
-                    RM {{ number_format($totalProfit, 2) }}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Earnings List -->
-    <div class="data-table mb-4">
-        <div class="table-header">
-            <i class="bi bi-arrow-up-circle"></i> Earnings List
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Payment ID</th>
-                        <th>Booking ID</th>
-                        <th>Customer Name</th>
-                        <th>Vehicle</th>
-                        <th>Payment Type</th>
-                        <th>Amount</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($earningsList as $earning)
-                        <tr>
-                            <td>#{{ $earning['payment_id'] }}</td>
-                            <td>#{{ $earning['booking_id'] ?? 'N/A' }}</td>
-                            <td>{{ $earning['customer_name'] }}</td>
-                            <td>{{ $earning['vehicle'] }}</td>
-                            <td>
-                                <span class="badge {{ $earning['payment_type'] === 'Full Payment' ? 'bg-success' : ($earning['payment_type'] === 'Deposit' ? 'bg-warning text-dark' : 'bg-info') }}">
-                                    {{ $earning['payment_type'] }}
-                                </span>
-                            </td>
-                            <td><strong>RM {{ number_format($earning['amount'], 2) }}</strong></td>
-                            <td>{{ \Carbon\Carbon::parse($earning['payment_date'])->format('d M Y') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">No earnings found</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Expenses List -->
-    <div class="data-table">
-        <div class="table-header">
-            <i class="bi bi-arrow-down-circle"></i> Expenses List
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Amount</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($expensesList as $expense)
-                        <tr>
-                            <td>
-                                <span class="badge {{ $expense['type'] === 'Leasing' ? 'bg-primary' : 'bg-warning text-dark' }}">
-                                    {{ $expense['type'] }}
-                                </span>
-                            </td>
-                            <td>{{ $expense['description'] }}</td>
-                            <td><strong>RM {{ number_format($expense['amount'], 2) }}</strong></td>
-                            <td>{{ \Carbon\Carbon::parse($expense['date'])->format('d M Y') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">No expenses found</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+    @endif
 </div>
-
-@push('scripts')
-<script>
-    function updatePeriodFields() {
-        const periodType = document.getElementById('period_type').value;
-        document.getElementById('daily_field').style.display = periodType === 'daily' ? 'block' : 'none';
-        document.getElementById('weekly_fields').style.display = periodType === 'weekly' ? 'block' : 'none';
-        document.getElementById('weekly_fields_to').style.display = periodType === 'weekly' ? 'block' : 'none';
-        document.getElementById('monthly_field').style.display = periodType === 'monthly' ? 'block' : 'none';
-        document.getElementById('yearly_field').style.display = periodType === 'yearly' ? 'block' : 'none';
-    }
-
-    window.addEventListener('beforeprint', function() {
-        document.querySelector('.print-title').style.display = 'block';
-    });
-
-    window.addEventListener('afterprint', function() {
-        document.querySelector('.print-title').style.display = 'none';
-    });
-</script>
-@endpush
 @endsection

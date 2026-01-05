@@ -80,87 +80,76 @@
 
     <!-- Filters -->
     <div class="filter-card">
-        <form method="GET" action="{{ route('admin.reports.rentals') }}" class="filter-row">
-            <div>
-                <label class="form-label small fw-semibold">Date Range</label>
-                <select name="date_range" class="form-select form-select-sm" id="date_range_select">
-                    <option value="all" {{ $dateRange === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="daily" {{ $dateRange === 'daily' ? 'selected' : '' }}>Daily</option>
-                    <option value="weekly" {{ $dateRange === 'weekly' ? 'selected' : '' }}>Weekly Range</option>
-                    <option value="monthly" {{ $dateRange === 'monthly' ? 'selected' : '' }}>Monthly Range</option>
-                    <option value="custom" {{ ($dateRange === 'custom' || ($dateFrom && $dateTo && $dateRange !== 'daily' && $dateRange !== 'weekly' && $dateRange !== 'monthly')) ? 'selected' : '' }}>Custom Date Range</option>
-                </select>
+        <form method="GET" action="{{ route('admin.reports.rentals') }}">
+            <div class="row g-2 mb-2">
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Sort By</label>
+                    <select name="sort_by" class="form-select form-select-sm">
+                        <option value="booking_date_asc" {{ ($sortBy ?? 'booking_date_asc') === 'booking_date_asc' ? 'selected' : '' }}>Booking Date (ASC)</option>
+                        <option value="booking_id_desc" {{ ($sortBy ?? '') === 'booking_id_desc' ? 'selected' : '' }}>Booking ID (DESC)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Date Range</label>
+                    <select name="date_range" class="form-select form-select-sm" id="date_range_select">
+                        <option value="all" {{ $dateRange === 'all' ? 'selected' : '' }}>All</option>
+                        <option value="daily" {{ $dateRange === 'daily' ? 'selected' : '' }}>Daily</option>
+                        <option value="weekly" {{ $dateRange === 'weekly' ? 'selected' : '' }}>Weekly</option>
+                        <option value="monthly" {{ $dateRange === 'monthly' ? 'selected' : '' }}>Monthly</option>
+                        <option value="custom" {{ ($dateRange === 'custom' || ($dateFrom && $dateTo && $dateRange !== 'daily' && $dateRange !== 'weekly' && $dateRange !== 'monthly')) ? 'selected' : '' }}>Custom Range</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Date From</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom }}" id="date_from_input">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Date To</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo }}" id="date_to_input">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Vehicle Type</label>
+                    <select name="vehicle_type" class="form-select form-select-sm">
+                        <option value="all" {{ $vehicleType === 'all' ? 'selected' : '' }}>All</option>
+                        <option value="car" {{ $vehicleType === 'car' ? 'selected' : '' }}>Car</option>
+                        <option value="motorcycle" {{ $vehicleType === 'motorcycle' || $vehicleType === 'motor' ? 'selected' : '' }}>Motorcycle</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Booking Status</label>
+                    <select name="booking_status" class="form-select form-select-sm">
+                        <option value="all" {{ $bookingStatus === 'all' ? 'selected' : '' }}>All</option>
+                        <option value="Pending" {{ $bookingStatus === 'Pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="Confirmed" {{ $bookingStatus === 'Confirmed' ? 'selected' : '' }}>Confirmed</option>
+                        <option value="Done" {{ $bookingStatus === 'Done' ? 'selected' : '' }}>Done</option>
+                        <option value="Cancelled" {{ $bookingStatus === 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label class="form-label small fw-semibold">Date From</label>
-                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom }}" id="date_from_input">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Vehicle Brand</label>
+                    <input type="text" name="vehicle_brand" class="form-control form-control-sm" value="{{ $vehicleBrand }}" placeholder="Brand">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Vehicle Model</label>
+                    <input type="text" name="vehicle_model" class="form-control form-control-sm" value="{{ $vehicleModel }}" placeholder="Model">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Plate No</label>
+                    <input type="text" name="plate_no" class="form-control form-control-sm" value="{{ $plateNo }}" placeholder="Plate No">
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-danger btn-sm flex-fill">
+                        <i class="bi bi-funnel"></i> Apply Filters
+                    </button>
+                    @if(request()->anyFilled(['sort_by', 'date_range', 'date_from', 'date_to', 'vehicle_type', 'booking_status', 'vehicle_brand', 'vehicle_model', 'plate_no']))
+                    <a href="{{ route('admin.reports.rentals') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                    @endif
+                </div>
             </div>
-            <div>
-                <label class="form-label small fw-semibold">Date To</label>
-                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo }}" id="date_to_input">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle Type</label>
-                <select name="vehicle_type" class="form-select form-select-sm">
-                    <option value="all" {{ $vehicleType === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="car" {{ $vehicleType === 'car' ? 'selected' : '' }}>Car</option>
-                    <option value="motor" {{ $vehicleType === 'motor' ? 'selected' : '' }}>Motor</option>
-                </select>
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Booking Status</label>
-                <select name="booking_status" class="form-select form-select-sm">
-                    <option value="all" {{ $bookingStatus === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="done" {{ $bookingStatus === 'done' ? 'selected' : '' }}>Done</option>
-                    <option value="upcoming" {{ $bookingStatus === 'upcoming' ? 'selected' : '' }}>Upcoming</option>
-                    <option value="cancelled" {{ $bookingStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                </select>
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Payment Status</label>
-                <select name="payment_status" class="form-select form-select-sm">
-                    <option value="all" {{ $paymentStatus === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="deposit" {{ $paymentStatus === 'deposit' ? 'selected' : '' }}>Deposit</option>
-                    <option value="fully" {{ $paymentStatus === 'fully' ? 'selected' : '' }}>Fully</option>
-                    <option value="refunded" {{ $paymentStatus === 'refunded' ? 'selected' : '' }}>Refunded</option>
-                </select>
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Customer ID</label>
-                <input type="number" name="customer_id" class="form-control form-control-sm" value="{{ $customerId }}" placeholder="Customer ID">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Customer Name</label>
-                <input type="text" name="customer_name" class="form-control form-control-sm" value="{{ $customerName }}" placeholder="Customer Name">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle ID</label>
-                <input type="number" name="vehicle_id" class="form-control form-control-sm" value="{{ $vehicleId }}" placeholder="Vehicle ID">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle Brand</label>
-                <input type="text" name="vehicle_brand" class="form-control form-control-sm" value="{{ $vehicleBrand }}" placeholder="Brand">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Vehicle Model</label>
-                <input type="text" name="vehicle_model" class="form-control form-control-sm" value="{{ $vehicleModel }}" placeholder="Model">
-            </div>
-            <div>
-                <label class="form-label small fw-semibold">Plate No</label>
-                <input type="text" name="plate_no" class="form-control form-control-sm" value="{{ $plateNo }}" placeholder="Plate No">
-            </div>
-            <div>
-                <button type="submit" class="btn btn-danger btn-sm w-100">
-                    <i class="bi bi-funnel"></i> Apply Filters
-                </button>
-            </div>
-            @if(request()->anyFilled(['date_range', 'date_from', 'date_to', 'vehicle_type', 'booking_status', 'payment_status', 'customer_id', 'customer_name', 'vehicle_id', 'vehicle_brand', 'vehicle_model', 'plate_no']))
-            <div>
-                <a href="{{ route('admin.reports.rentals') }}" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-x-circle"></i> Clear
-                </a>
-            </div>
-            @endif
         </form>
     </div>
 

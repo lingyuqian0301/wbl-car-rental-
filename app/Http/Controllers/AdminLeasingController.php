@@ -14,9 +14,24 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Carbon\Carbon;
+use App\Models\Vehicle;
 
 class AdminLeasingController extends Controller
 {
+    /**
+     * Combined Leasing Index - Shows both owner and vehicle tabs
+     */
+    public function index(Request $request): View
+    {
+        $activeTab = $request->get('tab', 'owner');
+
+        if ($activeTab === 'owner') {
+            return $this->ownerIndex($request);
+        } else {
+            return $this->vehicleIndex($request);
+        }
+    }
+
     /**
      * Owner Leasing Index - List all owners with their cars
      */
@@ -34,7 +49,7 @@ class AdminLeasingController extends Controller
             });
         }
 
-        $owners = $query->orderBy('registration_date', 'desc')->paginate(20)->withQueryString();
+        $owners = $query->orderBy('ownerID', 'asc')->paginate(20)->withQueryString();
 
         // Get cars for each owner (we'll need to join or get separately)
         // For now, we'll get all cars and match by some logic
@@ -46,7 +61,8 @@ class AdminLeasingController extends Controller
         $activeOwners = OwnerCar::where('isActive', true)->count();
         $totalCars = DB::table('car')->count();
 
-        return view('admin.leasing.owner.index', [
+        return view('admin.leasing.index', [
+            'activeTab' => 'owner',
             'owners' => $owners,
             'allCars' => $allCars,
             'totalOwners' => $totalOwners,
@@ -61,24 +77,15 @@ class AdminLeasingController extends Controller
      */
     public function ownerShow(OwnerCar $owner): View
     {
-        // Get cars associated with this owner (you may need to adjust this based on your schema)
-        $cars = DB::table('car')->get(); // Placeholder - adjust based on your schema
+        // Load owner with person details
+        $owner->load('personDetails');
         
-        // Get car images (up to 10)
-        $carImages = CarImg::limit(10)->get();
+        // Get vehicles for this owner (if any)
+        $vehicles = $owner->vehicles()->with(['car', 'motorcycle'])->get();
         
-        // Get documents
-        $grantDocs = GrantDoc::all();
-        $roadtaxes = Roadtax::all();
-        $insurances = Insurance::all();
-
         return view('admin.leasing.owner.show', [
             'owner' => $owner,
-            'cars' => $cars,
-            'carImages' => $carImages,
-            'grantDocs' => $grantDocs,
-            'roadtaxes' => $roadtaxes,
-            'insurances' => $insurances,
+            'vehicles' => $vehicles,
         ]);
     }
 
@@ -96,20 +103,51 @@ class AdminLeasingController extends Controller
     public function ownerStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'fullname' => 'required|string|max:100',
             'ic_no' => 'required|string|max:20',
             'contact_number' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'bankname' => 'nullable|string|max:50',
             'bank_acc_number' => 'nullable|string|max:30',
             'registration_date' => 'nullable|date',
+            'leasing_price' => 'nullable|numeric|min:0',
+            'leasing_due_date' => 'nullable|date',
+            'isActive' => 'nullable|boolean',
         ]);
 
-        $validated['registration_date'] = $validated['registration_date'] ?? now();
+        DB::beginTransaction();
+        try {
+            // Create PersonDetails if it doesn't exist
+            \App\Models\PersonDetails::firstOrCreate(
+                ['ic_no' => $validated['ic_no']],
+                ['fullname' => $validated['fullname']]
+            );
 
-        OwnerCar::create($validated);
+            // Create OwnerCar
+            $ownerData = [
+                'ic_no' => $validated['ic_no'],
+                'contact_number' => $validated['contact_number'] ?? null,
+                'email' => $validated['email'] ?? null,
+                'bankname' => $validated['bankname'] ?? null,
+                'bank_acc_number' => $validated['bank_acc_number'] ?? null,
+                'registration_date' => $validated['registration_date'] ?? now(),
+                'leasing_price' => $validated['leasing_price'] ?? null,
+                'leasing_due_date' => $validated['leasing_due_date'] ?? null,
+                'isActive' => $validated['isActive'] ?? true,
+            ];
 
-        return redirect()->route('admin.leasing.owner')
-            ->with('success', 'Owner leasing created successfully.');
+            OwnerCar::create($ownerData);
+
+            DB::commit();
+
+            return redirect()->route('admin.leasing.index', ['tab' => 'owner'])
+                ->with('success', 'Owner leasing created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create owner: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -132,11 +170,14 @@ class AdminLeasingController extends Controller
             'bankname' => 'nullable|string|max:50',
             'bank_acc_number' => 'nullable|string|max:30',
             'registration_date' => 'nullable|date',
+            'leasing_price' => 'nullable|numeric|min:0',
+            'leasing_due_date' => 'nullable|date',
+            'isActive' => 'nullable|boolean',
         ]);
 
         $owner->update($validated);
 
-        return redirect()->route('admin.leasing.owner')
+        return redirect()->route('admin.leasing.index', ['tab' => 'owner'])
             ->with('success', 'Owner leasing updated successfully.');
     }
 
@@ -147,7 +188,7 @@ class AdminLeasingController extends Controller
     {
         $owner->delete();
 
-        return redirect()->route('admin.leasing.owner')
+        return redirect()->route('admin.leasing.index', ['tab' => 'owner'])
             ->with('success', 'Owner leasing deleted successfully.');
     }
 
@@ -156,8 +197,14 @@ class AdminLeasingController extends Controller
      */
     public function vehicleIndex(Request $request): View
     {
-        $query = Booking::with(['customer.user', 'vehicle'])
-            ->whereRaw('DATEDIFF(rental_end_date, rental_start_date) > 15');
+        // Get bookings with duration > 15 days
+        $query = Booking::with(['customer.user', 'vehicle.documents', 'payments', 'invoice'])
+            ->where('booking_status', '!=', 'Cancelled')
+            ->where(function($q) {
+                // Use duration field if available, otherwise calculate
+                $q->where('duration', '>', 15)
+                  ->orWhereRaw('DATEDIFF(rental_end_date, rental_start_date) > 15');
+            });
 
         // Filter by status
         $statusFilter = $request->get('status', 'all');
@@ -171,6 +218,22 @@ class AdminLeasingController extends Controller
         } elseif ($statusFilter === 'future') {
             $query->where('rental_start_date', '>', $today);
         }
+
+        // Get all bookings for statistics (before pagination)
+        $allBookings = clone $query;
+        $allBookingsData = $allBookings->get();
+
+        // Calculate summary statistics
+        $totalBookings = $allBookingsData->count();
+        $totalRevenue = $allBookingsData->sum(function($booking) {
+            return ($booking->deposit_amount ?? 0) + ($booking->rental_amount ?? 0);
+        });
+        $totalPaid = $allBookingsData->sum(function($booking) {
+            return $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+        });
+        $ongoingBookings = $allBookingsData->filter(function($booking) use ($today) {
+            return $booking->rental_start_date <= $today && $booking->rental_end_date >= $today;
+        })->count();
 
         // Filter by vehicle type
         $vehicleType = $request->get('vehicle_type', 'all');
@@ -195,10 +258,26 @@ class AdminLeasingController extends Controller
             })->filter();
         }
 
-        return view('admin.leasing.vehicle.index', [
+        // Get staff users for served by dropdown
+        $staffUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff')->orWhereHas('admin');
+        })->orderBy('name')->get();
+
+        // Get booking statuses
+        $bookingStatuses = ['Pending', 'Confirmed', 'Request Cancellation', 'Refunding', 'Cancelled', 'Done'];
+
+        return view('admin.leasing.index', [
+            'activeTab' => 'vehicle',
             'bookings' => $bookings,
             'statusFilter' => $statusFilter,
             'vehicleType' => $vehicleType,
+            'today' => $today,
+            'totalBookings' => $totalBookings,
+            'totalRevenue' => $totalRevenue,
+            'totalPaid' => $totalPaid,
+            'ongoingBookings' => $ongoingBookings,
+            'staffUsers' => $staffUsers,
+            'bookingStatuses' => $bookingStatuses,
         ]);
     }
 }

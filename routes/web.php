@@ -47,6 +47,7 @@ use App\Http\Controllers\AdminChartsController;
 use App\Http\Controllers\AdminFinanceController;
 use App\Http\Controllers\AdminLeasingController;
 use App\Http\Controllers\AdminNotificationController;
+use App\Http\Controllers\AdminSettingsController;
 use App\Http\Controllers\AdminVoucherController;
 use App\Http\Controllers\StaffDashboardController;
 use App\Http\Controllers\BookingController;
@@ -194,8 +195,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/staff/dashboard', StaffDashboardController::class)->name('staff.dashboard');
     });
 
-    // Admin-only routes
-    Route::middleware('admin')->group(function () {
+    // Admin and Staff routes (shared access - except reports and settings)
+    Route::middleware('adminOrStaff')->group(function () {
         Route::get('/admin/dashboard', AdminDashboardController::class)->name('admin.dashboard');
 
         Route::prefix('admin/payments')->name('admin.payments.')->group(function () {
@@ -243,6 +244,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{vehicle}/documents', [AdminVehicleController::class, 'storeDocument'])->name('documents.store');
             Route::delete('/documents/{document}', [AdminVehicleController::class, 'destroyDocument'])->name('documents.destroy');
             Route::post('/{vehicle}/photos', [AdminVehicleController::class, 'storePhoto'])->name('photos.store');
+            Route::post('/{vehicle}/owner', [AdminVehicleController::class, 'updateOwner'])->name('owner.update');
         });
 
         Route::prefix('admin/topbar-calendar')->name('admin.topbar-calendar.')->group(function () {
@@ -273,9 +275,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/delete-selected', [AdminCustomerController::class, 'deleteSelected'])->name('delete-selected');
             Route::get('/export-pdf', [AdminCustomerController::class, 'exportPdf'])->name('export-pdf');
             Route::get('/export-excel', [AdminCustomerController::class, 'exportExcel'])->name('export-excel');
+            Route::get('/{customer}/edit', [AdminCustomerController::class, 'edit'])->name('edit');
+            Route::put('/{customer}', [AdminCustomerController::class, 'update'])->name('update');
+            Route::delete('/{customer}', [AdminCustomerController::class, 'destroy'])->name('destroy');
+            Route::get('/{customer}', [AdminCustomerController::class, 'show'])->name('show');
         });
 
         Route::prefix('admin/leasing')->name('admin.leasing.')->group(function () {
+            Route::get('/', [AdminLeasingController::class, 'index'])->name('index');
             Route::get('/owner', [AdminLeasingController::class, 'ownerIndex'])->name('owner');
             Route::get('/owner/create', [AdminLeasingController::class, 'ownerCreate'])->name('owner.create');
             Route::post('/owner', [AdminLeasingController::class, 'ownerStore'])->name('owner.store');
@@ -298,22 +305,27 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{voucher}', [AdminVoucherController::class, 'destroy'])->name('destroy');
             Route::get('/{voucher}/used-customers', [AdminVoucherController::class, 'showUsedCustomers'])->name('used-customers');
         });
+    });
 
+    // Admin-only routes (Settings and Reports)
+    Route::middleware('admin')->group(function () {
+        // Settings - Admin only
+        Route::prefix('admin/settings')->name('admin.settings.')->group(function () {
+            Route::get('/', [AdminSettingsController::class, 'index'])->name('index');
+            Route::post('/admin', [AdminSettingsController::class, 'storeAdmin'])->name('admin.store');
+            Route::put('/admin/{id}', [AdminSettingsController::class, 'updateAdmin'])->name('admin.update');
+            Route::post('/staff', [AdminSettingsController::class, 'storeStaff'])->name('staff.store');
+            Route::put('/staff/{id}', [AdminSettingsController::class, 'updateStaff'])->name('staff.update');
+        });
+
+
+        // Reports - Admin only (rentals, charts, finance)
         Route::prefix('admin/reports')->name('admin.reports.')->group(function () {
             Route::get('/rentals', [AdminRentalReportController::class, 'index'])->name('rentals');
             Route::get('/rentals/export-pdf', [AdminRentalReportController::class, 'exportPDF'])->name('rentals.export-pdf');
             Route::get('/charts', [AdminChartsController::class, 'index'])->name('charts');
             Route::get('/charts/export-pdf', [AdminChartsController::class, 'exportPdf'])->name('charts.export-pdf');
             Route::get('/finance', [AdminFinanceController::class, 'index'])->name('finance');
-        });
-
-        Route::prefix('admin/vouchers')->name('admin.vouchers.')->group(function () {
-            Route::get('/', [AdminVoucherController::class, 'index'])->name('index');
-            Route::post('/', [AdminVoucherController::class, 'store'])->name('store');
-            Route::put('/{voucher}', [AdminVoucherController::class, 'update'])->name('update');
-            Route::delete('/{voucher}', [AdminVoucherController::class, 'destroy'])->name('destroy');
-            Route::get('/{voucher}/edit-data', [AdminVoucherController::class, 'editData'])->name('edit-data');
-            Route::get('/{voucher}/used-customers', [AdminVoucherController::class, 'showUsedCustomers'])->name('used-customers');
         });
     });
 });

@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'staff' => \App\Http\Middleware\EnsureUserIsStaff::class,
+            'adminOrStaff' => \App\Http\Middleware\EnsureUserIsAdminOrStaff::class,
         ]);
         
         // Exclude booking/finalize from CSRF verification (for debugging)

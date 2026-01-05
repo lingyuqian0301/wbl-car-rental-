@@ -303,14 +303,22 @@ public function approve($id): RedirectResponse
 
     /**
      * Manually generate and download a PDF invoice from the admin panel.
+     * Creates invoice record if it doesn't exist.
      */
     public function generateInvoice($id)
     {
         $payment = Payment::where('paymentID', $id)->firstOrFail();
         $booking = $payment->booking;
         
-        // Find existing invoice record for the PDF data
-        $invoiceData = Invoice::where('bookingID', $booking->bookingID)->first();
+        // Create invoice record if it doesn't exist
+        $invoiceData = Invoice::firstOrCreate(
+            ['bookingID' => $booking->bookingID],
+            [
+                'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
+                'issue_date' => now(),
+                'totalAmount' => ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0),
+            ]
+        );
 
         $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData'));
         return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');

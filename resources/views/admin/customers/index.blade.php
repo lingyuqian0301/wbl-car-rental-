@@ -192,6 +192,8 @@
                             </th>
                             <th>Customer ID</th>
                             <th>Name</th>
+                            <th>Date Registered</th>
+                            <th>Status</th>
                             <th>No of Booking Time</th>
                             <th>Edit</th>
                         </tr>
@@ -200,20 +202,28 @@
                         @forelse($customers as $customer)
                             @php
                                 $user = $customer->user;
-                                $latestBooking = $customer->bookings->first();
-                                $latestBookingDate = $latestBooking ? ($latestBooking->rental_start_date ?? null) : null;
                                 
                                 // Get customer details
-                                $phone = $user->phone ?? $customer->phone_number ?? 'N/A';
+                                $username = $user->username ?? 'N/A';
+                                $dob = $user->DOB ?? null;
+                                $dobYear = $dob ? \Carbon\Carbon::parse($dob)->format('Y') : 'N/A';
                                 $address = $customer->address ?? 'N/A';
                                 $stateCountry = $customer->local->stateOfOrigin ?? $customer->international->countryOfOrigin ?? 'N/A';
                                 $license = $customer->customer_license ?? 'N/A';
                                 $icPassport = $customer->local->ic_no ?? $customer->international->passport_no ?? 'N/A';
                                 $emergencyContact = $customer->emergency_contact ?? 'N/A';
-                                $college = $customer->studentDetail->college ?? 'N/A';
-                                $faculty = $customer->studentDetail->faculty ?? 'N/A';
-                                $programme = $customer->studentDetail->programme ?? 'N/A';
-                                $yearOfStudy = $customer->studentDetail->yearOfStudy ?? 'N/A';
+                                
+                                // Student/Staff details
+                                // Get student details from LocalStudent/InternationalStudent -> StudentDetails relationship
+                                $localStudentDetails = $customer->localStudent->studentDetails ?? null;
+                                $internationalStudentDetails = $customer->internationalStudent->studentDetails ?? null;
+                                $college = $localStudentDetails->college ?? ($internationalStudentDetails->college ?? 'N/A');
+                                $faculty = $localStudentDetails->faculty ?? ($internationalStudentDetails->faculty ?? 'N/A');
+                                $matricStaffNo = $customer->localStudent->matric_number ?? ($customer->internationalStudent->matric_number ?? ($customer->localUtmStaff->staffID ?? ($customer->internationalUtmStaff->staffID ?? 'N/A')));
+                                $programme = $localStudentDetails->programme ?? ($internationalStudentDetails->programme ?? 'N/A');
+                                $yearOfStudy = $localStudentDetails->yearOfStudy ?? ($internationalStudentDetails->yearOfStudy ?? 'N/A');
+                                
+                                $dateRegistered = $user->dateRegistered ?? null;
                             @endphp
                             <tr class="{{ $customer->customer_status === 'blacklist' ? 'table-danger' : ($customer->customer_status === 'deleted' ? 'table-secondary' : '') }}">
                                 <td>
@@ -221,40 +231,50 @@
                                 </td>
                                 <td>
                                     <strong>#{{ $customer->customerID }}</strong>
-                                    <div class="customer-info-text">
-                                        <div>
-                                            <span class="badge {{ ($user->isActive ?? false) ? 'bg-success' : 'bg-secondary' }} badge-sm">
-                                                {{ ($user->isActive ?? false) ? 'Active' : 'Inactive' }}
-                                            </span>
-                                        </div>
-                                    </div>
                                 </td>
                                 <td>
                                     <strong>{{ $user->name ?? 'Unknown' }}</strong>
                                     <div class="customer-info-text">
-                                        <div><strong>Phone:</strong> {{ $phone }}</div>
+                                        <div><strong>Username:</strong> {{ $username }}</div>
+                                        @if($dob)
+                                        <div><strong>DOB:</strong> {{ \Carbon\Carbon::parse($dob)->format('d M Y') }} ({{ $dobYear }})</div>
+                                        @endif
                                         <div><strong>Address:</strong> {{ $address }}</div>
-                                        <div><strong>State/Country:</strong> {{ $stateCountry }}</div>
-                                        <div><strong>License:</strong> {{ $license }}</div>
-                                        <div><strong>IC/Passport:</strong> {{ $icPassport }}</div>
+                                        <div><strong>{{ $customer->local ? 'State of Origin' : 'Country of Origin' }}:</strong> {{ $stateCountry }}</div>
+                                        <div><strong>Customer License:</strong> {{ $license }}</div>
                                         <div><strong>Emergency Contact:</strong> {{ $emergencyContact }}</div>
+                                        <div><strong>{{ $customer->local ? 'IC No' : 'Passport No' }}:</strong> {{ $icPassport }}</div>
+                                        @if($college !== 'N/A')
                                         <div><strong>College:</strong> {{ $college }}</div>
+                                        @endif
+                                        @if($faculty !== 'N/A')
                                         <div><strong>Faculty:</strong> {{ $faculty }}</div>
+                                        @endif
+                                        @if($matricStaffNo !== 'N/A')
+                                        <div><strong>{{ ($customer->localStudent || $customer->internationalStudent) ? 'Matric No' : 'Staff No' }}:</strong> {{ $matricStaffNo }}</div>
+                                        @endif
+                                        @if($programme !== 'N/A')
                                         <div><strong>Programme:</strong> {{ $programme }}</div>
+                                        @endif
+                                        @if($yearOfStudy !== 'N/A')
                                         <div><strong>Year of Study:</strong> {{ $yearOfStudy }}</div>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>
-                                    <strong>{{ $customer->bookings_count ?? 0 }}</strong>
-                                    @if($latestBookingDate)
-                                        <div class="customer-info-text">
-                                            <div>Latest: {{ \Carbon\Carbon::parse($latestBookingDate)->format('d M Y') }}</div>
-                                        </div>
+                                    @if($dateRegistered)
+                                        {{ \Carbon\Carbon::parse($dateRegistered)->format('d M Y') }}
                                     @else
-                                        <div class="customer-info-text">
-                                            <div>No bookings yet</div>
-                                        </div>
+                                        <span class="text-muted">N/A</span>
                                     @endif
+                                </td>
+                                <td>
+                                    <span class="badge {{ ($user->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
+                                        {{ ($user->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ $customer->bookings_count ?? 0 }}</strong>
                                 </td>
                                 <td>
                                     <a href="{{ route('admin.customers.edit', $customer) }}" 
@@ -265,7 +285,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                     No customers found.
                                 </td>

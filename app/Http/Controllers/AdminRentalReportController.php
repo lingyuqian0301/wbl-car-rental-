@@ -101,7 +101,17 @@ class AdminRentalReportController extends Controller
             });
         }
 
-        $bookings = $query->orderBy('rental_start_date', 'desc')->get();
+        // Sorting
+        $sortBy = $request->get('sort_by', 'booking_date_asc');
+        if ($sortBy === 'booking_date_asc') {
+            $query->orderBy('rental_start_date', 'asc');
+        } elseif ($sortBy === 'booking_id_desc') {
+            $query->orderBy('bookingID', 'desc');
+        } else {
+            $query->orderBy('rental_start_date', 'asc');
+        }
+
+        $bookings = $query->get();
 
         // Filter by vehicle type, payment status, and vehicle details in PHP
         $filteredBookings = $bookings->filter(function($booking) use ($vehicleType, $vehicleTypeFilter, $paymentStatus, $vehicleBrand, $vehicleModel, $plateNo) {
@@ -159,7 +169,8 @@ class AdminRentalReportController extends Controller
         $summaries = $this->calculateSummaries($filteredBookings, $vehicleType);
 
         // Get filter options - join with vehicle table for cars and motorcycles
-        $customers = User::where('role', 'customer')->orderBy('name')->get();
+        // Get customers (users with customer relationship, not using role column)
+        $customers = User::whereHas('customer')->orderBy('name')->get();
         $cars = Car::with('vehicle')
             ->join('vehicle', 'car.vehicleID', '=', 'vehicle.vehicleID')
             ->select('car.*', 'vehicle.vehicle_brand', 'vehicle.vehicle_model', 'vehicle.plate_number')
@@ -195,6 +206,7 @@ class AdminRentalReportController extends Controller
             'vehicleBrand' => $vehicleBrand,
             'vehicleModel' => $vehicleModel,
             'plateNo' => $plateNo,
+            'sortBy' => $sortBy,
             'customers' => $customers,
             'cars' => $cars,
             'motorcycles' => $motorcycles,

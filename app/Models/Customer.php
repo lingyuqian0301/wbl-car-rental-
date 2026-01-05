@@ -81,6 +81,16 @@ class Customer extends Model
     }
 
     /**
+     * Get the student detail record for this customer.
+     * NOTE: This relationship is commented out because the studentdetails table doesn't exist in the schema.
+     * Student information is accessed via LocalStudent->studentDetails or InternationalStudent->studentDetails
+     */
+    // public function studentDetail(): HasOne
+    // {
+    //     return $this->hasOne(StudentDetail::class, 'customerID', 'customerID');
+    // }
+
+    /**
      * Get the bookings for this customer.
      */
     public function bookings(): HasMany

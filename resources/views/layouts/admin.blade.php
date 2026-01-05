@@ -316,6 +316,19 @@
             }
         }
     </style>
+    
+    <!-- Pagination Arrow Size -->
+    <style>
+        .pagination .page-link {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        .pagination .page-link svg,
+        .pagination .page-link i {
+            width: 0.875rem;
+            height: 0.875rem;
+        }
+    </style>
 </head>
 <body>
     <!-- Sidebar -->
@@ -364,7 +377,7 @@
                         <a href="{{ route('admin.manage.client') }}"><i class="bi bi-person"></i> Client</a>
                     </div>
                     <div class="submenu-item {{ request()->routeIs('admin.leasing.*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.leasing.owner') }}"><i class="bi bi-building"></i> Leasing</a>
+                        <a href="{{ route('admin.leasing.index') }}"><i class="bi bi-building"></i> Leasing</a>
                     </div>
                 </div>
             </div>
@@ -404,7 +417,8 @@
                 </div>
             </div>
 
-            <!-- Reports -->
+            <!-- Reports (Admin Only) -->
+            @if(auth()->check() && auth()->user()->isAdmin())
             <div class="menu-item has-submenu {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
                 <a>
                     <i class="bi bi-graph-up"></i>
@@ -422,6 +436,7 @@
                     </div>
                 </div>
             </div>
+            @endif
         </nav>
     </aside>
 
@@ -435,7 +450,7 @@
             <a href="{{ route('admin.dashboard') }}" class="topbar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                 <i class="bi bi-graph-up-arrow"></i> Latest
             </a>
-            <a href="{{ route('dashboard') }}" class="topbar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <a href="http://127.0.0.1:8000/" class="topbar-link">
                 <i class="bi bi-person-circle"></i> Customer
             </a>
             <a href="{{ route('admin.topbar-calendar.index') }}" class="topbar-link {{ request()->routeIs('admin.topbar-calendar.*') ? 'active' : '' }}">
@@ -466,6 +481,9 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                     <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="bi bi-person"></i> Profile</a></li>
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                    <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}"><i class="bi bi-gear"></i> Settings</a></li>
+                    @endif
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
