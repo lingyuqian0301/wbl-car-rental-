@@ -97,9 +97,9 @@ class BookingController extends Controller
         try {
             $booking->load(['vehicle', 'payments.verifier']);
 
-            $hasVerifiedPayment = $booking->payments()
+            $hasVerifiedPayment = $booking->payments
                 ->where('payment_status', 'Verified')
-                ->exists();
+                ->isNotEmpty();
 
             return view('bookings.show', [
                 'booking' => $booking,
@@ -434,31 +434,36 @@ if ($exists) {
         }
     }
 
+    /**
+     * Download the invoice PDF for a specific booking.
+     */
     public function downloadInvoice($id)
     {
-        try {
-            $booking = \App\Models\Booking::where('bookingID', $id)
-                              ->with(['vehicle', 'customer', 'payments'])
-                              ->firstOrFail();
+        // 1. Find the booking with all necessary relationships
+        $booking = \App\Models\Booking::with(['invoice', 'payments', 'vehicle', 'customer'])
+            ->findOrFail($id);
 
-            if (!$booking->customer || $booking->customer->userID !== auth()->user()->userID) {
-                abort(403, 'Unauthorized access to this invoice.');
-            }
-
-            $verifiedPayment = $booking->payments->where('payment_status', 'Verified')->first();
-            if (!$verifiedPayment) {
-                // User Friendly: Redirect back with message instead of crashing
-                return back()->with('error', 'Invoice is not available until your payment is verified by Admin.');
-            }
-
-            $pdf = Pdf::loadView('pdf.invoice', compact('booking'));
-            return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return back()->with('error', 'Invoice not found.');
-        } catch (\Exception $e) {
-            Log::error('Invoice Download Error: ' . $e->getMessage());
-            return back()->with('error', 'Unable to generate invoice at this time.');
+        // 2. Security Check: Ensure this booking belongs to the logged-in user
+        // We compare the booking's customer userID with the logged-in Auth ID
+        if ($booking->customer->userID !== \Illuminate\Support\Facades\Auth::id()) {
+            abort(403, 'Unauthorized action. This invoice does not belong to you.');
         }
+
+        // 3. Check if invoice exists
+        $invoiceData = $booking->invoice;
+        if (!$invoiceData) {
+            return redirect()->back()->with('error', 'Invoice has not been generated yet.');
+        }
+
+        // 4. Calculate Totals
+        $rentalAmount  = $booking->rental_amount;
+        $depositAmount = $booking->deposit_amount;
+        $totalPaid     = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+
+        // 5. Generate PDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData', 'rentalAmount', 'depositAmount', 'totalPaid'));
+
+        // 6. Download
+        return $pdf->download('Invoice-' . $booking->bookingID . '.pdf');
     }
 }
