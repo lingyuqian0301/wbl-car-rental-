@@ -10,7 +10,14 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <title>Register - Hasta Travel & Tours</title>
 
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+
+    
     <style>
         :root {
             --primary-orange: #dc2626;
@@ -536,28 +543,6 @@
                 <form method="POST" action="{{ route('register') }}" id="registerForm" enctype="multipart/form-data">
                     @csrf
 
-                    <!-- IC/Matric Card Upload -->
-                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.3s;">
-                        <div class="ic-upload-container" id="icUploadContainer">
-                            <svg class="ic-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                            </svg>
-                            <p class="ic-upload-text">Upload IC or Matric Card</p>
-                            <p class="ic-upload-subtext">Click to upload or drag and drop<br>PNG, JPG up to 10MB</p>
-                        </div>
-                        <input
-                            type="file"
-                            id="ic_card"
-                            name="ic_card"
-                            accept="image/*"
-                            class="hidden"
-                        />
-                        <div class="ic-preview" id="icPreview">
-                            <img id="icPreviewImage" class="ic-preview-image" alt="IC Preview">
-                            <button type="button" class="ic-remove-btn" id="icRemoveBtn">Remove</button>
-                        </div>
-                        <x-input-error :messages="$errors->get('ic_card')" class="error-message" />
-                    </div>
 
                     <!-- Name -->
 <div class="input-wrapper animate-fade-in" style="animation-delay: 0.4s;">
@@ -617,49 +602,6 @@
                         <x-input-error :messages="$errors->get('email')" class="error-message" />
                     </div>
 
-                    <!-- Matric Number -->
-                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.55s;">
-                        <div class="input-icon">
-                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
-                            </svg>
-                        </div>
-                        <input
-                            type="text"
-                            id="matric_number"
-                            name="matric_number"
-                            class="input-field"
-                            placeholder="Matric Number (e.g., A21EC0001)"
-                            value="{{ old('matric_number') }}"
-                            autocomplete="off"
-                        />
-                        <x-input-error :messages="$errors->get('matric_number')" class="error-message" />
-                    </div>
-
-                    <!-- Program -->
-                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.58s;">
-                        <div class="input-icon">
-                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                            </svg>
-                        </div>
-                        <select
-                            id="program"
-                            name="program"
-                            class="input-field"
-                            style="padding-left: 48px; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"%2364748b\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"/></svg>'); background-repeat: no-repeat; background-position: right 16px center;"
-                        >
-                            <option value="">-- Select Program --</option>
-                            @foreach(config('utm.faculties') as $facultyCode => $faculty)
-                                <optgroup label="{{ $faculty['name'] }}">
-                                    @foreach($faculty['programs'] as $programCode)
-                                        <option value="{{ $programCode }}" {{ old('program') == $programCode ? 'selected' : '' }}>{{ $programCode }}</option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('program')" class="error-message" />
-                    </div>
 
                     <!-- Password -->
                     <div class="input-wrapper animate-fade-in" style="animation-delay: 0.6s;">
@@ -733,102 +675,6 @@
         </div>
     </div>
 
-    <!-- Scanning Overlay -->
-    <div class="scanning-overlay" id="scanningOverlay">
-        <div class="scanning-content">
-            <div class="scanning-spinner"></div>
-            <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">Scanning IC Card...</h3>
-            <p style="font-size: 14px; color: var(--text-secondary);">Extracting information from your document</p>
-        </div>
-    </div>
-
-    <script>
-        // IC Card Upload Functionality
-        const icUploadContainer = document.getElementById('icUploadContainer');
-        const icInput = document.getElementById('ic_card');
-        const icPreview = document.getElementById('icPreview');
-        const icPreviewImage = document.getElementById('icPreviewImage');
-        const icRemoveBtn = document.getElementById('icRemoveBtn');
-        const scanningOverlay = document.getElementById('scanningOverlay');
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
-
-        // Click to upload
-        icUploadContainer.addEventListener('click', () => {
-            icInput.click();
-        });
-
-        // Drag and drop
-        icUploadContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            icUploadContainer.classList.add('drag-over');
-        });
-
-        icUploadContainer.addEventListener('dragleave', () => {
-            icUploadContainer.classList.remove('drag-over');
-        });
-
-        icUploadContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            icUploadContainer.classList.remove('drag-over');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFileSelect(files[0]);
-            }
-        });
-
-        // File input change
-        icInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileSelect(e.target.files[0]);
-            }
-        });
-
-        // Handle file selection
-        function handleFileSelect(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                icPreviewImage.src = e.target.result;
-                icPreview.classList.add('show');
-                icUploadContainer.style.display = 'none';
-
-                // Show scanning overlay
-                scanningOverlay.classList.add('show');
-
-                // Simulate OCR scanning (replace with actual OCR API)
-                setTimeout(() => {
-                    // Simulated extracted data
-                    const extractedData = {
-                        name: 'AHMAD BIN ABDULLAH',
-                        ic_number: '990101-01-1234',
-                        email: '' // Email usually not on IC
-                    };
-
-                    // Fill in the form
-                    nameInput.value = extractedData.name;
-
-                    // Hide scanning overlay
-                    scanningOverlay.classList.remove('show');
-
-                    // Show success message
-                    alert('IC card scanned successfully! Please verify your details and complete the registration.');
-                }, 2000);
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Remove IC image
-        icRemoveBtn.addEventListener('click', () => {
-            icInput.value = '';
-            icPreview.classList.remove('show');
-            icUploadContainer.style.display = 'block';
-            nameInput.value = '';
-        });
 
         // Password Toggle for Password field
         const togglePassword = document.getElementById('togglePassword');
