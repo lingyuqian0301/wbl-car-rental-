@@ -523,8 +523,8 @@
     @endauth
     <section class="hero">
         <div class="hero-container">
-            <h2>Experience the road like never before</h2>
-            <p>Discover our premium car rental service with unbeatable rates and reliable vehicles</p>
+            <h2>Love your ride? Get rewarded</h2>
+            <p>Leave a quick review and receive an exclusive rental voucher for your next trip</p>
             <!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
         </div>
     </section>
@@ -553,7 +553,7 @@
     <section>
        <div class="filter-capsule-wrapper">
 <form method="GET"
-      action="{{ route('home') }}"
+      action="{{ route('home') }}#carsGrid"
       class="filter-capsule-form"
       id="filterForm">
 
@@ -591,10 +591,9 @@
             </select>
         </div>
 
-        <div class="capsule-actions">
-    <a href="{{ route('home') }}" class="capsule-clear" onclick="sessionStorage.removeItem('filterScrollY')">
+<a href="{{ route('home') }}#carsGrid" class="capsule-clear" onclick="sessionStorage.removeItem('filterScrollY')">
     Clear
-</a>
+    </a>
 
 
     <button type="submit" class="capsule-btn">
