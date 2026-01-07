@@ -516,8 +516,8 @@
     @endauth
     <section class="hero">
         <div class="hero-container">
-            <h2>Experience the road like never before</h2>
-            <p>Discover our premium car rental service with unbeatable rates and reliable vehicles</p>
+            <h2>Love your ride? Get rewarded</h2>
+            <p>Leave a quick review and receive an exclusive rental voucher for your next trip</p>
             <!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
         </div>
     </section>
@@ -544,12 +544,94 @@
     </section>
 
     <section>
+<<<<<<< HEAD
         <div class="filter-capsule-wrapper">
             <form method="GET" action="{{ route('home') }}" class="filter-capsule-form" id="filterForm">
 
                 <div class="capsule-field">
                     <label>Pick-up Date</label>
                     <input type="date" name="start_date" value="{{ request('start_date') }}">
+=======
+       <div class="filter-capsule-wrapper">
+<form method="GET"
+      action="{{ route('home') }}#carsGrid"
+      class="filter-capsule-form"
+      id="filterForm">
+
+        <div class="capsule-field">
+            <label>Pick-up Date</label>
+            <input type="date" name="start_date" value="{{ request('start_date') }}">
+        </div>
+
+        <div class="capsule-field">
+            <label>Return Date</label>
+            <input type="date" name="end_date" value="{{ request('end_date') }}">
+        </div>
+
+        <div class="capsule-field">
+            <label>Vehicle</label>
+            <select name="vehicleType">
+                <option value="">All Vehicles</option>
+                @foreach ($vehicleTypes as $type)
+                    <option value="{{ $type }}" {{ request('vehicleType') == $type ? 'selected' : '' }}>
+                        {{ $type }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="capsule-field">
+            <label>Brand</label>
+            <select name="brand">
+                <option value="">All Brands</option>
+                @foreach ($brands as $brand)
+                    <option value="{{ $brand }}" {{ request('brand') == $brand ? 'selected' : '' }}>
+                        {{ $brand }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+<a href="{{ route('home') }}#carsGrid" class="capsule-clear" onclick="sessionStorage.removeItem('filterScrollY')">
+    Clear
+    </a>
+
+
+    <button type="submit" class="capsule-btn">
+    Filter
+</button>
+
+
+</div>
+
+
+    </form>
+</div>
+
+
+    <div id="carsGrid">
+
+        <div class="cars-grid">
+            @forelse($cars as $car)
+            <div class="car-card">
+                @php
+                $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
+                $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
+                $imageName = trim($imageName, '-');
+                $imageName .= '.png';
+
+                $imagePath = public_path('images/cars/browse/' . $imageName);
+                @endphp
+
+            
+                <div class="car-image">
+                    @if(file_exists($imagePath))
+                    <img src="{{ asset('images/cars/browse/' . $imageName) }}"
+                        alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}">
+                    @else
+                    <img src="{{ asset('images/cars/browse/default.png') }}" alt="Default car">
+                    @endif
+>>>>>>> 396c177df36263a5c474695b465ee7259e624388
                 </div>
 
                 <div class="capsule-field">

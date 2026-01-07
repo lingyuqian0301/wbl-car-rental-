@@ -9,63 +9,47 @@ use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
-    public function index(Request $request)
+public function index(Request $request)
     {
-$query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
-        // Filter by brand
-        if ($request->filled('brand')) {
-            $query->where('vehicle_brand', $request->brand);
+        // 1. Start the query as usual
+        $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
+
+        // 2. Check filters
+        $hasFilters = $request->filled('brand') || 
+                      $request->filled('vehicleType') || 
+                      ($request->filled('start_date') && $request->filled('end_date'));
+
+        if ($hasFilters) {
+            if ($request->filled('brand')) {
+                $query->where('vehicle_brand', $request->brand);
+            }
+            if ($request->filled('vehicleType')) {
+                $query->where('vehicleType', $request->vehicleType);
+            }
+            if ($request->filled('start_date') && $request->filled('end_date')) {
+                $startDate = $request->start_date;
+                $endDate = $request->end_date;
+                $query->whereDoesntHave('bookings', function ($q) use ($startDate, $endDate) {
+                    $q->where('booking_status', '!=', 'Cancelled')
+                        ->where(function ($overlap) use ($startDate, $endDate) {
+                            $overlap->where('rental_start_date', '<=', $endDate)
+                                ->where('rental_end_date', '>=', $startDate);
+                        });
+                });
+            }
+
+            $cars = $query->get();
+
+            if ($request->filled('start_date') && $request->filled('end_date') && $cars->isEmpty()) {
+                session()->flash('unavailable', 'No vehicles available for the selected dates.');
+            }
+
+        } else {
+            // Return empty if no filters
+            $cars = collect([]); 
         }
 
-        // Filter by car type (column is vehicleType not vehicle_type)
-        if ($request->filled('vehicleType')) {
-            $query->where('vehicleType', $request->vehicleType);
-        }
-
-        // 🔥 Date availability logic
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-
-            $startDate = $request->start_date;
-            $endDate = $request->end_date;
-
-            $query->whereDoesntHave('bookings', function ($q) use ($startDate, $endDate) {
-                $q->where('booking_status', '!=', 'Cancelled')
-                    ->where(function ($overlap) use ($startDate, $endDate) {
-                        $overlap->where('rental_start_date', '<=', $endDate)
-                            ->where('rental_end_date', '>=', $startDate);
-                    });
-            });
-
-        }
-        //         $request->validate([
-//         'brand' => 'required|string',
-//         'model' => 'required|string',
-//         'type' => 'required|string',
-//         'price_per_day' => 'required|numeric',
-//         'car_browse_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-//     ]);
-
-        //     Car::create([
-//         'brand' => $request->brand,
-//         'model' => $request->model,
-//         'type' => $request->type,
-//         'price_per_day' => $request->price_per_day,
-
-        //         // ✅ THIS IS WHERE IT GOES
-//         'car_browse_image' => $request->file('car_browse_image')
-//              $request->file('car_browse_image')->store('cars', 'public')
-//             : null,
-//     ]);
-
-        //     return redirect()->back()->with('success', 'Car added successfully');
-//     }
-
-        $cars = $query->get();
-        if ($request->filled('start_date') && $request->filled('end_date') && $cars->isEmpty()) {
-    session()->flash('unavailable', 'No vehicles available for the selected dates.');
-}
-
-        // Get unique vehicle types and brands for filters
+        // Dropdown data
         $vehicleTypes = Vehicle::whereIn('isActive', [1, 'true'])
             ->whereNotNull('vehicleType')
             ->distinct()
