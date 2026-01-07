@@ -88,8 +88,23 @@ $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
     {
         $vehicle = Vehicle::with(['car', 'motorcycle'])->findOrFail($id);
 
+        // Calculate blocked dates (active bookings)
+        $bookings = \App\Models\Booking::where('vehicleID', $vehicle->vehicleID)
+            ->where('booking_status', '!=', 'Cancelled')
+            ->select('rental_start_date', 'rental_end_date')
+            ->get();
 
-        return view('vehicles.show', compact('vehicle'));
+        $blockedDates = [];
+        foreach ($bookings as $booking) {
+            $start = \Carbon\Carbon::parse($booking->rental_start_date);
+            $end = \Carbon\Carbon::parse($booking->rental_end_date);
+            while ($start->lte($end)) {
+                $blockedDates[] = $start->format('Y-m-d');
+                $start->addDay();
+            }
+        }
+
+        return view('vehicles.show', compact('vehicle', 'blockedDates'));
     }
     // public function store(Request $request)
 //     {

@@ -116,10 +116,14 @@ Route::get('/send-test', function () {
 Route::get('/', [VehicleController::class, 'index'])->name('home');
 Route::get('/vehicles/{id}', [VehicleController::class, 'show'])->name('vehicles.show');
 
-// Booking route - accessible to all, but requires auth in controller
+// Booking routes
+Route::get('/vehicles/{vehicleID}/booked-dates', [BookingController::class, 'getBookedDates'])
+    ->name('vehicles.bookedDates')
+    ->where('vehicleID', '[0-9]+');
+
 Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
     ->name('booking.store')
-    ->where('vehicleID', '[0-9]+');  // <--- ADD THIS LINE
+    ->where('vehicleID', '[0-9]+');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

@@ -38,9 +38,7 @@
     .hero {
         background: linear-gradient(to right, var(--primary-orange), var(--primary-dark-orange));
         color: white;
-        /* padding: 5rem 2rem; */
-        text-align: center;
-         padding-bottom: 6rem;
+        padding-bottom: 8rem;
     }
 
     .hero-container {
@@ -186,6 +184,7 @@
         margin-bottom: 0.75rem;
         font-size: 0.9rem;
     }
+
     /* .car-content h4 {
     margin-bottom: 0;
 }
@@ -269,135 +268,131 @@
     }
 
     /* Filter Styles */
-/* ===========================
+    /* ===========================
    OPTION 3 – HORIZONTAL CAPSULE FILTER
 =========================== */
 
-.filter-capsule-wrapper {
-    max-width: 1200px;
-    margin: 1.5rem auto 3rem auto;
-    padding: 0 2rem;
-    position: relative;
-    z-index: 10;
-    position: sticky;
-    top: 90px; /* below header */
-    z-index: 999;
-    transition: box-shadow 0.3s ease;
-}
-/* Sticky capsule behavior */
-/* .filter-capsule-wrapper {
+    .filter-capsule-wrapper {
+        max-width: 1200px;
+        margin: 0.5rem auto 3rem auto;
+        padding: 0 2rem;
+        position: relative;
+        z-index: 999;
+        transition: box-shadow 0.3s ease;
+    }
+
+    /* Sticky capsule behavior */
+    /* .filter-capsule-wrapper {
     
 } */
 
-.filter-capsule-form {
-    background: #ffffff;
-    display: flex;
-    align-items: flex-end;
-    gap: 1rem;
-    padding: 1.25rem 1.5rem;
-    border-radius: 999px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-    flex-wrap: wrap;
-}
-
-.capsule-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    min-width: 160px;
-}
-
-.capsule-field label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6b7280;
-    padding-left: 0.25rem;
-}
-
-.capsule-field input,
-.capsule-field select {
-    border: none;
-    background: #f9fafb;
-    padding: 0.65rem 0.9rem;
-    border-radius: 999px;
-    font-size: 0.9rem;
-    min-height: 42px;
-}
-
-.capsule-field input:focus,
-.capsule-field select:focus {
-    outline: none;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
-}
-
-/* Filter Button */
-.capsule-btn {
-    background: linear-gradient(
-        135deg,
-        var(--primary-orange),
-        var(--primary-dark-orange)
-    );
-    color: white;
-    border: none;
-    padding: 0 2.25rem;
-    height: 42px;
-    border-radius: 999px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.25s ease;
-}
-
-.capsule-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
-}
-
-/* Responsive */
-@media (max-width: 900px) {
     .filter-capsule-form {
-        border-radius: 20px;
+        background: #ffffff;
+        display: flex;
+        align-items: flex-end;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-radius: 999px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        flex-wrap: wrap;
     }
 
     .capsule-field {
-        flex: 1 1 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 160px;
     }
 
+    .capsule-field label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        padding-left: 0.25rem;
+    }
+
+    .capsule-field input,
+    .capsule-field select {
+        border: none;
+        background: #f9fafb;
+        padding: 0.65rem 0.9rem;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        min-height: 42px;
+    }
+
+    .capsule-field input:focus,
+    .capsule-field select:focus {
+        outline: none;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+    }
+
+    /* Filter Button */
     .capsule-btn {
-        width: 100%;
+        background: linear-gradient(135deg,
+                var(--primary-orange),
+                var(--primary-dark-orange));
+        color: white;
+        border: none;
+        padding: 0 2.25rem;
+        height: 42px;
+        border-radius: 999px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.25s ease;
     }
-}
 
-.capsule-actions {
-    display: flex;
-    gap: 0.75rem;
-}
+    .capsule-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
+    }
 
-.capsule-clear {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 42px;
-    padding: 0 1.5rem;
-    border-radius: 999px;
-    background: #f3f4f6;
-    color: #374151;
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: background 0.2s ease;
-}
+    /* Responsive */
+    @media (max-width: 900px) {
+        .filter-capsule-form {
+            border-radius: 20px;
+        }
 
-.capsule-clear:hover {
-    background: #e5e7eb;
-}
+        .capsule-field {
+            flex: 1 1 100%;
+        }
 
-/* Add shadow when stuck */
-.filter-capsule-wrapper.is-sticky {
-    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.18);
-}
+        .capsule-btn {
+            width: 100%;
+        }
+    }
+
+    .capsule-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .capsule-clear {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 42px;
+        padding: 0 1.5rem;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #374151;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background 0.2s ease;
+    }
+
+    .capsule-clear:hover {
+        background: #e5e7eb;
+    }
+
+    /* Add shadow when stuck */
+    .filter-capsule-wrapper.is-sticky {
+        box-shadow: 0 18px 35px rgba(0, 0, 0, 0.18);
+    }
 
 
 
@@ -412,56 +407,54 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
     }
-/* ===== Spec Badges ===== */
-.car-specs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
 
-.spec-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.3rem 0.65rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 999px;
-    background-color: #f1f5f9;
-    color: #334155;
-    border: 1px solid #e2e8f0;
-    white-space: nowrap;
-}
+    /* ===== Spec Badges ===== */
+    .car-specs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
 
-/* Transmission styles */
-.spec-badge.transmission {
-    background-color: #eef2ff;
-    color: #3730a3;
-    border-color: #c7d2fe;
-}
+    .spec-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 999px;
+        background-color: #f1f5f9;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
 
-/* Seating styles */
-.spec-badge.seat {
-    background-color: #ecfeff;
-    color: #155e75;
-    border-color: #a5f3fc;
-}
+    /* Transmission styles */
+    .spec-badge.transmission {
+        background-color: #eef2ff;
+        color: #3730a3;
+        border-color: #c7d2fe;
+    }
 
-/* Color badge */
-.spec-badge.color {
-    background-color: #f8fafc;
-}
+    /* Seating styles */
+    .spec-badge.seat {
+        background-color: #ecfeff;
+        color: #155e75;
+        border-color: #a5f3fc;
+    }
 
-.spec-badge .dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 1.5px solid #d1d5db;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
-}
+    /* Color badge */
+    .spec-badge.color {
+        background-color: #f8fafc;
+    }
 
-
-    
+    .spec-badge .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1.5px solid #d1d5db;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+    }
     </style>
 </head>
 
@@ -551,123 +544,120 @@
     </section>
 
     <section>
-       <div class="filter-capsule-wrapper">
-<form method="GET"
-      action="{{ route('home') }}"
-      class="filter-capsule-form"
-      id="filterForm">
+        <div class="filter-capsule-wrapper">
+            <form method="GET" action="{{ route('home') }}" class="filter-capsule-form" id="filterForm">
 
-        <div class="capsule-field">
-            <label>Pick-up Date</label>
-            <input type="date" name="start_date" value="{{ request('start_date') }}">
-        </div>
-
-        <div class="capsule-field">
-            <label>Return Date</label>
-            <input type="date" name="end_date" value="{{ request('end_date') }}">
-        </div>
-
-        <div class="capsule-field">
-            <label>Vehicle</label>
-            <select name="vehicleType">
-                <option value="">All Vehicles</option>
-                @foreach ($vehicleTypes as $type)
-                    <option value="{{ $type }}" {{ request('vehicleType') == $type ? 'selected' : '' }}>
-                        {{ $type }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="capsule-field">
-            <label>Brand</label>
-            <select name="brand">
-                <option value="">All Brands</option>
-                @foreach ($brands as $brand)
-                    <option value="{{ $brand }}" {{ request('brand') == $brand ? 'selected' : '' }}>
-                        {{ $brand }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="capsule-actions">
-    <a href="{{ route('home') }}" class="capsule-clear" onclick="sessionStorage.removeItem('filterScrollY')">
-    Clear
-</a>
-
-
-    <button type="submit" class="capsule-btn">
-    Filter
-</button>
-
-
-</div>
-
-
-    </form>
-</div>
-
-
-    <div id="carsGrid">
-
-        <div class="cars-grid">
-            @forelse($cars as $car)
-            <div class="car-card">
-                @php
-                $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
-                $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
-                $imageName = trim($imageName, '-');
-                $imageName .= '.png';
-
-                $imagePath = public_path('images/cars/browse/' . $imageName);
-                @endphp
-
-            
-                <div class="car-image">
-                    @if(file_exists($imagePath))
-                    <img src="{{ asset('images/cars/browse/' . $imageName) }}"
-                        alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}">
-                    @else
-                    <img src="{{ asset('images/cars/browse/default.png') }}" alt="Default car">
-                    @endif
+                <div class="capsule-field">
+                    <label>Pick-up Date</label>
+                    <input type="date" name="start_date" value="{{ request('start_date') }}">
                 </div>
 
-                <div class="car-content">
-                    <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
-                    <p class="car-type">{{ $car->vehicleType }}</p>
-                    <div class="car-specs">
-
-    {{-- Transmission + Seats (only if this vehicle has a car record) --}}
-    @if ($car->car)
-        <span class="spec-badge transmission">
-            {{ $car->car->transmission ?? 'N/A' }}
-        </span>
-
-        <span class="spec-badge seat">
-            {{ $car->car->seating_capacity ?? 'N/A' }} seats
-        </span>
-    @endif
-
-    {{-- Color (all vehicles) --}}
-    <span class="spec-badge color">
-        <span class="dot"
-              style="background-color: {{ $car->color ?? '#cccccc' }}">
-        </span>
-        {{ $car->color ?? 'N/A' }}
-    </span>
-
-</div>
-
-                    <p class="car-price">RM {{ $car->rental_price }} <span>/day</span></p>
-                    <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">Book Now</a>
+                <div class="capsule-field">
+                    <label>Return Date</label>
+                    <input type="date" name="end_date" value="{{ request('end_date') }}">
                 </div>
+
+                <div class="capsule-field">
+                    <label>Vehicle</label>
+                    <select name="vehicleType">
+                        <option value="">All Vehicles</option>
+                        @foreach ($vehicleTypes as $type)
+                        <option value="{{ $type }}" {{ request('vehicleType') == $type ? 'selected' : '' }}>
+                            {{ $type }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="capsule-field">
+                    <label>Brand</label>
+                    <select name="brand">
+                        <option value="">All Brands</option>
+                        @foreach ($brands as $brand)
+                        <option value="{{ $brand }}" {{ request('brand') == $brand ? 'selected' : '' }}>
+                            {{ $brand }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="capsule-actions">
+                    <a href="{{ route('home') }}" class="capsule-clear"
+                        onclick="sessionStorage.removeItem('filterScrollY')">
+                        Clear
+                    </a>
+
+
+                    <button type="submit" class="capsule-btn">
+                        Filter
+                    </button>
+
+
+                </div>
+
+
+            </form>
+        </div>
+
+
+        <div id="carsGrid">
+
+            <div class="cars-grid">
+                @forelse($cars as $car)
+                <div class="car-card">
+                    @php
+                    $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
+                    $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
+                    $imageName = trim($imageName, '-');
+                    $imageName .= '.png';
+
+                    $imagePath = public_path('images/cars/browse/' . $imageName);
+                    @endphp
+
+
+                    <div class="car-image">
+                        @if(file_exists($imagePath))
+                        <img src="{{ asset('images/cars/browse/' . $imageName) }}"
+                            alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}">
+                        @else
+                        <img src="{{ asset('images/cars/browse/default.png') }}" alt="Default car">
+                        @endif
+                    </div>
+
+                    <div class="car-content">
+                        <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
+                        <p class="car-type">{{ $car->vehicleType }}</p>
+                        <div class="car-specs">
+
+                            {{-- Transmission + Seats (only if this vehicle has a car record) --}}
+                            @if ($car->car)
+                            <span class="spec-badge transmission">
+                                {{ $car->car->transmission ?? 'N/A' }}
+                            </span>
+
+                            <span class="spec-badge seat">
+                                {{ $car->car->seating_capacity ?? 'N/A' }} seats
+                            </span>
+                            @endif
+
+                            {{-- Color (all vehicles) --}}
+                            <span class="spec-badge color">
+                                <span class="dot" style="background-color: {{ $car->color ?? '#cccccc' }}">
+                                </span>
+                                {{ $car->color ?? 'N/A' }}
+                            </span>
+
+                        </div>
+
+                        <p class="car-price">RM {{ $car->rental_price }} <span>/day</span></p>
+                        <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">Book Now</a>
+                    </div>
+                </div>
+                @empty
+                <p style="text-align:center;">No cars available at the moment.</p>
+                @endforelse
             </div>
-            @empty
-            <p style="text-align:center;">No cars available at the moment.</p>
-            @endforelse
         </div>
-    </div>
     </section>
 
     @include('components.footer')
