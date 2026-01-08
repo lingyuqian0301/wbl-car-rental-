@@ -19,10 +19,15 @@ class VehicleMaintenance extends Model
         'service_type',
         'next_due_date',
         'cost',
+        'commission_amount',
         'service_center',
         'description',
         'vehicleID',
         'staffID',
+        'maintenance_img',
+        'block_start_date',
+        'block_end_date',
+        'accompany_vehicleID',
     ];
 
     protected function casts(): array
@@ -30,8 +35,19 @@ class VehicleMaintenance extends Model
         return [
             'service_date' => 'date',
             'next_due_date' => 'date',
+            'block_start_date' => 'date',
+            'block_end_date' => 'date',
             'cost' => 'decimal:2',
+            'commission_amount' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Get the accompany vehicle.
+     */
+    public function accompanyVehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class, 'accompany_vehicleID', 'vehicleID');
     }
 
     /**
@@ -48,5 +64,13 @@ class VehicleMaintenance extends Model
     public function staff(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'staffID', 'staffID');
+    }
+
+    /**
+     * Get the user (staff/admin) who handled the maintenance.
+     */
+    public function handledByUser(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'staffID', 'userID');
     }
 }

@@ -127,23 +127,11 @@
                 </div>
             </div>
             <div class="row g-2">
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Vehicle Brand</label>
-                    <input type="text" name="vehicle_brand" class="form-control form-control-sm" value="{{ $vehicleBrand }}" placeholder="Brand">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Vehicle Model</label>
-                    <input type="text" name="vehicle_model" class="form-control form-control-sm" value="{{ $vehicleModel }}" placeholder="Model">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Plate No</label>
-                    <input type="text" name="plate_no" class="form-control form-control-sm" value="{{ $plateNo }}" placeholder="Plate No">
-                </div>
-                <div class="col-md-3 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-danger btn-sm flex-fill">
+                <div class="col-md-12 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-danger btn-sm">
                         <i class="bi bi-funnel"></i> Apply Filters
                     </button>
-                    @if(request()->anyFilled(['sort_by', 'date_range', 'date_from', 'date_to', 'vehicle_type', 'booking_status', 'vehicle_brand', 'vehicle_model', 'plate_no']))
+                    @if(request()->anyFilled(['sort_by', 'date_range', 'date_from', 'date_to', 'vehicle_type', 'booking_status']))
                     <a href="{{ route('admin.reports.rentals') }}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-x-circle"></i> Clear
                     </a>

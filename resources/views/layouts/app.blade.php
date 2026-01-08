@@ -14,11 +14,18 @@
 
         <!-- Scripts -->
         <script src="https://cdn.tailwindcss.com"></script>
-
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     </head>
+    <style>
+    main {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+</style>
+
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
+        <div class="bg-gray-100">
             @include('components.header')
 
             <!-- Page Heading -->

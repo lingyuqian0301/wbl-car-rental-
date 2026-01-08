@@ -1,110 +1,286 @@
-    <header>
-        <style>
-        /* Header Styles */
-        header {
-            background-color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
+@auth
+@php
+$currentCustomer = \App\Models\Customer::where('userID', auth()->id())->first();
 
-        .header-container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+$wallet = $currentCustomer
+? \Illuminate\Support\Facades\DB::table('walletaccount')
+->where('customerID', $currentCustomer->customerID)
+->first()
+: null;
 
-        .logo {
-            display: flex;
-            align-items: center;
-        }
+$loyalty = $currentCustomer
+? \Illuminate\Support\Facades\DB::table('loyaltycard')
+->where('customerID', $currentCustomer->customerID)
+->first()
+: null;
 
-        .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-orange);
-        }
+$outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
+$stamps = $loyalty ? $loyalty->total_stamps : 0;
+@endphp
+@endauth
 
-        .logo span {
-            color: #6b7280;
-            margin-left: 0.5rem;
-        }
 
-        nav {
-            display: block;
-        }
+<header>
+    <style>
+    /* Header Styles */
 
-        nav a {
-            color: #374151;
-            text-decoration: none;
-            margin: 0 1.5rem;
-            transition: color 0.3s;
-        }
 
-        nav a:hover {
-            color: var(--primary-orange);
-        }
+    header {
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
 
-        .header-btn {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background-color: var(--primary-orange);
-            color: white;
-            text-decoration: none;
-            border-radius: 0.375rem;
-            transition: background-color 0.3s;
-        }
+    .header-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0.75rem 1rem; /* smaller padding */
+    display: flex;
+    align-items: center;
+}
 
-        .header-btn:hover {
-            background-color: var(--primary-dark-orange);
-        }
+    .logo {
+        display: flex;
+        align-items: center;
+    }
 
-        :root {
-            --primary-orange: #dc2626;
-            --primary-dark-orange: #991b1b;
-            --success-green: #059669;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --bg-light: #f8fafc;
-            --error-red: #dc2626;
-        }
-        </style>
-        <div class="header-container">
-            <div class="logo">
-                <a href="{{ route('home') }}" class="logo" style="text-decoration: none;">
-                    <h1>HASTA</h1>
-                    <span>Travel</span>
-                </a>
+    .logo h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-orange);
+    }
 
-            </div>
-            <nav>
-                @auth
-                <a href="{{ route('bookings.index') }}">View Bookings</a>
-                <a href="#">Wallet Transaction</a>
-                <a href="#">Loyalty Card</a>
-                @if(Auth::user()->isAdmin())
-                <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                    {{ __('Admin Dashboard') }}
-                </x-nav-link>
-                <x-nav-link :href="route('admin.payments.index')" :active="request()->routeIs('admin.payments.*')">
-                    {{ __('Payment Verification') }}
-                </x-nav-link>
-                @endif
-                @endauth
-            </nav>
-            <div>
-                @auth
-                <a href="{{ route('profile.edit') }}" class="header-btn">{{ Auth::user()->name }}</a>
-                @else
-                <a href="{{ route('login') }}?redirect={{ urlencode(request()->fullUrl()) }}"
-                    class="header-btn">Login</a>
-                @endauth
-            </div>
+    .logo span {
+        color: #6b7280;
+        margin-left: 0.5rem;
+    }
+
+    nav {
+        display: block;
+    }
+
+    nav a {
+        color: #374151;
+        text-decoration: none;
+        margin: 0 1.5rem;
+        transition: color 0.3s;
+    }
+
+    nav a:hover {
+        color: var(--primary-orange);
+    }
+
+    .header-btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background-color: var(--primary-orange);
+        color: white;
+        text-decoration: none;
+        border-radius: 0.375rem;
+        transition: background-color 0.3s;
+    }
+
+    .header-btn:hover {
+        background-color: var(--primary-dark-orange);
+    }
+
+    :root {
+        --primary-orange: #dc2626;
+        --primary-dark-orange: #991b1b;
+        --success-green: #059669;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border-color: #e2e8f0;
+        --bg-light: #f8fafc;
+        --error-red: #dc2626;
+    }
+
+   .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+
+    .header-info {
+        font-size: 0.875rem;
+        color: #374151;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .header-info:hover {
+        color: var(--primary-orange);
+    }
+
+    .icon {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        margin-right: 6px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+
+    /* simple inline SVG icons */
+    .wallet-icon {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m4-4h-6a2 2 0 100 4h6v-4z'/%3E%3C/svg%3E");
+    }
+
+    .loyalty-icon {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.95a1 1 0 00.95.69h4.15c.969 0 1.371 1.24.588 1.81l-3.36 2.44a1 1 0 00-.364 1.118l1.286 3.95c.3.921-.755 1.688-1.54 1.118l-3.36-2.44a1 1 0 00-1.175 0l-3.36 2.44c-.784.57-1.838-.197-1.539-1.118l1.285-3.95a1 1 0 00-.364-1.118l-3.36-2.44c-.783-.57-.38-1.81.588-1.81h4.15a1 1 0 00.95-.69l1.286-3.95z'/%3E%3C/svg%3E");
+    }
+
+    header {
+        background: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-top {
+        padding: 0.75rem 2rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .header-bottom {
+        padding: 0.75rem 2rem;
+    }
+
+    .header-status {
+        display: flex;
+        gap: 1.5rem;
+        font-size: 0.85rem;
+        color: #475569;
+    }
+
+    .header-bottom nav a {
+        margin-right: 1.5rem;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+
+    .header-status {
+        font-size: 0.85rem;
+        color: #475569;
+        white-space: nowrap;
+    }
+    .header-link {
+    text-decoration: none;
+    color: #475569;
+    cursor: pointer;
+}
+
+.header-link:hover {
+    color: var(--primary-orange);
+    text-decoration: underline;
+}
+
+    .header-left {
+    margin-right: auto; /* pushes everything else to the right */
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.nav-link {
+    color: #374151;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: var(--primary-orange);
+}
+.header-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* center looks cleaner in nav */
+    gap: 2px;            /* THIS fixes the big gap */
+    text-decoration: none;
+}
+
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    letter-spacing: 0.02em; /* reduce spacing */
+    line-height: 1;         /* IMPORTANT */
+}
+
+.metric-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    line-height: 1.1;       /* IMPORTANT */
+}
+
+
+.header-metric:hover .metric-value {
+    color: var(--primary-orange);
+}
+/* Remove underline in ALL states */
+.header-metric,
+.header-metric:visited,
+.header-metric:hover,
+.header-metric:active {
+    text-decoration: none;
+}
+
+/* Keep hover color change, but no underline */
+.header-metric:hover .metric-value {
+    color: var(--primary-orange);
+}
+
+
+    </style>
+    <div class="header-container">
+    <div class="header-left">
+        <a href="{{ route('home') }}" class="logo" style="text-decoration: none;">
+            <h1>HASTA</h1>
+            <span>Travel</span>
+        </a>
+    </div>
+
+    <div class="header-right">
+        @auth
+            <a href="{{ route('bookings.index') }}" class="nav-link">
+                View Bookings
+            </a>
+
+        <a href="{{ route('wallet.show') }}" class="header-status header-link header-metric">
+    <span class="metric-label">Wallet Outstanding</span>
+    <span class="metric-value">RM {{ number_format($outstanding, 2) }}</span>
+</a>
+
+<a href="{{ route('loyalty.show') }}" class="header-status header-link header-metric">
+    <span class="metric-label">Stamps</span>
+    <span class="metric-value">{{ $stamps }} / 48</span>
+</a>
+
+
+            <a href="{{ route('profile.edit') }}" class="header-btn">
+                {{ Auth::user()->name }}
+            </a>
+        @else
+            <a href="{{ route('login') }}?redirect={{ urlencode(request()->fullUrl()) }}"
+               class="header-btn">Login</a>
+        @endauth
+    </div>
+</div>
+
         </div>
 
-    </header>
+
+
+    </div>
+
+</header>

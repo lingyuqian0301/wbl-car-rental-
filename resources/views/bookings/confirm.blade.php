@@ -1,467 +1,644 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Booking Confirmation - HASTA Travel</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+@extends('layouts.app')
+
+@section('content')
+<style>
+
+    .booking-stepper {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 3rem auto 2rem;
+    padding: 0 1.5rem;
+}
+
+.booking-stepper .step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.booking-stepper .circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.booking-stepper .step.active .circle {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    color: #fff;
+}
+
+.booking-stepper .label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.booking-stepper .step.active .label {
+    color: #dc2626;
+}
+
+.booking-stepper .line {
+    flex: 1;
+    height: 4px;
+    background: #e5e7eb;
+    margin: 0 1rem;
+    border-radius: 10px;
+}
+
+.booking-stepper .line.active {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+}
+    :root {
+        --primary-orange: #dc2626;
+        --primary-dark-orange: #991b1b;
+        --success-green: #059669;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border-color: #e2e8f0;
+        --bg-light: #f8fafc;
+        --error-red: #dc2626;
+    }
+
+    /* Container Layout */
+    .confirmation-container {
+        max-width: 1200px;
+        margin: 0 auto 3rem auto;
+        padding: 0 1.5rem;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 3rem;
+    }
+
+    /* Left Section - Confirmation Details */
+    .confirmation-main {
+        background: #fff;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .confirmation-title {
+        margin-bottom: 1.2rem;
+    }
+
+    .confirmation-title h1 {
+        font-size: 2rem;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .confirmation-title p {
+        color: var(--text-secondary);
+        font-size: 1rem;
+    }
+
+    .confirmation-section {
+        margin-bottom: 1.2rem;
+        padding-bottom: 1.2rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .confirmation-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .confirmation-section h3 {
+        font-size: 1rem;
+        color: var(--text-primary);
+        margin-bottom: 0.6rem;
+        font-weight: 700;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.8rem 0;
+        font-size: 0.95rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .info-value {
+        color: var(--text-primary);
+        font-weight: 500;
+        text-align: right;
+    }
+
+    .addon-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .addon-list li {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.9rem;
+    }
+
+    .addon-list li:last-child {
+        border-bottom: none;
+    }
+
+    .addon-name {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .addon-price {
+        color: var(--primary-orange);
+        font-weight: 600;
+    }
+
+    /* Right Section - Summary Box */
+    .confirmation-summary {
+        background: #fff;
+        border-radius: 16px;
+        padding: 2rem;
+        position: sticky;
+        top: 100px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        animation: slideInRight 0.5s ease-out;
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .price-display {
+        background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-dark-orange) 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .total-price {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .total-price span {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    .price-breakdown {
+        background: #f9fafb;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        border: 2px solid var(--border-color);
+    }
+
+    .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.8rem;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.95rem;
+    }
+
+    .breakdown-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .breakdown-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .breakdown-value {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .breakdown-total {
+        font-size: 1.1rem;
+        border-top: 2px solid var(--primary-orange);
+        padding-top: 1rem;
+        margin-top: 1rem;
+        color: var(--primary-orange);
+    }
+
+    .breakdown-total .breakdown-label {
+        color: var(--primary-orange);
+        font-weight: 700;
+    }
+
+    .breakdown-total .breakdown-value {
+        color: var(--primary-orange);
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .btn-back {
+        flex: 1;
+        padding: 0.8rem 1rem;
+        background-color: #e5e7eb;
+        color: var(--text-primary);
+        text-decoration: none;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+    }
+
+    .btn-back:hover {
+        background-color: #d1d5db;
+        transform: translateY(-2px);
+    }
+
+    .btn-confirm {
+        flex: 1;
+        padding: 0.8rem 1rem;
+        background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-dark-orange) 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
+    .btn-confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+    }
+
+    .btn-confirm:active {
+        transform: translateY(0);
+    }
+
+    .error-message {
+        background-color: #fee2e2;
+        border: 1px solid var(--primary-orange);
+        color: var(--primary-orange);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Loading Overlay */
+    #loadingOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #loadingOverlay.active {
+        display: flex;
+    }
+
+    .loading-content {
+        background: white;
+        border-radius: 15px;
+        padding: 50px 40px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .spinner {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 30px;
+        border: 6px solid #f0f0f0;
+        border-top: 6px solid var(--primary-orange);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text h2 {
+        color: var(--text-primary);
+        font-size: 1.3rem;
+        margin-bottom: 10px;
+    }
+
+    .loading-text p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 900px) {
+        .confirmation-container {
+            grid-template-columns: 1fr;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 20px;
+        .confirmation-summary {
+            position: relative;
+            top: auto;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
+        .confirmation-title h1 {
+            font-size: 1.5rem;
         }
 
-        .header {
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
+        .total-price {
+            font-size: 2rem;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .confirmation-container {
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+            gap: 1.5rem;
         }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .confirmation-main,
+        .confirmation-summary {
+            padding: 1.5rem;
         }
 
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
+        .confirmation-title h1 {
+            font-size: 1.3rem;
         }
 
-        .content {
-            padding: 40px 30px;
+        .action-buttons {
+            flex-direction: column;
         }
 
-        .section {
-            margin-bottom: 35px;
-        }
-
-        .section h2 {
-            font-size: 1.3em;
-            color: #333;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #dc2626;
-            display: inline-block;
-        }
-
-        .section-content {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #666;
-        }
-
-        .info-value {
-            color: #333;
-            font-weight: 500;
-        }
-
-        .price-summary {
-            background: #fee2e2;
-            border: 2px solid #dc2626;
-            padding: 25px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-
-        .price-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #fecdd3;
-            font-size: 1em;
-        }
-
-        .price-row:last-child {
-            border-bottom: none;
-        }
-
-        .price-label {
-            color: #666;
-            font-weight: 500;
-        }
-
-        .price-value {
-            color: #333;
-            font-weight: 600;
-        }
-
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 15px;
-            border-top: 2px solid #dc2626;
-            margin-top: 15px;
-            font-size: 1.3em;
-        }
-
-        .total-label {
-            color: #333;
-            font-weight: bold;
-        }
-
-        .total-value {
-            color: #dc2626;
-            font-weight: bold;
-        }
-
-        .actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 40px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 15px 30px;
-            font-size: 1.1em;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            text-align: center;
-            display: inline-block;
-        }
-
-        .btn-cancel {
-            background-color: #d0d0d0;
-            color: #333;
-        }
-
-        .btn-cancel:hover {
-            background-color: #b0b0b0;
-            transform: translateY(-2px);
-        }
-
+        .btn-back,
         .btn-confirm {
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
-        }
-
-        .btn-confirm:hover {
-            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
-            transform: translateY(-2px);
-        }
-
-        /* Loading Overlay Styles */
-        #loadingOverlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
         }
+    }
+</style>
+<x-booking-stepper /> {{-- Auto-detects Booking Details step --}}
 
-        #loadingOverlay.active {
-            display: flex;
-        }
-
-        .loading-content {
-            background: white;
-            border-radius: 15px;
-            padding: 50px 40px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .spinner {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 30px;
-            border: 6px solid #f0f0f0;
-            border-top: 6px solid #dc2626;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text h2 {
-            color: #333;
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-
-        .loading-text p {
-            color: #666;
-            font-size: 1em;
-        }
-
-        .dots {
-            display: inline-block;
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60% { content: '...'; }
-            80%, 100% { content: ''; }
-        }
-
-        .addon-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            color: #333;
-        }
-
-        .addon-name {
-            font-weight: 500;
-        }
-
-        .addon-price {
-            color: #dc2626;
-            font-weight: 600;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
+<div class="confirmation-container">
+    <!-- LEFT SECTION - Confirmation Details -->
+    <div class="confirmation-main">
+        <div class="confirmation-title">
             <h1>Booking Confirmation</h1>
-            <p>Please review your booking details before confirming</p>
+            <p>Please review and confirm your booking details</p>
         </div>
 
-        <!-- Content -->
-        <div class="content">
-            @if(session('error'))
-                <div style="background-color: #fee2e2; border: 1px solid #dc2626; color: #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <strong>Error:</strong> {{ session('error') }}
-                </div>
-            @endif
-            
-            @if ($errors->any())
-                <div style="background-color: #fee2e2; border: 1px solid #dc2626; color: #dc2626; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <ul style="list-style-type: none;">
-                        @foreach ($errors->all() as $error)
-                            <li>• {{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            
-            {{-- Debug: Show form action URL --}}
-            @if(config('app.debug'))
-                <div style="background-color: #e0f2fe; border: 1px solid #0284c7; color: #0369a1; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 12px;">
-                    <strong>Debug Info:</strong><br>
-                    Current URL: {{ request()->url() }}<br>
-                    Form Action (route helper): {{ route('booking.finalize') }}<br>
-                    Vehicle ID: {{ $vehicle->vehicleID ?? 'N/A' }}<br>
-                    Start Date: {{ $bookingData['rental_start_date'] ?? $bookingData['start_date'] ?? 'EMPTY' }}<br>
-                    End Date: {{ $bookingData['rental_end_date'] ?? $bookingData['end_date'] ?? 'EMPTY' }}<br>
-                    Total Amount: {{ $bookingData['rental_amount'] ?? $bookingData['total_amount'] ?? 'EMPTY' }}
-                </div>
-            @endif
-            <!-- Customer Information -->
-            <div class="section">
-                <h2>Customer Information</h2>
-                <div class="section-content">
-                    <div class="info-row">
-                        <span class="info-label">Name:</span>
-                        <span class="info-value">{{ auth()->user()->name }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Email:</span>
-                        <span class="info-value">{{ auth()->user()->email }}</span>
-                    </div>
-                </div>
+        @if(session('error'))
+            <div class="error-message">
+                <strong>Error:</strong> {{ session('error') }}
             </div>
-
-            <!-- Vehicle Details -->
-            <div class="section">
-                <h2>Vehicle Details</h2>
-                <div class="section-content">
-                    <div class="info-row">
-                        <span class="info-label">Vehicle:</span>
-                        <span class="info-value">{{ $vehicle->vehicle_brand }} {{ $vehicle->vehicle_model }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Type:</span>
-                        <span class="info-value">{{ $vehicle->vehicle_type }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Color:</span>
-                        <span class="info-value">{{ $vehicle->color }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Plate Number:</span>
-                        <span class="info-value">{{ $vehicle->plate_number }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Daily Rate:</span>
-                        <span class="info-value" style="color: #dc2626; font-weight: bold;">RM {{ number_format($vehicle->rental_price, 2) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rental Period -->
-            <div class="section">
-                <h2>Rental Period</h2>
-                <div class="section-content">
-                    <div class="info-row">
-                        <span class="info-label">Pick-up Date:</span>
-                        <span class="info-value">{{ date('M d, Y', strtotime($bookingData['rental_start_date'] ?? $bookingData['start_date'] ?? '')) }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Return Date:</span>
-                        <span class="info-value">{{ date('M d, Y', strtotime($bookingData['rental_end_date'] ?? $bookingData['end_date'] ?? '')) }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Duration:</span>
-                        <span class="info-value">{{ $bookingData['duration'] ?? $bookingData['duration_days'] ?? 0 }} day(s)</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rental Locations -->
-            <div class="section">
-                <h2>Rental Locations</h2>
-                <div class="section-content">
-                    <div class="info-row">
-                        <span class="info-label">Pick-up Location:</span>
-                        <span class="info-value">{{ $bookingData['pickup_point'] }}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Return Location:</span>
-                        <span class="info-value">{{ $bookingData['return_point'] }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add-ons -->
-            @if(count($addons) > 0)
-            <div class="section">
-                <h2>Add-ons Selected</h2>
-                <div class="section-content">
-                    @foreach($addons as $addon)
-                    <div class="addon-item">
-                        <span class="addon-name">{{ $addon['name'] }}</span>
-                        <span class="addon-price">RM {{ number_format($addon['total'], 2) }}</span>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-
-            <!-- Price Summary -->
-            <div class="price-summary">
-                <h2 style="border-bottom: 2px solid #dc2626; padding-bottom: 10px; margin-bottom: 20px;">Price Summary</h2>
-                @php
-                    $duration = $bookingData['duration'] ?? $bookingData['duration_days'] ?? 1;
-                    $addonsCharge = 0;
-                    foreach($addons as $addon) {
-                        $addonsCharge += $addon['total'] ?? 0;
-                    }
-                    $vehicleTotal = $vehicle->rental_price * $duration;
-                    $totalAmount = $bookingData['rental_amount'] ?? $bookingData['total_amount'] ?? ($vehicleTotal + $addonsCharge);
-                @endphp
-                <div class="price-row">
-                    <span class="price-label">Vehicle (RM {{ $vehicle->rental_price }} × {{ $duration }} days)</span>
-                    <span class="price-value">RM {{ number_format($vehicleTotal, 2) }}</span>
-                </div>
-                @if(count($addons) > 0)
-                <div class="price-row">
-                    <span class="price-label">Add-ons Total</span>
-                    <span class="price-value">RM {{ number_format($addonsCharge, 2) }}</span>
-                </div>
-                @endif
-                <div class="total-row">
-                    <span class="total-label">Total Amount</span>
-                    <span class="total-value">RM {{ number_format($totalAmount, 2) }}</span>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-         <div class="actions">
-    <button class="btn btn-cancel" type="button" onclick="history.back()">Cancel</button>
-
-    <form method="post" action="{{ route('booking.finalize') }}" style="flex: 1;" id="confirmForm" enctype="application/x-www-form-urlencoded">
-        <input type="hidden" name="_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicleID ?? $vehicle->id ?? 0 }}">
-        <input type="hidden" name="start_date" value="{{ $bookingData['rental_start_date'] ?? $bookingData['start_date'] ?? now()->format('Y-m-d') }}">
-        <input type="hidden" name="end_date" value="{{ $bookingData['rental_end_date'] ?? $bookingData['end_date'] ?? now()->addDay()->format('Y-m-d') }}">
-        <input type="hidden" name="pickup_point" value="{{ $bookingData['pickup_point'] ?? 'Not specified' }}">
-        <input type="hidden" name="return_point" value="{{ $bookingData['return_point'] ?? 'Not specified' }}">
-        <input type="hidden" name="total_amount" value="{{ $bookingData['rental_amount'] ?? $bookingData['total_amount'] ?? 0 }}">
-
-        @if(isset($addons))
-            @foreach($addons as $index => $addon)
-                <input type="hidden" name="addons[{{ $index }}][name]" value="{{ $addon['name'] }}">
-                <input type="hidden" name="addons[{{ $index }}][price]" value="{{ $addon['total'] }}">
-            @endforeach
         @endif
-        <button type="submit" class="btn btn-confirm" style="width: 100%; margin: 0;" id="submitBtn">Confirm Booking</button>
-    </form>
-</div>
-        </div>
-    </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <div class="loading-text">
-                <h2>Processing Your Booking<span class="dots">...</span></h2>
-                <p>Please wait while we save your reservation</p>
+        @if ($errors->any())
+            <div class="error-message">
+                <ul style="list-style-type: none; margin: 0; padding: 0;">
+                    @foreach ($errors->all() as $error)
+                        <li>• {{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- Customer Information -->
+        <div class="confirmation-section">
+            <h3>Customer Information</h3>
+            <div class="info-item">
+                <span class="info-label">Name:</span>
+                <span class="info-value">{{ auth()->user()->name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ auth()->user()->email }}</span>
             </div>
         </div>
+
+        <!-- Vehicle Details -->
+        <div class="confirmation-section">
+            <h3>Vehicle Details</h3>
+            <div class="info-item">
+                <span class="info-label">Vehicle:</span>
+                <span class="info-value">{{ $vehicle->vehicle_brand }} {{ $vehicle->vehicle_model }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Type:</span>
+<span class="info-value">
+    @if ($vehicle->car)
+        {{ $vehicle->car->vehicle_type }}
+    @elseif ($vehicle->motorcycle)
+        {{ $vehicle->motorcycle->motor_type }}
+    @else
+        N/A
+    @endif
+</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Color:</span>
+                <span class="info-value">{{ $vehicle->color }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Daily Rate:</span>
+                <span class="info-value" style="color: var(--primary-orange); font-weight: 700;">RM {{ number_format((float)$vehicle->rental_price, 2) }}</span>
+            </div>
+        </div>
+
+        <!-- Rental Period -->
+        <div class="confirmation-section">
+            <h3>Rental Period</h3>
+            <div class="info-item">
+                <span class="info-label">Pick-up Date & Time:</span>
+                <span class="info-value">{{ date('M d, Y H:i', strtotime($bookingData['rental_start_date'])) }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Return Date & Time:</span>
+                <span class="info-value">{{ date('M d, Y H:i', strtotime($bookingData['rental_end_date'])) }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Duration:</span>
+                <span class="info-value">{{ $bookingData['duration'] }} day(s)</span>
+            </div>
+        </div>
+
+        <!-- Rental Locations -->
+        <div class="confirmation-section">
+            <h3> Rental Locations</h3>
+            <div class="info-item">
+                <span class="info-label">Pick-up:</span>
+                <span class="info-value">{{ $bookingData['pickup_point'] }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Return:</span>
+                <span class="info-value">{{ $bookingData['return_point'] }}</span>
+            </div>
+        </div>
+
+        <!-- Add-ons -->
+        @if(!empty($addons) && count($addons) > 0)
+        <div class="confirmation-section">
+            <h3> Add-ons Selected</h3>
+            <ul class="addon-list">
+                @foreach($addons as $addon)
+                <li>
+                    <span class="addon-name">{{ $addon['name'] }}</span>
+                    <span class="addon-price">RM {{ number_format((float)$addon['total'], 2) }}</span>
+                </li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
     </div>
 
-    <script>
-        document.getElementById('confirmForm').addEventListener('submit', function(e) {
-            // Show loading overlay when form is submitted
-            document.getElementById('loadingOverlay').classList.add('active');
-            document.getElementById('submitBtn').disabled = true;
-            // Form submits naturally as POST
-        });
-    </script>
-</body>
-</html>
+    <!-- RIGHT SECTION - Summary & Actions -->
+    <div class="confirmation-summary">
+        <!-- Total Price Display -->
+        <div class="price-display">
+            <div class="total-price">RM {{ number_format((float)$bookingData['total_amount'], 2) }}<span>/total</span></div>
+            <p style="margin: 0; font-size: 0.9rem;">Complete Rental Cost</p>
+        </div>
+
+        <!-- Price Breakdown -->
+        <div class="price-breakdown">
+            <div class="breakdown-item">
+                <span class="breakdown-label">Duration:</span>
+                <span class="breakdown-value">{{ $bookingData['duration'] }} day(s)</span>
+            </div>
+            <div class="breakdown-item">
+                <span class="breakdown-label">Vehicle Rate:</span>
+                <span class="breakdown-value">RM {{ number_format((float)$vehicle->rental_price, 2) }}/day × {{ $bookingData['duration'] }} days</span>
+            </div>
+            <div class="breakdown-item">
+                <span class="breakdown-label" style="font-weight: 700; color: var(--text-primary);">Subtotal (Base):</span>
+                <span class="breakdown-value" style="font-weight: 700;">RM {{ number_format((float)$vehicle->rental_price * $bookingData['duration'], 2) }}</span>
+            </div>
+            
+            @if(!empty($addons) && count($addons) > 0)
+                <div style="border-top: 1px solid var(--border-color); margin: 0.8rem 0; padding-top: 0.8rem;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.6rem;">Add-ons:</div>
+                    @php $addonTotal = 0; @endphp
+                    @foreach($addons as $addon)
+                        @php 
+                            $addonDailyPrice = $addon['total'] / $bookingData['duration'];
+                            $addonTotal += $addon['total']; 
+                        @endphp
+                        <div class="breakdown-item" style="padding: 0.5rem 0;">
+                            <span class="breakdown-label">{{ $addon['name'] }}:</span>
+                            <span class="breakdown-value">RM {{ number_format($addonDailyPrice, 2) }}/day × {{ $bookingData['duration'] }} = RM {{ number_format((float)$addon['total'], 2) }}</span>
+                        </div>
+                    @endforeach
+                    <div class="breakdown-item" style="padding-top: 0.6rem; border-top: 1px solid var(--border-color);">
+                        <span class="breakdown-label" style="font-weight: 600;">Total Add-ons:</span>
+                        <span class="breakdown-value" style="font-weight: 600;">RM {{ number_format($addonTotal, 2) }}</span>
+                    </div>
+                </div>
+            @endif
+            
+            @if(!empty($bookingData['pickup_surcharge']) && $bookingData['pickup_surcharge'] > 0)
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Pick-up Surcharge:</span>
+                    <span class="breakdown-value">RM {{ number_format((float)$bookingData['pickup_surcharge'], 2) }}</span>
+                </div>
+            @endif
+            
+            <div class="breakdown-item">
+                <span class="breakdown-label">Deposit (Refundable):</span>
+                <span class="breakdown-value">RM {{ number_format((float)$depositAmount, 2) }}</span>
+            </div>
+            
+            <div class="breakdown-item breakdown-total">
+                <span class="breakdown-label">Total Amount Due:</span>
+                <span class="breakdown-value">RM {{ number_format((float)$bookingData['total_amount'], 2) }}</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn-back" type="button" onclick="history.back()">← Back</button>
+            
+            <form method="post" action="{{ route('booking.finalize') }}" style="flex: 1;" id="confirmForm">
+                @csrf
+                <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicleID }}">
+                <input type="hidden" name="start_date" value="{{ \Carbon\Carbon::parse($bookingData['rental_start_date'])->format('Y-m-d') }}">
+                <input type="hidden" name="start_time" value="{{ \Carbon\Carbon::parse($bookingData['rental_start_date'])->format('H:i') }}">
+                <input type="hidden" name="end_date" value="{{ \Carbon\Carbon::parse($bookingData['rental_end_date'])->format('Y-m-d') }}">
+                <input type="hidden" name="end_time" value="{{ \Carbon\Carbon::parse($bookingData['rental_end_date'])->format('H:i') }}">
+                <input type="hidden" name="pickup_point" value="{{ $bookingData['pickup_point'] }}">
+                <input type="hidden" name="return_point" value="{{ $bookingData['return_point'] }}">
+                <input type="hidden" name="total_amount" value="{{ $bookingData['total_amount'] }}">
+                @if(!empty($bookingData['pickup_surcharge']))
+                <input type="hidden" name="pickup_surcharge" value="{{ $bookingData['pickup_surcharge'] }}">
+                @endif
+
+                @if(!empty($addons) && count($addons) > 0)
+                    @foreach($addons as $index => $addon)
+                        <input type="hidden" name="addons[{{ $index }}][name]" value="{{ $addon['name'] }}">
+                        <input type="hidden" name="addons[{{ $index }}][price]" value="{{ $addon['total'] }}">
+                    @endforeach
+                @endif
+                <button type="submit" class="btn-confirm" id="submitBtn">Confirm & Proceed</button>
+            </form>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--border-color); font-size: 0.85rem; color: var(--text-secondary); text-align: center;">
+            ✓ Secure booking • ✓ Best price guarantee • ✓ 24/7 support
+        </div>
+    </div>
+</div>
+
+
+@endsection

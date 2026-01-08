@@ -95,7 +95,7 @@ class BookingController extends Controller
     }
 
         try {
-            $booking->load(['vehicle', 'payments.verifier']);
+            $booking->load(['vehicle', 'payments']);
 
             $hasVerifiedPayment = $booking->payments
                 ->where('payment_status', 'Verified')
@@ -115,64 +115,51 @@ class BookingController extends Controller
     {
         // Check if user is authenticated
         if (!Auth::check()) {
-            // Store the intended URL so we can redirect back after login
             $request->session()->put('url.intended', url()->previous());
             return redirect()->route('login')->with('error', 'Please sign in to proceed with booking.');
         }
 
+        // Validate form inputs
         $request->validate([
             'start_date'    => 'required|date|after_or_equal:today',
+            'start_time'    => 'required|date_format:H:i',
             'end_date'      => 'required|date|after:start_date',
-            'pickup_point'  => 'required|string|max:100',
+            'end_time'      => 'required|date_format:H:i',
+            'pickup_point'  => 'required|string|max:255',
             'return_point'  => 'required|string|max:100',
+            'pickup_surcharge' => 'nullable|numeric',
         ]);
 
-        // Ensure 'start_date' and 'end_date' exist before proceeding
-        if (!$request->filled('start_date') || !$request->filled('end_date')) {
-            return back()->withErrors(['error' => 'Start date and end date are required.']);
-        }
+        // Check for date overlap with existing bookings
+     $startDateTime = $request->start_date . ' ' . $request->start_time;
+$endDateTime   = $request->end_date   . ' ' . $request->end_time;
 
-        // 1. Find the Conflicting Booking (if any)
-        $conflictingBooking = Booking::where('vehicleID', $vehicleID)
-            ->where('booking_status', '!=', 'Cancelled') // Ignore cancelled ones
-            ->where(function ($q) use ($request) {
-                $q->where('rental_start_date', '<=', $request->end_date)
-                  ->where('rental_end_date', '>=', $request->start_date);
+
+        $overlap = Booking::where('vehicleID', $vehicleID)
+            ->where('booking_status', '!=', 'Cancelled')
+            ->where(function ($q) use ($startDateTime, $endDateTime) {
+                $q->where('rental_start_date', '<=', $endDateTime)
+                  ->where('rental_end_date', '>=', $startDateTime);
             })
-            ->first(); // Get the actual record instead of just 'exists()'
+            ->exists();
 
-        // 2. Analyze the Conflict
-        if ($conflictingBooking) {
-            
-            // CHECK: Is it MY booking?
-            $currentCustomer = Customer::where('userID', Auth::user()->userID)->first();
-            
-            if ($currentCustomer && $conflictingBooking->customerID == $currentCustomer->customerID) {
-                // CASE A: You blocked yourself (Ghost Booking)
-                return redirect()->route('bookings.index')
-                    ->with('error', 'You already have a PENDING booking for these dates! Please pay for booking #' . $conflictingBooking->bookingID . ' or cancel it to make a new one.');
-            } else {
-                // CASE B: Someone else booked it
-                return back()->withErrors('Vehicle is unavailable for these dates. It is currently being booked by another customer.');
-            }
+        if ($overlap) {
+            return back()->withErrors(['dates' => 'These dates are unavailable. Please select different dates.']);
         }
 
-        // --- If no conflict, proceed as normal ---
-
-        // Duration (inclusive)
+        // Calculate duration
         $duration = Carbon::parse($request->start_date)
             ->diffInDays(Carbon::parse($request->end_date)) + 1;
 
-        // Vehicle price
+        // Get vehicle and addons
         $vehicle = Vehicle::findOrFail($vehicleID);
         $vehiclePrice = $vehicle->rental_price;
 
-        // Add-ons
         $addons = $request->addons ?? [];
         $addonPrices = [
-            'gps'        => 10,
-            'child_seat' => 15,
-            'insurance'  => 30,
+            'power_bank'  => 5,
+            'phone_holder' => 5,
+            'usb_wire'    => 3,
         ];
 
         $addonsPerDay = 0;
@@ -180,41 +167,56 @@ class BookingController extends Controller
             $addonsPerDay += $addonPrices[$addon] ?? 0;
         }
 
-        $addonsCharge = $addonsPerDay * $duration;
-        $totalAmount  = ($vehiclePrice + $addonsPerDay) * $duration;
+        // Calculate total (matching booking page: base + addons × duration + surcharge + deposit)
+        $pickupSurcharge = (float) ($request->pickup_surcharge ?? 0);
+        $depositAmount = 50; // Fixed deposit amount
+        $totalAmount = ($vehiclePrice + $addonsPerDay) * $duration + $pickupSurcharge + $depositAmount;
 
-        // Prepare booking data
+        // Store booking data in session
         $bookingData = [
-            'vehicleID'      => $vehicleID,
-            'rental_start_date' => $request->start_date,
-            'rental_end_date'   => $request->end_date,
-            'pickup_point'   => $request->pickup_point,
-            'return_point'   => $request->return_point,
-            'duration'       => $duration,
-            'addOns_item'    => implode(',', $addons),
-            'rental_amount'  => $totalAmount,
+            'vehicleID' => $vehicleID,
+            'rental_start_date' => $request->start_date . ' ' . $request->start_time,
+            'rental_end_date' => $request->end_date . ' ' . $request->end_time,
+            'pickup_point' => $request->pickup_point,
+            'return_point' => $request->return_point,
+            'duration' => $duration,
+            'addOns_item' => implode(',', $addons),
+            'rental_amount' => $totalAmount,
+            'pickup_surcharge' => $pickupSurcharge,
             'booking_status' => 'Pending',
         ];
 
-        $start = $request->start_date;
-$end   = $request->end_date;
-
-        $exists = Booking::where('vehicleID', $vehicleID)
-    ->where('booking_status', '!=', 'Cancelled')
-    ->where(function ($q) use ($start, $end) {
-        $q->where('rental_start_date', '<=', $end)
-          ->where('rental_end_date', '>=', $start);
-    })
-    ->exists();
-
-if ($exists) {
-    return back()->withErrors(['date' => 'Selected dates are unavailable']);
-}
-
-
         session(['booking_data' => $bookingData]);
 
+        // Redirect to confirmation page
         return redirect()->route('booking.confirm');
+    }
+
+    /**
+     * Get booked dates for a vehicle (for Flatpickr calendar)
+     */
+    public function getBookedDates($vehicleID)
+    {
+        $bookings = Booking::where('vehicleID', $vehicleID)
+            ->where('booking_status', '!=', 'Cancelled')
+            ->select('rental_start_date', 'rental_end_date')
+            ->get();
+
+        $bookedRanges = [];
+        foreach ($bookings as $booking) {
+            $start = Carbon::parse($booking->rental_start_date);
+            $end = Carbon::parse($booking->rental_end_date);
+            
+            // Create array of all dates in range
+            while ($start->lte($end)) {
+                $bookedRanges[] = $start->format('Y-m-d');
+                $start->addDay();
+            }
+        }
+
+        return response()->json([
+            'booked_dates' => $bookedRanges
+        ]);
     }
 
     public function confirm()
@@ -229,12 +231,13 @@ if ($exists) {
             $vehicle = Vehicle::findOrFail($bookingData['vehicleID']);
             $user = Auth::user();
 
+            // Parse add-ons
             $addonsArray = !empty($bookingData['addOns_item']) ? explode(',', $bookingData['addOns_item']) : [];
             $addonDetails = [];
             
-            // Hardcoded prices (Best practice: Move to DB or Config later)
-            $addonPrices = ['gps' => 10, 'child_seat' => 15, 'insurance' => 30];
-            $addonNames = ['gps' => 'GPS Navigation', 'child_seat' => 'Child Seat', 'insurance' => 'Full Insurance Coverage'];
+            // Addon configuration
+            $addonPrices = ['power_bank' => 5, 'phone_holder' => 5, 'usb_wire' => 3];
+            $addonNames = ['power_bank' => 'Power Bank', 'phone_holder' => 'Phone Holder', 'usb_wire' => 'USB Wire'];
 
             foreach ($addonsArray as $addon) {
                 if (isset($addonPrices[$addon])) {
@@ -245,6 +248,17 @@ if ($exists) {
                     ];
                 }
             }
+
+            // Standardize booking data keys for the view
+            $standardizedBookingData = [
+                'rental_start_date' => $bookingData['rental_start_date'],
+                'rental_end_date' => $bookingData['rental_end_date'],
+                'duration' => $bookingData['duration'],
+                'pickup_point' => $bookingData['pickup_point'],
+                'return_point' => $bookingData['return_point'],
+                'total_amount' => $bookingData['rental_amount'], // Map rental_amount to total_amount
+                'vehicleID' => $bookingData['vehicleID'],
+            ];
 
             $tempBooking = new Booking([
                 'duration' => $bookingData['duration'],
@@ -260,7 +274,7 @@ if ($exists) {
             $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet($user->userID, $depositAmount);
 
             return view('bookings.confirm', [
-                'bookingData' => $bookingData,
+                'bookingData' => $standardizedBookingData,
                 'vehicle'     => $vehicle,
                 'addons'      => $addonDetails,
                 'depositAmount' => $depositAmount,
@@ -295,7 +309,24 @@ if ($exists) {
             $request->validate([
                 'vehicle_id' => 'required|integer',
                 'start_date' => 'required|date',
-                'end_date'   => 'required|date|after_or_equal:start_date',
+'start_time' => [
+    'required',
+    'date_format:H:i',
+    function ($attr, $value, $fail) {
+        if (!in_array(substr($value, 3, 2), ['00', '30'])) {
+            $fail('Time must be on the hour or half-hour (00 or 30).');
+        }
+    }
+],                'end_date'   => 'required|date|after_or_equal:start_date',
+                'end_time'   => [
+                    'required',
+                    'date_format:H:i',
+                    function ($attr, $value, $fail) {
+                        if (!in_array(substr($value, 3, 2), ['00', '30'])) {
+                            $fail('Time must be on the hour or half-hour (00 or 30).');
+                        }
+                    }
+                ],
                 'pickup_point' => 'required|string',
                 'return_point' => 'required|string',
                 'total_amount' => 'required|numeric',
@@ -356,8 +387,8 @@ if ($exists) {
             $booking = new Booking();
             $booking->customerID = $customer->customerID;
             $booking->vehicleID  = $request->vehicle_id;
-            $booking->rental_start_date = $request->start_date;
-            $booking->rental_end_date   = $request->end_date;
+            $booking->rental_start_date = $request->start_date . ' ' . $request->start_time;
+            $booking->rental_end_date   = $request->end_date . ' ' . $request->end_time;
             $booking->duration = $duration;
             $booking->pickup_point = $request->pickup_point;
             $booking->return_point = $request->return_point;
@@ -465,5 +496,70 @@ if ($exists) {
 
         // 6. Download
         return $pdf->download('Invoice-' . $booking->bookingID . '.pdf');
+    }
+public function cancel(Request $request, $id)
+    {
+        // 1. Fetch booking with payments
+        $booking = Booking::with(['customer', 'payments'])->findOrFail($id);
+
+        // 2. Security: Ensure it belongs to the user
+        if ($booking->customer->userID !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // 3. Logic: Allow cancel ONLY if status is NOT Confirmed AND Payment is NOT Verified
+        
+        // Check if Payment is Verified
+        $hasVerifiedPayment = $booking->payments->contains('payment_status', 'Verified');
+
+        if ($booking->booking_status === 'Confirmed') {
+            return back()->with('error', 'Cannot cancel a booking that has already been Confirmed.');
+        }
+
+        if ($hasVerifiedPayment) {
+            return back()->with('error', 'Cannot cancel a booking once payment has been Verified.');
+        }
+
+        // Also prevent cancelling if it's already cancelled or completed
+        if (in_array($booking->booking_status, ['Cancelled', 'Completed'])) {
+            return back()->with('error', 'Booking cannot be cancelled.');
+        }
+
+        // Proceed to Cancel
+        $booking->booking_status = 'Cancelled';
+        $booking->save();
+
+        return back()->with('success', 'Booking cancelled successfully.');
+    }
+
+    /**
+     * Show form to extend booking.
+     */
+public function showExtendForm($id)
+    {
+        // 1. Fetch booking with payments and vehicle
+        $booking = Booking::with(['vehicle', 'payments'])->findOrFail($id);
+
+        // 2. Security: Ensure it belongs to the user
+        if ($booking->customer->userID !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // 3. Logic: Allow Extend ONLY if status is NOT Confirmed AND Payment is NOT Verified
+        $hasVerifiedPayment = $booking->payments->contains('payment_status', 'Verified');
+
+        if ($booking->booking_status === 'Confirmed') {
+            return redirect()->route('bookings.index')->with('error', 'Cannot extend a booking that has already been Confirmed.');
+        }
+
+        if ($hasVerifiedPayment) {
+            return redirect()->route('bookings.index')->with('error', 'Cannot extend a booking once payment has been Verified.');
+        }
+
+        if (in_array($booking->booking_status, ['Cancelled', 'Completed'])) {
+            return redirect()->route('bookings.index')->with('error', 'Cannot extend a completed or cancelled booking.');
+        }
+        
+        return view('bookings.extend', compact('booking'));
     }
 }

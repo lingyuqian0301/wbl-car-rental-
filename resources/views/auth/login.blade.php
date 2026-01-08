@@ -518,10 +518,7 @@
 
                     <!-- Remember & Forgot -->
                     <div class="remember-forgot animate-fade-in" style="animation-delay: 0.5s;">
-                        <div class="remember-me">
-                            <input type="checkbox" id="remember_me" name="remember" class="custom-checkbox" />
-                            <label for="remember_me">Remember me for 30 days</label>
-                        </div>
+
                         @if (Route::has('password.request'))
                             <a href="{{ route('password.request') }}" class="forgot-password">
                                 Forgot password?

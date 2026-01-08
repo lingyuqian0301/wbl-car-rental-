@@ -12,38 +12,45 @@ class AdminInvoiceController extends Controller
 {
     public function index(Request $request): View
     {
-        $sortInvoiceNo = $request->get('sort_invoice_no', 'asc');
-        $sortIssueDate = $request->get('sort_issue_date', 'desc');
-        $issueDateFrom = $request->get('issue_date_from');
-        $issueDateTo = $request->get('issue_date_to');
-        $pickupDateFrom = $request->get('pickup_date_from');
-        $pickupDateTo = $request->get('pickup_date_to');
+        $search = $request->get('search');
+        $sort = $request->get('sort', 'invoice_no_asc');
+        $dateFilterType = $request->get('date_filter_type', 'issue_date'); // issue_date or pickup_date
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
 
         $query = Booking::with([
-            'customer', 
+            'customer.user',
             'vehicle', 
             'payments', 
             'invoice',
         ])->whereHas('invoice');
 
-        // Filter by issue date range
-        if ($issueDateFrom) {
-            $query->whereHas('invoice', function($q) use ($issueDateFrom) {
-                $q->whereDate('issue_date', '>=', $issueDateFrom);
-            });
-        }
-        if ($issueDateTo) {
-            $query->whereHas('invoice', function($q) use ($issueDateTo) {
-                $q->whereDate('issue_date', '<=', $issueDateTo);
+        // Search by plate number
+        if ($search) {
+            $query->whereHas('vehicle', function($vQuery) use ($search) {
+                $vQuery->where('plate_number', 'like', "%{$search}%");
             });
         }
 
-        // Filter by pickup date range (FIXED: Uses 'rental_start_date')
-        if ($pickupDateFrom) {
-            $query->whereDate('rental_start_date', '>=', $pickupDateFrom);
-        }
-        if ($pickupDateTo) {
-            $query->whereDate('rental_start_date', '<=', $pickupDateTo);
+        // Date filter based on dropdown selection
+        if ($dateFilterType === 'issue_date' && ($dateFrom || $dateTo)) {
+            if ($dateFrom) {
+                $query->whereHas('invoice', function($q) use ($dateFrom) {
+                    $q->whereDate('issue_date', '>=', $dateFrom);
+                });
+            }
+            if ($dateTo) {
+                $query->whereHas('invoice', function($q) use ($dateTo) {
+                    $q->whereDate('issue_date', '<=', $dateTo);
+                });
+            }
+        } elseif ($dateFilterType === 'pickup_date' && ($dateFrom || $dateTo)) {
+            if ($dateFrom) {
+                $query->whereDate('rental_start_date', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $query->whereDate('rental_start_date', '<=', $dateTo);
+            }
         }
 
         // Join with invoice table for sorting
@@ -51,18 +58,16 @@ class AdminInvoiceController extends Controller
               ->select('booking.*')
               ->distinct();
 
-        // Sort by invoice number
-        if ($sortInvoiceNo === 'asc') {
+        // Sorting
+        if ($sort === 'invoice_no_asc') {
             $query->orderBy('invoice.invoice_number', 'asc');
-        } else {
-            $query->orderBy('invoice.invoice_number', 'desc');
-        }
-
-        // Sort by issue date (secondary sort)
-        if ($sortIssueDate === 'asc') {
-            $query->orderBy('invoice.issue_date', 'asc');
-        } else {
+        } elseif ($sort === 'issue_date_desc') {
             $query->orderBy('invoice.issue_date', 'desc');
+        } elseif ($sort === 'pickup_date_desc') {
+            $query->orderBy('booking.rental_start_date', 'desc');
+        } else {
+            // Default: asc invoice no
+            $query->orderBy('invoice.invoice_number', 'asc');
         }
 
         $bookings = $query->paginate(20)->withQueryString();
@@ -72,19 +77,17 @@ class AdminInvoiceController extends Controller
         $totalInvoices = Invoice::count();
         $totalBookings = Booking::whereHas('invoice')->count();
         
-        // FIXED: Uses 'rental_start_date' here too
         $totalToday = Booking::whereHas('invoice')
             ->whereDate('rental_start_date', $today)
             ->count();
 
         return view('admin.invoices.index', [
             'bookings' => $bookings,
-            'sortInvoiceNo' => $sortInvoiceNo,
-            'sortIssueDate' => $sortIssueDate,
-            'issueDateFrom' => $issueDateFrom,
-            'issueDateTo' => $issueDateTo,
-            'pickupDateFrom' => $pickupDateFrom,
-            'pickupDateTo' => $pickupDateTo,
+            'search' => $search,
+            'sort' => $sort,
+            'dateFilterType' => $dateFilterType,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
             'totalInvoices' => $totalInvoices,
             'totalBookings' => $totalBookings,
             'totalToday' => $totalToday,

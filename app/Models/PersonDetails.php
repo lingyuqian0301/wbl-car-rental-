@@ -17,6 +17,7 @@ class PersonDetails extends Model
     protected $fillable = [
         'ic_no',
         'fullname',
+        'ic_img',
     ];
 
     /**

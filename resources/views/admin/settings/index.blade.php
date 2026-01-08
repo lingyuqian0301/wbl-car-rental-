@@ -196,9 +196,14 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editStaffModal{{ $staff->staffID }}">
-                                            <i class="bi bi-pencil"></i> Edit
-                                        </button>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ route('admin.settings.staff.show', $staff->staffID) }}" class="btn btn-outline-info">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editStaffModal{{ $staff->staffID }}">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty

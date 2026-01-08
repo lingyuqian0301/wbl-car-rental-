@@ -126,7 +126,33 @@ class ProfileController extends Controller
             
             DB::commit();
             
-            return Redirect::route('profile.edit')->with('status', 'profile-updated');
+            // Check if all required fields (except address and state) are filled
+            // This allows saving incomplete data but warns the user they cannot book
+            $requiredForBooking = [
+                'phone_number',
+                'customer_license',
+                'identification_card',
+                'matric_number',
+                'college',
+                'faculty',
+                'program'
+            ];
+
+            $missingFields = false;
+            foreach ($requiredForBooking as $field) {
+                if (!$request->filled($field)) {
+                    $missingFields = true;
+                    break;
+                }
+            }
+
+            $response = Redirect::route('profile.edit')->with('status', 'profile-updated');
+
+            if ($missingFields) {
+                $response->with('warning', 'Profile saved, but you cannot book a car until all personal details (excluding Address and State of Origin) are completed.');
+            }
+
+            return $response;
             
         } catch (\Exception $e) {
             DB::rollBack();

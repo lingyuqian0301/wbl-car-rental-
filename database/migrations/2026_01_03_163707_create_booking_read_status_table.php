@@ -12,11 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('booking_read_status', function (Blueprint $table) {
-            $table->id(); // Primary key
-            $table->foreignId('booking_id')->constrained('bookings'); // foreign key to bookings table
-            $table->foreignId('user_id')->constrained('users');       // foreign key to users table
-            $table->boolean('is_read')->default(false);               // to track read/unread
-            $table->timestamps();                                     // created_at & updated_at
+            $table->id();
+            $table->timestamps();
         });
     }
 

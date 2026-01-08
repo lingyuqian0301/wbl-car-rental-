@@ -1,6 +1,34 @@
 @extends('layouts.admin')
 
+@php
+    use Carbon\Carbon;
+@endphp
+
 @section('title', 'Finance Report')
+
+@push('styles')
+<style>
+    @media print {
+        .btn, .nav-tabs, .card-header .btn, .d-flex.justify-content-end {
+            display: none !important;
+        }
+        .card {
+            border: none;
+            box-shadow: none;
+        }
+        .page-header {
+            page-break-after: avoid;
+        }
+        table {
+            page-break-inside: auto;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+    }
+</style>
+@endpush
 
 @section('content')
 <div class="container-fluid py-2">
@@ -19,6 +47,12 @@
             </a>
         </li>
         <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $activeTab === 'weekly-income' ? 'active' : '' }}" 
+               href="{{ route('admin.reports.finance', ['tab' => 'weekly-income']) }}">
+                <i class="bi bi-calendar-week me-1"></i> Weekly Income
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'daily-income' ? 'active' : '' }}" 
                href="{{ route('admin.reports.finance', ['tab' => 'daily-income']) }}">
                 <i class="bi bi-calendar-day me-1"></i> Daily Income
@@ -32,7 +66,8 @@
             title="Expenses and Profit" 
             description="Vehicle-wise expenses and profit breakdown"
             :stats="[
-                ['label' => 'Total Vehicles', 'value' => $vehicles->count() ?? 0, 'icon' => 'bi-car-front']
+                ['label' => 'Total Vehicles', 'value' => $totalVehicles ?? 0, 'icon' => 'bi-car-front'],
+                ['label' => 'Total Profit', 'value' => 'RM ' . number_format($totalProfit ?? 0, 2), 'icon' => 'bi-cash-stack']
             ]"
         />
 
@@ -43,21 +78,47 @@
             </div>
         @endif
 
+        <!-- Print and Export Buttons -->
+        <div class="d-flex justify-content-end mb-3 gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+            <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'expenses-profit', 'vehicle_type' => $vehicleType ?? 'all', 'month' => $selectedMonth ?? date('m'), 'year' => $selectedYear ?? date('Y')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+        </div>
+
         <!-- Filter -->
         <div class="card mb-3">
             <div class="card-body">
-                <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'expenses-profit']) }}" class="d-flex gap-2 align-items-end">
-                    <div>
+                <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'expenses-profit']) }}" class="row g-3">
+                    <div class="col-md-2">
                         <label class="form-label small">Vehicle Type</label>
-                        <select name="vehicle_type" class="form-select form-select-sm" style="width: 150px;">
+                        <select name="vehicle_type" class="form-select form-select-sm">
                             <option value="all" {{ ($vehicleType ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
                             <option value="car" {{ ($vehicleType ?? 'all') === 'car' ? 'selected' : '' }}>Car</option>
                             <option value="motor" {{ ($vehicleType ?? 'all') === 'motor' ? 'selected' : '' }}>Motor</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-danger btn-sm">
-                        <i class="bi bi-funnel"></i> Filter
-                    </button>
+                    <div class="col-md-2">
+                        <label class="form-label small">Month</label>
+                        <select name="month" class="form-select form-select-sm">
+                            @for($m = 1; $m <= 12; $m++)
+                                <option value="{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}" {{ ($selectedMonth ?? date('m')) == str_pad($m, 2, '0', STR_PAD_LEFT) ? 'selected' : '' }}>
+                                    {{ \Carbon\Carbon::create(null, $m, 1)->format('F') }}
+                                </option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Year</label>
+                        <input type="number" name="year" class="form-control form-control-sm" value="{{ $selectedYear ?? date('Y') }}" min="2020" max="2100">
+                    </div>
+                    <div class="col-md-auto d-flex align-items-end">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -73,6 +134,7 @@
                                 <th>Plate Number</th>
                                 <th>Owner Leasing Price</th>
                                 <th>Expenses (Maintenance)</th>
+                                <th>Expenses (Staff)</th>
                                 <th>Profit</th>
                             </tr>
                         </thead>
@@ -82,8 +144,16 @@
                                     <td>#{{ $vehicle['vehicleID'] }}</td>
                                     <td>{{ $vehicle['vehicle'] }}</td>
                                     <td>{{ $vehicle['plate_number'] ?? 'N/A' }}</td>
-                                    <td>RM {{ number_format($vehicle['leasing_price'], 2) }}</td>
+                                    <td>
+                                        <span class="editable-leasing-price" 
+                                              data-owner-id="{{ $vehicle['ownerID'] ?? '' }}"
+                                              data-current-value="{{ $vehicle['leasing_price'] ?? 0 }}"
+                                              style="cursor: pointer; text-decoration: underline;">
+                                            RM {{ number_format($vehicle['leasing_price'], 2) }}
+                                        </span>
+                                    </td>
                                     <td>RM {{ number_format($vehicle['expenses'], 2) }}</td>
+                                    <td>RM {{ number_format($vehicle['staff_expenses'] ?? 0, 2) }}</td>
                                     <td>
                                         <span class="fw-bold {{ $vehicle['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
                                             RM {{ number_format($vehicle['profit'], 2) }}
@@ -92,7 +162,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-muted">No vehicles found</td>
+                                    <td colspan="7" class="text-center py-5 text-muted">No vehicles found</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -112,6 +182,16 @@
                 ['label' => 'Total Profit', 'value' => 'RM ' . number_format($yearTotalProfit ?? 0, 2), 'icon' => 'bi-cash-stack']
             ]"
         />
+
+        <!-- Print and Export Buttons -->
+        <div class="d-flex justify-content-end mb-3 gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+            <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'monthly-income', 'year' => $selectedYear ?? date('Y')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+        </div>
 
         <div class="mb-3">
             <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'monthly-income']) }}" class="d-flex gap-2 align-items-end">
@@ -187,6 +267,16 @@
             ]"
         />
 
+        <!-- Print and Export Buttons -->
+        <div class="d-flex justify-content-end mb-3 gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+            <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'daily-income', 'year' => $selectedYear ?? date('Y'), 'month' => $selectedMonth ?? date('m')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+        </div>
+
         <div class="mb-3">
             <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'daily-income']) }}" class="d-flex gap-2 align-items-end">
                 <div>
@@ -216,7 +306,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Total Rental Amount</th>
+                                <th>Total Earning Amount</th>
                                 <th>Total Expenses</th>
                                 <th>Total Profit</th>
                             </tr>
@@ -225,7 +315,7 @@
                             @forelse($days ?? [] as $day)
                                 <tr>
                                     <td>{{ $day['dateFormatted'] }}</td>
-                                    <td>RM {{ number_format($day['totalRentalAmount'], 2) }}</td>
+                                    <td>RM {{ number_format($day['totalEarnings'], 2) }}</td>
                                     <td>RM {{ number_format($day['totalExpenses'], 2) }}</td>
                                     <td>
                                         <span class="fw-bold {{ $day['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
@@ -244,5 +334,125 @@
             </div>
         </div>
     @endif
+
+    <!-- Weekly Income Tab -->
+    @if($activeTab === 'weekly-income')
+        <x-admin-page-header 
+            title="Weekly Income" 
+            description="Weekly income breakdown (7 days from selected start date)"
+            :stats="[
+                ['label' => 'Start Date', 'value' => \Carbon\Carbon::parse($startDate ?? Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d'))->format('d M Y'), 'icon' => 'bi-calendar'],
+                ['label' => 'Total Profit', 'value' => 'RM ' . number_format($weekTotalProfit ?? 0, 2), 'icon' => 'bi-cash-stack']
+            ]"
+        />
+
+        <!-- Print and Export Buttons -->
+        <div class="d-flex justify-content-end mb-3 gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+            <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'weekly-income', 'start_date' => $startDate ?? Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+        </div>
+
+        <div class="mb-3">
+            <form method="GET" action="{{ route('admin.reports.finance', ['tab' => 'weekly-income']) }}" class="d-flex gap-2 align-items-end">
+                <div>
+                    <label class="form-label small">Start Date</label>
+                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ $startDate ?? Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d') }}">
+                </div>
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Total Earning Amount</th>
+                                <th>Total Expenses</th>
+                                <th>Total Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($days ?? [] as $day)
+                                <tr>
+                                    <td>{{ $day['dateFormatted'] }}</td>
+                                    <td>RM {{ number_format($day['totalEarnings'], 2) }}</td>
+                                    <td>RM {{ number_format($day['totalExpenses'], 2) }}</td>
+                                    <td>
+                                        <span class="fw-bold {{ $day['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                            RM {{ number_format($day['profit'], 2) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">No data found</td>
+                                </tr>
+                            @endforelse
+                            <!-- Week Total Row -->
+                            @if(isset($days) && count($days) > 0)
+                                <tr class="table-info fw-bold">
+                                    <td><strong>Total (Week)</strong></td>
+                                    <td>RM {{ number_format($weekTotalEarnings ?? 0, 2) }}</td>
+                                    <td>RM {{ number_format($weekTotalExpenses ?? 0, 2) }}</td>
+                                    <td>
+                                        <span class="{{ ($weekTotalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                            RM {{ number_format($weekTotalProfit ?? 0, 2) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
+
+@push('scripts')
+<script>
+    // Make leasing price editable
+    document.querySelectorAll('.editable-leasing-price').forEach(function(element) {
+        element.addEventListener('click', function() {
+            const ownerId = this.dataset.ownerId;
+            const currentValue = parseFloat(this.dataset.currentValue);
+            const newValue = prompt('Enter new leasing price:', currentValue);
+            
+            if (newValue !== null && !isNaN(newValue) && newValue >= 0) {
+                fetch(`/admin/reports/finance/owner/${ownerId}/leasing-price`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        leasing_price: parseFloat(newValue)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Failed to update leasing price.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating leasing price.');
+                });
+            }
+        });
+    });
+</script>
+@endpush
 @endsection

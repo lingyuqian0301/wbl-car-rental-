@@ -117,9 +117,19 @@ class PaymentController extends Controller
             Log::warning('Notification Error (Ignored): ' . $e->getMessage());
         }
 
-        return redirect()
-            ->route('dashboard')
-            ->with('success', 'Payment submitted successfully! Waiting for verification.');
+        // 7. Redirect to Agreement Step with proper defensive checks
+        // Try to get the booking ID using the correct column name
+        $bookingId = $booking->bookingID ?? $booking->id ?? null;
+        
+        if ($bookingId) {
+            return redirect()
+                ->route('agreement.show', $bookingId)
+                ->with('success', 'Payment submitted successfully! Please review and accept the rental agreement.');
+        } else {
+            // Fallback if booking ID cannot be determined
+            Log::error('Unable to determine booking ID after payment submission');
+            return redirect()->back()->with('error', 'Payment recorded but unable to proceed. Please try again.');
+        }
     }
 
     public function payWithWallet(Request $request, Booking $booking)
@@ -194,8 +204,18 @@ class PaymentController extends Controller
 
             DB::commit();
 
-            return redirect()->route('dashboard')
-                ->with('success', 'Deposit paid successfully from wallet! Booking confirmed.');
+            // Redirect to Agreement Step with proper defensive checks
+            // Try to get the booking ID using the correct column name
+            $bookingId = $booking->bookingID ?? $booking->id ?? null;
+            
+            if ($bookingId) {
+                return redirect()->route('agreement.show', $bookingId)
+                    ->with('success', 'Deposit paid successfully from wallet! Please review and accept the rental agreement.');
+            } else {
+                // Fallback if booking ID cannot be determined
+                Log::error('Unable to determine booking ID after wallet payment');
+                return redirect()->back()->with('error', 'Payment completed but unable to proceed. Please try again.');
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();

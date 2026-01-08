@@ -199,22 +199,32 @@
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#car-info" type="button" role="tab">
+            <button class="nav-link {{ ($activeTab ?? 'car-info') === 'car-info' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#car-info" type="button" role="tab">
                 <i class="bi bi-info-circle"></i> Car Info
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#owner-info" type="button" role="tab">
+            <button class="nav-link {{ ($activeTab ?? '') === 'owner-info' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#owner-info" type="button" role="tab">
                 <i class="bi bi-person"></i> Owner Info
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#booking-history" type="button" role="tab">
+            <a href="{{ route('admin.vehicles.maintenance', $vehicle->vehicleID) }}" class="nav-link {{ ($activeTab ?? '') === 'maintenance' ? 'active' : '' }}">
+                <i class="bi bi-tools"></i> Maintenance
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a href="{{ route('admin.vehicles.fuel', $vehicle->vehicleID) }}" class="nav-link {{ ($activeTab ?? '') === 'fuel' ? 'active' : '' }}">
+                <i class="bi bi-fuel-pump"></i> Fuel
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ ($activeTab ?? '') === 'booking-history' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#booking-history" type="button" role="tab">
                 <i class="bi bi-clock-history"></i> Booking History
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#photos" type="button" role="tab">
+            <button class="nav-link {{ ($activeTab ?? '') === 'photos' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#photos" type="button" role="tab">
                 <i class="bi bi-images"></i> Car Photos
             </button>
         </li>
@@ -222,10 +232,10 @@
 
     <div class="tab-content">
         <!-- Car Info Tab - Contains Vehicle Info, Maintenance, and Documentation -->
-        <div class="tab-pane fade show active" id="car-info" role="tabpanel">
+        <div class="tab-pane fade {{ ($activeTab ?? 'car-info') === 'car-info' ? 'show active' : '' }}" id="car-info" role="tabpanel">
             <div class="row g-3">
                 <!-- Vehicle Basic Info -->
-                <div class="col-lg-6">
+                <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-car-front"></i> Vehicle Information</h5>
@@ -317,104 +327,6 @@
                     </div>
                 </div>
 
-                <!-- Maintenance List Section -->
-                <div class="col-lg-6">
-                    <div class="card">
-                        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-tools"></i> Maintenance List</h5>
-                            <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addMaintenanceModal">
-                                <i class="bi bi-plus-circle"></i> Add Maintenance
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <!-- Service History -->
-                            <div class="mb-3">
-                                <h6 class="fw-semibold"><i class="bi bi-clock-history"></i> Service History</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered">
-                                        <thead style="background: var(--hasta-red); color: white;">
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Service Type</th>
-                                                <th>Mileage</th>
-                                                <th>Cost</th>
-                                                <th>Next Due</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @forelse($vehicle->maintenances as $maintenance)
-                                                <tr>
-                                                    <td>{{ $maintenance->service_date ? \Carbon\Carbon::parse($maintenance->service_date)->format('d M Y') : 'N/A' }}</td>
-                                                    <td>{{ $maintenance->service_type ?? 'N/A' }}</td>
-                                                    <td>{{ $maintenance->mileage ?? 'N/A' }}</td>
-                                                    <td>RM {{ number_format($maintenance->cost ?? 0, 2) }}</td>
-                                                    <td>
-                                                        @if($maintenance->next_due_date)
-                                                            @php
-                                                                $nextDue = \Carbon\Carbon::parse($maintenance->next_due_date);
-                                                                $isDue = $nextDue->isPast();
-                                                            @endphp
-                                                            <span class="{{ $isDue ? 'text-danger fw-bold' : '' }}">
-                                                                {{ $nextDue->format('d M Y') }}
-                                                            </span>
-                                                            @if($isDue)
-                                                                <span class="badge bg-danger">Due</span>
-                                                            @endif
-                                                        @else
-                                                            N/A
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <form method="POST" action="{{ route('admin.vehicles.maintenance.destroy', $maintenance->maintenanceID) }}" 
-                                                              onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                                <i class="bi bi-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="6" class="text-center text-muted py-2">No service history recorded yet.</td>
-                                            </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Service Remainder -->
-                            <div class="mb-3">
-                                <h6 class="fw-semibold"><i class="bi bi-calendar-check"></i> Service Reminder</h6>
-                                @php
-                                    $upcomingServices = $vehicle->maintenances()
-                                        ->whereNotNull('next_due_date')
-                                        ->where('next_due_date', '>=', \Carbon\Carbon::today())
-                                        ->orderBy('next_due_date', 'asc')
-                                        ->get();
-                                @endphp
-                                @if($upcomingServices->isNotEmpty())
-                                <div class="alert alert-info mb-0">
-                                        @foreach($upcomingServices->take(3) as $service)
-                                            <div class="small">
-                                                <strong>{{ $service->service_type }}:</strong> 
-                                                {{ \Carbon\Carbon::parse($service->next_due_date)->format('d M Y') }}
-                                </div>
-                                        @endforeach
-                            </div>
-                                @else
-                                    <div class="alert alert-info mb-0">
-                                        <small>No upcoming service reminders.</small>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Documentation Section -->
                 <div class="col-12">
                     <div class="card">
@@ -452,21 +364,13 @@
                                                     <i class="bi bi-calendar3"></i> Uploaded: {{ $insuranceDoc->upload_date ? \Carbon\Carbon::parse($insuranceDoc->upload_date)->format('d M Y') : 'N/A' }}
                                                 </div>
                                                 <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
-                                                    @if($isPdf)
-                                                        <a href="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
-                                                           target="_blank" 
-                                                           class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </a>
-                                                    @else
-                                                        <button type="button" 
-                                                                class="btn btn-sm" 
-                                                                style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#viewDocumentModal{{ $insuranceDoc->documentID }}">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </button>
-                                                    @endif
+                                                    <button type="button" 
+                                                            class="btn btn-sm" 
+                                                            style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#viewDocumentModal{{ $insuranceDoc->documentID }}">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#uploadDocumentModal"
@@ -484,7 +388,6 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Insurance -->
-                                                @if(!$isPdf)
                                                 <div class="modal fade" id="viewDocumentModal{{ $insuranceDoc->documentID }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
@@ -492,12 +395,19 @@
                                                                 <h5 class="modal-title">Insurance Document</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
-                                                            <div class="modal-body text-center">
-                                                                <img src="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
-                                                                     alt="Insurance Document" 
-                                                                     class="img-fluid" 
-                                                                     style="max-height: 70vh; width: auto; border-radius: 6px;"
-                                                                     onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                            <div class="modal-body text-center" style="min-height: 400px;">
+                                                                @if($isPdf)
+                                                                    <iframe src="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
+                                                                            style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
+                                                                            onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
+                                                                    </iframe>
+                                                                @else
+                                                                    <img src="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
+                                                                         alt="Insurance Document" 
+                                                                         class="img-fluid" 
+                                                                         style="max-height: 70vh; width: auto; border-radius: 6px;"
+                                                                         onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                                @endif
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <a href="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
@@ -510,7 +420,6 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                @endif
                                             @else
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -553,21 +462,13 @@
                                                     <i class="bi bi-calendar3"></i> Uploaded: {{ $grantDoc->upload_date ? \Carbon\Carbon::parse($grantDoc->upload_date)->format('d M Y') : 'N/A' }}
                                                 </div>
                                                 <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
-                                                    @if($isPdf)
-                                                        <a href="{{ asset('storage/' . $grantDoc->fileURL) }}" 
-                                                           target="_blank" 
-                                                           class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </a>
-                                                    @else
-                                                        <button type="button" 
-                                                                class="btn btn-sm" 
-                                                                style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#viewDocumentModal{{ $grantDoc->documentID }}">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </button>
-                                                    @endif
+                                                    <button type="button" 
+                                                            class="btn btn-sm" 
+                                                            style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#viewDocumentModal{{ $grantDoc->documentID }}">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#uploadDocumentModal"
@@ -585,7 +486,6 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Grant -->
-                                                @if(!$isPdf)
                                                 <div class="modal fade" id="viewDocumentModal{{ $grantDoc->documentID }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
@@ -593,12 +493,19 @@
                                                                 <h5 class="modal-title">Grant Document</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
-                                                            <div class="modal-body text-center">
-                                                                <img src="{{ asset('storage/' . $grantDoc->fileURL) }}" 
-                                                                     alt="Grant Document" 
-                                                                     class="img-fluid" 
-                                                                     style="max-height: 70vh; width: auto; border-radius: 6px;"
-                                                                     onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                            <div class="modal-body text-center" style="min-height: 400px;">
+                                                                @if($isPdf)
+                                                                    <iframe src="{{ asset('storage/' . $grantDoc->fileURL) }}" 
+                                                                            style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
+                                                                            onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
+                                                                    </iframe>
+                                                                @else
+                                                                    <img src="{{ asset('storage/' . $grantDoc->fileURL) }}" 
+                                                                         alt="Grant Document" 
+                                                                         class="img-fluid" 
+                                                                         style="max-height: 70vh; width: auto; border-radius: 6px;"
+                                                                         onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                                @endif
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <a href="{{ asset('storage/' . $grantDoc->fileURL) }}" 
@@ -611,7 +518,6 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                @endif
                                             @else
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -657,21 +563,13 @@
                                                     @php
                                                         $isPdf = strtolower(pathinfo($roadtaxDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
                                                     @endphp
-                                                    @if($isPdf)
-                                                        <a href="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
-                                                           target="_blank" 
-                                                           class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </a>
-                                                    @else
-                                                        <button type="button" 
-                                                                class="btn btn-sm" 
-                                                                style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#viewDocumentModal{{ $roadtaxDoc->documentID }}">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </button>
-                                                    @endif
+                                                    <button type="button" 
+                                                            class="btn btn-sm" 
+                                                            style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#viewDocumentModal{{ $roadtaxDoc->documentID }}">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#uploadDocumentModal"
@@ -689,7 +587,6 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Road Tax -->
-                                                @if(!$isPdf)
                                                 <div class="modal fade" id="viewDocumentModal{{ $roadtaxDoc->documentID }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
@@ -697,12 +594,19 @@
                                                                 <h5 class="modal-title">Road Tax Document</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
-                                                            <div class="modal-body text-center">
-                                                                <img src="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
-                                                                     alt="Road Tax Document" 
-                                                                     class="img-fluid" 
-                                                                     style="max-height: 70vh; width: auto; border-radius: 6px;"
-                                                                     onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                            <div class="modal-body text-center" style="min-height: 400px;">
+                                                                @if($isPdf)
+                                                                    <iframe src="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
+                                                                            style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
+                                                                            onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
+                                                                    </iframe>
+                                                                @else
+                                                                    <img src="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
+                                                                         alt="Road Tax Document" 
+                                                                         class="img-fluid" 
+                                                                         style="max-height: 70vh; width: auto; border-radius: 6px;"
+                                                                         onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                                @endif
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <a href="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
@@ -715,7 +619,6 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                @endif
                                             @else
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -761,21 +664,13 @@
                                                     @php
                                                         $isPdf = strtolower(pathinfo($contractDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
                                                     @endphp
-                                                    @if($isPdf)
-                                                        <a href="{{ asset('storage/' . $contractDoc->fileURL) }}" 
-                                                           target="_blank" 
-                                                           class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </a>
-                                                    @else
-                                                        <button type="button" 
-                                                                class="btn btn-sm" 
-                                                                style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#viewDocumentModal{{ $contractDoc->documentID }}">
-                                                            <i class="bi bi-eye"></i> View
-                                                        </button>
-                                                    @endif
+                                                    <button type="button" 
+                                                            class="btn btn-sm" 
+                                                            style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#viewDocumentModal{{ $contractDoc->documentID }}">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#uploadDocumentModal"
@@ -793,7 +688,6 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Contract -->
-                                                @if(!$isPdf)
                                                 <div class="modal fade" id="viewDocumentModal{{ $contractDoc->documentID }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
@@ -801,12 +695,22 @@
                                                                 <h5 class="modal-title">Contract Document</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
-                                                            <div class="modal-body text-center">
-                                                                <img src="{{ asset('storage/' . $contractDoc->fileURL) }}" 
-                                                                     alt="Contract Document" 
-                                                                     class="img-fluid" 
-                                                                     style="max-height: 70vh; width: auto; border-radius: 6px;"
-                                                                     onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                            <div class="modal-body text-center" style="min-height: 400px;">
+                                                                @php
+                                                                    $isPdfContract = strtolower(pathinfo($contractDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
+                                                                @endphp
+                                                                @if($isPdfContract)
+                                                                    <iframe src="{{ asset('storage/' . $contractDoc->fileURL) }}" 
+                                                                            style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
+                                                                            onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
+                                                                    </iframe>
+                                                                @else
+                                                                    <img src="{{ asset('storage/' . $contractDoc->fileURL) }}" 
+                                                                         alt="Contract Document" 
+                                                                         class="img-fluid" 
+                                                                         style="max-height: 70vh; width: auto; border-radius: 6px;"
+                                                                         onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                                @endif
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <a href="{{ asset('storage/' . $contractDoc->fileURL) }}" 
@@ -819,7 +723,6 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                @endif
                                             @else
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -840,80 +743,250 @@
         </div>
 
         <!-- Owner Info Tab -->
-        <div class="tab-pane fade" id="owner-info" role="tabpanel">
-            <div class="card">
-                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-person-circle"></i> Owner Information</h5>
-                    <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#editOwnerModal">
-                        <i class="bi bi-pencil"></i> Edit Owner
-                    </button>
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'owner-info' ? 'show active' : '' }}" id="owner-info" role="tabpanel">
+            <div class="row g-3">
+                <!-- Owner Information Card -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-person-circle"></i> Owner Information</h5>
+                            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#editOwnerModal">
+                                <i class="bi bi-pencil"></i> Edit Owner
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            @if($vehicle->owner)
+                            <div class="row">
+                                <div class="col-md-6">
+                                        <dl class="row mb-0">
+                                            <dt class="col-5">Owner ID:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->ownerID ?? 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">Owner Name:</dt>
+                                            <dd class="col-7">
+                                                @php
+                                                    $ownerName = 'N/A';
+                                                    if ($vehicle->owner && $vehicle->owner->personDetails) {
+                                                        $ownerName = $vehicle->owner->personDetails->fullname ?? 'N/A';
+                                                    }
+                                                @endphp
+                                                {{ $ownerName }}
+                                            </dd>
+                                            
+                                            <dt class="col-5">IC No:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->ic_no ?? 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">Contact:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->contact_number ?? 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">Email:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->email ?? 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">Bank Name:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->bankname ?? 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">Bank Account No:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->bank_acc_number ?? 'N/A' }}</dd>
+                                        </dl>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <dl class="row mb-0">
+                                            <dt class="col-5">Registration Date:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->registration_date ? \Carbon\Carbon::parse($vehicle->owner->registration_date)->format('d M Y') : 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">Leasing Price:</dt>
+                                            <dd class="col-7">RM {{ number_format($vehicle->owner->leasing_price ?? 0, 2) }}</dd>
+                                            
+                                            <dt class="col-5">Leasing Due Date:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->leasing_due_date ? \Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('d M Y') : 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">License Expiry Date:</dt>
+                                            <dd class="col-7">{{ $vehicle->owner->license_expirydate ? \Carbon\Carbon::parse($vehicle->owner->license_expirydate)->format('d M Y') : 'N/A' }}</dd>
+                                            
+                                            <dt class="col-5">Status:</dt>
+                                            <dd class="col-7">
+                                                <span class="badge {{ ($vehicle->owner->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
+                                                    {{ ($vehicle->owner->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                                </span>
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> No owner information available for this vehicle.
+                                    <button type="button" class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#editOwnerModal">
+                                        <i class="bi bi-plus-circle"></i> Add Owner Information
+                                    </button>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    @if($vehicle->owner)
-                    <div class="row">
-                        <div class="col-md-6">
-                                <dl class="row mb-0">
-                                    <dt class="col-5">Owner ID:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->ownerID ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Owner Name:</dt>
-                                    <dd class="col-7">
-                                        @php
-                                            $ownerName = 'N/A';
-                                            if ($vehicle->owner && $vehicle->owner->personDetails) {
-                                                $ownerName = $vehicle->owner->personDetails->fullname ?? 'N/A';
-                                            }
-                                        @endphp
-                                        {{ $ownerName }}
-                                    </dd>
-                                    
-                                    <dt class="col-5">IC No:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->ic_no ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Contact:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->contact_number ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Email:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->email ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Bank Name:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->bankname ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Bank Account No:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->bank_acc_number ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Registration Date:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->registration_date ? \Carbon\Carbon::parse($vehicle->owner->registration_date)->format('d M Y') : 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Leasing Price:</dt>
-                                    <dd class="col-7">RM {{ number_format($vehicle->owner->leasing_price ?? 0, 2) }}</dd>
-                                    
-                                    <dt class="col-5">Leasing Due Date:</dt>
-                                    <dd class="col-7">{{ $vehicle->owner->leasing_due_date ? \Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('d M Y') : 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Status:</dt>
-                                    <dd class="col-7">
-                                        <span class="badge {{ ($vehicle->owner->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                            {{ ($vehicle->owner->isActive ?? false) ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </dd>
-                            </dl>
+
+                <!-- Documentation Section -->
+                @if($vehicle->owner)
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentation</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- License Image -->
+                                <div class="col-md-6">
+                                    <div class="card document-cell h-100">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-card-text fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
+                                            <h6 class="fw-semibold">License</h6>
+                                            @php
+                                                $licenseImg = $vehicle->owner->license_img ?? null;
+                                            @endphp
+                                            @if($licenseImg)
+                                                <div class="mb-2">
+                                                    <img src="{{ asset('storage/' . $licenseImg) }}" 
+                                                         alt="License" 
+                                                         class="img-fluid mb-2" 
+                                                         style="max-height: 150px; border-radius: 6px;"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                                    <p class="text-muted small" style="display:none;">Image not found</p>
+                                                </div>
+                                                <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
+                                                    <button type="button" 
+                                                            class="btn btn-sm" 
+                                                            style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#viewOwnerLicenseModal">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#uploadOwnerLicenseModal">
+                                                        <i class="bi bi-upload"></i> Upload
+                                                    </button>
+                                                </div>
+                                                
+                                                <!-- View License Modal -->
+                                                <div class="modal fade" id="viewOwnerLicenseModal" tabindex="-1">
+                                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Owner License</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body text-center" style="min-height: 400px;">
+                                                                <img src="{{ asset('storage/' . $licenseImg) }}" 
+                                                                     alt="Owner License" 
+                                                                     class="img-fluid" 
+                                                                     style="max-height: 70vh; width: auto; border-radius: 6px;"
+                                                                     onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <a href="{{ asset('storage/' . $licenseImg) }}" 
+                                                                   target="_blank" 
+                                                                   class="btn btn-primary">
+                                                                    <i class="bi bi-download"></i> Open in New Tab
+                                                                </a>
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <p class="small text-muted mb-2">No license image uploaded</p>
+                                                <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#uploadOwnerLicenseModal">
+                                                    <i class="bi bi-upload"></i> Upload
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- IC Image -->
+                                <div class="col-md-6">
+                                    <div class="card document-cell h-100">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-person-badge fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
+                                            <h6 class="fw-semibold">IC</h6>
+                                            @php
+                                                $icImg = null;
+                                                if ($vehicle->owner && $vehicle->owner->personDetails) {
+                                                    $icImg = $vehicle->owner->personDetails->ic_img ?? null;
+                                                }
+                                            @endphp
+                                            @if($icImg)
+                                                <div class="mb-2">
+                                                    <img src="{{ asset('storage/' . $icImg) }}" 
+                                                         alt="IC" 
+                                                         class="img-fluid mb-2" 
+                                                         style="max-height: 150px; border-radius: 6px;"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                                    <p class="text-muted small" style="display:none;">Image not found</p>
+                                                </div>
+                                                <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
+                                                    <button type="button" 
+                                                            class="btn btn-sm" 
+                                                            style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#viewOwnerIcModal">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#uploadOwnerIcModal">
+                                                        <i class="bi bi-upload"></i> Upload
+                                                    </button>
+                                                </div>
+                                                
+                                                <!-- View IC Modal -->
+                                                <div class="modal fade" id="viewOwnerIcModal" tabindex="-1">
+                                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Owner IC</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body text-center" style="min-height: 400px;">
+                                                                <img src="{{ asset('storage/' . $icImg) }}" 
+                                                                     alt="Owner IC" 
+                                                                     class="img-fluid" 
+                                                                     style="max-height: 70vh; width: auto; border-radius: 6px;"
+                                                                     onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <a href="{{ asset('storage/' . $icImg) }}" 
+                                                                   target="_blank" 
+                                                                   class="btn btn-primary">
+                                                                    <i class="bi bi-download"></i> Open in New Tab
+                                                                </a>
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <p class="small text-muted mb-2">No IC image uploaded</p>
+                                                <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#uploadOwnerIcModal">
+                                                    <i class="bi bi-upload"></i> Upload
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    @else
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> No owner information available for this vehicle.
-                            <button type="button" class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#editOwnerModal">
-                                <i class="bi bi-plus-circle"></i> Add Owner Information
-                            </button>
                     </div>
-                    @endif
                 </div>
+                @endif
             </div>
         </div>
 
         <!-- Booking History Tab -->
-        <div class="tab-pane fade" id="booking-history" role="tabpanel">
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'booking-history' ? 'show active' : '' }}" id="booking-history" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-danger text-white">
                     <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Booking History</h5>
@@ -943,7 +1016,11 @@
                                         // Assuming there's a vehicle condition form - using bookingID for now
                                     @endphp
                                     <tr>
-                                        <td>#{{ $booking->bookingID }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.bookings.reservations', ['search' => $booking->bookingID]) }}" class="text-decoration-none fw-bold text-primary">
+                                                #{{ $booking->bookingID }}
+                                            </a>
+                                        </td>
                                         <td>{{ $user->name ?? 'N/A' }}</td>
                                         <td>{{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</td>
                                         <td>{{ $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A' }}</td>
@@ -985,12 +1062,12 @@
         </div>
 
         <!-- Car Photos Tab -->
-        <div class="tab-pane fade" id="photos" role="tabpanel">
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'photos' ? 'show active' : '' }}" id="photos" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-images"></i> Car Photos</h5>
                     <button class="btn btn-sm" style="background: white; color: var(--hasta-red); border: none;" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">
-                        <i class="bi bi-plus-circle"></i> Upload Photo
+                        <i class="bi bi-plus-circle"></i> <span style="color: var(--hasta-red);">Upload</span>
                     </button>
                 </div>
                 <div class="card-body">
@@ -1072,55 +1149,6 @@
 
     </div>
 
-    <!-- Add Maintenance Modal -->
-    <div class="modal fade" id="addMaintenanceModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Maintenance Record</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="{{ route('admin.vehicles.maintenance.store', $vehicle->vehicleID) }}">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Service Date <span class="text-danger">*</span></label>
-                            <input type="date" name="service_date" class="form-control" value="{{ old('service_date', date('Y-m-d')) }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Service Type <span class="text-danger">*</span></label>
-                            <input type="text" name="service_type" class="form-control" value="{{ old('service_type') }}" required>
-                            <small class="text-muted">e.g., Oil Change, Tire Replacement, Battery, General Service</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control" rows="3">{{ old('description') }}</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Mileage</label>
-                            <input type="number" name="mileage" class="form-control" value="{{ old('mileage') }}" min="0">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Cost (RM) <span class="text-danger">*</span></label>
-                            <input type="number" name="cost" step="0.01" class="form-control" value="{{ old('cost') }}" min="0" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Next Due Date</label>
-                            <input type="date" name="next_due_date" class="form-control" value="{{ old('next_due_date') }}">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Service Center</label>
-                            <input type="text" name="service_center" class="form-control" value="{{ old('service_center') }}">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger">Add Maintenance</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- Upload Document Modal -->
     <div class="modal fade" id="uploadDocumentModal" tabindex="-1">
@@ -1192,6 +1220,58 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-danger">Upload Photo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Owner License Modal -->
+    <div class="modal fade" id="uploadOwnerLicenseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Owner License</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ route('admin.vehicles.owner.upload-license', $vehicle->vehicleID) }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">License Image <span class="text-danger">*</span></label>
+                            <input type="file" name="license_img" class="form-control" accept="image/*,.pdf" required>
+                            <small class="text-muted">Supported formats: JPG, PNG, GIF, PDF. Max size: 5MB</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Upload License</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Owner IC Modal -->
+    <div class="modal fade" id="uploadOwnerIcModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Owner IC</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ route('admin.vehicles.owner.upload-ic', $vehicle->vehicleID) }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">IC Image <span class="text-danger">*</span></label>
+                            <input type="file" name="ic_img" class="form-control" accept="image/*,.pdf" required>
+                            <small class="text-muted">Supported formats: JPG, PNG, GIF, PDF. Max size: 5MB</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Upload IC</button>
                     </div>
                 </form>
             </div>

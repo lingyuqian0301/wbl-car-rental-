@@ -34,12 +34,15 @@ Route::get('/api/colleges', function () {
 Route::get('/api/states', function () {
     return response()->json(config('utm.states'));
 });
+
 use App\Http\Controllers\AdminVehicleController;
 use App\Http\Controllers\AdminPaymentController;
+use App\Http\Controllers\AdminDepositController;
 use App\Http\Controllers\AdminTopbarCalendarController;
 use App\Http\Controllers\AdminReservationController;
 use App\Http\Controllers\AdminCalendarController;
 use App\Http\Controllers\AdminCancellationController;
+use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AdminCustomerController;
 use App\Http\Controllers\AdminInvoiceController;
 use App\Http\Controllers\AdminRentalReportController;
@@ -49,11 +52,16 @@ use App\Http\Controllers\AdminLeasingController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\AdminSettingsController;
 use App\Http\Controllers\AdminVoucherController;
+use App\Http\Controllers\AgreementController;
+
 use App\Http\Controllers\StaffDashboardController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PickupController;
+use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ProfileController;
+
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
@@ -116,10 +124,14 @@ Route::get('/send-test', function () {
 Route::get('/', [VehicleController::class, 'index'])->name('home');
 Route::get('/vehicles/{id}', [VehicleController::class, 'show'])->name('vehicles.show');
 
-// Booking route - accessible to all, but requires auth in controller
+// Booking routes
+Route::get('/vehicles/{vehicleID}/booked-dates', [BookingController::class, 'getBookedDates'])
+    ->name('vehicles.bookedDates')
+    ->where('vehicleID', '[0-9]+');
+
 Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
     ->name('booking.store')
-    ->where('vehicleID', '[0-9]+');  // <--- ADD THIS LINE
+    ->where('vehicleID', '[0-9]+');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -155,6 +167,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
         Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
+        Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
+        Route::get('/{booking}/extend', [BookingController::class, 'showExtendForm'])->name('extend.form');
     });
 
     // Customer Invoice Download Route
@@ -190,6 +204,25 @@ Route::middleware('auth')->group(function () {
         Route::get('/generate/{bookingId}', [InvoiceController::class, 'generatePDF'])->name('generate');
     });
 
+    // Agreement Routes (Customer) - Rental Agreement
+    Route::prefix('agreement')->name('agreement.')->group(function () {
+        Route::get('/{booking}', [AgreementController::class, 'show'])->name('show');
+        Route::get('/{booking}/preview', [AgreementController::class, 'preview'])->name('preview');
+        Route::post('/{booking}/download', [AgreementController::class, 'download'])->name('download');
+    });
+
+    // Pickup Routes (Customer) - Vehicle Pickup Confirmation
+    Route::prefix('pickup')->name('pickup.')->group(function () {
+        Route::get('/{booking}', [PickupController::class, 'show'])->name('show');
+        Route::post('/{booking}/confirm', [PickupController::class, 'confirm'])->name('confirm');
+    });
+
+    // Return Routes (Customer) - Vehicle Return Confirmation
+    Route::prefix('return')->name('return.')->group(function () {
+        Route::get('/{booking}', [ReturnController::class, 'show'])->name('show');
+        Route::post('/{booking}/confirm', [ReturnController::class, 'confirm'])->name('confirm');
+    });
+
     // Staff-only routes
     Route::middleware('staff')->group(function () {
         Route::get('/staff/dashboard', StaffDashboardController::class)->name('staff.dashboard');
@@ -206,6 +239,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/{payment}/approve', [AdminPaymentController::class, 'approve'])->name('approve');
             Route::post('/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('reject');
             Route::put('/{payment}/update-verify', [AdminPaymentController::class, 'updateVerify'])->name('update-verify');
+        });
+
+        Route::prefix('admin/deposits')->name('admin.deposits.')->group(function () {
+            Route::get('/', [AdminDepositController::class, 'index'])->name('index');
+            Route::get('/{booking}', [AdminDepositController::class, 'show'])->name('show');
+            Route::put('/{booking}', [AdminDepositController::class, 'update'])->name('update');
         });
 
         Route::prefix('admin/notifications')->name('admin.notifications.')->group(function () {
@@ -239,12 +278,20 @@ Route::middleware('auth')->group(function () {
             Route::get('/export-all-excel', [AdminVehicleController::class, 'exportAllExcel'])->name('export-all-excel');
             Route::delete('/{vehicle}', [AdminVehicleController::class, 'destroy'])->name('destroy');
             Route::get('/{vehicle}', [AdminVehicleController::class, 'show'])->name('show');
+            Route::get('/{vehicle}/maintenance', [AdminVehicleController::class, 'maintenance'])->name('maintenance');
             Route::post('/{vehicle}/maintenance', [AdminVehicleController::class, 'storeMaintenance'])->name('maintenance.store');
             Route::delete('/maintenance/{maintenance}', [AdminVehicleController::class, 'destroyMaintenance'])->name('maintenance.destroy');
+            Route::get('/{vehicle}/fuel', [AdminVehicleController::class, 'fuel'])->name('fuel');
+            Route::post('/{vehicle}/fuel', [AdminVehicleController::class, 'storeFuel'])->name('fuel.store');
+            Route::put('/fuel/{fuel}', [AdminVehicleController::class, 'updateFuel'])->name('fuel.update');
+            Route::delete('/fuel/{fuel}', [AdminVehicleController::class, 'destroyFuel'])->name('fuel.destroy');
+            Route::get('/available-vehicles', [AdminVehicleController::class, 'getAvailableVehicles'])->name('available-vehicles');
             Route::post('/{vehicle}/documents', [AdminVehicleController::class, 'storeDocument'])->name('documents.store');
             Route::delete('/documents/{document}', [AdminVehicleController::class, 'destroyDocument'])->name('documents.destroy');
             Route::post('/{vehicle}/photos', [AdminVehicleController::class, 'storePhoto'])->name('photos.store');
             Route::post('/{vehicle}/owner', [AdminVehicleController::class, 'updateOwner'])->name('owner.update');
+            Route::post('/{vehicle}/owner/upload-license', [AdminVehicleController::class, 'uploadOwnerLicense'])->name('owner.upload-license');
+            Route::post('/{vehicle}/owner/upload-ic', [AdminVehicleController::class, 'uploadOwnerIc'])->name('owner.upload-ic');
         });
 
         Route::prefix('admin/topbar-calendar')->name('admin.topbar-calendar.')->group(function () {
@@ -261,6 +308,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/reservations/{booking}/update-status', [AdminReservationController::class, 'updateBookingStatus'])->name('reservations.update-status');
             Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
             Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
+            Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews');
             Route::post('/cancellation/{booking}/update', [AdminCancellationController::class, 'updateCancellation'])->name('cancellation.update');
             Route::post('/cancellation/{booking}/send-email', [AdminCancellationController::class, 'sendEmail'])->name('cancellation.send-email');
         });
@@ -315,7 +363,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/admin', [AdminSettingsController::class, 'storeAdmin'])->name('admin.store');
             Route::put('/admin/{id}', [AdminSettingsController::class, 'updateAdmin'])->name('admin.update');
             Route::post('/staff', [AdminSettingsController::class, 'storeStaff'])->name('staff.store');
+            Route::get('/staff/{staff}', [AdminSettingsController::class, 'showStaff'])->name('staff.show');
             Route::put('/staff/{id}', [AdminSettingsController::class, 'updateStaff'])->name('staff.update');
+            Route::post('/staff/{staff}/task', [AdminSettingsController::class, 'storeTask'])->name('staff.task.store');
+            Route::get('/staff/{staff}/export-excel', [AdminSettingsController::class, 'exportExcel'])->name('staff.export-excel');
+            Route::get('/staff/{staff}/export-pdf', [AdminSettingsController::class, 'exportPdf'])->name('staff.export-pdf');
         });
 
 
@@ -326,6 +378,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/charts', [AdminChartsController::class, 'index'])->name('charts');
             Route::get('/charts/export-pdf', [AdminChartsController::class, 'exportPdf'])->name('charts.export-pdf');
             Route::get('/finance', [AdminFinanceController::class, 'index'])->name('finance');
+            Route::get('/finance/export-pdf', [AdminFinanceController::class, 'exportPdf'])->name('finance.export-pdf');
+            Route::put('/finance/owner/{owner}/leasing-price', [AdminFinanceController::class, 'updateLeasingPrice'])->name('finance.update-leasing-price');
         });
     });
 });

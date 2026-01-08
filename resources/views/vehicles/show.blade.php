@@ -6,9 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $vehicle->vehicle_brand }} {{ $vehicle->vehicle_model }} | HASTA Travel</title>
 
-    <!-- Leaflet.js CSS (Open Source Map Library) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
     <style>
     * {
         margin: 0;
@@ -102,7 +99,7 @@
     /* Main Content */
     .container {
         max-width: 1200px;
-        margin: 3rem auto;
+        margin: 0 auto 3rem auto;
         padding: 0 1.5rem;
         display: grid;
         grid-template-columns: 2fr 1fr;
@@ -451,7 +448,7 @@
     }
 
     .breakdown-item {
-        
+
         display: flex;
         justify-content: space-between;
         margin-bottom: 0.8rem;
@@ -459,12 +456,12 @@
         border-bottom: 1px solid var(--border-color);
         font-size: 0.95rem;
     }
-    
-.deposit-item {
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-}
+
+    .deposit-item {
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
 
     .breakdown-item:last-child {
         border-bottom: none;
@@ -510,12 +507,98 @@
     .leaflet-container {
         font-family: inherit;
     }
+
+    /* =========================
+   BOOKING STEPPER (HASTA)
+========================= */
+
+    .booking-stepper {
+        display: flex;
+        align-items: center;
+        max-width: 1200px;
+        margin: 3rem auto 2rem;
+        padding: 0 1.5rem;
+    }
+
+    .booking-stepper .step {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        white-space: nowrap;
+    }
+
+    .booking-stepper .circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e5e7eb;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .booking-stepper .step.active .circle {
+        background: linear-gradient(135deg,
+                var(--primary-orange),
+                var(--primary-dark-orange));
+        color: #fff;
+        box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+    }
+
+    .booking-stepper .label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .booking-stepper .step.active .label {
+        color: var(--primary-orange);
+    }
+
+    .booking-stepper .line {
+        flex: 1;
+        height: 4px;
+        background: #e5e7eb;
+        margin: 0 1rem;
+        border-radius: 10px;
+        transition: background 0.3s ease;
+    }
+
+    .booking-stepper .line.active {
+        background: linear-gradient(135deg,
+                var(--primary-orange),
+                var(--primary-dark-orange));
+    }
+
+    /* Flatpickr disabled dates styling */
+    .flatpickr-calendar .flatpickr-day.disabled,
+    .flatpickr-calendar .flatpickr-day.disabled:hover,
+    .flatpickr-calendar .flatpickr-day.disabled.prevMonthDay,
+    .flatpickr-calendar .flatpickr-day.disabled.nextMonthDay {
+        background: #dc2626 !important;
+        color: #fff !important;
+        cursor: not-allowed !important;
+        opacity: 0.7;
+        text-decoration: line-through;
+        font-weight: 700;
+        pointer-events: none !important;
+    }
+    
     </style>
-    @include('components.header')
+    <!-- @include('components.header') -->
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    @extends('layouts.app')
 
 </head>
 
 <body>
+    @section('content')
+    <x-booking-stepper /> {{-- Auto-detects Select Vehicle step --}}
 
     <div class="container">
 
@@ -545,60 +628,60 @@
                 @endif
             </div>
             <!-- Vehicle Specifications -->
- <div class="specs-section">
-    <h3>Vehicle Specifications</h3>
+            <div class="specs-section">
+                <h3>Vehicle Specifications</h3>
 
-    <div class="specs">
+                <div class="specs">
 
-        {{-- Car --}}
-       {{-- Car specs --}}
-@if ($vehicle->car)
-    <div class="spec">
-        <div class="spec-label">Transmission</div>
-        <div class="spec-value">
-            {{ $vehicle->car->transmission ?? 'N/A' }}
-        </div>
-    </div>
+                    {{-- Car --}}
+                    {{-- Car specs --}}
+                    @if ($vehicle->car)
+                    <div class="spec">
+                        <div class="spec-label">Transmission</div>
+                        <div class="spec-value">
+                            {{ $vehicle->car->transmission ?? 'N/A' }}
+                        </div>
+                    </div>
 
-    <div class="spec">
-        <div class="spec-label">Seating Capacity</div>
-        <div class="spec-value">
-            {{ $vehicle->car->seating_capacity ?? 'N/A' }} persons
-        </div>
-    </div>
-@endif
+                    <div class="spec">
+                        <div class="spec-label">Seating Capacity</div>
+                        <div class="spec-value">
+                            {{ $vehicle->car->seating_capacity ?? 'N/A' }} persons
+                        </div>
+                    </div>
+                    @endif
 
-{{-- Motorcycle specs --}}
-@if ($vehicle->motorcycle)
-    <div class="spec">
-        <div class="spec-label">Motor Type</div>
-        <div class="spec-value">
-            {{ $vehicle->motorcycle->motor_type }}
-        </div>
-    </div>
+                    {{-- Motorcycle specs --}}
+                    @if ($vehicle->motorcycle)
+                    <div class="spec">
+                        <div class="spec-label">Motor Type</div>
+                        <div class="spec-value">
+                            {{ $vehicle->motorcycle->motor_type }}
+                        </div>
+                    </div>
 
-    <div class="spec">
-        <div class="spec-label">Engine Capacity</div>
-        <div class="spec-value">
-            {{ $vehicle->engineCapacity }} cc
-        </div>
-    </div>
-@endif
+                    <div class="spec">
+                        <div class="spec-label">Engine Capacity</div>
+                        <div class="spec-value">
+                            {{ $vehicle->engineCapacity }} cc
+                        </div>
+                    </div>
+                    @endif
 
 
-        {{-- Common --}}
-        <div class="spec">
-            <div class="spec-label">Color</div>
-            <div class="spec-value">{{ $vehicle->color ?? 'N/A' }}</div>
-        </div>
+                    {{-- Common --}}
+                    <div class="spec">
+                        <div class="spec-label">Color</div>
+                        <div class="spec-value">{{ $vehicle->color ?? 'N/A' }}</div>
+                    </div>
 
-        <div class="spec">
+                    <!-- <div class="spec">
             <div class="spec-label">Plate Number</div>
             <div class="spec-value">{{ $vehicle->plate_number }}</div>
-        </div>
+        </div> -->
 
-    </div>
-</div>
+                </div>
+            </div>
 
 
 
@@ -611,69 +694,199 @@
                 <p style="margin: 0; font-size: 0.9rem;">Premium Rental Rate</p>
             </div>
 
+
             <form method="POST" action="{{ route('booking.store', $vehicle->vehicleID) }}" class="booking-form"
                 id="bookingForm">
                 @csrf
 
-                <!-- 1️⃣ PICK-UP DATE -->
-                <h4>📅 Pick-up Date</h4>
-                <div class="form-group">
-                    <input type="date" id="startDate" name="start_date" required>
+                <!-- Display validation errors -->
+                @if ($errors->any())
+                <div id="errorBox" style="background-color: #fee; border: 2px solid #dc2626; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                    <p style="color: #dc2626; font-weight: 600; margin: 0 0 0.5rem 0;">Booking Error:</p>
+                    <ul style="margin: 0; padding-left: 1.5rem; color: #dc2626;">
+                        @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
+                @else
+                <div id="errorBox" style="background-color: #fee; border: 2px solid #dc2626; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: none;">
+                    <p style="color: #dc2626; font-weight: 600; margin: 0 0 0.5rem 0;">Booking Error:</p>
+                    <ul style="margin: 0; padding-left: 1.5rem; color: #dc2626;"></ul>
+                </div>
+                @endif
 
-                <!-- 2️⃣ PICK-UP LOCATION -->
-                <h4>📍 Pick-up Location</h4>
+                <!-- PICK-UP DETAILS -->
+                <h4>Pick-up Details</h4>
+
+                <!-- Pick-up Point Type (Radio Buttons) -->
                 <div class="form-group">
-                    <input type="text" id="pickup_point" name="pickup_point"
-                        placeholder="Enter address manually or click on map below" required>
-
-                    <div id="pickup_map" style="height: 250px; width: 100%; margin-top: 10px;
-        border-radius: 8px; border: 2px solid var(--border-color);">
+                    <label style="display: block; margin-bottom: 0.8rem; font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Pick-up Point Type</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="officeRadio" name="pickup_type_radio" value="office" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Office</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="facultyRadio" name="pickup_type_radio" value="faculty" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Faculty</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="collegeRadio" name="pickup_type_radio" value="college" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>College</span>
+                        </label>
                     </div>
-
-                    <small style="color: var(--text-secondary); font-size: 0.85rem;">
-                        You can type the address manually or click on the map
-                    </small>
-                </div>
-                <!-- 3️⃣ RETURN DATE -->
-                <h4>📅 Return Date</h4>
-                <div class="form-group">
-                    <input type="date" id="endDate" name="end_date" required>
                 </div>
 
-                <!-- 4️⃣ RETURN LOCATION -->
-                <h4>📍 Return Location</h4>
+                <!-- Pick-up Location (conditional) -->
                 <div class="form-group">
-                    <input type="text" id="return_point" name="return_point"
-                        placeholder="Enter address manually or click on map below" required>
-
-                    <div id="return_map" style="height: 250px; width: 100%; margin-top: 10px;
-        border-radius: 8px; border: 2px solid var(--border-color);">
+                    <div id="officeLocation" style="display: none;">
+                        <input type="text" value="HASTA HQ Office" disabled style="background-color: #f0f0f0; cursor: not-allowed; width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
                     </div>
-
-                    <small style="color: var(--text-secondary); font-size: 0.85rem;">
-                        You can type the address manually or click on the map
-                    </small>
+                    <div id="facultyLocation" style="display: none;">
+                        <select id="facultySelect" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select faculty</option>
+                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                            <option value="Computing">Computing</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Science">Science</option>
+                            <option value="Built Environment & Surveying">Built Environment & Surveying</option>
+                            <option value="Social Sciences & Humanities">Social Sciences & Humanities</option>
+                            <option value="Management">Management</option>
+                            <option value="Malaysia-Japan International Institute of Technology">Malaysia-Japan International Institute of Technology</option>
+                            <option value="Azman Hashim International Business School">Azman Hashim International Business School</option>
+                        </select>
+                    </div>
+                    <div id="collegeLocation" style="display: none;">
+                        <select id="collegeSelect" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select college</option>
+                            <option value="Kolej Rahman Putra">Kolej Rahman Putra</option>
+                            <option value="Kolej Tun Fatimah">Kolej Tun Fatimah</option>
+                            <option value="Kolej Tun Razak">Kolej Tun Razak</option>
+                            <option value="Kolej Tun Hussein Onn">Kolej Tun Hussein Onn</option>
+                            <option value="Kolej Tun Dr. Ismail">Kolej Tun Dr. Ismail</option>
+                            <option value="Kolej Tuanku Canselor">Kolej Tuanku Canselor</option>
+                            <option value="Kolej Perdana">Kolej Perdana</option>
+                            <option value="Kolej 9">Kolej 9</option>
+                            <option value="Kolej 10">Kolej 10</option>
+                            <option value="Kolej Dato' Seri Endon">Kolej Dato' Seri Endon</option>
+                            <option value="Kolej Dato' Onn Jaafar">Kolej Dato' Onn Jaafar</option>
+                            <option value="Kolej Sri Jelai">Kolej Sri Jelai</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Hidden fields -->
+                <input type="hidden" id="pickup_point" name="pickup_point" value="">
+                <input type="hidden" id="pickup_surcharge" name="pickup_surcharge" value="0">
+
+                <!-- Date & Time -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                    <div class="form-group">
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Date</small>
+                        <input type="date" id="startDate" name="start_date" value="{{ request('start_date') }}" required>
+                    </div>
+                    <div class="form-group">
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
+<select id="startTime" name="start_time" required>
+    <option value="">Select time</option>   
+</select>
+                    </div>
+                </div>
+
+                <!-- RETURN DETAILS -->
+                <h4>Return Details</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                    <div class="form-group">
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Date</small>
+                        <input type="date" id="endDate" name="end_date" value="{{ request('end_date') }}" required>
+                    </div>
+                    <div class="form-group">
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
+<select id="endTime" name="end_time" required>
+    <option value="">Select time</option>
+</select>
+                    </div>
+                </div>
+
+                <!-- Return Point Type (Radio Buttons) -->
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.8rem; font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Return Point Type</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="returnOfficeRadio" name="return_type_radio" value="office" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Office</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="returnFacultyRadio" name="return_type_radio" value="faculty" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Faculty</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="returnCollegeRadio" name="return_type_radio" value="college" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>College</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Return Location (conditional) -->
+                <div class="form-group">
+                    <div id="returnOfficeLocation" style="display: none;">
+                        <input type="text" value="HASTA HQ Office" disabled style="background-color: #f0f0f0; cursor: not-allowed; width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                    </div>
+                    <div id="returnFacultyLocation" style="display: none;">
+                        <select id="returnFacultySelect" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select faculty</option>
+                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                            <option value="Computing">Computing</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Science">Science</option>
+                            <option value="Built Environment & Surveying">Built Environment & Surveying</option>
+                            <option value="Social Sciences & Humanities">Social Sciences & Humanities</option>
+                            <option value="Management">Management</option>
+                            <option value="Malaysia-Japan International Institute of Technology">Malaysia-Japan International Institute of Technology</option>
+                            <option value="Azman Hashim International Business School">Azman Hashim International Business School</option>
+                        </select>
+                    </div>
+                    <div id="returnCollegeLocation" style="display: none;">
+                        <select id="returnCollegeSelect" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select college</option>
+                            <option value="Kolej Rahman Putra">Kolej Rahman Putra</option>
+                            <option value="Kolej Tun Fatimah">Kolej Tun Fatimah</option>
+                            <option value="Kolej Tun Razak">Kolej Tun Razak</option>
+                            <option value="Kolej Tun Hussein Onn">Kolej Tun Hussein Onn</option>
+                            <option value="Kolej Tun Dr. Ismail">Kolej Tun Dr. Ismail</option>
+                            <option value="Kolej Tuanku Canselor">Kolej Tuanku Canselor</option>
+                            <option value="Kolej Perdana">Kolej Perdana</option>
+                            <option value="Kolej 9">Kolej 9</option>
+                            <option value="Kolej 10">Kolej 10</option>
+                            <option value="Kolej Dato' Seri Endon">Kolej Dato' Seri Endon</option>
+                            <option value="Kolej Dato' Onn Jaafar">Kolej Dato' Onn Jaafar</option>
+                            <option value="Kolej Sri Jelai">Kolej Sri Jelai</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hidden field for return point -->
+                <input type="hidden" id="return_point" name="return_point" value="">
                 <!-- Add-ons Options -->
                 <div class="addons-section">
                     <h3>Add-on Options</h3>
                     <label class="addon-option">
-                        <input type="checkbox" class="addon-checkbox" data-price="10" value="GPS|10">
-                        <span class="addon-label">🗺 GPS Navigation</span>
-                        <span class="addon-price">+RM10/day</span>
+                        <input type="checkbox" class="addon-checkbox" data-price="5" value="Power Bank|5">
+                        <span class="addon-label">Power Bank</span>
+                        <span class="addon-price">+RM5/day</span>
                     </label>
 
                     <label class="addon-option">
-                        <input type="checkbox" class="addon-checkbox" data-price="15" value="Child Seat|15">
-                        <span class="addon-label">🚼 Child Seat</span>
-                        <span class="addon-price">+RM15/day</span>
+                        <input type="checkbox" class="addon-checkbox" data-price="5" value="Phone Holder|5">
+                        <span class="addon-label">Phone Holder</span>
+                        <span class="addon-price">+RM5/day</span>
                     </label>
 
                     <label class="addon-option">
-                        <input type="checkbox" class="addon-checkbox" data-price="30" value="Insurance|30">
-                        <span class="addon-label">🛡 Full Insurance Coverage</span>
-                        <span class="addon-price">+RM30/day</span>
+                        <input type="checkbox" class="addon-checkbox" data-price="3" value="USB Wire|3">
+                        <span class="addon-label">USB Wire</span>
+                        <span class="addon-price">+RM3/day</span>
                     </label>
                 </div>
 
@@ -691,10 +904,15 @@
 
                     <div id="addonsBreakdown"></div>
 
-                  <div class="breakdown-item deposit-item">
-    <span class="breakdown-label">Deposit (Refundable):</span>
-    <span class="breakdown-value">RM <span id="depositAmount">50.00</span></span>
-</div>
+                    <div id="surchargeBreakdown" class="breakdown-item" style="display: none;">
+                        <span class="breakdown-label">Pick-up Surcharge:</span>
+                        <span class="breakdown-value">RM <span id="surchargeAmount">10.00</span></span>
+                    </div>
+
+                    <div class="breakdown-item deposit-item">
+                        <span class="breakdown-label">Deposit (Refundable):</span>
+                        <span class="breakdown-value">RM <span id="depositAmount">50.00</span></span>
+                    </div>
 
 
                     <div class="breakdown-item total">
@@ -718,137 +936,13 @@
 
     @include('components.footer')
 
-    <!-- Leaflet.js JS (Open Source Map Library) -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
-    // Initialize Pickup Location Map using Leaflet (Open Source)
-    let pickupMap, pickupMarker;
-    const pickupInput = document.getElementById('pickup_point');
-    const pickupMapDiv = document.getElementById('pickup_map');
-
-    // Initialize pickup map centered on Malaysia (default)
-    pickupMap = L.map(pickupMapDiv).setView([3.1390, 101.6869], 12); // Kuala Lumpur, Malaysia
-
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19
-    }).addTo(pickupMap);
-
-    // Create initial marker for pickup (not visible until clicked)
-    pickupMarker = null;
-
-    // Function to update pickup address from coordinates
-    function updatePickupAddress(lat, lng) {
-        // Update input with coordinates first (user can edit manually)
-        pickupInput.value = lat.toFixed(6) + ', ' + lng.toFixed(6);
-
-        // Try to get address using Nominatim (OpenStreetMap geocoding)
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.display_name) {
-                    pickupInput.value = data.display_name;
-                }
-            })
-            .catch(err => console.log('Geocoding failed:', err));
-    }
-
-    // Click on map to set pickup location
-    pickupMap.on('click', function(e) {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
-
-        // Remove existing marker if any
-        if (pickupMarker) {
-            pickupMap.removeLayer(pickupMarker);
-        }
-
-        // Add new marker
-        pickupMarker = L.marker([lat, lng], {
-            draggable: true
-        }).addTo(pickupMap);
-
-        // Update address
-        updatePickupAddress(lat, lng);
-
-        // Drag marker to update location
-        pickupMarker.on('dragend', function(e) {
-            const newLat = e.target.getLatLng().lat;
-            const newLng = e.target.getLatLng().lng;
-            updatePickupAddress(newLat, newLng);
-        });
-    });
-
-    // Allow manual input - user can type address freely
-    // The input field is fully editable and doesn't require map interaction
-
-    // Initialize Return Location Map using Leaflet (Open Source)
-    let returnMap, returnMarker;
-    const returnInput = document.getElementById('return_point');
-    const returnMapDiv = document.getElementById('return_map');
-
-    // Initialize return map centered on Malaysia (default)
-    returnMap = L.map(returnMapDiv).setView([3.1390, 101.6869], 12); // Kuala Lumpur, Malaysia
-
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19
-    }).addTo(returnMap);
-
-    // Create initial marker for return (not visible until clicked)
-    returnMarker = null;
-
-    // Function to update return address from coordinates
-    function updateReturnAddress(lat, lng) {
-        // Update input with coordinates first (user can edit manually)
-        returnInput.value = lat.toFixed(6) + ', ' + lng.toFixed(6);
-
-        // Try to get address using Nominatim (OpenStreetMap geocoding)
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.display_name) {
-                    returnInput.value = data.display_name;
-                }
-            })
-            .catch(err => console.log('Geocoding failed:', err));
-    }
-
-    // Click on map to set return location
-    returnMap.on('click', function(e) {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
-
-        // Remove existing marker if any
-        if (returnMarker) {
-            returnMap.removeLayer(returnMarker);
-        }
-
-        // Add new marker
-        returnMarker = L.marker([lat, lng], {
-            draggable: true
-        }).addTo(returnMap);
-
-        // Update address
-        updateReturnAddress(lat, lng);
-
-        // Drag marker to update location
-        returnMarker.on('dragend', function(e) {
-            const newLat = e.target.getLatLng().lat;
-            const newLng = e.target.getLatLng().lng;
-            updateReturnAddress(newLat, newLng);
-        });
-    });
-
-    // Allow manual input - user can type address freely
-    // The input field is fully editable and doesn't require map interaction
-
     // Vehicle rental price per day (for real-time display only)
-     const dailyRate = {{ $vehicle->rental_price }};
-     const depositAmount = 50;
+    const dailyRate = {{ $vehicle->rental_price }};
+
+    const depositAmount = 50;
 
 
 
@@ -860,20 +954,270 @@
     const addonCheckboxes = document.querySelectorAll('.addon-checkbox');
     const priceBreakdown = document.getElementById('priceBreakdown');
     const bookingForm = document.getElementById('bookingForm');
+    const submitBtn = document.querySelector('.submit-btn');
+    
+    const officeRadio = document.getElementById('officeRadio');
+    const facultyRadio = document.getElementById('facultyRadio');
+    const collegeRadio = document.getElementById('collegeRadio');
+    
+    const officeLocation = document.getElementById('officeLocation');
+    const facultyLocation = document.getElementById('facultyLocation');
+    const collegeLocation = document.getElementById('collegeLocation');
+    const facultySelect = document.getElementById('facultySelect');
+    const collegeSelect = document.getElementById('collegeSelect');
+    const pickupPointInput = document.getElementById('pickup_point');
+    const pickupSurcharge = document.getElementById('pickup_surcharge');
+
+    let currentPickupSurcharge = 0;
+
+    // Radio button change handlers
+    officeRadio.addEventListener('change', function() {
+        officeLocation.style.display = 'block';
+        facultyLocation.style.display = 'none';
+        collegeLocation.style.display = 'none';
+        pickupPointInput.value = 'HASTA HQ Office';
+        pickupSurcharge.value = '0';
+        currentPickupSurcharge = 0;
+        facultySelect.value = '';
+        collegeSelect.value = '';
+        displayPriceBreakdown();
+    });
+
+    facultyRadio.addEventListener('change', function() {
+        officeLocation.style.display = 'none';
+        facultyLocation.style.display = 'block';
+        collegeLocation.style.display = 'none';
+        pickupPointInput.value = '';
+        pickupSurcharge.value = '10';
+        currentPickupSurcharge = 10;
+        collegeSelect.value = '';
+        displayPriceBreakdown();
+    });
+
+    collegeRadio.addEventListener('change', function() {
+        officeLocation.style.display = 'none';
+        facultyLocation.style.display = 'none';
+        collegeLocation.style.display = 'block';
+        pickupPointInput.value = '';
+        pickupSurcharge.value = '10';
+        currentPickupSurcharge = 10;
+        facultySelect.value = '';
+        displayPriceBreakdown();
+    });
+
+    // Faculty dropdown updates hidden pickup_point
+    facultySelect.addEventListener('change', function() {
+        if (this.value) {
+            pickupPointInput.value = this.value;
+        } else {
+            pickupPointInput.value = '';
+        }
+    });
+
+    // College dropdown updates hidden pickup_point
+    collegeSelect.addEventListener('change', function() {
+        if (this.value) {
+            pickupPointInput.value = this.value;
+        } else {
+            pickupPointInput.value = '';
+        }
+    });
+
+    // ====== RETURN LOCATION LOGIC ======
+    const returnOfficeRadio = document.getElementById('returnOfficeRadio');
+    const returnFacultyRadio = document.getElementById('returnFacultyRadio');
+    const returnCollegeRadio = document.getElementById('returnCollegeRadio');
+    
+    const returnOfficeLocation = document.getElementById('returnOfficeLocation');
+    const returnFacultyLocation = document.getElementById('returnFacultyLocation');
+    const returnCollegeLocation = document.getElementById('returnCollegeLocation');
+    const returnFacultySelect = document.getElementById('returnFacultySelect');
+    const returnCollegeSelect = document.getElementById('returnCollegeSelect');
+    const returnPointInput = document.getElementById('return_point');
+
+    // Return office radio - show office location, hide others
+    returnOfficeRadio.addEventListener('change', function() {
+        returnOfficeLocation.style.display = 'block';
+        returnFacultyLocation.style.display = 'none';
+        returnCollegeLocation.style.display = 'none';
+        returnPointInput.value = 'HASTA HQ Office';
+        returnFacultySelect.value = '';
+        returnCollegeSelect.value = '';
+    });
+
+    // Return faculty radio - show faculty dropdown, hide others
+    returnFacultyRadio.addEventListener('change', function() {
+        returnOfficeLocation.style.display = 'none';
+        returnFacultyLocation.style.display = 'block';
+        returnCollegeLocation.style.display = 'none';
+        returnPointInput.value = '';
+        returnCollegeSelect.value = '';
+    });
+
+    // Return college radio - show college dropdown, hide others
+    returnCollegeRadio.addEventListener('change', function() {
+        returnOfficeLocation.style.display = 'none';
+        returnFacultyLocation.style.display = 'none';
+        returnCollegeLocation.style.display = 'block';
+        returnPointInput.value = '';
+        returnFacultySelect.value = '';
+    });
+
+    // Return faculty dropdown updates hidden return_point
+    returnFacultySelect.addEventListener('change', function() {
+        if (this.value) {
+            returnPointInput.value = this.value;
+        } else {
+            returnPointInput.value = '';
+        }
+    });
+
+    // Return college dropdown updates hidden return_point
+    returnCollegeSelect.addEventListener('change', function() {
+        if (this.value) {
+            returnPointInput.value = this.value;
+        } else {
+            returnPointInput.value = '';
+        }
+    });
+
+    // Real-time date availability checking
+    const dateErrorBox = document.getElementById('errorBox');
+    const errorHeading = dateErrorBox ? dateErrorBox.querySelector('p') : null;
+    const errorList = dateErrorBox ? dateErrorBox.querySelector('ul') : null;
+    const blockedDates = @json($blockedDates);
+
+    // Initialize Flatpickr with blocked dates
+    function initializeDatePickers() {
+    flatpickr('#startDate', {
+        minDate: 'today',
+        defaultDate: "{{ request('start_date') }}", // Add defaultDate
+        disable: blockedDates,
+        onChange: validateDates,
+        dateFormat: 'Y-m-d'
+    });
+
+    flatpickr('#endDate', {
+        minDate: 'today',
+        defaultDate: "{{ request('end_date') }}",   // Add defaultDate
+        disable: blockedDates,
+        onChange: validateDates,
+        dateFormat: 'Y-m-d'
+    });
+    flatpickr('#startTime', {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: 'H:i',
+    time_24hr: true,
+    minuteIncrement: 30,
+    allowInput: false,
+    disableMobile: true
+});
+
+flatpickr('#endTime', {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: 'H:i',
+    time_24hr: true,
+    minuteIncrement: 30,
+    allowInput: false,
+    disableMobile: true
+});
+
+
+    }
+
+    function validateDates() {
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        if (!startDate || !endDate) {
+            hideAvailabilityError();
+            return;
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        if (end < start) {
+            showAvailabilityError('Return date must be after pick-up date.');
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.cursor = 'not-allowed';
+        } else {
+            hideAvailabilityError();
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+            displayPriceBreakdown();
+        }
+    }
+
+    function showAvailabilityError(message) {
+        if (!dateErrorBox) return;
+        
+        dateErrorBox.style.display = 'block';
+        if (errorHeading) {
+            errorHeading.textContent = 'Booking Error:';
+        }
+        if (errorList) {
+            errorList.innerHTML = `<li>${message}</li>`;
+        }
+    }
+
+    function hideAvailabilityError() {
+        if (!dateErrorBox) return;
+        dateErrorBox.style.display = 'none';
+    }
+
+    // Initialize date pickers when DOM is ready
+    document.addEventListener('DOMContentLoaded', initializeDatePickers);
+
+    function generateTimeOptions(selectElement) {
+    selectElement.innerHTML = '<option value="">Select time</option>';
+
+    for (let hour = 0; hour < 24; hour++) {
+        for (let minute of ['00', '30']) {
+            const h = hour.toString().padStart(2, '0');
+            const time = `${h}:${minute}`;
+
+            const option = document.createElement('option');
+            option.value = time;
+            option.textContent = time;
+
+            selectElement.appendChild(option);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+// 1. Generate time options
+    generateTimeOptions(document.getElementById('startTime'));
+    generateTimeOptions(document.getElementById('endTime'));
+
+    // 2. Initialize calendars
+    initializeDatePickers();
+
+    // 3. Trigger validation and price calculation if dates are present from URL
+    if (startDateInput.value && endDateInput.value) {
+        validateDates(); 
+    }
+});
+
 
     // Addon configuration for display (must match controller prices)
     const addonConfig = {
-        'GPS|10': {
-            key: 'gps',
-            price: 10
+        'Power Bank|5': {
+            key: 'power_bank',
+            price: 5
         },
-        'Child Seat|15': {
-            key: 'child_seat',
-            price: 15
+        'Phone Holder|5': {
+            key: 'phone_holder',
+            price: 5
         },
-        'Insurance|30': {
-            key: 'insurance',
-            price: 30
+        'USB Wire|3': {
+            key: 'usb_wire',
+            price: 3
         }
     };
 
@@ -906,7 +1250,7 @@
         const basePrice = durationDays > 0 ? dailyRate * durationDays : 0;
         let addonsTotal = 0;
         let addonsDetails = [];
-        
+
         addonCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
                 const addonValue = checkbox.value;
@@ -922,14 +1266,22 @@
             }
         });
 
-const totalPrice = basePrice + addonsTotal + depositAmount;
+        const totalPrice = basePrice + addonsTotal + depositAmount + currentPickupSurcharge;
 
         // Update UI display
-
         document.getElementById('durationDays').textContent = durationDays > 0 ? durationDays : '-';
         document.getElementById('depositAmount').textContent = depositAmount.toFixed(2);
-
         document.getElementById('basePriceBreakdown').textContent = basePrice.toFixed(2);
+
+        // Show/hide surcharge
+        const surchargeBreakdown = document.getElementById('surchargeBreakdown');
+        if (currentPickupSurcharge > 0) {
+            surchargeBreakdown.style.display = 'flex';
+            document.getElementById('surchargeAmount').textContent = currentPickupSurcharge.toFixed(2);
+        } else {
+            surchargeBreakdown.style.display = 'none';
+        }
+
         document.getElementById('totalPriceBreakdown').textContent = totalPrice.toFixed(2);
 
         // Update addons breakdown
@@ -958,8 +1310,64 @@ const totalPrice = basePrice + addonsTotal + depositAmount;
         checkbox.addEventListener('change', displayPriceBreakdown);
     });
 
-    // Form submission - prepare addon data for controller
+    // Form submission - prepare addon data and validate pickup selection
     bookingForm.addEventListener('submit', function(e) {
+        // Validate pickup type is selected
+        if (!officeRadio.checked && !facultyRadio.checked && !collegeRadio.checked) {
+            e.preventDefault();
+            alert('Please select a pick-up point type');
+            return;
+        }
+
+        // Validate faculty selection if faculty selected
+        if (facultyRadio.checked && !facultySelect.value) {
+            e.preventDefault();
+            alert('Please select a faculty');
+            return;
+        }
+
+        // Validate college selection if college selected
+        if (collegeRadio.checked && !collegeSelect.value) {
+            e.preventDefault();
+            alert('Please select a college');
+            return;
+        }
+
+        // Validate pickup location is filled
+        if (!pickupPointInput.value) {
+            e.preventDefault();
+            alert('Please complete the pick-up location');
+            return;
+        }
+
+        // Validate return type is selected
+        if (!returnOfficeRadio.checked && !returnFacultyRadio.checked && !returnCollegeRadio.checked) {
+            e.preventDefault();
+            alert('Please select a return point type');
+            return;
+        }
+
+        // Validate return faculty selection if faculty selected
+        if (returnFacultyRadio.checked && !returnFacultySelect.value) {
+            e.preventDefault();
+            alert('Please select a return faculty');
+            return;
+        }
+
+        // Validate return college selection if college selected
+        if (returnCollegeRadio.checked && !returnCollegeSelect.value) {
+            e.preventDefault();
+            alert('Please select a return college');
+            return;
+        }
+
+        // Validate return location is filled
+        if (!returnPointInput.value) {
+            e.preventDefault();
+            alert('Please complete the return location');
+            return;
+        }
+
         // Remove any existing addon inputs
         const existingAddonInputs = bookingForm.querySelectorAll('input[name="addons[]"]');
         existingAddonInputs.forEach(input => input.remove());
@@ -983,5 +1391,6 @@ const totalPrice = basePrice + addonsTotal + depositAmount;
     </script>
 
 </body>
+@endsection
 
 </html>

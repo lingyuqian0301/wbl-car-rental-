@@ -192,7 +192,9 @@
                         @endphp
                         <tr>
                             <td>
-                                <strong>#{{ $booking->bookingID }}</strong>
+                                <a href="{{ route('admin.bookings.reservations', ['search' => $booking->bookingID]) }}" class="text-decoration-none fw-bold text-primary">
+                                    #{{ $booking->bookingID }}
+                                </a>
                             </td>
                             <td>
                                 @if($booking->lastUpdateDate)

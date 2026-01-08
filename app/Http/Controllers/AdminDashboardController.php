@@ -16,11 +16,43 @@ class AdminDashboardController extends Controller
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
 
+        // Calculate current day available fleet (vehicles not booked today)
+        $currentDayAvailableFleet = Vehicle::where('availability_status', '!=', 'maintenance')
+            ->whereDoesntHave('bookings', function($query) use ($today) {
+                $query->where('booking_status', '!=', 'Cancelled')
+                      ->where('rental_start_date', '<=', $today)
+                      ->where('rental_end_date', '>=', $today);
+            })->count();
+
+        // Calculate new bookings in current week (Monday to Sunday)
+        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = $today->copy()->endOfWeek(Carbon::SUNDAY);
+        $newBookingsThisWeek = Booking::whereBetween('lastUpdateDate', [$startOfWeek, $endOfWeek])
+            ->count();
+
+        // Count payments where isVerify is false
+        $unverifiedPayments = Payment::where('payment_isVerify', false)
+            ->orWhere('payment_isVerify', 0)
+            ->orWhereNull('payment_isVerify')
+            ->count();
+
+        // Count today's pickup bookings
+        $todayPickupBookings = Booking::whereDate('rental_start_date', $today)
+            ->whereIn('booking_status', ['Pending', 'Confirmed'])
+            ->count();
+
+        // Count today's return bookings
+        $todayReturnBookings = Booking::whereDate('rental_end_date', $today)
+            ->whereIn('booking_status', ['Pending', 'Confirmed', 'Completed'])
+            ->count();
+
         $metrics = [
             'totalBookings' => Booking::count(),
             'activeBookings' => Booking::whereIn('booking_status', ['Pending', 'Confirmed'])->count(),
+            'newBookingsThisWeek' => $newBookingsThisWeek,
             'completedBookings' => Booking::where('booking_status', 'Completed')->count(),
             'pendingPayments' => Payment::where('payment_status', 'Pending')->count(),
+            'unverifiedPayments' => $unverifiedPayments,
             'verifiedPayments' => Payment::where('payment_status', 'Verified')->count(),
             'revenueAllTime' => Payment::where('payment_status', 'Verified')->sum('total_amount'),
             'revenueThisMonth' => Payment::where('payment_status', 'Verified')
@@ -31,6 +63,9 @@ class AdminDashboardController extends Controller
 'vehiclesRented'      => Vehicle::where('availability_status', 'rented')->count(),
 'vehiclesMaintenance' => Vehicle::where('availability_status', 'maintenance')->count(),
             'fleetTotal' => Vehicle::count(),
+            'currentDayAvailableFleet' => $currentDayAvailableFleet,
+            'todayPickupBookings' => $todayPickupBookings,
+            'todayReturnBookings' => $todayReturnBookings,
         ];
 
         $recentBookings = Booking::with(['vehicle', 'customer.user'])
@@ -51,15 +86,56 @@ class AdminDashboardController extends Controller
 
         // Upcoming bookings to serve (pickup date within next 3 days)
         try {
-            $upcomingBookingsToServe = Booking::with(['vehicle', 'customer.user'])
+            $upcomingBookingsToServe = Booking::with(['vehicle', 'customer.user', 'payments'])
                 ->whereIn('booking_status', ['Pending', 'Confirmed'])
                 ->whereBetween('rental_start_date', [$today, $today->copy()->addDays(3)])
                 ->orderBy('rental_start_date', 'asc')
                 ->take(10)
-                ->get();
+                ->get()
+                ->map(function($booking) {
+                    // Calculate payment status (Deposit or Full)
+                    $totalPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+                    $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                    $paymentStatus = $totalPaid >= $totalRequired ? 'Full' : 'Deposit';
+                    $booking->payment_status_display = $paymentStatus;
+                    return $booking;
+                });
         } catch (\Exception $e) {
             $upcomingBookingsToServe = collect([]);
         }
+
+        // Cancellation requests with refund status false
+        // Refund status false means bookings that haven't been refunded yet
+        $cancellationRequests = Booking::with(['vehicle', 'customer.user', 'payments'])
+            ->whereIn('booking_status', ['request cancelling', 'refunding', 'Cancelled', 'cancelled'])
+            ->whereDoesntHave('payments', function($query) {
+                // Refund status false means no refund payment exists (payment_status = 'Refunded')
+                $query->where('payment_status', 'Refunded');
+            })
+            ->orderByDesc('lastUpdateDate')
+            ->take(5)
+            ->get();
+
+        // Weekly booking statistics for Fleet Booking (Monday to Sunday)
+        // $startOfWeek and $endOfWeek already calculated above
+        $yesterday = $today->copy()->subDay();
+
+        $weeklyBookings = Booking::whereBetween('rental_start_date', [$startOfWeek, $endOfWeek])
+            ->whereIn('booking_status', ['Pending', 'Confirmed', 'Completed'])
+            ->get();
+
+        $weeklyBookingStats = [
+            'done' => $weeklyBookings->filter(function ($booking) use ($yesterday) {
+                return $booking->rental_start_date->lessThanOrEqualTo($yesterday);
+            })->count(),
+            'current' => $weeklyBookings->filter(function ($booking) use ($today) {
+                return $booking->rental_start_date->isSameDay($today);
+            })->count(),
+            'upcoming' => $weeklyBookings->filter(function ($booking) use ($today) {
+                return $booking->rental_start_date->greaterThan($today);
+            })->count(),
+            'total' => $weeklyBookings->count(),
+        ];
 
         return view('admin.dashboard', [
             'metrics' => $metrics,
@@ -67,8 +143,14 @@ class AdminDashboardController extends Controller
             'recentPayments' => $recentPayments,
             'pendingPayments' => $pendingPayments,
             'upcomingBookingsToServe' => $upcomingBookingsToServe,
+            'cancellationRequests' => $cancellationRequests,
             'monthlyRevenue' => $this->monthlyRevenueData(),
             'today' => $today,
+            'weeklyBookingStats' => $weeklyBookingStats,
+            'startOfMonth' => $startOfMonth,
+            'endOfMonth' => $endOfMonth,
+            'startOfWeek' => $startOfWeek,
+            'endOfWeek' => $endOfWeek,
         ]);
     }
 
@@ -95,6 +177,10 @@ class AdminDashboardController extends Controller
             return [
                 'label' => $label,
                 'total' => round((float) $total, 2),
+                'month' => $month->month,
+                'year' => $month->year,
+                'date_from' => $month->copy()->startOfMonth()->format('Y-m-d'),
+                'date_to' => $month->copy()->endOfMonth()->format('Y-m-d'),
             ];
         })->all();
     }

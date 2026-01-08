@@ -21,19 +21,15 @@ class AdminVehicleController extends Controller
     {
         $search = $request->get('search');
         $sortBy = $request->get('sort_by', 'vehicle_id_asc');
-        $filterBrand = $request->get('filter_brand');
-        $filterModel = $request->get('filter_model');
-        $filterSeating = $request->get('filter_seating');
-        $filterTransmission = $request->get('filter_transmission');
-        $filterCarType = $request->get('filter_car_type');
         $filterStatus = $request->get('filter_status');
+        $filterIsActive = $request->get('filter_isactive');
         
         // Get cars from car table and join with vehicle table
         $query = \App\Models\Car::with('vehicle')
             ->join('vehicle', 'car.vehicleID', '=', 'vehicle.vehicleID')
-            ->select('car.*', 'vehicle.vehicle_brand', 'vehicle.vehicle_model', 'vehicle.plate_number', 'vehicle.availability_status', 'vehicle.rental_price', 'vehicle.created_date', 'vehicle.vehicleID');
+            ->select('car.*', 'vehicle.vehicle_brand', 'vehicle.vehicle_model', 'vehicle.plate_number', 'vehicle.availability_status', 'vehicle.rental_price', 'vehicle.created_date', 'vehicle.vehicleID', 'vehicle.isActive');
         
-        // Search
+        // Search (keep current search function)
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('vehicle.vehicle_brand', 'like', "%{$search}%")
@@ -42,24 +38,12 @@ class AdminVehicleController extends Controller
             });
         }
         
-        // Filters
-        if ($filterBrand) {
-            $query->where('vehicle.vehicle_brand', $filterBrand);
-        }
-        if ($filterModel) {
-            $query->where('vehicle.vehicle_model', $filterModel);
-        }
-        if ($filterSeating) {
-            $query->where('car.seating_capacity', $filterSeating);
-        }
-        if ($filterTransmission) {
-            $query->where('car.transmission', $filterTransmission);
-        }
-        if ($filterCarType) {
-            $query->where('car.car_type', $filterCarType);
-        }
+        // Filters - only status and isActive
         if ($filterStatus) {
             $query->where('vehicle.availability_status', $filterStatus);
+        }
+        if ($filterIsActive !== null && $filterIsActive !== '') {
+            $query->where('vehicle.isActive', $filterIsActive == '1');
         }
         
         // Sorting
@@ -67,20 +51,18 @@ class AdminVehicleController extends Controller
             case 'vehicle_id_asc':
                 $query->orderBy('vehicle.vehicleID', 'ASC');
                 break;
-            case 'vehicle_id_desc':
-                $query->orderBy('vehicle.vehicleID', 'DESC');
+            case 'highest_rented':
+                // Sort by number of bookings (highest first)
+                $query->leftJoin('booking', 'vehicle.vehicleID', '=', 'booking.vehicleID')
+                      ->selectRaw('car.*, vehicle.vehicle_brand, vehicle.vehicle_model, vehicle.plate_number, vehicle.availability_status, vehicle.rental_price, vehicle.created_date, vehicle.vehicleID, vehicle.isActive, COUNT(booking.bookingID) as booking_count')
+                      ->groupBy('vehicle.vehicleID', 'car.carID')
+                      ->orderBy('booking_count', 'DESC');
                 break;
-            case 'brand_asc':
-                $query->orderBy('vehicle.vehicle_brand', 'ASC');
+            case 'highest_rental_price':
+                $query->orderBy('vehicle.rental_price', 'DESC');
                 break;
-            case 'brand_desc':
-                $query->orderBy('vehicle.vehicle_brand', 'DESC');
-                break;
-            case 'model_asc':
-                $query->orderBy('vehicle.vehicle_model', 'ASC');
-                break;
-            case 'model_desc':
-                $query->orderBy('vehicle.vehicle_model', 'DESC');
+            case 'plate_no_asc':
+                $query->orderBy('vehicle.plate_number', 'ASC');
                 break;
             default:
                 $query->orderBy('vehicle.vehicleID', 'ASC');
@@ -110,17 +92,8 @@ class AdminVehicleController extends Controller
             'cars' => $cars,
             'search' => $search,
             'sortBy' => $sortBy,
-            'filterBrand' => $filterBrand,
-            'filterModel' => $filterModel,
-            'filterSeating' => $filterSeating,
-            'filterTransmission' => $filterTransmission,
-            'filterCarType' => $filterCarType,
             'filterStatus' => $filterStatus,
-            'brands' => $brands,
-            'models' => $models,
-            'seatings' => $seatings,
-            'transmissions' => $transmissions,
-            'carTypes' => $carTypes,
+            'filterIsActive' => $filterIsActive,
             'statuses' => $statuses,
             'heading' => 'Cars',
             'totalCars' => $totalCars,
@@ -134,17 +107,15 @@ class AdminVehicleController extends Controller
     {
         $search = $request->get('search');
         $sortBy = $request->get('sort_by', 'vehicle_id_asc');
-        $filterBrand = $request->get('filter_brand');
-        $filterModel = $request->get('filter_model');
-        $filterMotorType = $request->get('filter_motor_type');
         $filterStatus = $request->get('filter_status');
+        $filterIsActive = $request->get('filter_isactive');
         
         // Get motorcycles from motorcycle table and join with vehicle table
         $query = \App\Models\Motorcycle::with('vehicle')
             ->join('vehicle', 'motorcycle.vehicleID', '=', 'vehicle.vehicleID')
-            ->select('motorcycle.*', 'vehicle.vehicle_brand', 'vehicle.vehicle_model', 'vehicle.plate_number', 'vehicle.availability_status', 'vehicle.rental_price', 'vehicle.created_date', 'vehicle.vehicleID');
+            ->select('motorcycle.*', 'vehicle.vehicle_brand', 'vehicle.vehicle_model', 'vehicle.plate_number', 'vehicle.availability_status', 'vehicle.rental_price', 'vehicle.created_date', 'vehicle.vehicleID', 'vehicle.isActive');
         
-        // Search
+        // Search (keep current search function)
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('vehicle.vehicle_brand', 'like', "%{$search}%")
@@ -153,18 +124,12 @@ class AdminVehicleController extends Controller
             });
         }
         
-        // Filters
-        if ($filterBrand) {
-            $query->where('vehicle.vehicle_brand', $filterBrand);
-        }
-        if ($filterModel) {
-            $query->where('vehicle.vehicle_model', $filterModel);
-        }
-        if ($filterMotorType) {
-            $query->where('motorcycle.motor_type', $filterMotorType);
-        }
+        // Filters - only status and isActive
         if ($filterStatus) {
             $query->where('vehicle.availability_status', $filterStatus);
+        }
+        if ($filterIsActive !== null && $filterIsActive !== '') {
+            $query->where('vehicle.isActive', $filterIsActive == '1');
         }
         
         // Sorting
@@ -172,20 +137,18 @@ class AdminVehicleController extends Controller
             case 'vehicle_id_asc':
                 $query->orderBy('vehicle.vehicleID', 'ASC');
                 break;
-            case 'vehicle_id_desc':
-                $query->orderBy('vehicle.vehicleID', 'DESC');
+            case 'highest_rented':
+                // Sort by number of bookings (highest first)
+                $query->leftJoin('booking', 'vehicle.vehicleID', '=', 'booking.vehicleID')
+                      ->selectRaw('motorcycle.*, vehicle.vehicle_brand, vehicle.vehicle_model, vehicle.plate_number, vehicle.availability_status, vehicle.rental_price, vehicle.created_date, vehicle.vehicleID, vehicle.isActive, COUNT(booking.bookingID) as booking_count')
+                      ->groupBy('vehicle.vehicleID', 'motorcycle.motorcycleID')
+                      ->orderBy('booking_count', 'DESC');
                 break;
-            case 'brand_asc':
-                $query->orderBy('vehicle.vehicle_brand', 'ASC');
+            case 'highest_rental_price':
+                $query->orderBy('vehicle.rental_price', 'DESC');
                 break;
-            case 'brand_desc':
-                $query->orderBy('vehicle.vehicle_brand', 'DESC');
-                break;
-            case 'model_asc':
-                $query->orderBy('vehicle.vehicle_model', 'ASC');
-                break;
-            case 'model_desc':
-                $query->orderBy('vehicle.vehicle_model', 'DESC');
+            case 'plate_no_asc':
+                $query->orderBy('vehicle.plate_number', 'ASC');
                 break;
             default:
                 $query->orderBy('vehicle.vehicleID', 'ASC');
@@ -213,13 +176,8 @@ class AdminVehicleController extends Controller
             'motorcycles' => $motorcycles,
             'search' => $search,
             'sortBy' => $sortBy,
-            'filterBrand' => $filterBrand,
-            'filterModel' => $filterModel,
-            'filterMotorType' => $filterMotorType,
             'filterStatus' => $filterStatus,
-            'brands' => $brands,
-            'models' => $models,
-            'motorTypes' => $motorTypes,
+            'filterIsActive' => $filterIsActive,
             'statuses' => $statuses,
             'heading' => 'Motorcycles',
             'totalMotorcycles' => $totalMotorcycles,
@@ -239,20 +197,18 @@ class AdminVehicleController extends Controller
         
         // If vehicle tab is active, fetch vehicle data
         if ($activeTab === 'vehicle') {
-            $filterBrand = $request->get('filter_brand');
-            $filterModel = $request->get('filter_model');
+            $search = $request->get('search');
             $filterType = $request->get('filter_type'); // all, car, motor, other
             $filterIsActive = $request->get('filter_isactive');
             
             $query = Vehicle::query();
             
+            // Search by plate number
+            if ($search) {
+                $query->where('plate_number', 'like', "%{$search}%");
+            }
+            
             // Filters
-            if ($filterBrand) {
-                $query->where('vehicle_brand', $filterBrand);
-            }
-            if ($filterModel) {
-                $query->where('vehicle_model', $filterModel);
-            }
             if ($filterType) {
                 if ($filterType === 'car') {
                     $query->whereHas('car');
@@ -266,7 +222,7 @@ class AdminVehicleController extends Controller
                 $query->where('isActive', $filterIsActive == 1);
             }
             
-            // Default sort: ASC vehicle ID
+            // Default sort: ASC vehicle ID (no sort function, but usually display based on this)
             $query->orderBy('vehicleID', 'ASC');
             
             $vehicles = $query->with(['car', 'motorcycle'])->paginate(20)->withQueryString();
@@ -283,12 +239,9 @@ class AdminVehicleController extends Controller
             
             $data = array_merge($data, [
                 'vehicles' => $vehicles,
-                'filterBrand' => $filterBrand,
-                'filterModel' => $filterModel,
+                'search' => $search,
                 'filterType' => $filterType,
                 'filterIsActive' => $filterIsActive,
-                'brands' => $brands,
-                'models' => $models,
                 'totalVehicles' => $totalVehicles,
                 'totalCars' => $totalCars,
                 'totalMotors' => $totalMotors,
@@ -451,10 +404,197 @@ class AdminVehicleController extends Controller
             }
         }
 
+        $activeTab = request()->get('tab', 'car-info');
+        
         return view('admin.vehicles.show', [
             'vehicle' => $vehicle,
             'bookedDates' => $bookedDates,
+            'activeTab' => $activeTab,
         ]);
+    }
+
+    /**
+     * Show maintenance page for a vehicle.
+     */
+    public function maintenance(Vehicle $vehicle): View
+    {
+        $vehicle->load([
+            'maintenances' => function($query) {
+                $query->orderBy('service_date', 'desc')
+                      ->with(['accompanyVehicle']);
+            }
+        ]);
+
+        // Get staff users for dropdown
+        $staffUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff')->orWhereHas('admin');
+        })->orderBy('name')->get();
+
+        return view('admin.vehicles.maintenance', [
+            'vehicle' => $vehicle,
+            'staffUsers' => $staffUsers,
+        ]);
+    }
+
+    /**
+     * Get available vehicles for a date range (for accompany vehicle dropdown).
+     */
+    public function getAvailableVehicles(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $excludeVehicleId = $request->get('exclude_vehicle');
+
+        if (!$startDate || !$endDate) {
+            return response()->json(['vehicles' => []]);
+        }
+
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        // Get vehicles that are available on the start and end dates (not between)
+        $availableVehicles = Vehicle::where('availability_status', '!=', 'maintenance')
+            ->where('isActive', true)
+            ->when($excludeVehicleId, function($query) use ($excludeVehicleId) {
+                $query->where('vehicleID', '!=', $excludeVehicleId);
+            })
+            ->whereDoesntHave('bookings', function($query) use ($start, $end) {
+                $query->where('booking_status', '!=', 'Cancelled')
+                      ->where(function($q) use ($start, $end) {
+                          // Not booked on start date
+                          $q->where(function($sq) use ($start) {
+                              $sq->whereDate('rental_start_date', '<=', $start)
+                                 ->whereDate('rental_end_date', '>=', $start);
+                          })
+                          // Not booked on end date
+                          ->orWhere(function($sq) use ($end) {
+                              $sq->whereDate('rental_start_date', '<=', $end)
+                                 ->whereDate('rental_end_date', '>=', $end);
+                          });
+                      });
+            })
+            ->select('vehicleID', 'plate_number', 'vehicle_brand', 'vehicle_model')
+            ->orderBy('plate_number')
+            ->get()
+            ->map(function($vehicle) {
+                return [
+                    'vehicleID' => $vehicle->vehicleID,
+                    'plate_number' => $vehicle->plate_number,
+                    'display' => $vehicle->plate_number . ' - ' . ($vehicle->vehicle_brand ?? '') . ' ' . ($vehicle->vehicle_model ?? ''),
+                ];
+            });
+
+        return response()->json(['vehicles' => $availableVehicles]);
+    }
+
+    /**
+     * Show fuel page for a vehicle.
+     */
+    public function fuel(Vehicle $vehicle): View
+    {
+        $vehicle->load([
+            'fuels' => function($query) {
+                $query->orderBy('fuel_date', 'desc')
+                      ->with('handledByUser');
+            }
+        ]);
+
+        // Get staff users for dropdown
+        $staffUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff')->orWhereHas('admin');
+        })->orderBy('name')->get();
+
+        return view('admin.vehicles.fuel', [
+            'vehicle' => $vehicle,
+            'staffUsers' => $staffUsers,
+        ]);
+    }
+
+    /**
+     * Store a new fuel record.
+     */
+    public function storeFuel(Request $request, Vehicle $vehicle): \Illuminate\Http\RedirectResponse
+    {
+        $validated = $request->validate([
+            'fuel_date' => 'required|date',
+            'cost' => 'required|numeric|min:0',
+            'receipt_img' => 'nullable|file|mimes:jpeg,jpg,png,gif,pdf|max:5120',
+            'handled_by' => 'nullable|exists:user,userID',
+        ]);
+
+        try {
+            // Handle receipt image upload
+            $receiptImgPath = null;
+            if ($request->hasFile('receipt_img')) {
+                $file = $request->file('receipt_img');
+                $filename = 'fuel_receipt_' . $vehicle->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $receiptImgPath = $file->storeAs('fuel_receipts', $filename, 'public');
+            }
+
+            \App\Models\Fuel::create([
+                'vehicleID' => $vehicle->vehicleID,
+                'fuel_date' => $validated['fuel_date'],
+                'cost' => $validated['cost'],
+                'receipt_img' => $receiptImgPath,
+                'handled_by' => $validated['handled_by'] ?? Auth::user()->userID ?? null,
+            ]);
+
+            return redirect()->back()->with('success', 'Fuel record added successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Failed to add fuel record: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update a fuel record.
+     */
+    public function updateFuel(Request $request, \App\Models\Fuel $fuel): \Illuminate\Http\RedirectResponse
+    {
+        $validated = $request->validate([
+            'fuel_date' => 'required|date',
+            'cost' => 'required|numeric|min:0',
+            'receipt_img' => 'nullable|file|mimes:jpeg,jpg,png,gif,pdf|max:5120',
+            'handled_by' => 'nullable|exists:user,userID',
+        ]);
+
+        try {
+            // Handle receipt image upload
+            if ($request->hasFile('receipt_img')) {
+                // Delete old image if exists
+                if ($fuel->receipt_img) {
+                    Storage::disk('public')->delete($fuel->receipt_img);
+                }
+                
+                $file = $request->file('receipt_img');
+                $filename = 'fuel_receipt_' . $fuel->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $receiptImgPath = $file->storeAs('fuel_receipts', $filename, 'public');
+                $validated['receipt_img'] = $receiptImgPath;
+            }
+
+            $fuel->update($validated);
+
+            return redirect()->back()->with('success', 'Fuel record updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Failed to update fuel record: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a fuel record.
+     */
+    public function destroyFuel(\App\Models\Fuel $fuel): \Illuminate\Http\RedirectResponse
+    {
+        try {
+            // Delete receipt image if exists
+            if ($fuel->receipt_img) {
+                Storage::disk('public')->delete($fuel->receipt_img);
+            }
+            
+            $fuel->delete();
+            return redirect()->back()->with('success', 'Fuel record deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete fuel record: ' . $e->getMessage());
+        }
     }
 
     private function checkServiceReminders(Vehicle $vehicle)
@@ -486,33 +626,110 @@ class AdminVehicleController extends Controller
             'description' => 'nullable|string',
             'mileage' => 'nullable|integer|min:0',
             'cost' => 'required|numeric|min:0',
+            'commission_amount' => 'nullable|numeric|min:0',
             'next_due_date' => 'nullable|date',
             'service_center' => 'nullable|string|max:100',
+            'maintenance_img' => 'nullable|file|mimes:jpeg,jpg,png,gif,pdf|max:5120',
+            'block_start_date' => 'nullable|date',
+            'block_end_date' => 'nullable|date|after_or_equal:block_start_date',
+            'accompany_vehicleID' => 'nullable|exists:vehicle,vehicleID',
+            'staffID' => 'nullable|exists:user,userID',
         ]);
 
-        $maintenance = \App\Models\VehicleMaintenance::create([
-            'vehicleID' => $vehicle->vehicleID,
-            'service_date' => $validated['service_date'],
-            'service_type' => $validated['service_type'],
-            'description' => $validated['description'] ?? null,
-            'mileage' => $validated['mileage'] ?? null,
-            'cost' => $validated['cost'],
-            'next_due_date' => $validated['next_due_date'] ?? null,
-            'service_center' => $validated['service_center'] ?? null,
-            'staffID' => Auth::user()->userID ?? null,
-        ]);
-
-        // Create notification for staff/admin if next_due_date is within 7 days
-        if ($validated['next_due_date']) {
-            $nextDue = Carbon::parse($validated['next_due_date']);
-            $daysUntilDue = Carbon::today()->diffInDays($nextDue, false);
-            
-            if ($daysUntilDue <= 7 && $daysUntilDue >= 0) {
-                $this->createServiceReminderNotification($vehicle, $maintenance, $nextDue);
+        DB::beginTransaction();
+        try {
+            // Handle maintenance image upload
+            $maintenanceImgPath = null;
+            if ($request->hasFile('maintenance_img')) {
+                $file = $request->file('maintenance_img');
+                $filename = 'maintenance_' . $vehicle->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $maintenanceImgPath = $file->storeAs('maintenance_images', $filename, 'public');
             }
-        }
 
-        return redirect()->back()->with('success', 'Maintenance record added successfully.');
+            $maintenance = \App\Models\VehicleMaintenance::create([
+                'vehicleID' => $vehicle->vehicleID,
+                'service_date' => $validated['service_date'],
+                'service_type' => $validated['service_type'],
+                'description' => $validated['description'] ?? null,
+                'mileage' => $validated['mileage'] ?? null,
+                'cost' => $validated['cost'],
+                'commission_amount' => $validated['commission_amount'] ?? 0,
+                'next_due_date' => $validated['next_due_date'] ?? null,
+                'service_center' => $validated['service_center'] ?? null,
+                'maintenance_img' => $maintenanceImgPath,
+                'block_start_date' => $validated['block_start_date'] ?? null,
+                'block_end_date' => $validated['block_end_date'] ?? null,
+                'accompany_vehicleID' => $validated['accompany_vehicleID'] ?? null,
+                'staffID' => $validated['staffID'] ?? Auth::user()->userID ?? null,
+            ]);
+
+            // Handle block dates - make vehicle unavailable between block dates
+            if ($validated['block_start_date'] && $validated['block_end_date']) {
+                $blockStart = Carbon::parse($validated['block_start_date']);
+                $blockEnd = Carbon::parse($validated['block_end_date']);
+                
+                // Update vehicle availability status if block dates include today
+                $today = Carbon::today();
+                if ($blockStart->lte($today) && $blockEnd->gte($today)) {
+                    $vehicle->update(['availability_status' => 'maintenance']);
+                }
+            }
+
+            // Handle accompany vehicle - make it unavailable at start and end dates only (not between)
+            if ($validated['accompany_vehicleID'] && $validated['block_start_date'] && $validated['block_end_date']) {
+                $accompanyVehicle = Vehicle::find($validated['accompany_vehicleID']);
+                if ($accompanyVehicle) {
+                    $blockStart = Carbon::parse($validated['block_start_date']);
+                    $blockEnd = Carbon::parse($validated['block_end_date']);
+                    $today = Carbon::today();
+                    
+                    // Only block on start and end dates, not between
+                    // Check if start date is today or past
+                    if ($blockStart->lte($today)) {
+                        // Check if vehicle is already booked on start date
+                        $hasBookingOnStart = $accompanyVehicle->bookings()
+                            ->where('booking_status', '!=', 'Cancelled')
+                            ->whereDate('rental_start_date', '<=', $blockStart)
+                            ->whereDate('rental_end_date', '>=', $blockStart)
+                            ->exists();
+                        
+                        if (!$hasBookingOnStart && $accompanyVehicle->availability_status !== 'maintenance') {
+                            // Could update status temporarily, but we'll track via maintenance record
+                        }
+                    }
+                    
+                    // Check if end date is today or past
+                    if ($blockEnd->lte($today)) {
+                        // Check if vehicle is already booked on end date
+                        $hasBookingOnEnd = $accompanyVehicle->bookings()
+                            ->where('booking_status', '!=', 'Cancelled')
+                            ->whereDate('rental_start_date', '<=', $blockEnd)
+                            ->whereDate('rental_end_date', '>=', $blockEnd)
+                            ->exists();
+                        
+                        if (!$hasBookingOnEnd && $accompanyVehicle->availability_status !== 'maintenance') {
+                            // Could update status temporarily, but we'll track via maintenance record
+                        }
+                    }
+                }
+            }
+
+            // Create notification for staff/admin if next_due_date is within 7 days
+            if ($validated['next_due_date']) {
+                $nextDue = Carbon::parse($validated['next_due_date']);
+                $daysUntilDue = Carbon::today()->diffInDays($nextDue, false);
+                
+                if ($daysUntilDue <= 7 && $daysUntilDue >= 0) {
+                    $this->createServiceReminderNotification($vehicle, $maintenance, $nextDue);
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Maintenance record added successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Failed to add maintenance record: ' . $e->getMessage());
+        }
     }
 
     private function createServiceReminderNotification(Vehicle $vehicle, $maintenance, $dueDate)
@@ -1167,6 +1384,66 @@ class AdminVehicleController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withInput()->with('error', 'Failed to update owner: ' . $e->getMessage());
+        }
+    }
+
+    public function uploadOwnerLicense(Request $request, Vehicle $vehicle)
+    {
+        $request->validate([
+            'license_img' => 'required|file|mimes:jpeg,jpg,png,gif,pdf|max:5120',
+        ]);
+
+        if (!$vehicle->owner) {
+            return redirect()->back()->with('error', 'No owner associated with this vehicle.');
+        }
+
+        try {
+            $file = $request->file('license_img');
+            $filename = 'owner_license_' . $vehicle->owner->ownerID . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('owner_documents', $filename, 'public');
+
+            $vehicle->owner->update([
+                'license_img' => $path,
+            ]);
+
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner license uploaded successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to upload license: ' . $e->getMessage());
+        }
+    }
+
+    public function uploadOwnerIc(Request $request, Vehicle $vehicle)
+    {
+        $request->validate([
+            'ic_img' => 'required|file|mimes:jpeg,jpg,png,gif,pdf|max:5120',
+        ]);
+
+        if (!$vehicle->owner) {
+            return redirect()->back()->with('error', 'No owner associated with this vehicle.');
+        }
+
+        try {
+            $file = $request->file('ic_img');
+            $filename = 'owner_ic_' . $vehicle->owner->ownerID . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('owner_documents', $filename, 'public');
+
+            // Update PersonDetails with IC image
+            if ($vehicle->owner->personDetails) {
+                $vehicle->owner->personDetails->update([
+                    'ic_img' => $path,
+                ]);
+            } else {
+                // Create PersonDetails if it doesn't exist
+                \App\Models\PersonDetails::create([
+                    'ic_no' => $vehicle->owner->ic_no,
+                    'fullname' => 'Unknown',
+                    'ic_img' => $path,
+                ]);
+            }
+
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner IC uploaded successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to upload IC: ' . $e->getMessage());
         }
     }
 

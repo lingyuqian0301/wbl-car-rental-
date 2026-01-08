@@ -234,11 +234,42 @@ class AdminCustomerController extends Controller
 
     public function show(Customer $customer): View
     {
-        $customer->load(['bookings', 'documents']);
+        $customer->load([
+            'user',
+            'local',
+            'international',
+            'localStudent.studentDetails',
+            'internationalStudent.studentDetails',
+            'localUtmStaff.staffDetails',
+            'internationalUtmStaff.staffDetails',
+            'bookings' => function($q) {
+                $q->with(['vehicle', 'payments'])
+                  ->orderBy('rental_start_date', 'desc');
+            }
+        ]);
+
+        // Calculate booking statistics
+        $totalBookings = $customer->bookings->count();
+        $totalOutstanding = 0;
+        $totalWalletAmount = 0;
+
+        foreach ($customer->bookings as $booking) {
+            $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+            $totalPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+            $outstanding = max(0, $totalRequired - $totalPaid);
+            $totalOutstanding += $outstanding;
+            
+            // Abstract wallet amount (assuming it's refunded amounts or credits)
+            $refundedAmount = $booking->payments->where('payment_status', 'Refunded')->sum('total_amount');
+            $totalWalletAmount += abs($refundedAmount);
+        }
         
         $viewName = str_starts_with(Route::currentRouteName(), 'staff.') ? 'staff.customers.show' : 'admin.customers.show';
         return view($viewName, [
             'customer' => $customer,
+            'totalBookings' => $totalBookings,
+            'totalOutstanding' => $totalOutstanding,
+            'totalWalletAmount' => $totalWalletAmount,
         ]);
     }
 

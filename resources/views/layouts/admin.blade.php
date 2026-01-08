@@ -97,11 +97,24 @@
         }
 
         .menu-item.has-submenu > a {
-            cursor: default;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .menu-item.has-submenu > a::after {
+            content: '\f282';
+            font-family: 'bootstrap-icons';
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-item.has-submenu.open > a::after {
+            transform: rotate(180deg);
         }
 
         .menu-item.has-submenu > a:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .menu-item i {
@@ -113,7 +126,16 @@
         .submenu {
             background: rgba(0, 0, 0, 0.2);
             padding: 3px 0;
+            display: none;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .menu-item.has-submenu.open .submenu {
             display: block;
+            max-height: 500px;
+            padding: 3px 0;
         }
 
         .submenu-item {
@@ -334,22 +356,17 @@
     <!-- Sidebar -->
     <aside class="admin-sidebar">
         <nav class="sidebar-menu">
-            <!-- Main -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                <a>
+            <!-- Dashboard -->
+            <div class="menu-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                <a href="{{ route('admin.dashboard') }}">
                     <i class="bi bi-speedometer2"></i>
-                    <span>Main</span>
+                    <span>Dashboard</span>
                 </a>
-                <div class="submenu">
-                    <div class="submenu-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                        <a href="{{ route('admin.dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-                    </div>
-                </div>
             </div>
 
             <!-- Bookings -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
-                <a>
+            <div class="menu-item has-submenu {{ request()->routeIs('admin.bookings.*') ? 'active open' : '' }}" data-menu="bookings">
+                <a onclick="toggleMenu('bookings')">
                     <i class="bi bi-calendar-check"></i>
                     <span>Bookings</span>
                 </a>
@@ -363,12 +380,15 @@
                     <div class="submenu-item {{ request()->routeIs('admin.bookings.cancellation') ? 'active' : '' }}">
                         <a href="{{ route('admin.bookings.cancellation') }}"><i class="bi bi-x-circle"></i> Cancellation</a>
                     </div>
+                    <div class="submenu-item {{ request()->routeIs('admin.bookings.reviews') ? 'active' : '' }}">
+                        <a href="{{ route('admin.bookings.reviews') }}"><i class="bi bi-star"></i> Review</a>
+                    </div>
                 </div>
             </div>
 
             <!-- Manage -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.manage.*') ? 'active' : '' }}">
-                <a>
+            <div class="menu-item has-submenu {{ request()->routeIs('admin.manage.*') ? 'active open' : '' }}" data-menu="manage">
+                <a onclick="toggleMenu('manage')">
                     <i class="bi bi-people"></i>
                     <span>Manage</span>
                 </a>
@@ -376,17 +396,17 @@
                     <div class="submenu-item {{ request()->routeIs('admin.manage.client') ? 'active' : '' }}">
                         <a href="{{ route('admin.manage.client') }}"><i class="bi bi-person"></i> Client</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.leasing.*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.leasing.index') }}"><i class="bi bi-building"></i> Leasing</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.leasing.owner') ? 'active' : '' }}">
+                        <a href="{{ route('admin.leasing.owner') }}"><i class="bi bi-building"></i> Owner</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Category -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.category.*') || request()->routeIs('admin.vehicles.*') ? 'active' : '' }}">
-                <a>
-                    <i class="bi bi-grid"></i>
-                    <span>Category</span>
+            <!-- Fleet -->
+            <div class="menu-item has-submenu {{ request()->routeIs('admin.vehicles.*') ? 'active open' : '' }}" data-menu="fleet">
+                <a onclick="toggleMenu('fleet')">
+                    <i class="bi bi-truck"></i>
+                    <span>Fleet</span>
                 </a>
                 <div class="submenu">
                     <div class="submenu-item {{ request()->routeIs('admin.vehicles.cars') ? 'active' : '' }}">
@@ -396,14 +416,14 @@
                         <a href="{{ route('admin.vehicles.motorcycles') }}"><i class="bi bi-bicycle"></i> Motorcycle</a>
                     </div>
                     <div class="submenu-item {{ request()->routeIs('admin.vehicles.others') ? 'active' : '' }}">
-                        <a href="{{ route('admin.vehicles.others') }}"><i class="bi bi-box"></i> Other</a>
+                        <a href="{{ route('admin.vehicles.others') }}"><i class="bi bi-box"></i> Others</a>
                     </div>
                 </div>
             </div>
 
             <!-- Billing and Account -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.billing.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
-                <a>
+            <div class="menu-item has-submenu {{ request()->routeIs('admin.payments.*') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.deposits.*') ? 'active open' : '' }}" data-menu="billing">
+                <a onclick="toggleMenu('billing')">
                     <i class="bi bi-receipt-cutoff"></i>
                     <span>Billing and Account</span>
                 </a>
@@ -414,13 +434,16 @@
                     <div class="submenu-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
                         <a href="{{ route('admin.payments.index') }}"><i class="bi bi-credit-card"></i> Payment</a>
                     </div>
+                    <div class="submenu-item {{ request()->routeIs('admin.deposits.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.deposits.index') }}"><i class="bi bi-wallet"></i> Deposit</a>
+                    </div>
                 </div>
             </div>
 
             <!-- Reports (Admin Only) -->
             @if(auth()->check() && auth()->user()->isAdmin())
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
-                <a>
+            <div class="menu-item has-submenu {{ request()->routeIs('admin.reports.*') ? 'active open' : '' }}" data-menu="reports">
+                <a onclick="toggleMenu('reports')">
                     <i class="bi bi-graph-up"></i>
                     <span>Reports</span>
                 </a>
@@ -505,6 +528,47 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // Sidebar dropdown functionality
+        function toggleMenu(menuName) {
+            event.preventDefault();
+            const menuItem = document.querySelector(`[data-menu="${menuName}"]`);
+            const allMenuItems = document.querySelectorAll('.menu-item.has-submenu');
+            
+            // Close all other menus
+            allMenuItems.forEach(item => {
+                if (item !== menuItem) {
+                    item.classList.remove('open');
+                }
+            });
+            
+            // Toggle current menu
+            if (menuItem) {
+                menuItem.classList.toggle('open');
+            }
+        }
+
+        // Auto-open menu if current route matches
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeMenuItems = document.querySelectorAll('.menu-item.has-submenu.active');
+            activeMenuItems.forEach(item => {
+                if (item.classList.contains('active')) {
+                    item.classList.add('open');
+                }
+            });
+            
+            // If no menu is open but we're on a submenu page, open the parent menu
+            const openMenus = document.querySelectorAll('.menu-item.has-submenu.open');
+            if (openMenus.length === 0) {
+                const activeSubmenu = document.querySelector('.submenu-item.active');
+                if (activeSubmenu) {
+                    const parentMenu = activeSubmenu.closest('.menu-item.has-submenu');
+                    if (parentMenu) {
+                        parentMenu.classList.add('open');
+                    }
+                }
+            }
+        });
+
         // Load notification count and list
         function loadNotifications() {
             fetch('{{ route("admin.notifications.unread-count") }}')

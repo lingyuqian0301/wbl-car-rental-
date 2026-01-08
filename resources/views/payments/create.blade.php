@@ -1,200 +1,394 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Make Payment - {{ config('app.name', 'Hasta Travel') }}</title>
+@extends('layouts.app')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+@section('content')
 
-    <style>
-        :root {
-            --hasta-maroon: #800020;
-            --hasta-white: #ffffff;
-        }
-        .bg-maroon { background-color: var(--hasta-maroon); }
-        .text-maroon { color: var(--hasta-maroon); }
-        .btn-maroon {
-            background-color: var(--hasta-maroon);
-            border-color: var(--hasta-maroon);
-            color: var(--hasta-white);
-        }
-        .btn-maroon:hover {
-            background-color: #600018;
-            border-color: #600018;
-            color: var(--hasta-white);
-        }
-        .card-header-maroon {
-            background-color: var(--hasta-maroon);
-            color: var(--hasta-white);
-        }
-        .qr-container {
-            border: 2px solid #333;
-            border-radius: 10px;
-            padding: 10px;
-            background: white;
-            display: inline-block;
-        }
-    </style>
-</head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="text-center mb-4">
-                    <h1 class="text-maroon fw-bold">HASTA TRAVEL & TOURS SDN. BHD.</h1>
-                    <p class="text-muted">Secure Payment Submission</p>
-                </div>
+<style>
+:root {
+    --hasta-maroon: #7a0019;
+    --hasta-yellow: #f6c343;
+    --border: #e5e7eb;
+    --bg: #f5f5f5;
+}
 
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
+body {
+    background: var(--bg);
+}
 
-                @if($errors->any())
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
+/* ===== STEPPER (already working) ===== */
+.booking-stepper {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 3rem auto 2rem;
+    padding: 0 1.5rem;
+}
 
-                <div class="card mb-4 shadow-sm border-0">
-                    <div class="card-header card-header-maroon">
-                        <h5 class="mb-0"><i class="fas fa-car me-2"></i>Booking Summary (ID: #{{ $booking->bookingID }})</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Car:</strong> {{ $booking->vehicle->full_model ?? $booking->vehicle->vehicle_model }}</p>
-                                <p class="mb-1"><strong>Plate:</strong> {{ $booking->vehicle->registration_number ?? $booking->vehicle->plate_number }}</p>
-                                <p class="mb-1"><strong>Dates:</strong> {{ $booking->start_date->format('d M Y') }} - {{ $booking->end_date->format('d M Y') }}</p>
-                            </div>
-                            <div class="col-md-6 text-md-end">
-                                <p class="mb-1">Total Price: <strong>RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }}</strong></p>
-                                <h4 class="text-maroon fw-bold mt-2">Required Deposit: RM {{ number_format($depositAmount, 2) }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+/* ===== MAIN CARD ===== */
+.payment-wrapper {
+    max-width: 900px;
+    margin: 0 auto 3rem;
+    padding: 0 1.5rem;
+}
 
-                <form action="{{ route('payments.submit') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <input type="hidden" name="bookingID" value="{{ $booking->bookingID }}">
+.payment-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+    overflow: hidden;
+}
 
-                    <div class="card mb-4 shadow-sm border-2 border-warning">
-                        <div class="card-header bg-warning text-dark fw-bold">
-                            <i class="fas fa-qrcode me-2"></i>Step 1: Scan DuitNow QR to Pay
-                        </div>
-                        <div class="card-body text-center bg-white">
-                            <div class="qr-container mb-3">
-                                <img src="{{ asset('images/qr.png') }}" alt="DuitNow QR Code" style="width: 200px; height: 200px;">
-                            </div>
-                            <h5 class="fw-bold">HASTA TRAVEL TOURS SDN. BHD.</h5>
-                            <p class="text-muted mb-0">Maybank: 5513 0654 1568</p>
-                        </div>
-                    </div>
+/* ===== HEADERS ===== */
+.section-header-maroon {
+    background: var(--hasta-maroon);
+    color: #fff;
+    padding: .7rem 1rem;
+    font-weight: 700;
+    font-size: .9rem;
+}
 
-                    <div class="card shadow-sm border-0">
-                        <div class="card-header card-header-maroon">
-                            <h5 class="mb-0"><i class="fas fa-file-upload me-2"></i>Step 2: Upload Proof & Details</h5>
-                        </div>
-                        <div class="card-body">
+.section-header-yellow {
+    background: var(--hasta-yellow);
+    color: #000;
+    padding: .7rem 1rem;
+    font-weight: 700;
+    font-size: .9rem;
+}
 
-                            <div class="mb-4 p-3 bg-light rounded border">
-                                <label class="form-label fw-bold">Choose Payment Option <span class="text-danger">*</span></label>
-                                
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="payment_type" id="payDeposit" value="Deposit" checked onchange="updateAmount(this.value)">
-                                    <label class="form-check-label" for="payDeposit">
-                                        Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})
-                                    </label>
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="radio" name="payment_type" id="payFull" value="Full Payment" onchange="updateAmount(this.value)">
-                                    <label class="form-check-label" for="payFull">
-                                        Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }})
-                                    </label>
-                                </div>
+/* ===== BODY ===== */
+.section-body {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
 
-                                <div class="form-group">
-                                    <label class="form-label fw-bold">Amount to Pay (RM)</label>
-                                    <input type="number" step="0.01" name="amount" id="amountInput" class="form-control fw-bold text-success fs-5" value="{{ $depositAmount }}" readonly>
-                                    <div class="form-text">This updates automatically based on your selection above.</div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Payment Date <span class="text-danger">*</span></label>
-                                    <input type="date" name="payment_date" class="form-control" value="{{ date('Y-m-d') }}" required>
-                                </div>
-                                <div class="col-md-4 mb-3">
-        <label class="form-label fw-bold">Transaction Reference No. <span class="text-danger">*</span></label>
-        <input type="text" name="transaction_reference" class="form-control" placeholder="e.g. 12345678" required>
-        <div class="form-text" style="font-size: 0.8rem;">Found on your banking receipt</div>
-    </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Payment Method</label>
-                                    <input type="text" class="form-control" value="DuitNow / Bank Transfer" readonly>
-                                    <input type="hidden" name="payment_method" value="Bank Transfer">
-                                </div>
-                            </div>
+.section-body:last-child {
+    border-bottom: none;
+}
 
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Upload Receipt <span class="text-danger">*</span></label>
-                                <input type="file" name="receipt_image" class="form-control" accept=".jpg,.jpeg,.png,.pdf" required>
-                                <div class="form-text">Please ensure the reference number is visible. Max 2MB.</div>
-                            </div>
+/* ===== TEXT ===== */
+.text-maroon {
+    color: var(--hasta-maroon);
+}
 
-                            <hr>
+/* ===== INPUTS ===== */
+input,
+select {
+    width: 100%;
+    padding: .5rem .65rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    font-size: .9rem;
+}
 
-                            <h6 class="text-maroon fw-bold mb-3">Your Bank Details (For Deposit Refund)</h6>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Your Bank Name <span class="text-danger">*</span></label>
-                                    <input type="text" name="bank_name" class="form-control" placeholder="e.g. CIMB" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Your Account Number <span class="text-danger">*</span></label>
-                                    <input type="text" name="bank_account_number" class="form-control" placeholder="e.g. 7654321098" required>
-                                </div>
-                            </div>
+input:focus {
+    border-color: var(--hasta-maroon);
+    box-shadow: 0 0 0 2px rgba(122, 0, 25, .15);
+    outline: none;
+}
 
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                                <a href="{{ route('bookings.show', $booking->bookingID) }}" class="btn btn-secondary px-4 me-2">Cancel</a>
-                                <button type="submit" class="btn btn-maroon px-5">Submit Payment</button>
-                            </div>
+input[readonly] {
+    background: #eef2f7;
+    font-weight: 600;
+}
 
-                        </div>
-                    </div>
-                </form>
+/* ===== QR ===== */
+.qr-container {
+    border: 2px solid var(--hasta-yellow);
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
+    display: inline-block;
+}
+
+/* ===== BUTTONS ===== */
+.btn-maroon {
+    background: var(--hasta-maroon);
+    color: #fff;
+    border: none;
+    padding: .45rem 1.3rem;
+    border-radius: 5px;
+}
+.payment-option {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+
+.btn-maroon:hover {
+    background: #5e0014;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 600px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.booking-stepper {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.booking-stepper .step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    white-space: nowrap;
+}
+
+.booking-stepper .circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.booking-stepper .step.active .circle {
+    background: #800020;
+    color: #fff;
+}
+
+.booking-stepper .label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.booking-stepper .step.active .label {
+    color: #800020;
+}
+
+.booking-stepper .line {
+    flex: 1;
+    height: 4px;
+    background: #e5e7eb;
+    margin: 0 1rem;
+    border-radius: 10px;
+}
+
+.booking-stepper .line.active {
+    background: #800020;
+}
+
+.step-header {
+    background: #800020;
+    color: #fff;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+}
+
+.payment-option {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.radio-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+}
+
+.radio-row input[type="radio"] {
+    accent-color: #800020;
+    transform: scale(1.1);
+}
+
+.amount-input {
+    background: #f0fdf4 !important;
+    border-color: #22c55e !important;
+    color: #166534;
+    font-weight: 600;
+}
+
+.text-maroon {
+    color: #800020;
+}
+
+.btn-maroon {
+    background-color: #800020;
+    border-color: #800020;
+    color: #fff;
+}
+
+.btn-maroon:hover {
+    background-color: #600018;
+    border-color: #600018;
+}
+#amountInput {
+    background: #ecfdf5;
+    border-color: #22c55e;
+    color: #065f46;
+    font-weight: 700;
+}
+input[type="radio"] {
+    width: auto !important;
+}
+
+</style>
+
+<x-booking-stepper /> {{-- Auto-detects Payment step --}}
+
+<div class="payment-wrapper">
+    <div class="payment-card">
+
+        <!-- HEADER -->
+        <div class="section-body text-center">
+            <strong>HASTA TRAVEL & TOURS SDN. BHD.</strong><br>
+            <small class="text-muted">Secure Payment Submission</small>
+        </div>
+
+        <!-- BOOKING SUMMARY -->
+        <div class="section-header-maroon">
+            Booking Summary (ID: #{{ $booking->bookingID }})
+        </div>
+        <div class="section-body">
+            <p><strong>Car:</strong> {{ $booking->vehicle->vehicle_model }}</p>
+            <p><strong>Dates:</strong>
+                {{ $booking->start_date->format('d M Y') }} –
+                {{ $booking->end_date->format('d M Y') }}
+            </p>
+            <p><strong>Total Price:</strong>
+                RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }}
+            </p>
+            <p class="text-maroon fw-bold">
+                Required Deposit: RM {{ number_format($depositAmount, 2) }}
+            </p>
+        </div>
+
+        <!-- STEP 1 -->
+        <div class="section-header-yellow">
+            Step 1: Scan DuitNow QR to Pay
+        </div>
+        <div class="section-body text-center">
+            <div class="qr-container mb-2">
+                <img src="{{ asset('images/qr.png') }}" width="180">
             </div>
+            <div><strong>HASTA TRAVEL TOURS SDN. BHD.</strong></div>
+            <small class="text-muted">Maybank: 5513 0654 1568</small>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="section-header-maroon">
+            Step 2: Upload Proof & Details
+        </div>
+        <div class="section-body">
+
+            <form action="{{ route('payments.submit') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="bookingID" value="{{ $booking->bookingID }}">
+
+                <!-- PAYMENT OPTION -->
+                <div class="payment-option">
+    <div class="radio-row">
+        <input type="radio"
+               name="payment_type"
+               value="Deposit"
+               checked
+               onchange="updateAmount(this.value)">
+        <span>Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})</span>
+    </div>
+
+    <div class="radio-row">
+        <input type="radio"
+               name="payment_type"
+               value="Full Payment"
+               onchange="updateAmount(this.value)">
+        <span>Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }})</span>
+    </div>
+</div>
+
+
+
+                <!-- AMOUNT -->
+                <div class="mt-3">
+                    <label class="fw-bold">Amount to Pay (RM)</label>
+                    <input type="number" id="amountInput" name="amount" value="{{ $depositAmount }}" readonly>
+                </div>
+
+                <!-- DATE + REF -->
+                <div class="form-row mt-3">
+                    <div>
+                        <label class="fw-bold">Payment Date</label>
+                        <input type="date" name="payment_date" value="{{ date('Y-m-d') }}" required>
+                    </div>
+                    <div>
+                        <label class="fw-bold">Transaction Reference No.</label>
+                        <input type="text" name="transaction_reference" placeholder="e.g. 12345678" required>
+                    </div>
+                </div>
+
+                <!-- RECEIPT -->
+                <div class="mt-3">
+                    <label class="fw-bold">Upload Receipt</label>
+                    <input type="file" name="receipt_image" required>
+                </div>
+
+                <!-- BANK -->
+                <div class="mt-4">
+                    <strong class="text-maroon">Bank Details (Refund)</strong>
+                </div>
+
+                <div class="form-row mt-2">
+                    <div>
+                        <label>Bank Name</label>
+
+                        <input type="text" name="bank_name" placeholder="e.g. CIMB" required>
+                    </div>
+                    <div>
+                        <label>Account Number</label>
+
+                        <input type="text" name="bank_account_number" placeholder="e.g. 7654321098" required>
+                    </div>
+                </div>
+
+                <!-- BUTTONS -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{{ route('bookings.show', $booking->bookingID) }}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                    <button class="btn-maroon">
+                        Submit Payment
+                    </button>
+                </div>
+            </form>
+
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function updateAmount(type) {
+    let deposit = {{ $depositAmount }};
+    let full = {{ $booking->total_amount ?? $booking->rental_amount }};
 
-    <script>
-        function updateAmount(type) {
-            // Get PHP values into JS variables
-            var deposit = {{ $depositAmount ?? 50 }};
-            var full = {{ $booking->total_amount ?? $booking->rental_amount ?? 0 }};
+    document.getElementById('amountInput').value =
+        type === 'Full Payment'
+            ? Number(full).toFixed(2)
+            : Number(deposit).toFixed(2);
+}
+</script>
 
-            var input = document.getElementById('amountInput');
 
-            if (type === 'Full Payment') {
-                input.value = full.toFixed(2);
-            } else {
-                input.value = deposit.toFixed(2);
-            }
-        }
-    </script>
-</body>
-</html>
+
+@endsection

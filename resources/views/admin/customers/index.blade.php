@@ -88,7 +88,7 @@
                         <option value="name_asc" {{ $sortBy === 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
                         <option value="name_desc" {{ $sortBy === 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
                         <option value="latest_booking" {{ $sortBy === 'latest_booking' ? 'selected' : '' }}>Latest Booking</option>
-                        <option value="highest_rental" {{ $sortBy === 'highest_rental' ? 'selected' : '' }}>Highest Rental Time</option>
+                        <option value="highest_rental" {{ $sortBy === 'highest_rental' ? 'selected' : '' }}>Most Rental Time</option>
                     </select>
                 </div>
                 
@@ -277,10 +277,16 @@
                                     <strong>{{ $customer->bookings_count ?? 0 }}</strong>
                                 </td>
                                 <td>
-                                    <a href="{{ route('admin.customers.edit', $customer) }}" 
-                                       class="btn btn-sm btn-outline-primary" title="Edit Customer">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </a>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('admin.customers.show', $customer) }}" 
+                                           class="btn btn-outline-primary" title="View Customer">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        <a href="{{ route('admin.customers.edit', $customer) }}" 
+                                           class="btn btn-outline-secondary" title="Edit Customer">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
