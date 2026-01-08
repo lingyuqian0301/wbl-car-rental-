@@ -165,6 +165,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
         Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
+        Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
+        Route::get('/{booking}/extend', [BookingController::class, 'showExtendForm'])->name('extend.form');
     });
 
     // Customer Invoice Download Route
