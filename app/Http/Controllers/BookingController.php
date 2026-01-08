@@ -131,8 +131,9 @@ class BookingController extends Controller
         ]);
 
         // Check for date overlap with existing bookings
-        $startDateTime = $request->start_date;
-        $endDateTime = $request->end_date;
+     $startDateTime = $request->start_date . ' ' . $request->start_time;
+$endDateTime   = $request->end_date   . ' ' . $request->end_time;
+
 
         $overlap = Booking::where('vehicleID', $vehicleID)
             ->where('booking_status', '!=', 'Cancelled')
@@ -308,9 +309,24 @@ class BookingController extends Controller
             $request->validate([
                 'vehicle_id' => 'required|integer',
                 'start_date' => 'required|date',
-                'start_time' => 'required|date_format:H:i',
-                'end_date'   => 'required|date|after_or_equal:start_date',
-                'end_time'   => 'required|date_format:H:i',
+'start_time' => [
+    'required',
+    'date_format:H:i',
+    function ($attr, $value, $fail) {
+        if (!in_array(substr($value, 3, 2), ['00', '30'])) {
+            $fail('Time must be on the hour or half-hour (00 or 30).');
+        }
+    }
+],                'end_date'   => 'required|date|after_or_equal:start_date',
+                'end_time'   => [
+                    'required',
+                    'date_format:H:i',
+                    function ($attr, $value, $fail) {
+                        if (!in_array(substr($value, 3, 2), ['00', '30'])) {
+                            $fail('Time must be on the hour or half-hour (00 or 30).');
+                        }
+                    }
+                ],
                 'pickup_point' => 'required|string',
                 'return_point' => 'required|string',
                 'total_amount' => 'required|numeric',

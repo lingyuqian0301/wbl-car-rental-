@@ -8,6 +8,8 @@
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 
     <style>
     * {
@@ -656,6 +658,26 @@
 </div>
 
     </section>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    flatpickr('input[name="start_date"]', {
+        minDate: 'today',
+        dateFormat: 'Y-m-d',
+        allowInput: true
+    });
+
+    flatpickr('input[name="end_date"]', {
+        minDate: 'today',
+        dateFormat: 'Y-m-d',
+        allowInput: true
+    });
+
+});
+</script>
+
 
     @include('components.footer')
 

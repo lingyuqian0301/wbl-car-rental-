@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
+use Carbon\Carbon;
 // use App\Models\OwnerCar;
 // use App\Models\VehicleDocument;
 use Illuminate\Http\Request;
@@ -78,15 +79,13 @@ public function index(Request $request)
             ->select('rental_start_date', 'rental_end_date')
             ->get();
 
-        $blockedDates = [];
-        foreach ($bookings as $booking) {
-            $start = \Carbon\Carbon::parse($booking->rental_start_date);
-            $end = \Carbon\Carbon::parse($booking->rental_end_date);
-            while ($start->lte($end)) {
-                $blockedDates[] = $start->format('Y-m-d');
-                $start->addDay();
-            }
-        }
+        $blockedDates = $bookings->map(function ($booking) {
+    return [
+        'from' => Carbon::parse($booking->rental_start_date)->format('Y-m-d'),
+        'to'   => Carbon::parse($booking->rental_end_date)->format('Y-m-d'),
+    ];
+});
+
 
         return view('vehicles.show', compact('vehicle', 'blockedDates'));
     }

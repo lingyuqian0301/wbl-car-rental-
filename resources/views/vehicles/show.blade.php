@@ -587,6 +587,7 @@
         font-weight: 700;
         pointer-events: none !important;
     }
+    
     </style>
     <!-- @include('components.header') -->
     <!-- Flatpickr CSS -->
@@ -787,7 +788,9 @@
                     </div>
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
-                        <input type="time" id="startTime" name="start_time" required>
+<select id="startTime" name="start_time" required>
+    <option value="">Select time</option>
+</select>
                     </div>
                 </div>
 
@@ -800,12 +803,71 @@
                     </div>
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
-                        <input type="time" id="endTime" name="end_time" required>
+<select id="endTime" name="end_time" required>
+    <option value="">Select time</option>
+</select>
                     </div>
                 </div>
+
+                <!-- Return Point Type (Radio Buttons) -->
                 <div class="form-group">
-                    <input type="text" id="return_point" name="return_point" placeholder="Location" required>
+                    <label style="display: block; margin-bottom: 0.8rem; font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Return Point Type</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="returnOfficeRadio" name="return_type_radio" value="office" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Office</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="returnFacultyRadio" name="return_type_radio" value="faculty" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Faculty</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="returnCollegeRadio" name="return_type_radio" value="college" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>College</span>
+                        </label>
+                    </div>
                 </div>
+
+                <!-- Return Location (conditional) -->
+                <div class="form-group">
+                    <div id="returnOfficeLocation" style="display: none;">
+                        <input type="text" value="HASTA HQ Office" disabled style="background-color: #f0f0f0; cursor: not-allowed; width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                    </div>
+                    <div id="returnFacultyLocation" style="display: none;">
+                        <select id="returnFacultySelect" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select faculty</option>
+                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                            <option value="Computing">Computing</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Science">Science</option>
+                            <option value="Built Environment & Surveying">Built Environment & Surveying</option>
+                            <option value="Social Sciences & Humanities">Social Sciences & Humanities</option>
+                            <option value="Management">Management</option>
+                            <option value="Malaysia-Japan International Institute of Technology">Malaysia-Japan International Institute of Technology</option>
+                            <option value="Azman Hashim International Business School">Azman Hashim International Business School</option>
+                        </select>
+                    </div>
+                    <div id="returnCollegeLocation" style="display: none;">
+                        <select id="returnCollegeSelect" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                            <option value="">Select college</option>
+                            <option value="Kolej Rahman Putra">Kolej Rahman Putra</option>
+                            <option value="Kolej Tun Fatimah">Kolej Tun Fatimah</option>
+                            <option value="Kolej Tun Razak">Kolej Tun Razak</option>
+                            <option value="Kolej Tun Hussein Onn">Kolej Tun Hussein Onn</option>
+                            <option value="Kolej Tun Dr. Ismail">Kolej Tun Dr. Ismail</option>
+                            <option value="Kolej Tuanku Canselor">Kolej Tuanku Canselor</option>
+                            <option value="Kolej Perdana">Kolej Perdana</option>
+                            <option value="Kolej 9">Kolej 9</option>
+                            <option value="Kolej 10">Kolej 10</option>
+                            <option value="Kolej Dato' Seri Endon">Kolej Dato' Seri Endon</option>
+                            <option value="Kolej Dato' Onn Jaafar">Kolej Dato' Onn Jaafar</option>
+                            <option value="Kolej Sri Jelai">Kolej Sri Jelai</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hidden field for return point -->
+                <input type="hidden" id="return_point" name="return_point" value="">
                 <!-- Add-ons Options -->
                 <div class="addons-section">
                     <h3>Add-on Options</h3>
@@ -961,6 +1023,64 @@
         }
     });
 
+    // ====== RETURN LOCATION LOGIC ======
+    const returnOfficeRadio = document.getElementById('returnOfficeRadio');
+    const returnFacultyRadio = document.getElementById('returnFacultyRadio');
+    const returnCollegeRadio = document.getElementById('returnCollegeRadio');
+    
+    const returnOfficeLocation = document.getElementById('returnOfficeLocation');
+    const returnFacultyLocation = document.getElementById('returnFacultyLocation');
+    const returnCollegeLocation = document.getElementById('returnCollegeLocation');
+    const returnFacultySelect = document.getElementById('returnFacultySelect');
+    const returnCollegeSelect = document.getElementById('returnCollegeSelect');
+    const returnPointInput = document.getElementById('return_point');
+
+    // Return office radio - show office location, hide others
+    returnOfficeRadio.addEventListener('change', function() {
+        returnOfficeLocation.style.display = 'block';
+        returnFacultyLocation.style.display = 'none';
+        returnCollegeLocation.style.display = 'none';
+        returnPointInput.value = 'HASTA HQ Office';
+        returnFacultySelect.value = '';
+        returnCollegeSelect.value = '';
+    });
+
+    // Return faculty radio - show faculty dropdown, hide others
+    returnFacultyRadio.addEventListener('change', function() {
+        returnOfficeLocation.style.display = 'none';
+        returnFacultyLocation.style.display = 'block';
+        returnCollegeLocation.style.display = 'none';
+        returnPointInput.value = '';
+        returnCollegeSelect.value = '';
+    });
+
+    // Return college radio - show college dropdown, hide others
+    returnCollegeRadio.addEventListener('change', function() {
+        returnOfficeLocation.style.display = 'none';
+        returnFacultyLocation.style.display = 'none';
+        returnCollegeLocation.style.display = 'block';
+        returnPointInput.value = '';
+        returnFacultySelect.value = '';
+    });
+
+    // Return faculty dropdown updates hidden return_point
+    returnFacultySelect.addEventListener('change', function() {
+        if (this.value) {
+            returnPointInput.value = this.value;
+        } else {
+            returnPointInput.value = '';
+        }
+    });
+
+    // Return college dropdown updates hidden return_point
+    returnCollegeSelect.addEventListener('change', function() {
+        if (this.value) {
+            returnPointInput.value = this.value;
+        } else {
+            returnPointInput.value = '';
+        }
+    });
+
     // Real-time date availability checking
     const dateErrorBox = document.getElementById('errorBox');
     const errorHeading = dateErrorBox ? dateErrorBox.querySelector('p') : null;
@@ -982,6 +1102,27 @@
             onChange: validateDates,
             dateFormat: 'Y-m-d'
         });
+    flatpickr('#startTime', {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: 'H:i',
+    time_24hr: true,
+    minuteIncrement: 30,
+    allowInput: false,
+    disableMobile: true
+});
+
+flatpickr('#endTime', {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: 'H:i',
+    time_24hr: true,
+    minuteIncrement: 30,
+    allowInput: false,
+    disableMobile: true
+});
+
+
     }
 
     function validateDates() {
@@ -1029,6 +1170,29 @@
 
     // Initialize date pickers when DOM is ready
     document.addEventListener('DOMContentLoaded', initializeDatePickers);
+
+    function generateTimeOptions(selectElement) {
+    selectElement.innerHTML = '<option value="">Select time</option>';
+
+    for (let hour = 0; hour < 24; hour++) {
+        for (let minute of ['00', '30']) {
+            const h = hour.toString().padStart(2, '0');
+            const time = `${h}:${minute}`;
+
+            const option = document.createElement('option');
+            option.value = time;
+            option.textContent = time;
+
+            selectElement.appendChild(option);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    generateTimeOptions(document.getElementById('startTime'));
+    generateTimeOptions(document.getElementById('endTime'));
+});
+
 
     // Addon configuration for display (must match controller prices)
     const addonConfig = {
@@ -1162,6 +1326,34 @@
         if (!pickupPointInput.value) {
             e.preventDefault();
             alert('Please complete the pick-up location');
+            return;
+        }
+
+        // Validate return type is selected
+        if (!returnOfficeRadio.checked && !returnFacultyRadio.checked && !returnCollegeRadio.checked) {
+            e.preventDefault();
+            alert('Please select a return point type');
+            return;
+        }
+
+        // Validate return faculty selection if faculty selected
+        if (returnFacultyRadio.checked && !returnFacultySelect.value) {
+            e.preventDefault();
+            alert('Please select a return faculty');
+            return;
+        }
+
+        // Validate return college selection if college selected
+        if (returnCollegeRadio.checked && !returnCollegeSelect.value) {
+            e.preventDefault();
+            alert('Please select a return college');
+            return;
+        }
+
+        // Validate return location is filled
+        if (!returnPointInput.value) {
+            e.preventDefault();
+            alert('Please complete the return location');
             return;
         }
 
