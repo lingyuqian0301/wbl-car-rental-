@@ -34,6 +34,7 @@ Route::get('/api/colleges', function () {
 Route::get('/api/states', function () {
     return response()->json(config('utm.states'));
 });
+
 use App\Http\Controllers\AdminVehicleController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\AdminTopbarCalendarController;
@@ -49,11 +50,16 @@ use App\Http\Controllers\AdminLeasingController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\AdminSettingsController;
 use App\Http\Controllers\AdminVoucherController;
+use App\Http\Controllers\AgreementController;
+
 use App\Http\Controllers\StaffDashboardController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PickupController;
+use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ProfileController;
+
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
@@ -192,6 +198,25 @@ Route::middleware('auth')->group(function () {
     // Invoice Routes (General)
     Route::prefix('invoices')->name('invoices.')->group(function () {
         Route::get('/generate/{bookingId}', [InvoiceController::class, 'generatePDF'])->name('generate');
+    });
+
+    // Agreement Routes (Customer) - Rental Agreement
+    Route::prefix('agreement')->name('agreement.')->group(function () {
+        Route::get('/{booking}', [AgreementController::class, 'show'])->name('show');
+        Route::get('/{booking}/preview', [AgreementController::class, 'preview'])->name('preview');
+        Route::post('/{booking}/download', [AgreementController::class, 'download'])->name('download');
+    });
+
+    // Pickup Routes (Customer) - Vehicle Pickup Confirmation
+    Route::prefix('pickup')->name('pickup.')->group(function () {
+        Route::get('/{booking}', [PickupController::class, 'show'])->name('show');
+        Route::post('/{booking}/confirm', [PickupController::class, 'confirm'])->name('confirm');
+    });
+
+    // Return Routes (Customer) - Vehicle Return Confirmation
+    Route::prefix('return')->name('return.')->group(function () {
+        Route::get('/{booking}', [ReturnController::class, 'show'])->name('show');
+        Route::post('/{booking}/confirm', [ReturnController::class, 'confirm'])->name('confirm');
     });
 
     // Staff-only routes

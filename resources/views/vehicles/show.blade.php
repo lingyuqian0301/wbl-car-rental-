@@ -598,7 +598,7 @@
 
 <body>
     @section('content')
-    <x-booking-stepper current="1" /> {{-- Booking --}}
+    <x-booking-stepper /> {{-- Auto-detects Select Vehicle step --}}
 
     <div class="container">
 

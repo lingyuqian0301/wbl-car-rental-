@@ -86,6 +86,18 @@
             View
         </a>
 
+        @php
+            $resumeStep = $booking->getResumeStep();
+        @endphp
+
+        @if($resumeStep['step'] !== 'completed')
+            <a href="{{ $resumeStep['route'] }}" class="text-blue-600 hover:text-blue-900 font-semibold">
+                {{ $resumeStep['label'] }}
+            </a>
+        @else
+            <span class="text-gray-500 text-sm italic">{{ $resumeStep['label'] }}</span>
+        @endif
+
         @if(!$verifiedPayment && !$pendingPayment)
             <a href="{{ route('payments.create', $booking->bookingID) }}" class="text-indigo-600 hover:text-indigo-900">
                 {{ $rejectedPayment ? 'Resubmit' : 'Pay Now' }}

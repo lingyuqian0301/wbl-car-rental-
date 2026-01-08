@@ -247,7 +247,7 @@ input[type="radio"] {
 
 </style>
 
-<x-booking-stepper current="3" />
+<x-booking-stepper /> {{-- Auto-detects Payment step --}}
 
 <div class="payment-wrapper">
     <div class="payment-card">

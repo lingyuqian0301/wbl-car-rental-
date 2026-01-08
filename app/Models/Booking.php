@@ -157,4 +157,46 @@ class Booking extends Model
     {
         return 'bookingID';
     }
+
+    /**
+     * Determine the current booking step for resume functionality.
+     * Returns: ['step' => 'agreement|pickup|return|completed', 'route' => route_name, 'label' => button_text]
+     */
+    public function getResumeStep()
+    {
+        // Check if agreement is accepted (if there's a verified payment, they've likely accepted agreement)
+        $hasAgreedAndDownloaded = $this->payments->where('payment_status', 'Verified')->first() !== null;
+
+        // If no verified payment, they haven't completed agreement step yet
+        if (!$hasAgreedAndDownloaded) {
+            return [
+                'step' => 'agreement',
+                'route' => route('agreement.show', $this->bookingID),
+                'label' => 'Continue Booking',
+            ];
+        }
+
+        // Agreement is done, check if pickup is done
+        // Pickup would be indicated by pickup_point being set and booking progressing
+        // For now, we check if they've moved past agreement (payment verified)
+        // Since we don't have explicit pickup_completed flag, we assume they proceed to pickup after agreement
+        // In a real scenario, you'd check for a pickup_completed_at or similar
+        
+        // If booking status is 'Completed', they've finished everything
+        if ($this->booking_status === 'Completed') {
+            return [
+                'step' => 'completed',
+                'route' => null,
+                'label' => 'Completed',
+            ];
+        }
+
+        // Default: if agreement done but pickup status unclear, offer pickup
+        // This assumes linear progression: Agreement → Pickup → Return
+        return [
+            'step' => 'pickup',
+            'route' => route('pickup.show', $this->bookingID),
+            'label' => 'Proceed to Pickup',
+        ];
+    }
 }

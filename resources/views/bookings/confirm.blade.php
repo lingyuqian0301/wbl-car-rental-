@@ -430,7 +430,7 @@
         }
     }
 </style>
-<x-booking-stepper current="2" /> {{-- Confirmation --}}
+<x-booking-stepper /> {{-- Auto-detects Booking Details step --}}
 
 <div class="confirmation-container">
     <!-- LEFT SECTION - Confirmation Details -->
