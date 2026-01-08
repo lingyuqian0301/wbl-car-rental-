@@ -31,7 +31,7 @@
                                     @foreach($bookings as $booking)
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {{ ($bookings->currentPage() - 1) * $bookings->perPage() + $loop->iteration }}
+                                            {{ $bookings->total() - (($bookings->currentPage() - 1) * $bookings->perPage() + $loop->index) }}
                                             </td>
                                          <td class="px-6 py-4 whitespace-nowrap">
                                         @if($booking->vehicle)
