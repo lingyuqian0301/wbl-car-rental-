@@ -50,39 +50,27 @@
     </div>
 </div>
 
-<!-- Filters -->
+<!-- Search and Filters -->
 <div class="card mb-3">
     <div class="card-body">
         <form method="GET" action="{{ route('admin.vehicles.others', ['tab' => 'vehicle']) }}" class="row g-3">
             <input type="hidden" name="tab" value="vehicle">
             
+            <!-- Search -->
             <div class="col-md-3">
-                <label class="form-label small fw-semibold">Brand</label>
-                <select name="filter_brand" class="form-select form-select-sm">
-                    <option value="">All Brands</option>
-                    @foreach($brands as $brand)
-                        <option value="{{ $brand }}" {{ $filterBrand === $brand ? 'selected' : '' }}>{{ $brand }}</option>
-                    @endforeach
-                </select>
-            </div>
-            
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold">Model</label>
-                <select name="filter_model" class="form-select form-select-sm">
-                    <option value="">All Models</option>
-                    @foreach($models as $model)
-                        <option value="{{ $model }}" {{ $filterModel === $model ? 'selected' : '' }}>{{ $model }}</option>
-                    @endforeach
-                </select>
+                <label class="form-label small fw-semibold">Search</label>
+                <input type="text" name="search" value="{{ $search ?? '' }}" 
+                       class="form-control form-control-sm" 
+                       placeholder="Plate No">
             </div>
             
             <div class="col-md-2">
                 <label class="form-label small fw-semibold">Type</label>
                 <select name="filter_type" class="form-select form-select-sm">
                     <option value="">All</option>
-                    <option value="car" {{ $filterType === 'car' ? 'selected' : '' }}>Car</option>
-                    <option value="motor" {{ $filterType === 'motor' ? 'selected' : '' }}>Motor</option>
-                    <option value="other" {{ $filterType === 'other' ? 'selected' : '' }}>Other</option>
+                    <option value="car" {{ ($filterType ?? '') === 'car' ? 'selected' : '' }}>Car</option>
+                    <option value="motor" {{ ($filterType ?? '') === 'motor' ? 'selected' : '' }}>Motor</option>
+                    <option value="other" {{ ($filterType ?? '') === 'other' ? 'selected' : '' }}>Other</option>
                 </select>
             </div>
             
@@ -90,8 +78,8 @@
                 <label class="form-label small fw-semibold">Is Active</label>
                 <select name="filter_isactive" class="form-select form-select-sm">
                     <option value="">All</option>
-                    <option value="1" {{ $filterIsActive == '1' ? 'selected' : '' }}>Active</option>
-                    <option value="0" {{ $filterIsActive == '0' ? 'selected' : '' }}>Inactive</option>
+                    <option value="1" {{ ($filterIsActive ?? '') == '1' ? 'selected' : '' }}>Active</option>
+                    <option value="0" {{ ($filterIsActive ?? '') == '0' ? 'selected' : '' }}>Inactive</option>
                 </select>
             </div>
             
@@ -164,22 +152,32 @@
                             </span>
                         </td>
                         <td>
-                            @if($vehicleType === 'Car')
-                                <a href="{{ route('admin.vehicles.cars.edit', $vehicle->vehicleID) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="Edit Vehicle">
-                                    <i class="bi bi-pencil"></i> Edit
-                                </a>
-                            @elseif($vehicleType === 'Motorcycle')
-                                <a href="{{ route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="Edit Vehicle">
-                                    <i class="bi bi-pencil"></i> Edit
-                                </a>
-                            @else
-                                <a href="{{ route('admin.vehicles.show', $vehicle->vehicleID) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="View Vehicle">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
-                            @endif
+                            <div class="btn-group btn-group-sm">
+                                @if($vehicleType === 'Car')
+                                    <a href="{{ route('admin.vehicles.cars') }}?search={{ $vehicle->vehicleID }}" 
+                                       class="btn btn-outline-primary" title="View Vehicle">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <a href="{{ route('admin.vehicles.cars.edit', $vehicle->vehicleID) }}" 
+                                       class="btn btn-outline-secondary" title="Edit Vehicle">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                @elseif($vehicleType === 'Motorcycle')
+                                    <a href="{{ route('admin.vehicles.motorcycles') }}?search={{ $vehicle->vehicleID }}" 
+                                       class="btn btn-outline-primary" title="View Vehicle">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <a href="{{ route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID) }}" 
+                                       class="btn btn-outline-secondary" title="Edit Vehicle">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                @else
+                                    <a href="{{ route('admin.vehicles.show', $vehicle->vehicleID) }}" 
+                                       class="btn btn-outline-primary" title="View Vehicle">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty

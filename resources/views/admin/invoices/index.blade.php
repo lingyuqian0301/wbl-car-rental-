@@ -98,35 +98,43 @@
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.invoices.index') }}">
             <div class="row g-2 mb-2">
+                <!-- Search -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Search</label>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" 
+                           class="form-control form-control-sm" 
+                           placeholder="Plate No">
+                </div>
+                
+                <!-- Sort -->
                 <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Sort by Invoice No</label>
-                    <select name="sort_invoice_no" class="form-select form-select-sm">
-                        <option value="asc" {{ $sortInvoiceNo === 'asc' ? 'selected' : '' }}>Ascending</option>
-                        <option value="desc" {{ $sortInvoiceNo === 'desc' ? 'selected' : '' }}>Descending</option>
+                    <label class="form-label small fw-semibold">Sort By</label>
+                    <select name="sort" class="form-select form-select-sm">
+                        <option value="invoice_no_asc" {{ ($sort ?? 'invoice_no_asc') === 'invoice_no_asc' ? 'selected' : '' }}>Asc Invoice No</option>
+                        <option value="issue_date_desc" {{ ($sort ?? '') === 'issue_date_desc' ? 'selected' : '' }}>Desc Issue Date</option>
+                        <option value="pickup_date_desc" {{ ($sort ?? '') === 'pickup_date_desc' ? 'selected' : '' }}>Desc Pickup Date</option>
                     </select>
                 </div>
+                
+                <!-- Date Filter Type -->
                 <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Sort by Issue Date</label>
-                    <select name="sort_issue_date" class="form-select form-select-sm">
-                        <option value="desc" {{ $sortIssueDate === 'desc' ? 'selected' : '' }}>Descending</option>
-                        <option value="asc" {{ $sortIssueDate === 'asc' ? 'selected' : '' }}>Ascending</option>
+                    <label class="form-label small fw-semibold">Filter By</label>
+                    <select name="date_filter_type" class="form-select form-select-sm" id="dateFilterType">
+                        <option value="issue_date" {{ ($dateFilterType ?? 'issue_date') === 'issue_date' ? 'selected' : '' }}>Issue Date</option>
+                        <option value="pickup_date" {{ ($dateFilterType ?? '') === 'pickup_date' ? 'selected' : '' }}>Pickup Date</option>
                     </select>
                 </div>
+                
+                <!-- Date From -->
                 <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Issue Date From</label>
-                    <input type="date" name="issue_date_from" class="form-control form-control-sm" value="{{ $issueDateFrom }}">
+                    <label class="form-label small fw-semibold">From</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $dateFrom ?? '' }}">
                 </div>
+                
+                <!-- Date To -->
                 <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Issue Date To</label>
-                    <input type="date" name="issue_date_to" class="form-control form-control-sm" value="{{ $issueDateTo }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Pickup Date From</label>
-                    <input type="date" name="pickup_date_from" class="form-control form-control-sm" value="{{ $pickupDateFrom }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Pickup Date To</label>
-                    <input type="date" name="pickup_date_to" class="form-control form-control-sm" value="{{ $pickupDateTo }}">
+                    <label class="form-label small fw-semibold">To</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $dateTo ?? '' }}">
                 </div>
             </div>
             <div class="row g-2">
@@ -135,7 +143,7 @@
                         <i class="bi bi-funnel"></i> Apply Filters
                     </button>
                 </div>
-                @if($issueDateFrom || $issueDateTo || $pickupDateFrom || $pickupDateTo || $sortInvoiceNo !== 'asc' || $sortIssueDate !== 'desc')
+                @if($search || $dateFrom || $dateTo || ($sort ?? '') !== 'invoice_no_asc')
                 <div class="col-md-auto">
                     <a href="{{ route('admin.invoices.index') }}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-x-circle"></i> Clear

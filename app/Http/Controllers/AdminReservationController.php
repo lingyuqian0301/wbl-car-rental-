@@ -14,40 +14,25 @@ class AdminReservationController extends Controller
     public function index(Request $request): View
     {
         $search = $request->get('search');
-        $filterBrand = $request->get('filter_brand');
-        $filterModel = $request->get('filter_model');
         $filterPlateNo = $request->get('filter_plate_no');
         $filterPickupDate = $request->get('filter_pickup_date');
         $filterReturnDate = $request->get('filter_return_date');
-        $filterDuration = $request->get('filter_duration');
         $filterServedBy = $request->get('filter_served_by');
         $filterBookingStatus = $request->get('filter_booking_status');
+        $filterPaymentStatus = $request->get('filter_payment_status');
 
         $query = Booking::with(['customer.user', 'vehicle', 'payments', 'invoice']);
 
-        // Search by customer name or booking ID
+        // Search by booking ID, plate number, or customer name
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('bookingID', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function($customerQuery) use ($search) {
-                      $customerQuery->whereHas('user', function($userQuery) use ($search) {
-                          $userQuery->where('name', 'like', "%{$search}%");
-                      });
+                  ->orWhereHas('vehicle', function($vQuery) use ($search) {
+                      $vQuery->where('plate_number', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('customer.user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%");
                   });
-            });
-        }
-
-        // Filter by vehicle brand
-        if ($filterBrand) {
-            $query->whereHas('vehicle', function($vQuery) use ($filterBrand) {
-                $vQuery->where('vehicle_brand', $filterBrand);
-            });
-        }
-
-        // Filter by vehicle model
-        if ($filterModel) {
-            $query->whereHas('vehicle', function($vQuery) use ($filterModel) {
-                $vQuery->where('vehicle_model', $filterModel);
             });
         }
 
@@ -68,11 +53,6 @@ class AdminReservationController extends Controller
             $query->whereDate('rental_end_date', $filterReturnDate);
         }
 
-        // Filter by duration
-        if ($filterDuration) {
-            $query->where('duration', $filterDuration);
-        }
-
         // Filter by served by (staff_served)
         if ($filterServedBy) {
             $query->where('staff_served', $filterServedBy);
@@ -83,21 +63,69 @@ class AdminReservationController extends Controller
             $query->where('booking_status', $filterBookingStatus);
         }
 
-        // Default sort by booking ID desc
-        $query->orderBy('bookingID', 'desc');
+        // Filter by payment status
+        if ($filterPaymentStatus) {
+            if ($filterPaymentStatus === 'Full') {
+                $query->whereHas('payments', function($pQuery) {
+                    $pQuery->where('payment_status', 'Full')
+                           ->orWhere('isPayment_complete', true);
+                });
+            } elseif ($filterPaymentStatus === 'Deposit') {
+                $query->whereHas('payments', function($pQuery) {
+                    $pQuery->where('isPayment_complete', false)
+                           ->where('payment_status', '!=', 'Full');
+                });
+            } elseif ($filterPaymentStatus === 'Unpaid') {
+                $query->whereDoesntHave('payments', function($pQuery) {
+                    $pQuery->where('payment_status', 'Verified');
+                });
+            }
+        }
+
+        // Filter by pickup date range
+        $filterPickupDateFrom = $request->get('filter_pickup_date_from');
+        $filterPickupDateTo = $request->get('filter_pickup_date_to');
+        if ($filterPickupDateFrom && $filterPickupDateTo) {
+            $query->whereBetween('rental_start_date', [$filterPickupDateFrom, $filterPickupDateTo]);
+        } elseif ($filterPickupDateFrom) {
+            $query->where('rental_start_date', '>=', $filterPickupDateFrom);
+        } elseif ($filterPickupDateTo) {
+            $query->where('rental_start_date', '<=', $filterPickupDateTo);
+        }
+
+        // Sorting
+        $sort = $request->get('sort');
+        if ($sort === 'booking_date_desc') {
+            $query->orderBy('lastUpdateDate', 'desc');
+        } elseif ($sort === 'pickup_date_desc') {
+            $query->orderBy('rental_start_date', 'desc');
+        } elseif ($sort === 'status_priority') {
+            // Sort by status priority: upcoming (future dates) first, then current (today), then done (past dates)
+            $today = Carbon::today()->format('Y-m-d');
+            $query->orderByRaw("
+                CASE 
+                    WHEN rental_start_date > '{$today}' THEN 1
+                    WHEN rental_start_date = '{$today}' THEN 2
+                    WHEN rental_start_date < '{$today}' THEN 3
+                    ELSE 4
+                END
+            ")
+            ->orderBy('rental_start_date', 'asc');
+        } else {
+            // Default sort by booking ID desc
+            $query->orderBy('bookingID', 'desc');
+        }
 
         $bookings = $query->paginate(20)->withQueryString();
 
         // Get unique values for filters
-        $brands = \App\Models\Vehicle::distinct()->pluck('vehicle_brand')->filter()->sort()->values();
-        $models = \App\Models\Vehicle::distinct()->pluck('vehicle_model')->filter()->sort()->values();
         $plateNumbers = \App\Models\Vehicle::distinct()->pluck('plate_number')->filter()->sort()->values();
-        $durations = Booking::distinct()->pluck('duration')->filter()->sort()->values();
         // Get users who are staff or admins (using relationships instead of role column)
         $staffUsers = \App\Models\User::where(function($query) {
             $query->whereHas('staff')->orWhereHas('admin');
         })->get();
         $bookingStatuses = ['Pending', 'Confirmed', 'Request Cancellation', 'Refunding', 'Cancelled', 'Done'];
+        $paymentStatuses = ['Full', 'Deposit', 'Unpaid'];
 
         // Summary stats for header
         $today = Carbon::today();
@@ -106,28 +134,82 @@ class AdminReservationController extends Controller
         $totalConfirmed = Booking::where('booking_status', 'Confirmed')->count();
         $totalToday = Booking::whereDate('rental_start_date', $today)->count();
 
+        // Get active tab (default to bookings)
+        $activeTab = $request->get('tab', 'bookings');
+
+        // Initialize leasing data (will be populated only if leasing tab is active)
+        // Use empty paginator instead of collection to avoid Collection->total() error
+        $leasingBookings = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20, 1);
+        $leasingStats = [
+            'totalBookings' => 0,
+            'totalRevenue' => 0,
+            'totalPaid' => 0,
+            'ongoingBookings' => 0,
+        ];
+
+        if ($activeTab === 'leasing') {
+            $leasingQuery = Booking::with(['customer.user', 'vehicle.documents', 'payments', 'invoice'])
+                ->where('booking_status', '!=', 'Cancelled')
+                ->where(function($q) {
+                    $q->where('duration', '>', 15)
+                      ->orWhereRaw('DATEDIFF(rental_end_date, rental_start_date) > 15');
+                });
+
+            $statusFilter = $request->get('status', 'all');
+            if ($statusFilter === 'past') {
+                $leasingQuery->where('rental_end_date', '<', $today);
+            } elseif ($statusFilter === 'ongoing') {
+                $leasingQuery->where('rental_start_date', '<=', $today)
+                      ->where('rental_end_date', '>=', $today);
+            } elseif ($statusFilter === 'future') {
+                $leasingQuery->where('rental_start_date', '>', $today);
+            }
+
+            $leasingBookings = $leasingQuery->orderBy('rental_start_date', 'desc')->paginate(20)->withQueryString();
+
+            // Calculate stats
+            $allLeasingBookings = Booking::where('booking_status', '!=', 'Cancelled')
+                ->where(function($q) {
+                    $q->where('duration', '>', 15)
+                      ->orWhereRaw('DATEDIFF(rental_end_date, rental_start_date) > 15');
+                })
+                ->get();
+
+            $leasingStats['totalBookings'] = $allLeasingBookings->count();
+            $leasingStats['totalRevenue'] = $allLeasingBookings->sum(function($booking) {
+                return ($booking->deposit_amount ?? 0) + ($booking->rental_amount ?? 0);
+            });
+            $leasingStats['totalPaid'] = $allLeasingBookings->sum(function($booking) {
+                return $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+            });
+            $leasingStats['ongoingBookings'] = $allLeasingBookings->filter(function($booking) use ($today) {
+                return $booking->rental_start_date <= $today && $booking->rental_end_date >= $today;
+            })->count();
+        }
+
         return view('admin.reservations.index', [
             'bookings' => $bookings,
+            'leasingBookings' => $leasingBookings,
+            'leasingStats' => $leasingStats,
+            'activeTab' => $activeTab,
             'search' => $search,
-            'filterBrand' => $filterBrand,
-            'filterModel' => $filterModel,
             'filterPlateNo' => $filterPlateNo,
             'filterPickupDate' => $filterPickupDate,
             'filterReturnDate' => $filterReturnDate,
-            'filterDuration' => $filterDuration,
             'filterServedBy' => $filterServedBy,
             'filterBookingStatus' => $filterBookingStatus,
-            'brands' => $brands,
-            'models' => $models,
+            'filterPaymentStatus' => $filterPaymentStatus,
             'plateNumbers' => $plateNumbers,
-            'durations' => $durations,
             'staffUsers' => $staffUsers,
             'bookingStatuses' => $bookingStatuses,
+            'paymentStatuses' => $paymentStatuses,
             'totalBookings' => $totalBookings,
             'totalPending' => $totalPending,
             'totalConfirmed' => $totalConfirmed,
             'totalToday' => $totalToday,
             'today' => $today,
+            'sort' => $sort ?? null,
+            'statusFilter' => $request->get('status', 'all'),
         ]);
     }
 

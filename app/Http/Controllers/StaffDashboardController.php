@@ -57,6 +57,28 @@ class StaffDashboardController extends Controller
             $upcomingBookingsToServe = collect([]);
         }
 
+        // Weekly booking statistics for Fleet Booking (Monday to Sunday)
+        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = $today->copy()->endOfWeek(Carbon::SUNDAY);
+        $yesterday = $today->copy()->subDay();
+
+        $weeklyBookings = Booking::whereBetween('rental_start_date', [$startOfWeek, $endOfWeek])
+            ->whereIn('booking_status', ['Pending', 'Confirmed', 'Completed'])
+            ->get();
+
+        $weeklyBookingStats = [
+            'done' => $weeklyBookings->filter(function ($booking) use ($yesterday) {
+                return $booking->rental_start_date->lessThanOrEqualTo($yesterday);
+            })->count(),
+            'current' => $weeklyBookings->filter(function ($booking) use ($today) {
+                return $booking->rental_start_date->isSameDay($today);
+            })->count(),
+            'upcoming' => $weeklyBookings->filter(function ($booking) use ($today) {
+                return $booking->rental_start_date->greaterThan($today);
+            })->count(),
+            'total' => $weeklyBookings->count(),
+        ];
+
         return view('admin.dashboard', [
             'metrics' => $metrics,
             'recentBookings' => $recentBookings,
@@ -66,6 +88,7 @@ class StaffDashboardController extends Controller
             'monthlyRevenue' => [], // Empty array for staff - no revenue data
             'today' => $today,
             'isStaff' => true, // Flag to indicate this is staff view
+            'weeklyBookingStats' => $weeklyBookingStats,
         ]);
     }
 }

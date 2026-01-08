@@ -88,4 +88,12 @@ class Vehicle extends Model
     {
         return $this->hasMany(VehicleDocument::class, 'vehicleID', 'vehicleID');
     }
+
+    /**
+     * Get the fuel records for this vehicle.
+     */
+    public function fuels(): HasMany
+    {
+        return $this->hasMany(Fuel::class, 'vehicleID', 'vehicleID');
+    }
 }

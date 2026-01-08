@@ -26,6 +26,8 @@ class OwnerCar extends Model
         'isActive',
         'leasing_end_month',
         'leasing_end_year',
+        'license_expirydate',
+        'license_img',
     ];
 
     protected function casts(): array

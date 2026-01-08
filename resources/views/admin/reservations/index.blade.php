@@ -17,17 +17,34 @@
 
 @section('content')
 <div class="container-fluid py-2">
-    <x-admin-page-header 
-        title="Reservations" 
-        description="Manage all booking reservations"
-        :stats="[
-            ['label' => 'Total Bookings', 'value' => $totalBookings, 'icon' => 'bi-calendar'],
-            ['label' => 'Pending', 'value' => $totalPending, 'icon' => 'bi-clock'],
-            ['label' => 'Confirmed', 'value' => $totalConfirmed, 'icon' => 'bi-check-circle'],
-            ['label' => 'Bookings Today', 'value' => $totalToday, 'icon' => 'bi-calendar-day']
-        ]"
-        :date="$today"
-    />
+    <!-- Dynamic Tabs -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ ($activeTab ?? 'bookings') === 'bookings' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#bookings" type="button" role="tab">
+                <i class="bi bi-calendar-check"></i> Bookings
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ ($activeTab ?? '') === 'leasing' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#leasing" type="button" role="tab">
+                <i class="bi bi-file-earmark-text"></i> Leasing
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Bookings Tab -->
+        <div class="tab-pane fade {{ ($activeTab ?? 'bookings') === 'bookings' ? 'show active' : '' }}" id="bookings" role="tabpanel">
+            <x-admin-page-header 
+                title="Reservations" 
+                description="Manage all booking reservations"
+                :stats="[
+                    ['label' => 'Total Bookings', 'value' => $totalBookings, 'icon' => 'bi-calendar'],
+                    ['label' => 'Pending', 'value' => $totalPending, 'icon' => 'bi-clock'],
+                    ['label' => 'Confirmed', 'value' => $totalConfirmed, 'icon' => 'bi-check-circle'],
+                    ['label' => 'Bookings Today', 'value' => $totalToday, 'icon' => 'bi-calendar-day']
+                ]"
+                :date="$today"
+            />
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -46,34 +63,22 @@
     <!-- Search and Filters -->
     <div class="card mb-3">
         <div class="card-body">
-            <form method="GET" action="{{ route('admin.bookings.reservations') }}" class="row g-3">
+            <form method="GET" action="{{ route('admin.bookings.reservations', ['tab' => 'bookings']) }}" class="row g-3">
                 <!-- Search -->
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold">Search</label>
                     <input type="text" name="search" value="{{ $search }}" 
                            class="form-control form-control-sm" 
-                           placeholder="Customer Name, Booking ID">
+                           placeholder="Booking ID, Plate No, Customer Name">
                 </div>
                 
-                <!-- Vehicle Brand Filter -->
+                <!-- Sort -->
                 <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Vehicle Brand</label>
-                    <select name="filter_brand" class="form-select form-select-sm">
-                        <option value="">All Brands</option>
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand }}" {{ $filterBrand === $brand ? 'selected' : '' }}>{{ $brand }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <!-- Vehicle Model Filter -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Vehicle Model</label>
-                    <select name="filter_model" class="form-select form-select-sm">
-                        <option value="">All Models</option>
-                        @foreach($models as $model)
-                            <option value="{{ $model }}" {{ $filterModel === $model ? 'selected' : '' }}>{{ $model }}</option>
-                        @endforeach
+                    <label class="form-label small fw-semibold">Sort By</label>
+                    <select name="sort" class="form-select form-select-sm">
+                        <option value="">Default (Desc Booking ID)</option>
+                        <option value="booking_date_desc" {{ ($sort ?? '') === 'booking_date_desc' ? 'selected' : '' }}>Desc Booking Date</option>
+                        <option value="pickup_date_desc" {{ ($sort ?? '') === 'pickup_date_desc' ? 'selected' : '' }}>Desc Pickup Date</option>
                     </select>
                 </div>
                 
@@ -102,17 +107,6 @@
                            class="form-control form-control-sm">
                 </div>
                 
-                <!-- Duration Filter -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Duration</label>
-                    <select name="filter_duration" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        @foreach($durations as $duration)
-                            <option value="{{ $duration }}" {{ $filterDuration == $duration ? 'selected' : '' }}>{{ $duration }} days</option>
-                        @endforeach
-                    </select>
-                </div>
-                
                 <!-- Served By Filter -->
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Served By</label>
@@ -135,11 +129,22 @@
                     </select>
                 </div>
                 
+                <!-- Payment Status Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment Status</label>
+                    <select name="filter_payment_status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($paymentStatuses ?? [] as $status)
+                            <option value="{{ $status }}" {{ $filterPaymentStatus === $status ? 'selected' : '' }}>{{ $status }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
                 <div class="col-md-12">
                     <button type="submit" class="btn btn-sm btn-danger">
                         <i class="bi bi-search me-1"></i> Apply Filters
                     </button>
-                    <a href="{{ route('admin.bookings.reservations') }}" class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ route('admin.bookings.reservations', ['tab' => 'bookings']) }}" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-x-circle me-1"></i> Clear
                     </a>
                 </div>
@@ -330,6 +335,121 @@
             </div>
         @endif
     </div>
+        </div>
+
+        <!-- Leasing Tab -->
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'leasing' ? 'show active' : '' }}" id="leasing" role="tabpanel">
+            <x-admin-page-header 
+                title="Vehicle Leasing" 
+                description="Manage vehicle leasing bookings (more than 15 days)"
+                :stats="[
+                    ['label' => 'Total Bookings', 'value' => $leasingStats['totalBookings'] ?? 0, 'icon' => 'bi-calendar'],
+                    ['label' => 'Total Revenue', 'value' => 'RM ' . number_format($leasingStats['totalRevenue'] ?? 0, 2), 'icon' => 'bi-currency-dollar'],
+                    ['label' => 'Total Paid', 'value' => 'RM ' . number_format($leasingStats['totalPaid'] ?? 0, 2), 'icon' => 'bi-check-circle'],
+                    ['label' => 'Ongoing', 'value' => $leasingStats['ongoingBookings'] ?? 0, 'icon' => 'bi-clock']
+                ]"
+                :date="$today"
+            />
+
+            <!-- Filters for Leasing -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form method="GET" action="{{ route('admin.bookings.reservations', ['tab' => 'leasing']) }}" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Status</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="all" {{ ($statusFilter ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
+                                <option value="future" {{ ($statusFilter ?? '') === 'future' ? 'selected' : '' }}>Future</option>
+                                <option value="ongoing" {{ ($statusFilter ?? '') === 'ongoing' ? 'selected' : '' }}>Ongoing</option>
+                                <option value="past" {{ ($statusFilter ?? '') === 'past' ? 'selected' : '' }}>Past</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="bi bi-funnel"></i> Apply Filters
+                            </button>
+                            @if($statusFilter && $statusFilter !== 'all')
+                                <a href="{{ route('admin.bookings.reservations', ['tab' => 'leasing']) }}" class="btn btn-sm btn-outline-secondary ms-2">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </a>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Leasing Bookings Table -->
+            <div class="card">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Vehicle Leasing Bookings</h5>
+                    <span class="badge bg-light text-dark">{{ $leasingBookings->total() }} total</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Customer Name</th>
+                                    <th>Vehicle Plate No</th>
+                                    <th>Duration</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Total Amount</th>
+                                    <th>Booking Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($leasingBookings as $booking)
+                                    @php
+                                        $customer = $booking->customer;
+                                        $user = $customer->user ?? null;
+                                        $vehicle = $booking->vehicle;
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <a href="{{ route('admin.bookings.reservations', ['search' => $booking->bookingID, 'tab' => 'bookings']) }}" class="text-decoration-none fw-bold text-primary">
+                                                #{{ $booking->bookingID }}
+                                            </a>
+                                        </td>
+                                        <td>{{ $user->name ?? 'Unknown' }}</td>
+                                        <td><strong>{{ $vehicle->plate_number ?? 'N/A' }}</strong></td>
+                                        <td><strong>{{ $booking->duration ?? 0 }} days</strong></td>
+                                        <td>{{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</td>
+                                        <td>{{ $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A' }}</td>
+                                        <td><strong>RM {{ number_format(($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0), 2) }}</strong></td>
+                                        <td>
+                                            <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : 'bg-info') }}">
+                                                {{ $booking->booking_status ?? 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('admin.bookings.reservations', ['search' => $booking->bookingID, 'tab' => 'bookings']) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="9" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            No leasing bookings found.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @if($leasingBookings->hasPages())
+                    <div class="card-footer">
+                        {{ $leasingBookings->links() }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Review Modal -->
@@ -364,6 +484,23 @@
 
 @push('scripts')
 <script>
+    // Handle tab switching from URL parameter
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        
+        if (tab === 'leasing') {
+            const leasingTab = document.querySelector('button[data-bs-target="#leasing"]');
+            const bookingsTab = document.querySelector('button[data-bs-target="#bookings"]');
+            if (leasingTab && bookingsTab) {
+                bookingsTab.classList.remove('active');
+                leasingTab.classList.add('active');
+                document.getElementById('bookings').classList.remove('show', 'active');
+                document.getElementById('leasing').classList.add('show', 'active');
+            }
+        }
+    });
+
     // Update Booking Status
     document.querySelectorAll('.booking-status-select').forEach(select => {
         select.addEventListener('change', function() {

@@ -22,6 +22,8 @@ class Customer extends Model
         'customer_license',
         'emergency_contact',
         'booking_times',
+        'default_bank_name',
+        'default_account_no',
     ];
 
     /**

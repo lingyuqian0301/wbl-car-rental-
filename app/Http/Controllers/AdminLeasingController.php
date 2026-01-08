@@ -37,18 +37,30 @@ class AdminLeasingController extends Controller
      */
     public function ownerIndex(Request $request): View
     {
-        $query = OwnerCar::with([]);
+        $query = OwnerCar::with(['personDetails', 'vehicles']);
 
-        // Search
+        // Search by owner name, vehicle plate no, contact no
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('ic_no', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('contact_number', 'like', "%{$search}%");
+                  ->orWhere('contact_number', 'like', "%{$search}%")
+                  ->orWhereHas('personDetails', function($pdQuery) use ($search) {
+                      $pdQuery->where('fullname', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('vehicles', function($vQuery) use ($search) {
+                      $vQuery->where('plate_number', 'like', "%{$search}%");
+                  });
             });
         }
 
+        // Filter by isActive
+        if ($request->filled('filter_isactive')) {
+            $query->where('isActive', $request->filter_isactive == '1');
+        }
+
+        // Default sort: asc owner id
         $owners = $query->orderBy('ownerID', 'asc')->paginate(20)->withQueryString();
 
         // Get cars for each owner (we'll need to join or get separately)
@@ -61,14 +73,14 @@ class AdminLeasingController extends Controller
         $activeOwners = OwnerCar::where('isActive', true)->count();
         $totalCars = DB::table('car')->count();
 
-        return view('admin.leasing.index', [
-            'activeTab' => 'owner',
+        return view('leasing.owner', [
             'owners' => $owners,
             'allCars' => $allCars,
             'totalOwners' => $totalOwners,
             'activeOwners' => $activeOwners,
             'totalCars' => $totalCars,
             'today' => $today,
+            'request' => $request,
         ]);
     }
 
@@ -266,8 +278,7 @@ class AdminLeasingController extends Controller
         // Get booking statuses
         $bookingStatuses = ['Pending', 'Confirmed', 'Request Cancellation', 'Refunding', 'Cancelled', 'Done'];
 
-        return view('admin.leasing.index', [
-            'activeTab' => 'vehicle',
+        return view('leasing.vehicle', [
             'bookings' => $bookings,
             'statusFilter' => $statusFilter,
             'vehicleType' => $vehicleType,

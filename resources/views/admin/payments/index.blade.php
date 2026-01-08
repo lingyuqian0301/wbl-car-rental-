@@ -79,33 +79,83 @@
         </div>
     @endif
 
-    <!-- Filters -->
+    <!-- Action Buttons - Right Top Corner -->
+    <div class="d-flex justify-content-end mb-3">
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-light text-danger" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
             <form method="GET" action="{{ route('admin.payments.index') }}" class="row g-3">
-                <div class="col-md-4">
+                <!-- Search -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Search</label>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" 
+                           class="form-control form-control-sm" 
+                           placeholder="Plate No">
+                </div>
+                
+                <!-- Payment Date Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment Date</label>
+                    <input type="date" name="filter_payment_date" value="{{ $filterPaymentDate ?? '' }}" 
+                           class="form-control form-control-sm">
+                </div>
+                
+                <!-- Payment Status Filter -->
+                <div class="col-md-2">
                     <label class="form-label small fw-semibold">Payment Status</label>
                     <select name="filter_payment_status" class="form-select form-select-sm">
                         <option value="">All</option>
-                        <option value="Full" {{ $filterPaymentStatus === 'Full' ? 'selected' : '' }}>Full</option>
-                        <option value="Deposit" {{ $filterPaymentStatus === 'Deposit' ? 'selected' : '' }}>Deposit</option>
-                        <option value="Balance" {{ $filterPaymentStatus === 'Balance' ? 'selected' : '' }}>Balance</option>
+                        <option value="Full" {{ ($filterPaymentStatus ?? '') === 'Full' ? 'selected' : '' }}>Full</option>
+                        <option value="Deposit" {{ ($filterPaymentStatus ?? '') === 'Deposit' ? 'selected' : '' }}>Deposit</option>
+                        <option value="Balance" {{ ($filterPaymentStatus ?? '') === 'Balance' ? 'selected' : '' }}>Balance</option>
+                        <option value="Verified" {{ ($filterPaymentStatus ?? '') === 'Verified' ? 'selected' : '' }}>Verified</option>
+                        <option value="Pending" {{ ($filterPaymentStatus ?? '') === 'Pending' ? 'selected' : '' }}>Pending</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-semibold">Booking Status</label>
-                    <select name="filter_booking_status" class="form-select form-select-sm">
+                
+                <!-- Payment IsComplete Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment IsComplete</label>
+                    <select name="filter_payment_iscomplete" class="form-select form-select-sm">
                         <option value="">All</option>
-                        @foreach($bookingStatuses as $status)
-                            <option value="{{ $status }}" {{ $filterBookingStatus === $status ? 'selected' : '' }}>{{ $status }}</option>
+                        <option value="1" {{ ($filterPaymentIsComplete ?? '') == '1' ? 'selected' : '' }}>Complete</option>
+                        <option value="0" {{ ($filterPaymentIsComplete ?? '') == '0' ? 'selected' : '' }}>Incomplete</option>
+                    </select>
+                </div>
+                
+                <!-- Payment IsVerify Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment IsVerify</label>
+                    <select name="filter_payment_isverify" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="1" {{ ($filterPaymentIsVerify ?? '') == '1' ? 'selected' : '' }}>Verified</option>
+                        <option value="0" {{ ($filterPaymentIsVerify ?? '') == '0' ? 'selected' : '' }}>Not Verified</option>
+                    </select>
+                </div>
+                
+                <!-- Verify By Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Verify By</label>
+                    <select name="filter_verify_by" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($verifyByUsers ?? [] as $user)
+                            <option value="{{ $user->userID }}" {{ ($filterVerifyBy ?? '') == $user->userID ? 'selected' : '' }}>{{ $user->name }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4 d-flex align-items-end gap-2">
+                
+                <div class="col-md-12 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-danger btn-sm">
                         <i class="bi bi-funnel"></i> Apply Filters
                     </button>
-                    @if($filterPaymentStatus || $filterBookingStatus)
+                    @if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify || $filterVerifyBy)
                         <a href="{{ route('admin.payments.index') }}" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-x-circle"></i> Clear
                         </a>

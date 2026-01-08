@@ -37,10 +37,12 @@ Route::get('/api/states', function () {
 
 use App\Http\Controllers\AdminVehicleController;
 use App\Http\Controllers\AdminPaymentController;
+use App\Http\Controllers\AdminDepositController;
 use App\Http\Controllers\AdminTopbarCalendarController;
 use App\Http\Controllers\AdminReservationController;
 use App\Http\Controllers\AdminCalendarController;
 use App\Http\Controllers\AdminCancellationController;
+use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AdminCustomerController;
 use App\Http\Controllers\AdminInvoiceController;
 use App\Http\Controllers\AdminRentalReportController;
@@ -239,6 +241,12 @@ Route::middleware('auth')->group(function () {
             Route::put('/{payment}/update-verify', [AdminPaymentController::class, 'updateVerify'])->name('update-verify');
         });
 
+        Route::prefix('admin/deposits')->name('admin.deposits.')->group(function () {
+            Route::get('/', [AdminDepositController::class, 'index'])->name('index');
+            Route::get('/{booking}', [AdminDepositController::class, 'show'])->name('show');
+            Route::put('/{booking}', [AdminDepositController::class, 'update'])->name('update');
+        });
+
         Route::prefix('admin/notifications')->name('admin.notifications.')->group(function () {
             Route::get('/', [AdminNotificationController::class, 'index'])->name('index');
             Route::post('/{notification}/mark-as-read', [AdminNotificationController::class, 'markAsRead'])->name('mark-as-read');
@@ -270,12 +278,20 @@ Route::middleware('auth')->group(function () {
             Route::get('/export-all-excel', [AdminVehicleController::class, 'exportAllExcel'])->name('export-all-excel');
             Route::delete('/{vehicle}', [AdminVehicleController::class, 'destroy'])->name('destroy');
             Route::get('/{vehicle}', [AdminVehicleController::class, 'show'])->name('show');
+            Route::get('/{vehicle}/maintenance', [AdminVehicleController::class, 'maintenance'])->name('maintenance');
             Route::post('/{vehicle}/maintenance', [AdminVehicleController::class, 'storeMaintenance'])->name('maintenance.store');
             Route::delete('/maintenance/{maintenance}', [AdminVehicleController::class, 'destroyMaintenance'])->name('maintenance.destroy');
+            Route::get('/{vehicle}/fuel', [AdminVehicleController::class, 'fuel'])->name('fuel');
+            Route::post('/{vehicle}/fuel', [AdminVehicleController::class, 'storeFuel'])->name('fuel.store');
+            Route::put('/fuel/{fuel}', [AdminVehicleController::class, 'updateFuel'])->name('fuel.update');
+            Route::delete('/fuel/{fuel}', [AdminVehicleController::class, 'destroyFuel'])->name('fuel.destroy');
+            Route::get('/available-vehicles', [AdminVehicleController::class, 'getAvailableVehicles'])->name('available-vehicles');
             Route::post('/{vehicle}/documents', [AdminVehicleController::class, 'storeDocument'])->name('documents.store');
             Route::delete('/documents/{document}', [AdminVehicleController::class, 'destroyDocument'])->name('documents.destroy');
             Route::post('/{vehicle}/photos', [AdminVehicleController::class, 'storePhoto'])->name('photos.store');
             Route::post('/{vehicle}/owner', [AdminVehicleController::class, 'updateOwner'])->name('owner.update');
+            Route::post('/{vehicle}/owner/upload-license', [AdminVehicleController::class, 'uploadOwnerLicense'])->name('owner.upload-license');
+            Route::post('/{vehicle}/owner/upload-ic', [AdminVehicleController::class, 'uploadOwnerIc'])->name('owner.upload-ic');
         });
 
         Route::prefix('admin/topbar-calendar')->name('admin.topbar-calendar.')->group(function () {
@@ -292,6 +308,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/reservations/{booking}/update-status', [AdminReservationController::class, 'updateBookingStatus'])->name('reservations.update-status');
             Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
             Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
+            Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews');
             Route::post('/cancellation/{booking}/update', [AdminCancellationController::class, 'updateCancellation'])->name('cancellation.update');
             Route::post('/cancellation/{booking}/send-email', [AdminCancellationController::class, 'sendEmail'])->name('cancellation.send-email');
         });
@@ -346,7 +363,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/admin', [AdminSettingsController::class, 'storeAdmin'])->name('admin.store');
             Route::put('/admin/{id}', [AdminSettingsController::class, 'updateAdmin'])->name('admin.update');
             Route::post('/staff', [AdminSettingsController::class, 'storeStaff'])->name('staff.store');
+            Route::get('/staff/{staff}', [AdminSettingsController::class, 'showStaff'])->name('staff.show');
             Route::put('/staff/{id}', [AdminSettingsController::class, 'updateStaff'])->name('staff.update');
+            Route::post('/staff/{staff}/task', [AdminSettingsController::class, 'storeTask'])->name('staff.task.store');
+            Route::get('/staff/{staff}/export-excel', [AdminSettingsController::class, 'exportExcel'])->name('staff.export-excel');
+            Route::get('/staff/{staff}/export-pdf', [AdminSettingsController::class, 'exportPdf'])->name('staff.export-pdf');
         });
 
 
@@ -357,6 +378,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/charts', [AdminChartsController::class, 'index'])->name('charts');
             Route::get('/charts/export-pdf', [AdminChartsController::class, 'exportPdf'])->name('charts.export-pdf');
             Route::get('/finance', [AdminFinanceController::class, 'index'])->name('finance');
+            Route::get('/finance/export-pdf', [AdminFinanceController::class, 'exportPdf'])->name('finance.export-pdf');
+            Route::put('/finance/owner/{owner}/leasing-price', [AdminFinanceController::class, 'updateLeasingPrice'])->name('finance.update-leasing-price');
         });
     });
 });

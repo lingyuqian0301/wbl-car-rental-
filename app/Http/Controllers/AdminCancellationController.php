@@ -31,20 +31,28 @@ class AdminCancellationController extends Controller
 
         // Filter by refund status
         if ($request->filled('refund_status')) {
-            // Map refund_status filter to booking_status values
-            $statusMap = [
-                'request' => 'request cancelling',
-                'refunding' => 'refunding',
-                'cancelled' => ['Cancelled', 'cancelled'],
-                'rejected' => ['Cancelled', 'cancelled'],
-            ];
-            
-            if (isset($statusMap[$request->refund_status])) {
-                $statusValue = $statusMap[$request->refund_status];
-                if (is_array($statusValue)) {
-                    $query->whereIn('booking_status', $statusValue);
-                } else {
-                    $query->where('booking_status', $statusValue);
+            // Handle refund_status=false (bookings that haven't been refunded)
+            if ($request->refund_status === 'false' || $request->refund_status === false) {
+                // Refund status false means no refund payment exists
+                $query->whereDoesntHave('payments', function($q) {
+                    $q->where('payment_status', 'Refunded');
+                });
+            } else {
+                // Map refund_status filter to booking_status values
+                $statusMap = [
+                    'request' => 'request cancelling',
+                    'refunding' => 'refunding',
+                    'cancelled' => ['Cancelled', 'cancelled'],
+                    'rejected' => ['Cancelled', 'cancelled'],
+                ];
+                
+                if (isset($statusMap[$request->refund_status])) {
+                    $statusValue = $statusMap[$request->refund_status];
+                    if (is_array($statusValue)) {
+                        $query->whereIn('booking_status', $statusValue);
+                    } else {
+                        $query->where('booking_status', $statusValue);
+                    }
                 }
             }
         }

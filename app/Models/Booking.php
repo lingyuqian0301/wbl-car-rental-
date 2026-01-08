@@ -32,6 +32,11 @@ class Booking extends Model
         'customerID',
         'vehicleID',
         'staff_served',
+        'deposit_refund_status',
+        'deposit_handled_by',
+        'deposit_fine_amount',
+        'deposit_refund_amount',
+        'deposit_customer_choice',
     ];
 
     protected function casts(): array
@@ -43,6 +48,8 @@ class Booking extends Model
             'duration' => 'integer',
             'deposit_amount' => 'decimal:2',
             'rental_amount' => 'decimal:2',
+            'deposit_fine_amount' => 'decimal:2',
+            'deposit_refund_amount' => 'decimal:2',
         ];
     }
 

@@ -133,46 +133,14 @@
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Sort By</label>
                     <select name="sort_by" class="form-select form-select-sm">
-                        <option value="vehicle_id_asc" {{ $sortBy === 'vehicle_id_asc' ? 'selected' : '' }}>Vehicle ID (Asc)</option>
-                        <option value="vehicle_id_desc" {{ $sortBy === 'vehicle_id_desc' ? 'selected' : '' }}>Vehicle ID (Desc)</option>
-                        <option value="brand_asc" {{ $sortBy === 'brand_asc' ? 'selected' : '' }}>Brand (A-Z)</option>
-                        <option value="brand_desc" {{ $sortBy === 'brand_desc' ? 'selected' : '' }}>Brand (Z-A)</option>
-                        <option value="model_asc" {{ $sortBy === 'model_asc' ? 'selected' : '' }}>Model (A-Z)</option>
-                        <option value="model_desc" {{ $sortBy === 'model_desc' ? 'selected' : '' }}>Model (Z-A)</option>
+                        <option value="vehicle_id_asc" {{ $sortBy === 'vehicle_id_asc' ? 'selected' : '' }}>Asc Vehicle ID</option>
+                        <option value="highest_rented" {{ $sortBy === 'highest_rented' ? 'selected' : '' }}>Highest Rented</option>
+                        <option value="highest_rental_price" {{ $sortBy === 'highest_rental_price' ? 'selected' : '' }}>Highest Rental Price</option>
+                        <option value="plate_no_asc" {{ $sortBy === 'plate_no_asc' ? 'selected' : '' }}>Asc Plate No</option>
                     </select>
                 </div>
                 
                 <!-- Filters -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Brand</label>
-                    <select name="filter_brand" class="form-select form-select-sm">
-                        <option value="">All Brands</option>
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand }}" {{ $filterBrand === $brand ? 'selected' : '' }}>{{ $brand }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Model</label>
-                    <select name="filter_model" class="form-select form-select-sm">
-                        <option value="">All Models</option>
-                        @foreach($models as $model)
-                            <option value="{{ $model }}" {{ $filterModel === $model ? 'selected' : '' }}>{{ $model }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Motor Type</label>
-                    <select name="filter_motor_type" class="form-select form-select-sm">
-                        <option value="">All Types</option>
-                        @foreach($motorTypes as $motorType)
-                            <option value="{{ $motorType }}" {{ $filterMotorType === $motorType ? 'selected' : '' }}>{{ $motorType }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Status</label>
                     <select name="filter_status" class="form-select form-select-sm">
@@ -180,6 +148,15 @@
                         @foreach($statuses as $status)
                             <option value="{{ $status }}" {{ $filterStatus === $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
                         @endforeach
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Is Active</label>
+                    <select name="filter_isactive" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="1" {{ ($filterIsActive ?? '') == '1' ? 'selected' : '' }}>Active</option>
+                        <option value="0" {{ ($filterIsActive ?? '') == '0' ? 'selected' : '' }}>Inactive</option>
                     </select>
                 </div>
                 

@@ -85,21 +85,6 @@ class AdminRentalReportController extends Controller
         if ($vehicleId) {
             $query->where('vehicleID', $vehicleId);
         }
-        if ($vehicleBrand) {
-            $query->whereHas('vehicle', function($vQuery) use ($vehicleBrand) {
-                $vQuery->where('vehicle_brand', 'like', "%{$vehicleBrand}%");
-            });
-        }
-        if ($vehicleModel) {
-            $query->whereHas('vehicle', function($vQuery) use ($vehicleModel) {
-                $vQuery->where('vehicle_model', 'like', "%{$vehicleModel}%");
-            });
-        }
-        if ($plateNo) {
-            $query->whereHas('vehicle', function($vQuery) use ($plateNo) {
-                $vQuery->where('plate_number', 'like', "%{$plateNo}%");
-            });
-        }
 
         // Sorting
         $sortBy = $request->get('sort_by', 'booking_date_asc');

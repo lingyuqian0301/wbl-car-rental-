@@ -24,33 +24,50 @@ class AdminPaymentController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Payment::with(['booking.customer', 'booking.vehicle']);
-        
+        $search = $request->get('search');
+        $filterPaymentDate = $request->get('filter_payment_date');
         $filterPaymentStatus = $request->get('filter_payment_status');
-        $filterBookingStatus = $request->get('filter_booking_status');
+        $filterPaymentIsComplete = $request->get('filter_payment_is_complete');
+        $filterPaymentIsVerify = $request->get('payment_isVerify');
+        $filterVerifyBy = $request->get('filter_verify_by');
         
-        if ($filterPaymentStatus) {
-            if ($filterPaymentStatus === 'Full') {
-                $query->where(function($q) {
-                    $q->where('payment_status', 'Full')
-                      ->orWhere('isPayment_complete', true);
-                });
-            } elseif ($filterPaymentStatus === 'Deposit') {
-                $query->where('isPayment_complete', false)
-                      ->where('payment_status', '!=', 'Full');
-            } elseif ($filterPaymentStatus === 'Balance') {
-                $query->where('payment_status', 'Verified')
-                      ->where('isPayment_complete', false);
-            }
-        }
+        $query = Payment::with(['booking.customer.user', 'booking.vehicle']);
         
-        if ($filterBookingStatus) {
-            $query->whereHas('booking', function($q) use ($filterBookingStatus) {
-                $q->where('booking_status', $filterBookingStatus);
+        // Search by plate number
+        if ($search) {
+            $query->whereHas('booking.vehicle', function($vQuery) use ($search) {
+                $vQuery->where('plate_number', 'like', "%{$search}%");
             });
         }
         
+        // Filter by payment date
+        if ($filterPaymentDate) {
+            $query->whereDate('payment_date', $filterPaymentDate);
+        }
+        
+        // Filter by payment status
+        if ($filterPaymentStatus) {
+            $query->where('payment_status', $filterPaymentStatus);
+        }
+        
+        // Filter by payment isComplete
+        if ($filterPaymentIsComplete !== null && $filterPaymentIsComplete !== '') {
+            $query->where('isPayment_complete', (bool)$filterPaymentIsComplete);
+        }
+        
+        // Filter by payment isVerify
+        if ($filterPaymentIsVerify !== null && $filterPaymentIsVerify !== '') {
+            $query->where('payment_isVerify', (bool)$filterPaymentIsVerify);
+        }
+        
+        // Filter by verify_by
+        if ($filterVerifyBy) {
+            $query->where('verify_by', $filterVerifyBy);
+        }
+        
+        // No sort function but usually display by desc payment time and date (default)
         $payments = $query->orderBy('payment_date', 'desc')
+            ->orderBy('latest_Update_Date_Time', 'desc')
             ->orderBy('paymentID', 'desc')
             ->paginate(20)->withQueryString();
 
@@ -67,13 +84,20 @@ class AdminPaymentController extends Controller
             })->count();
         $totalToday = Payment::whereDate('payment_date', $today)->count();
         
-        $bookingStatuses = Booking::distinct()->pluck('booking_status')->filter()->sort()->values();
+        // Get users who can verify (staff/admins) for verify_by filter
+        $verifyByUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff')->orWhereHas('admin');
+        })->orderBy('name')->get();
 
         return view('admin.payments.index', [
             'payments' => $payments,
+            'search' => $search,
+            'filterPaymentDate' => $filterPaymentDate,
             'filterPaymentStatus' => $filterPaymentStatus,
-            'filterBookingStatus' => $filterBookingStatus,
-            'bookingStatuses' => $bookingStatuses,
+            'filterPaymentIsComplete' => $filterPaymentIsComplete,
+            'filterPaymentIsVerify' => $filterPaymentIsVerify,
+            'filterVerifyBy' => $filterVerifyBy,
+            'verifyByUsers' => $verifyByUsers,
             'totalPayments' => $totalPayments,
             'totalPending' => $totalPending,
             'totalVerified' => $totalVerified,

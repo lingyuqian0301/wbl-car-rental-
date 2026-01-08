@@ -18,6 +18,7 @@ class Local extends Model
         'customerID',
         'ic_no',
         'stateOfOrigin',
+        'ic_img',
     ];
 
     /**
