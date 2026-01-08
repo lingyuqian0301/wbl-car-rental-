@@ -98,61 +98,54 @@
                                                             </div>
                                                         </button>
                                                     </x-slot>
-{{-- Resume Booking Step --}}
-@php
-    $resumeStep = $booking->getResumeStep();
-@endphp
 
-@if($resumeStep['step'] !== 'completed')
-    <a href="{{ $resumeStep['route'] }}"
-       class="text-blue-600 hover:text-blue-900 font-semibold">
-        {{ $resumeStep['label'] }}
-    </a>
-@else
-    <span class="text-gray-500 text-sm italic">
-        {{ $resumeStep['label'] }}
-    </span>
-@endif
+                                                    {{-- Resume Booking Step --}}
+                                                    @php
+                                                        $resumeStep = $booking->getResumeStep();
+                                                    @endphp
 
-{{-- View Booking Details --}}
-<x-dropdown-link :href="route('bookings.show', $booking->bookingID)">
-    {{ __('View Details') }}
-</x-dropdown-link>
+                                                    @if($resumeStep['step'] !== 'completed')
+                                                        <x-dropdown-link :href="$resumeStep['route']">
+                                                            {{ $resumeStep['label'] }}
+                                                        </x-dropdown-link>
+                                                    @endif
 
+                                                    {{-- View Booking Details --}}
+                                                    <x-dropdown-link :href="route('bookings.show', $booking->bookingID)">
+                                                        {{ __('View Details') }}
+                                                    </x-dropdown-link>
 
+                                                    {{-- Payment Actions --}}
+                                                    @if(!$verifiedPayment && !$pendingPayment && $booking->booking_status != 'Cancelled')
+                                                        <x-dropdown-link :href="route('payments.create', $booking->bookingID)">
+                                                            {{ $rejectedPayment ? __('Resubmit Payment') : __('Pay Now') }}
+                                                        </x-dropdown-link>
+                                                    @endif
 
-                                                        {{-- Payment Actions --}}
-                                                        @if(!$verifiedPayment && !$pendingPayment && $booking->booking_status != 'Cancelled')
-                                                            <x-dropdown-link :href="route('payments.create', $booking->bookingID)">
-                                                                {{ $rejectedPayment ? __('Resubmit Payment') : __('Pay Now') }}
+                                                    {{-- Invoice --}}
+                                                    @if($verifiedPayment)
+                                                        <x-dropdown-link :href="route('booking.invoice', $booking->bookingID)">
+                                                            {{ __('Download Invoice') }}
+                                                        </x-dropdown-link>
+                                                    @endif
+                                                    
+                                                    {{-- Extend Booking (Only if Active/Confirmed/Pending and not Cancelled) --}}
+                                                    @if($booking->booking_status != 'Confirmed' && !$verifiedPayment && !in_array($booking->booking_status, ['Cancelled', 'Completed']))
+                                                        <x-dropdown-link :href="route('bookings.extend.form', $booking->bookingID)">
+                                                            {{ __('Extend Booking') }}
+                                                        </x-dropdown-link>
+                                                    @endif
+
+                                                    {{-- Cancel Booking (Only if not already cancelled or completed) --}}
+                                                    @if($booking->booking_status != 'Confirmed' && !$verifiedPayment && !in_array($booking->booking_status, ['Cancelled', 'Completed']))
+                                                        <form method="POST" action="{{ route('bookings.cancel', $booking->bookingID) }}" style="display:inline;">
+                                                            @csrf
+                                                            <x-dropdown-link :href="route('bookings.cancel', $booking->bookingID)"
+                                                                    onclick="event.preventDefault(); if(confirm('Are you sure you want to cancel this booking?')) { this.closest('form').submit(); }">
+                                                                {{ __('Cancel Booking') }}
                                                             </x-dropdown-link>
-                                                        @endif
-
-                                                        {{-- Invoice --}}
-                                                        @if($verifiedPayment)
-                                                            <x-dropdown-link :href="route('booking.invoice', $booking->bookingID)">
-                                                                {{ __('Download Invoice') }}
-                                                            </x-dropdown-link>
-                                                        @endif
-                                                        
-                                                        {{-- Extend Booking (Only if Active/Confirmed/Pending and not Cancelled) --}}
-                                                        @if($booking->booking_status != 'Confirmed' && !$verifiedPayment && !in_array($booking->booking_status, ['Cancelled', 'Completed']))
-                                                            <x-dropdown-link :href="route('bookings.extend.form', $booking->bookingID)">
-                                                                {{ __('Extend Booking') }}
-                                                            </x-dropdown-link>
-                                                        @endif
-
-                                                        {{-- Cancel Booking (Only if not already cancelled or completed) --}}
-                                                            @if($booking->booking_status != 'Confirmed' && !$verifiedPayment && !in_array($booking->booking_status, ['Cancelled', 'Completed']))
-                                                                <form method="POST" action="{{ route('bookings.cancel', $booking->bookingID) }}">
-                                                                    @csrf
-                                                                    <x-dropdown-link :href="route('bookings.cancel', $booking->bookingID)"
-                                                                            onclick="event.preventDefault(); if(confirm('Are you sure you want to cancel this booking?')) { this.closest('form').submit(); }">
-                                                                        {{ __('Cancel Booking') }}
-                                                                    </x-dropdown-link>
-                                                                </form>
-                                                            @endif
-                                                    </x-slot>
+                                                        </form>
+                                                    @endif
                                                 </x-dropdown>
                                             </td>
                                         </tr>
