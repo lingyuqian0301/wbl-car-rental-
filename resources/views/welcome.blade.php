@@ -518,7 +518,7 @@
         <div class="hero-container">
             <h2>Love your ride? Get rewarded</h2>
             <p>Leave a quick review on google and receive an exclusive rental voucher for your next trip</p>
-            <a href="https://share.google/ZICVAfzTN6tAijmZL" class="hero-btn" target="_blank">Share Your Review</a>
+            <a href="https://www.google.com/search?sca_esv=189c82b39954af99&sxsrf=ANbL-n5Anp80h8dYhG2xKm29JoOjA_C3Zw:1767841767647&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOXyCFa9BmMH0fGKt5MubrOT1JEHrQ0TPniYENBBGrBFLfRgjvbeReC2xOMTT6mEGYvM8guDbTO_ry31RsTNkKyT8Hj1GpBJ4BLResCU80OD7zcPEYjfWprqYwQS0Pm9kcyxNIc0h9S3iNQthbDiEjoEq5TTA&q=Hasta+Travel+%26+Tours+Sdn+Bhd+%28Car+Rental+UTM,+Johor%29+Reviews&sa=X&ved=2ahUKEwits9Hk-_qRAxXbwTgGHYnbOEcQ0bkNegQIJBAE&biw=1536&bih=730&dpr=1.25&aic=0" class="hero-btn" target="_blank">Share Your Review</a>
             <!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
         </div>
     </section>
