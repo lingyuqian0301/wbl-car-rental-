@@ -12,7 +12,10 @@ use App\Models\Vehicle;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // Added for logging errors
+use Illuminate\Support\Facades\Log;
+// Add these models for the check
+use App\Models\Local;
+use App\Models\StudentDetails; 
 
 class BookingController extends Controller
 {
@@ -23,103 +26,71 @@ class BookingController extends Controller
         $this->paymentService = $paymentService;
     }
 
-    /**
-     * Display a listing of the user's bookings.
-     */
-    public function index()
+    
+    // --- NEW: Helper function to check profile completeness ---
+    private function checkProfileCompletion($user)
     {
-        try {
-            $customer = \App\Models\Customer::where('userID', auth()->user()->userID)->first();
+        $customer = $user->customer;
 
-            if (!$customer) {
-                // Not an error, just an empty state
-                return view('bookings.index', ['bookings' => collect([])]);
-            }
+        // 1. Must have a customer record
+        if (!$customer) return false;
 
-            $bookings = \App\Models\Booking::where('customerID', $customer->customerID)
-                        ->with(['vehicle', 'payments'])
-                        ->orderBy('bookingID', 'desc')
-                        ->paginate(10);
-
-            // Log payment data for debugging
-            foreach ($bookings as $booking) {
-                Log::info('Booking ID: ' . $booking->bookingID);
-                Log::info('Payments: ' . $booking->payments->toJson());
-            }
-
-            // Update status logic to handle bookings without payments explicitly
-            $status = 'Completed';
-            if ($bookings->isNotEmpty()) {
-                $firstBooking = $bookings->first();
-                if ($firstBooking->payments->where('status', 'Pending')->isNotEmpty() || $firstBooking->payments->where('status', 'Rejected')->isNotEmpty()) {
-                    $status = 'Pending';
-                } elseif ($firstBooking->status === 'Confirmed') {
-                    $status = 'Confirmed';
-                } elseif ($firstBooking->status === 'Cancelled') {
-                    $status = 'Cancelled';
-                }
-            }
-
-            return view('bookings.index', [
-                'bookings' => $bookings,
-                'status' => $status,
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error fetching bookings: ' . $e->getMessage());
-            return redirect()->route('home')->with('error', 'Unable to load bookings. Please try again later.');
+        // 2. Basic Fields Required
+        if (empty($customer->phone_number) || empty($customer->customer_license)) {
+            return false;
         }
+
+        // 3. Identity Check (Must have either IC or Passport)
+        $hasIdentity = false;
+        if ($customer->local && !empty($customer->local->ic_no)) {
+            $hasIdentity = true;
+        } elseif ($customer->international && !empty($customer->international->passport_no)) {
+            $hasIdentity = true;
+        }
+        if (!$hasIdentity) return false;
+
+        // 4. Student Details Check (Enforce logic similar to ProfileController)
+        // Check if there is a matric number linked to the customer
+        $matricNumber = null;
+        if ($customer->localStudent && !empty($customer->localStudent->matric_number)) {
+            $matricNumber = $customer->localStudent->matric_number;
+        } elseif ($customer->internationalStudent && !empty($customer->internationalStudent->matric_number)) {
+            $matricNumber = $customer->internationalStudent->matric_number;
+        }
+
+        // If your system REQUIRES everyone to be a student, return false if no matric number
+        if (empty($matricNumber)) {
+            return false; 
+        }
+
+        // Verify the student details (College, Faculty, Program) exist
+        $studentDetails = StudentDetails::where('matric_number', $matricNumber)->first();
+        if (!$studentDetails || empty($studentDetails->college) || empty($studentDetails->faculty) || empty($studentDetails->programme)) {
+            return false;
+        }
+
+        return true;
     }
 
-    /**
-     * Display the specified booking.
-     */
-    public function show(Booking $booking): View
-        {
-        // --- START OF FIX ---
-        $isAuthorized = false;
+    // ... existing index and show methods ...
 
-        // 1. Check if the booking belongs to the logged-in user
-        // We traverse: Booking -> Customer -> User ID
-        if ($booking->customer && $booking->customer->userID === Auth::user()->userID) {
-            $isAuthorized = true;
-        }
-
-        // 2. Allow Admins to view any booking (Optional but recommended)
-        if (Auth::user()->isAdmin() || Auth::user()->isStaff()) {
-            $isAuthorized = true;
-        }
-
-    if (!$isAuthorized) {
-        abort(403, 'You are not authorized to view this booking.');
-    }
-
-        try {
-            $booking->load(['vehicle', 'payments']);
-
-            $hasVerifiedPayment = $booking->payments
-                ->where('payment_status', 'Verified')
-                ->isNotEmpty();
-
-            return view('bookings.show', [
-                'booking' => $booking,
-                'hasVerifiedPayment' => $hasVerifiedPayment,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error showing booking details: ' . $e->getMessage());
-            abort(500, 'System error while loading booking details.');
-        }
-    }
-
-   public function store(Request $request, $vehicleID)
+    public function store(Request $request, $vehicleID)
     {
-        // Check if user is authenticated
+        // 1. Authentication Check
         if (!Auth::check()) {
             $request->session()->put('url.intended', url()->previous());
             return redirect()->route('login')->with('error', 'Please sign in to proceed with booking.');
         }
 
-        // Validate form inputs
+        // 2. --- NEW: Profile Completion Check ---
+        if (!$this->checkProfileCompletion(Auth::user())) {
+            // Redirect to profile with a specific flag to show the popup
+            return redirect()->route('profile.edit')
+                ->with('incomplete_profile', true)
+                ->with('warning', 'You cannot book a vehicle until your profile (License, ID, Student Info) is complete.');
+        }
+
+        // 3. Existing Validation
         $request->validate([
             'start_date'    => 'required|date|after_or_equal:today',
             'start_time'    => 'required|date_format:H:i',
@@ -130,10 +101,11 @@ class BookingController extends Controller
             'pickup_surcharge' => 'nullable|numeric',
         ]);
 
-        // Check for date overlap with existing bookings
-     $startDateTime = $request->start_date . ' ' . $request->start_time;
-$endDateTime   = $request->end_date   . ' ' . $request->end_time;
-
+        // ... rest of your existing store logic ...
+        // (Date overlap check, price calculation, session storage, etc.)
+        
+        $startDateTime = $request->start_date . ' ' . $request->start_time;
+        $endDateTime   = $request->end_date   . ' ' . $request->end_time;
 
         $overlap = Booking::where('vehicleID', $vehicleID)
             ->where('booking_status', '!=', 'Cancelled')
