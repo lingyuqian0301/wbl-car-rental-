@@ -7,7 +7,7 @@
     display: flex;
     align-items: center;
     max-width: 1200px;
-    margin: 2rem auto 3rem;
+    margin: 3rem auto 2rem;
     padding: 0 1.5rem;
 }
 
@@ -69,7 +69,7 @@
     /* Container Layout */
     .confirmation-container {
         max-width: 1200px;
-        margin: 3rem auto;
+        margin: 0 auto 3rem auto;
         padding: 0 1.5rem;
         display: grid;
         grid-template-columns: 2fr 1fr;
@@ -478,7 +478,15 @@
             </div>
             <div class="info-item">
                 <span class="info-label">Type:</span>
-                <span class="info-value">{{ $vehicle->car->vehicle_type }}</span>
+<span class="info-value">
+    @if ($vehicle->car)
+        {{ $vehicle->car->vehicle_type }}
+    @elseif ($vehicle->motorcycle)
+        {{ $vehicle->motorcycle->motor_type }}
+    @else
+        N/A
+    @endif
+</span>
             </div>
             <div class="info-item">
                 <span class="info-label">Color:</span>

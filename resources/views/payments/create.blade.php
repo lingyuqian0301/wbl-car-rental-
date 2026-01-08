@@ -19,7 +19,7 @@ body {
     display: flex;
     align-items: center;
     max-width: 1200px;
-    margin: 2rem auto 2.5rem;
+    margin: 3rem auto 2rem;
     padding: 0 1.5rem;
 }
 

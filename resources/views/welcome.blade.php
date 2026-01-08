@@ -38,7 +38,7 @@
     .hero {
         background: linear-gradient(to right, var(--primary-orange), var(--primary-dark-orange));
         color: white;
-        padding-bottom: 8rem;
+        padding-bottom: 3rem;
     }
 
     .hero-container {
@@ -274,7 +274,7 @@
 
     .filter-capsule-wrapper {
         max-width: 1200px;
-        margin: 0.5rem auto 3rem auto;
+        margin: 0 auto 3rem auto;
         padding: 0 2rem;
         position: relative;
         z-index: 999;
@@ -475,7 +475,7 @@
     $stamps = $loyalty ? $loyalty->total_stamps : 0;
     @endphp
 
-    <section style="padding: 1.5rem 2rem; background-color: #fff1f2;">
+    <!-- <section style="padding: 1.5rem 2rem; background-color: #fff1f2;">
         <div class="hero-container">
             <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
 
@@ -512,7 +512,7 @@
 
             </div>
         </div>
-    </section>
+    </section> -->
     @endauth
     <section class="hero">
         <div class="hero-container">

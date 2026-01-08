@@ -99,7 +99,7 @@
     /* Main Content */
     .container {
         max-width: 1200px;
-        margin: 3rem auto;
+        margin: 0 auto 3rem auto;
         padding: 0 1.5rem;
         display: grid;
         grid-template-columns: 2fr 1fr;
@@ -516,7 +516,7 @@
         display: flex;
         align-items: center;
         max-width: 1200px;
-        margin: 2rem auto 3rem;
+        margin: 3rem auto 2rem;
         padding: 0 1.5rem;
     }
 
