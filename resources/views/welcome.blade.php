@@ -646,9 +646,14 @@
                         RM {{ $car->rental_price }} <span>/day</span>
                     </p>
 
-                    <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">
-                        Book Now
-                    </a>
+                    <a href="{{ route('vehicles.show', [
+                            'id' => $car->vehicleID, 
+                            'start_date' => request('start_date'), 
+                            'end_date' => request('end_date')
+                        ]) }}" class="car-btn">
+                            Book Now
+                        </a>
+
                 </div>
             </div>
         @empty
