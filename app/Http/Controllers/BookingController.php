@@ -497,4 +497,69 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
         // 6. Download
         return $pdf->download('Invoice-' . $booking->bookingID . '.pdf');
     }
+public function cancel(Request $request, $id)
+    {
+        // 1. Fetch booking with payments
+        $booking = Booking::with(['customer', 'payments'])->findOrFail($id);
+
+        // 2. Security: Ensure it belongs to the user
+        if ($booking->customer->userID !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // 3. Logic: Allow cancel ONLY if status is NOT Confirmed AND Payment is NOT Verified
+        
+        // Check if Payment is Verified
+        $hasVerifiedPayment = $booking->payments->contains('payment_status', 'Verified');
+
+        if ($booking->booking_status === 'Confirmed') {
+            return back()->with('error', 'Cannot cancel a booking that has already been Confirmed.');
+        }
+
+        if ($hasVerifiedPayment) {
+            return back()->with('error', 'Cannot cancel a booking once payment has been Verified.');
+        }
+
+        // Also prevent cancelling if it's already cancelled or completed
+        if (in_array($booking->booking_status, ['Cancelled', 'Completed'])) {
+            return back()->with('error', 'Booking cannot be cancelled.');
+        }
+
+        // Proceed to Cancel
+        $booking->booking_status = 'Cancelled';
+        $booking->save();
+
+        return back()->with('success', 'Booking cancelled successfully.');
+    }
+
+    /**
+     * Show form to extend booking.
+     */
+public function showExtendForm($id)
+    {
+        // 1. Fetch booking with payments and vehicle
+        $booking = Booking::with(['vehicle', 'payments'])->findOrFail($id);
+
+        // 2. Security: Ensure it belongs to the user
+        if ($booking->customer->userID !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // 3. Logic: Allow Extend ONLY if status is NOT Confirmed AND Payment is NOT Verified
+        $hasVerifiedPayment = $booking->payments->contains('payment_status', 'Verified');
+
+        if ($booking->booking_status === 'Confirmed') {
+            return redirect()->route('bookings.index')->with('error', 'Cannot extend a booking that has already been Confirmed.');
+        }
+
+        if ($hasVerifiedPayment) {
+            return redirect()->route('bookings.index')->with('error', 'Cannot extend a booking once payment has been Verified.');
+        }
+
+        if (in_array($booking->booking_status, ['Cancelled', 'Completed'])) {
+            return redirect()->route('bookings.index')->with('error', 'Cannot extend a completed or cancelled booking.');
+        }
+        
+        return view('bookings.extend', compact('booking'));
+    }
 }
