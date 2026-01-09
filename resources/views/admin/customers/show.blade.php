@@ -277,11 +277,8 @@
                                         <i class="bi bi-card-text fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                         <h6 class="fw-semibold">License</h6>
                                         @php
-                                            // Get license image from international table if international, or from customer table
-                                            $licenseImg = null;
-                                            if ($customer->international && isset($customer->international->license_img)) {
-                                                $licenseImg = $customer->international->license_img;
-                                            }
+                                            // Get license image from customer table
+                                            $licenseImg = $customer->customer_license_img ?? null;
                                         @endphp
                                         @if($licenseImg)
                                             <div class="mb-2">
@@ -292,13 +289,20 @@
                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                                 <p class="text-muted small" style="display:none;">Image not found</p>
                                             </div>
-                                            <div class="d-flex gap-2 justify-content-center mt-2">
+                                            <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
                                                 <button type="button" 
                                                         class="btn btn-sm" 
                                                         style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#viewLicenseModal">
                                                     <i class="bi bi-eye"></i> View
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm" 
+                                                        style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#uploadLicenseModal">
+                                                    <i class="bi bi-upload"></i> Upload
                                                 </button>
                                             </div>
                                             
@@ -330,6 +334,13 @@
                                             </div>
                                         @else
                                             <p class="small text-muted mb-2">No license image uploaded</p>
+                                            <button type="button" 
+                                                    class="btn btn-sm" 
+                                                    style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#uploadLicenseModal">
+                                                <i class="bi bi-upload"></i> Upload
+                                            </button>
                                         @endif
                                     </div>
                                 </div>
@@ -357,13 +368,20 @@
                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                                 <p class="text-muted small" style="display:none;">Image not found</p>
                                             </div>
-                                            <div class="d-flex gap-2 justify-content-center mt-2">
+                                            <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
                                                 <button type="button" 
                                                         class="btn btn-sm" 
                                                         style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#viewIcModal">
                                                     <i class="bi bi-eye"></i> View
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm" 
+                                                        style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#uploadIcModal">
+                                                    <i class="bi bi-upload"></i> Upload
                                                 </button>
                                             </div>
                                             
@@ -395,12 +413,71 @@
                                             </div>
                                         @else
                                             <p class="small text-muted mb-2">No {{ $customer->local ? 'IC' : 'Passport' }} image uploaded</p>
+                                            <button type="button" 
+                                                    class="btn btn-sm" 
+                                                    style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#uploadIcModal">
+                                                <i class="bi bi-upload"></i> Upload
+                                            </button>
                                         @endif
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload License Modal -->
+        <div class="modal fade" id="uploadLicenseModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Upload License</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ route('admin.customers.upload-license', $customer->customerID) }}" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">License Image <span class="text-danger">*</span></label>
+                                <input type="file" name="license_img" class="form-control" accept="image/*,.pdf" required>
+                                <small class="text-muted">Supported formats: JPG, PNG, GIF, PDF. Max size: 5MB</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Upload License</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload IC/Passport Modal -->
+        <div class="modal fade" id="uploadIcModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Upload {{ $customer->local ? 'IC' : 'Passport' }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ route('admin.customers.upload-ic', $customer->customerID) }}" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">{{ $customer->local ? 'IC' : 'Passport' }} Image <span class="text-danger">*</span></label>
+                                <input type="file" name="ic_img" class="form-control" accept="image/*,.pdf" required>
+                                <small class="text-muted">Supported formats: JPG, PNG, GIF, PDF. Max size: 5MB</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Upload {{ $customer->local ? 'IC' : 'Passport' }}</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

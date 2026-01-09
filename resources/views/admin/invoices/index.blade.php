@@ -233,12 +233,16 @@
                                 @endif
                             </td>
                             <td>
-                                <strong>RM {{ number_format($totalPaymentAmount, 2) }}</strong>
+                                @php
+                                    $totalRequired = $depositAmount + $rentalAmount;
+                                    $outstandingBalance = max(0, $totalRequired - $totalPaid);
+                                @endphp
+                                <strong>RM {{ number_format($totalRequired, 2) }}</strong>
                                 <div class="invoice-info-text">
-                                    <div>Deposit: RM {{ number_format($depositAmount, 2) }}</div>
-                                    <div>Rental: RM {{ number_format($rentalAmount, 2) }}</div>
+                                    <div>Paid: RM {{ number_format($totalPaid, 2) }}</div>
+                                    <div>Outstanding: RM {{ number_format($outstandingBalance, 2) }}</div>
                                     @if($additionalChargesTotal > 0)
-                                        <div>Additional Charges: RM {{ number_format($additionalChargesTotal, 2) }}</div>
+                                        <div class="mt-1">Additional Charges: RM {{ number_format($additionalChargesTotal, 2) }}</div>
                                         @if($additionalCharges)
                                             <div class="mt-1">
                                                 @if($additionalCharges->addOns_charge > 0)

@@ -454,7 +454,32 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             DB::commit(); // Save everything if successful
             file_put_contents($debugLog, "Transaction committed successfully!\n", FILE_APPEND);
 
-            // 5. Success Redirect
+            // 5. Create Admin Notification for New Booking
+            try {
+                $customer = $booking->customer;
+                $vehicle = $booking->vehicle;
+                $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . $vehicle->plate_number . ')') : 'N/A';
+                
+                \App\Models\AdminNotification::create([
+                    'type' => 'new_booking',
+                    'notifiable_type' => 'admin',
+                    'notifiable_id' => null,
+                    'user_id' => Auth::id(),
+                    'booking_id' => $booking->bookingID,
+                    'payment_id' => null,
+                    'message' => "New booking created: Booking #{$booking->bookingID} - {$vehicleInfo}",
+                    'data' => [
+                        'booking_id' => $booking->bookingID,
+                        'vehicle_info' => $vehicleInfo,
+                        'customer_id' => $customer->customerID ?? null,
+                    ],
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Notification Error (Ignored): ' . $e->getMessage());
+            }
+
+            // 6. Success Redirect
             $redirectUrl = route('payments.create', ['booking' => $booking->bookingID]);
             file_put_contents($debugLog, "Redirecting to: $redirectUrl\n", FILE_APPEND);
             
@@ -544,6 +569,30 @@ public function cancel(Request $request, $id)
         // Proceed to Cancel
         $booking->booking_status = 'Cancelled';
         $booking->save();
+
+        // Create Admin Notification for Cancellation
+        try {
+            $vehicle = $booking->vehicle;
+            $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . $vehicle->plate_number . ')') : 'N/A';
+            
+            \App\Models\AdminNotification::create([
+                'type' => 'booking_cancelled',
+                'notifiable_type' => 'admin',
+                'notifiable_id' => null,
+                'user_id' => Auth::id(),
+                'booking_id' => $booking->bookingID,
+                'payment_id' => null,
+                'message' => "Booking cancelled: Booking #{$booking->bookingID} - {$vehicleInfo}",
+                'data' => [
+                    'booking_id' => $booking->bookingID,
+                    'vehicle_info' => $vehicleInfo,
+                    'customer_id' => $booking->customer->customerID ?? null,
+                ],
+                'is_read' => false,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Notification Error (Ignored): ' . $e->getMessage());
+        }
 
         return back()->with('success', 'Booking cancelled successfully.');
     }

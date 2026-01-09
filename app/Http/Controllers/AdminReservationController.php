@@ -243,4 +243,46 @@ class AdminReservationController extends Controller
         ]);
     }
 
+    /**
+     * Show booking detail page with tabs
+     */
+    public function show(Booking $booking): View
+    {
+        $booking->load([
+            'customer.user',
+            'vehicle.car',
+            'vehicle.motorcycle',
+            'payments',
+            'invoice',
+            'review',
+            'additionalCharges',
+        ]);
+
+        // Calculate payment totals
+        $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+        $totalRequired = ($booking->deposit_amount ?? 0) + ($booking->rental_amount ?? 0);
+        $outstandingBalance = max(0, $totalRequired - $totalPaid);
+        
+        // Get staff served info
+        $staffServed = $booking->staff_served ? \App\Models\User::find($booking->staff_served) : null;
+        
+        // Get verify by users for payments
+        $verifyByUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff')->orWhereHas('admin');
+        })->orderBy('name')->get();
+
+        // Get active tab from query parameter
+        $activeTab = request()->get('tab', 'booking-info');
+
+        return view('admin.reservations.show', [
+            'booking' => $booking,
+            'totalPaid' => $totalPaid,
+            'totalRequired' => $totalRequired,
+            'outstandingBalance' => $outstandingBalance,
+            'staffServed' => $staffServed,
+            'verifyByUsers' => $verifyByUsers,
+            'activeTab' => $activeTab,
+        ]);
+    }
+
 }

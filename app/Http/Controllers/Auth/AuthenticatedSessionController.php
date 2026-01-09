@@ -35,12 +35,17 @@ class AuthenticatedSessionController extends Controller
         // 2. Regenerate session ID (Security standard)
         $request->session()->regenerate();
 
-        // 3. Check if the authenticated user is an Admin - redirect directly to admin dashboard
+        // 3. Check if the authenticated user is StaffIT - redirect directly to staffit dashboard
+        if ($request->user()->isStaffIT()) {
+            return redirect()->route('staffit.dashboard');
+        }
+
+        // 4. Check if the authenticated user is an Admin - redirect directly to admin dashboard
         if ($request->user()->isAdmin()) {
             return redirect()->route('admin.dashboard');
         }
 
-        // 4. Check if the authenticated user is a Staff member - redirect directly to staff dashboard
+        // 5. Check if the authenticated user is a Staff member - redirect directly to staff dashboard
         if ($request->user()->isStaff()) {
             return redirect()->route('staff.dashboard');
         }

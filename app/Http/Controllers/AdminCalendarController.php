@@ -21,7 +21,7 @@ class AdminCalendarController extends Controller
 
         // Get bookings based on filters
         // Note: 'vehicle' is not a relationship, it's a custom accessor, so we can't eager load it
-        $bookingsQuery = Booking::with(['user', 'payments'])
+        $bookingsQuery = Booking::with(['customer.user', 'payments'])
             ->where('booking_status', '!=', 'Cancelled');
 
         if ($vehicleId !== 'all') {
@@ -39,18 +39,41 @@ class AdminCalendarController extends Controller
 
         $bookings = $bookingsQuery->get();
 
-        // Group bookings by date for calendar display
+        // Group bookings by date for calendar display - separate pickups and returns
         $bookingsByDate = [];
+        $pickupsByDate = [];
+        $returnsByDate = [];
+        
         foreach ($bookings as $booking) {
-            $start = $booking->start_date;
-            $end = $booking->end_date;
-            
-            if (!$start instanceof \Carbon\Carbon) {
-                $start = Carbon::parse($start);
+            // Get pickup date (rental_start_date)
+            $pickupDate = $booking->rental_start_date;
+            if (!$pickupDate instanceof \Carbon\Carbon) {
+                $pickupDate = Carbon::parse($pickupDate);
             }
-            if (!$end instanceof \Carbon\Carbon) {
-                $end = Carbon::parse($end);
-            } 
+            $pickupDateKey = $pickupDate->format('Y-m-d');
+            
+            // Get return date (rental_end_date)
+            $returnDate = $booking->rental_end_date;
+            if (!$returnDate instanceof \Carbon\Carbon) {
+                $returnDate = Carbon::parse($returnDate);
+            }
+            $returnDateKey = $returnDate->format('Y-m-d');
+            
+            // Count pickups
+            if (!isset($pickupsByDate[$pickupDateKey])) {
+                $pickupsByDate[$pickupDateKey] = [];
+            }
+            $pickupsByDate[$pickupDateKey][] = $booking;
+            
+            // Count returns
+            if (!isset($returnsByDate[$returnDateKey])) {
+                $returnsByDate[$returnDateKey] = [];
+            }
+            $returnsByDate[$returnDateKey][] = $booking;
+            
+            // Also keep all bookings for the date range (for popup display)
+            $start = $pickupDate;
+            $end = $returnDate;
             $current = $start->copy();
             while ($current->lte($end)) {
                 $dateKey = $current->format('Y-m-d');
@@ -80,6 +103,8 @@ class AdminCalendarController extends Controller
         return view($viewName, [
             'bookings' => $bookings,
             'bookingsByDate' => $bookingsByDate,
+            'pickupsByDate' => $pickupsByDate,
+            'returnsByDate' => $returnsByDate,
             'cars' => $cars,
             'motorcycles' => $motorcycles,
             'selectedVehicle' => $vehicleId,

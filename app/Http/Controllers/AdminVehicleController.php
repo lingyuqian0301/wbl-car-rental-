@@ -1554,19 +1554,10 @@ class AdminVehicleController extends Controller
             $filename = 'owner_ic_' . $vehicle->owner->ownerID . '_' . time() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('owner_documents', $filename, 'public');
 
-            // Update PersonDetails with IC image
-            if ($vehicle->owner->personDetails) {
-                $vehicle->owner->personDetails->update([
-                    'ic_img' => $path,
-                ]);
-            } else {
-                // Create PersonDetails if it doesn't exist
-                \App\Models\PersonDetails::create([
-                    'ic_no' => $vehicle->owner->ic_no,
-                    'fullname' => 'Unknown',
-                    'ic_img' => $path,
-                ]);
-            }
+            // Update OwnerCar table with IC image
+            $vehicle->owner->update([
+                'ic_img' => $path,
+            ]);
 
             return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner IC uploaded successfully.');
         } catch (\Exception $e) {

@@ -32,8 +32,9 @@ class InvoiceController extends Controller
         $customer = $booking->customer;
         $user = $customer ? $customer->user : null;
 
-        // 3. GET VOUCHER (If any)
-        $voucher = \App\Models\Voucher::where('bookingID', $booking->bookingID)->first();
+        // 3. GET VOUCHER (If any) - Get voucher through voucher_usage table
+        $voucherUsage = \App\Models\VoucherUsage::where('bookingID', $booking->bookingID)->with('voucher')->first();
+        $voucher = $voucherUsage ? $voucherUsage->voucher : null;
 
         // 4. CALCULATE TOTALS (Using new DB column 'total_amount')
         $verifiedPayments = $booking->payments()

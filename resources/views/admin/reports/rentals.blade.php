@@ -200,7 +200,7 @@
                     @forelse($bookings as $booking)
                         @php
                             $vehicle = $booking->vehicle;
-                            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
+                            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
                         @endphp
                         <tr>
                             <td><strong>#{{ $booking->bookingID ?? $booking->id }}</strong></td>

@@ -28,7 +28,7 @@ class BalanceReminderMail extends Mailable
     {
         $totalPaid = $this->booking->payments()
             ->where('payment_status', 'Verified')
-            ->sum('amount');
+            ->sum('total_amount');
         $balanceDue = max(0, $this->booking->total_price - $totalPaid);
 
         return new Content(

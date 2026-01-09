@@ -79,54 +79,25 @@
         }
 
         .calendar-booking-count {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #666;
             margin-top: 5px;
+            line-height: 1.3;
         }
 
-        /* Darker color based on booking count */
+        .calendar-booking-count .text-success {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .calendar-booking-count .text-danger {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        /* Background color for days with activity */
         .calendar-day-cell.has-bookings {
             background: #fee2e2;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="1"] {
-            background: #fecaca;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="2"] {
-            background: #fca5a5;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="3"] {
-            background: #f87171;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="4"] {
-            background: #ef4444;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="5"] {
-            background: #dc2626;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="6"] {
-            background: #b91c1c;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="7"] {
-            background: #991b1b;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="8"] {
-            background: #7f1d1d;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="9"] {
-            background: #6b1d1d;
-        }
-
-        .calendar-day-cell.has-bookings[data-booking-count="10"] {
-            background: #5a1a1a;
         }
 
         .booking-details-popup {
@@ -248,25 +219,34 @@
                             $isToday = $currentDay->isToday();
                             $isOtherMonth = !$currentDay->isSameMonth($startOfMonth);
                             $dayBookings = $bookingsByDate[$dateKey] ?? [];
-                            $bookingCount = count($dayBookings);
+                            $pickupCount = count($pickupsByDate[$dateKey] ?? []);
+                            $returnCount = count($returnsByDate[$dateKey] ?? []);
+                            $hasActivity = $pickupCount > 0 || $returnCount > 0;
                             $cellClass = 'calendar-day-cell';
                             if ($isOtherMonth) $cellClass .= ' other-month';
                             if ($isToday) $cellClass .= ' today';
-                            if ($bookingCount > 0) $cellClass .= ' has-bookings';
+                            if ($hasActivity) $cellClass .= ' has-bookings';
                         @endphp
                         <div class="{{ $cellClass }}" 
-                             data-booking-count="{{ $bookingCount }}"
                              data-date="{{ $dateKey }}">
                             <div class="calendar-day-number">{{ $currentDay->format('j') }}</div>
-                            @if($bookingCount > 0)
+                            @if($hasActivity)
                                 <div class="calendar-booking-count">
-                                    {{ $bookingCount }} {{ $bookingCount === 1 ? 'booking' : 'bookings' }}
+                                    @if($pickupCount > 0)
+                                        <span class="text-success"><i class="bi bi-arrow-up-circle"></i> {{ $pickupCount }} pickup{{ $pickupCount > 1 ? 's' : '' }}</span>
+                                    @endif
+                                    @if($pickupCount > 0 && $returnCount > 0)
+                                        <br>
+                                    @endif
+                                    @if($returnCount > 0)
+                                        <span class="text-danger"><i class="bi bi-arrow-down-circle"></i> {{ $returnCount }} return{{ $returnCount > 1 ? 's' : '' }}</span>
+                                    @endif
                                 </div>
                                 <div class="booking-details-popup">
                                     <strong>Bookings for {{ $currentDay->format('M d, Y') }}</strong>
                                     @foreach($dayBookings as $booking)
                                         <div class="booking-item">
-                                            <div><strong>{{ $booking->user->name ?? 'Unknown Customer' }}</strong></div>
+                                            <div><strong>{{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'Unknown Customer' }}</strong></div>
                                             <div>{{ $booking->vehicle->full_model ?? 'N/A' }}</div>
                                             <div class="text-muted small">
                                                 @php

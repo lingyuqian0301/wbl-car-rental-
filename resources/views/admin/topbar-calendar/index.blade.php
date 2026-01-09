@@ -375,10 +375,11 @@
                                     $paymentStatus = $booking->payment_status;
                                     $isCompleted = $booking->booking_status === 'Completed';
                                     
-                                    $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
-                                    $hasBalancePayment = $booking->payments()->where('payment_status', 'Verified')->where('payment_type', 'Balance')->exists();
-                                    $hasFullPayment = $booking->payments()->where('payment_status', 'Verified')->where('payment_type', 'Full Payment')->exists();
-                                    $isDepositOnly = $totalPaid > 0 && $totalPaid < $booking->total_price && !$hasFullPayment && !$hasBalancePayment;
+                                    $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+                                    $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                                    $hasFullPayment = $totalPaid >= $totalRequired;
+                                    $hasBalancePayment = $totalPaid > 0 && $totalPaid < $totalRequired;
+                                    $isDepositOnly = $totalPaid > 0 && $totalPaid < ($booking->deposit_amount ?? 0);
                                     
                                     // Determine color class
                                     $colorClass = '';
@@ -408,7 +409,7 @@
                                      onmouseenter="showBookingBox({{ $booking->id }}, event)"
                                      onclick="event.stopPropagation(); toggleBookingBox({{ $booking->id }})">
                                     <div>
-                                        <strong>{{ $booking->user->name }}</strong>
+                                        <strong>{{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'N/A' }}</strong>
                                         @if($isUnread)
                                             <i class="bi bi-circle-fill" style="font-size: 0.5rem; margin-left: 5px;"></i>
                                         @endif
@@ -462,7 +463,7 @@
                                     <div class="booking-floating-box" id="booking-box-{{ $booking->id }}" onclick="event.stopPropagation()">
                                         <div class="booking-detail-row">
                                             <span class="booking-detail-label">Customer Name:</span>
-                                            <span class="booking-detail-value">{{ $booking->user->name }}</span>
+                                            <span class="booking-detail-value">{{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'N/A' }}</span>
                                         </div>
                                         <div class="booking-detail-row">
                                             <span class="booking-detail-label">Plate Number:</span>

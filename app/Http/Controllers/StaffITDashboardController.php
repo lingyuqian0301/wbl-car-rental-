@@ -5,21 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Vehicle;
-use App\Models\VehicleMaintenance;
-use App\Models\Fuel;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
-class AdminDashboardController extends Controller
+class StaffITDashboardController extends Controller
 {
     public function __invoke(): View
     {
-        // Redirect StaffIT users to their dashboard
-        if (auth()->check() && auth()->user()->isStaffIT()) {
-            return redirect()->route('staffit.dashboard');
-        }
-
         $today = Carbon::today();
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
@@ -62,14 +54,10 @@ class AdminDashboardController extends Controller
             'pendingPayments' => Payment::where('payment_status', 'Pending')->count(),
             'unverifiedPayments' => $unverifiedPayments,
             'verifiedPayments' => Payment::where('payment_status', 'Verified')->count(),
-            'revenueAllTime' => Payment::where('payment_status', 'Verified')->sum('total_amount'),
-            'revenueThisMonth' => Payment::where('payment_status', 'Verified')
-                ->whereBetween('payment_date', [$startOfMonth, $endOfMonth])
-                ->sum('total_amount'),
             // Use 'availability_status' instead of 'status'
-'vehiclesAvailable'   => Vehicle::where('availability_status', 'available')->count(),
-'vehiclesRented'      => Vehicle::where('availability_status', 'rented')->count(),
-'vehiclesMaintenance' => Vehicle::where('availability_status', 'maintenance')->count(),
+            'vehiclesAvailable'   => Vehicle::where('availability_status', 'available')->count(),
+            'vehiclesRented'      => Vehicle::where('availability_status', 'rented')->count(),
+            'vehiclesMaintenance' => Vehicle::where('availability_status', 'maintenance')->count(),
             'fleetTotal' => Vehicle::count(),
             'currentDayAvailableFleet' => $currentDayAvailableFleet,
             'todayPickupBookings' => $todayPickupBookings,
@@ -113,11 +101,9 @@ class AdminDashboardController extends Controller
         }
 
         // Cancellation requests with refund status false
-        // Refund status false means bookings that haven't been refunded yet
         $cancellationRequests = Booking::with(['vehicle', 'customer.user', 'payments'])
             ->whereIn('booking_status', ['request cancelling', 'refunding', 'Cancelled', 'cancelled'])
             ->whereDoesntHave('payments', function($query) {
-                // Refund status false means no refund payment exists (payment_status = 'Refunded')
                 $query->where('payment_status', 'Refunded');
             })
             ->orderByDesc('lastUpdateDate')
@@ -125,7 +111,6 @@ class AdminDashboardController extends Controller
             ->get();
 
         // Weekly booking statistics for Fleet Booking (Monday to Sunday)
-        // $startOfWeek and $endOfWeek already calculated above
         $yesterday = $today->copy()->subDay();
 
         $weeklyBookings = Booking::whereBetween('rental_start_date', [$startOfWeek, $endOfWeek])
@@ -145,88 +130,22 @@ class AdminDashboardController extends Controller
             'total' => $weeklyBookings->count(),
         ];
 
-        return view('admin.dashboard', [
+        return view('staffit.dashboard', [
             'metrics' => $metrics,
             'recentBookings' => $recentBookings,
             'recentPayments' => $recentPayments,
             'pendingPayments' => $pendingPayments,
             'upcomingBookingsToServe' => $upcomingBookingsToServe,
             'cancellationRequests' => $cancellationRequests,
-            'monthlyRevenue' => $this->monthlyRevenueData(),
             'today' => $today,
             'weeklyBookingStats' => $weeklyBookingStats,
             'startOfMonth' => $startOfMonth,
             'endOfMonth' => $endOfMonth,
             'startOfWeek' => $startOfWeek,
             'endOfWeek' => $endOfWeek,
+            'isStaffIT' => true,
         ]);
     }
-
-    /**
-     * Build a three-month revenue trend showing profit (including current month).
-     * Profit = Earnings (rental_amount + deposit_fine_amount) - Expenses (maintenance + staff commission)
-     */
-    private function monthlyRevenueData(): array
-    {
-        $months = collect(range(0, 2))
-            ->map(fn (int $i) => Carbon::now()->subMonths($i)->startOfMonth())
-            ->reverse()
-            ->values();
-
-        return $months->map(function (Carbon $month) {
-            $dateFrom = $month->copy()->startOfMonth();
-            $dateTo = $month->copy()->endOfMonth();
-            $key = $month->format('Y-m');
-            $label = $month->format('M');
-
-            // Get bookings for this month (excluding cancelled)
-            $bookings = Booking::whereBetween('rental_start_date', [$dateFrom, $dateTo])
-                ->where('booking_status', '!=', 'Cancelled')
-                ->get();
-
-            // Calculate earnings: rental_amount + deposit_fine_amount
-            $totalEarnings = $bookings->sum('rental_amount') + $bookings->sum('deposit_fine_amount');
-
-            // Calculate expenses
-            // 1. Maintenance expenses
-            $maintenanceExpenses = \App\Models\VehicleMaintenance::whereBetween('service_date', [$dateFrom, $dateTo])
-                ->sum('cost');
-
-            // 2. Staff commission
-            // Booking commission: 10% of rental_amount for bookings served by staff
-            $bookingCommission = $bookings->filter(function($booking) {
-                return !is_null($booking->staff_served);
-            })->sum(function($booking) {
-                return ($booking->rental_amount ?? 0) * 0.10;
-            });
-
-            // Maintenance commission
-            $maintenanceCommission = \App\Models\VehicleMaintenance::whereBetween('service_date', [$dateFrom, $dateTo])
-                ->whereNotNull('staffID')
-                ->sum('commission_amount');
-
-            // Fuel commission: RM2 per fuel record
-            $fuelCommission = \App\Models\Fuel::whereBetween('fuel_date', [$dateFrom, $dateTo])
-                ->whereNotNull('handled_by')
-                ->count() * 2;
-
-            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission;
-            $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
-
-            // Calculate profit: earnings - expenses
-            $profit = $totalEarnings - $totalExpenses;
-
-            return [
-                'label' => $label,
-                'total' => round((float) max(0, $profit), 2), // Ensure profit is not negative for display
-                'month' => $month->month,
-                'year' => $month->year,
-                'date_from' => $dateFrom->format('Y-m-d'),
-                'date_to' => $dateTo->format('Y-m-d'),
-            ];
-        })->all();
-    }
 }
-
 
 

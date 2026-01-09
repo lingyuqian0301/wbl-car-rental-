@@ -9,18 +9,92 @@
 @push('styles')
 <style>
     @media print {
-        .btn, .nav-tabs, .card-header .btn, .d-flex.justify-content-end {
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            margin: 20px;
+        }
+        .btn, .nav-tabs, .card-header .btn, .d-flex.justify-content-end, .card-header, .filter-section, .form-select, .form-label, .input-group {
             display: none !important;
         }
         .card {
             border: none;
             box-shadow: none;
+            background: white;
+        }
+        .card-body {
+            padding: 0;
+        }
+        /* PDF-style header */
+        /* PDF-style header */
+        .print-header {
+            display: block !important;
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 10px;
+            page-break-after: avoid;
+        }
+        .print-header h1 {
+            color: #dc3545;
+            margin: 0;
+            font-size: 24px;
+        }
+        .print-header p {
+            margin: 5px 0;
+        }
+        /* PDF-style summary */
+        .print-summary {
+            display: block !important;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            page-break-after: avoid;
+        }
+        .print-summary h3 {
+            margin-top: 0;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        /* PDF-style table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            page-break-inside: auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #dc3545;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .text-success {
+            color: #28a745;
+        }
+        .text-danger {
+            color: #dc3545;
+        }
+        .text-right {
+            text-align: right;
+        }
+        tfoot tr {
+            background-color: #e9ecef;
+            font-weight: bold;
         }
         .page-header {
             page-break-after: avoid;
-        }
-        table {
-            page-break-inside: auto;
         }
         tr {
             page-break-inside: avoid;
@@ -62,6 +136,29 @@
 
     <!-- Expenses and Profit Tab -->
     @if($activeTab === 'expenses-profit')
+        <!-- Print Header (only visible when printing) -->
+        <div class="print-header" style="display: none;">
+            <h1>Expenses and Profit Report</h1>
+            <p>Period: {{ $selectedYear ?? date('Y') }}{{ isset($selectedMonth) ? ' - ' . \Carbon\Carbon::create($selectedYear ?? date('Y'), $selectedMonth, 1)->format('F') : '' }}</p>
+            @if(isset($vehicleType) && $vehicleType !== 'all')
+                <p>Vehicle Type: {{ ucfirst($vehicleType) }}</p>
+            @endif
+            <p>Generated: {{ \Carbon\Carbon::now()->format('d M Y H:i:s') }}</p>
+        </div>
+
+        <!-- Print Summary (only visible when printing) -->
+        <div class="print-summary" style="display: none;">
+            <h3>Summary</h3>
+            <div class="summary-row">
+                <strong>Total Vehicles:</strong>
+                <span>{{ $totalVehicles ?? 0 }}</span>
+            </div>
+            <div class="summary-row">
+                <strong>Total Profit:</strong>
+                <span class="{{ ($totalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">RM {{ number_format($totalProfit ?? 0, 2) }}</span>
+            </div>
+        </div>
+
         <x-admin-page-header 
             title="Expenses and Profit" 
             description="Vehicle-wise expenses and profit breakdown"
@@ -132,10 +229,10 @@
                                 <th>Vehicle ID</th>
                                 <th>Vehicle</th>
                                 <th>Plate Number</th>
-                                <th>Owner Leasing Price</th>
-                                <th>Expenses (Maintenance)</th>
-                                <th>Expenses (Staff)</th>
-                                <th>Profit</th>
+                                <th class="text-right">Owner Leasing Price</th>
+                                <th class="text-right">Expenses (Maintenance)</th>
+                                <th class="text-right">Expenses (Staff)</th>
+                                <th class="text-right">Profit</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -144,7 +241,7 @@
                                     <td>#{{ $vehicle['vehicleID'] }}</td>
                                     <td>{{ $vehicle['vehicle'] }}</td>
                                     <td>{{ $vehicle['plate_number'] ?? 'N/A' }}</td>
-                                    <td>
+                                    <td class="text-right">
                                         <span class="editable-leasing-price" 
                                               data-owner-id="{{ $vehicle['ownerID'] ?? '' }}"
                                               data-current-value="{{ $vehicle['leasing_price'] ?? 0 }}"
@@ -152,10 +249,10 @@
                                             RM {{ number_format($vehicle['leasing_price'], 2) }}
                                         </span>
                                     </td>
-                                    <td>RM {{ number_format($vehicle['expenses'], 2) }}</td>
-                                    <td>RM {{ number_format($vehicle['staff_expenses'] ?? 0, 2) }}</td>
-                                    <td>
-                                        <span class="fw-bold {{ $vehicle['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                    <td class="text-right">RM {{ number_format($vehicle['expenses'], 2) }}</td>
+                                    <td class="text-right">RM {{ number_format($vehicle['staff_expenses'] ?? 0, 2) }}</td>
+                                    <td class="text-right {{ $vehicle['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                        <span class="fw-bold">
                                             RM {{ number_format($vehicle['profit'], 2) }}
                                         </span>
                                     </td>
@@ -166,6 +263,14 @@
                                 </tr>
                             @endforelse
                         </tbody>
+                        <tfoot>
+                            <tr style="background-color: #e9ecef; font-weight: bold;">
+                                <td colspan="6" class="text-right">Total Profit:</td>
+                                <td class="text-right {{ ($totalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                    RM {{ number_format($totalProfit ?? 0, 2) }}
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>

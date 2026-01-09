@@ -5,7 +5,7 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h4 mb-0"><i class="bi bi-pencil"></i> Edit Customer</h1>
-        <a href="{{ route('admin.customers.index') }}" class="btn btn-sm btn-outline-secondary">
+        <a href="{{ route('admin.manage.client') }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Back to List
         </a>
     </div>
@@ -105,7 +105,7 @@
                     </div>
                 </div>
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ route('admin.customers.index') }}" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ route('admin.manage.client') }}" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-danger">Update Customer</button>
                 </div>
             </form>

@@ -334,7 +334,7 @@ class AdminRentalReportController extends Controller
     {
         $totalBookings = $bookings->count();
         $totalRevenue = $bookings->sum(function($booking) {
-            return $booking->payments()->where('payment_status', 'Verified')->sum('amount');
+            return $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
         });
         $cancelledBookings = $bookings->where('booking_status', 'Cancelled')->count();
 

@@ -85,11 +85,11 @@
             @foreach($bookings as $booking)
                 @php
                     $vehicle = $booking->vehicle;
-                    $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
+                    $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
                 @endphp
                 <tr>
                     <td>#{{ $booking->bookingID ?? $booking->id }}</td>
-                    <td>{{ $booking->user->name ?? 'Unknown' }}</td>
+                    <td>{{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'Unknown' }}</td>
                     <td>{{ $vehicle ? (($vehicle->vehicle_brand ?? '') . ' ' . ($vehicle->vehicle_model ?? '')) : 'N/A' }}</td>
                     <td>{{ $vehicle ? ($vehicle->plate_number ?? $vehicle->plate_no ?? 'N/A') : 'N/A' }}</td>
                     <td>{{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</td>

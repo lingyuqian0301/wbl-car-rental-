@@ -23,6 +23,7 @@ class AdminInvoiceController extends Controller
             'vehicle', 
             'payments', 
             'invoice',
+            'additionalCharges',
         ])->whereHas('invoice');
 
         // Search by plate number

@@ -62,6 +62,31 @@ class Booking extends Model
     }
 
     /**
+     * Get the user through customer relationship (helper accessor).
+     * This allows $booking->user to work even though there's no direct relationship.
+     */
+    public function getUserAttribute()
+    {
+        return $this->customer ? $this->customer->user : null;
+    }
+
+    /**
+     * Get the user who confirmed this booking.
+     */
+    public function confirmedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'confirmed_by', 'userID');
+    }
+
+    /**
+     * Get the user who completed this booking.
+     */
+    public function completedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completed_by', 'userID');
+    }
+
+    /**
      * Get the vehicle for this booking.
      */
     public function vehicle(): BelongsTo

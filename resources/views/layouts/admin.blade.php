@@ -440,8 +440,8 @@
                 </div>
             </div>
 
-            <!-- Reports (Admin Only) -->
-            @if(auth()->check() && auth()->user()->isAdmin())
+            <!-- Reports (Admin Only - Exclude StaffIT) -->
+            @if(auth()->check() && auth()->user()->isAdmin() && !auth()->user()->isStaffIT())
             <div class="menu-item has-submenu {{ request()->routeIs('admin.reports.*') ? 'active open' : '' }}" data-menu="reports">
                 <a onclick="toggleMenu('reports')">
                     <i class="bi bi-graph-up"></i>

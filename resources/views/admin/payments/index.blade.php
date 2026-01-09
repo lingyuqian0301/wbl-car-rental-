@@ -288,7 +288,7 @@
                                 <form action="{{ route('admin.payments.update-verify', $payment->paymentID) }}" method="POST" class="d-inline" id="verifyForm{{ $payment->paymentID }}">
                                     @csrf
                                     @method('PUT')
-                                    <select name="payment_isVerify" class="form-select form-select-sm verify-dropdown" onchange="document.getElementById('verifyForm{{ $payment->paymentID }}').submit();">
+                                    <select name="payment_isVerify" class="form-select form-select-sm verify-dropdown" onchange="this.form.submit();">
                                         <option value="0" {{ ($payment->payment_isVerify ?? false) ? '' : 'selected' }}>False</option>
                                         <option value="1" {{ ($payment->payment_isVerify ?? false) ? 'selected' : '' }}>True</option>
                                     </select>
@@ -308,17 +308,17 @@
                                 @endif
                             </td>
                             <td>
-                                @php
-                                    $verifiedBy = null;
-                                    if (isset($payment->verify_by) && $payment->verify_by) {
-                                        $verifiedBy = \App\Models\User::find($payment->verify_by);
-                                    }
-                                @endphp
-                                @if($verifiedBy)
-                                    {{ $verifiedBy->name ?? 'User #' . $payment->verify_by }}
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
+                                <form action="{{ route('admin.payments.update-verify', $payment->paymentID) }}" method="POST" class="d-inline" id="verifyByForm{{ $payment->paymentID }}">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="payment_isVerify" value="{{ ($payment->payment_isVerify ?? false) ? '1' : '0' }}">
+                                    <select name="verify_by" class="form-select form-select-sm verify-dropdown" onchange="document.getElementById('verifyByForm{{ $payment->paymentID }}').submit();" {{ !($payment->payment_isVerify ?? false) ? 'disabled' : '' }}>
+                                        <option value="">Select Staff</option>
+                                        @foreach($verifyByUsers ?? [] as $user)
+                                            <option value="{{ $user->userID }}" {{ ($payment->verify_by ?? null) == $user->userID ? 'selected' : '' }}>{{ $user->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </form>
                             </td>
                         </tr>
                     @empty

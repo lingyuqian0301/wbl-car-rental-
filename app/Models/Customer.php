@@ -20,6 +20,7 @@ class Customer extends Model
         'phone_number',
         'address',
         'customer_license',
+        'customer_license_img',
         'emergency_contact',
         'booking_times',
         'default_bank_name',

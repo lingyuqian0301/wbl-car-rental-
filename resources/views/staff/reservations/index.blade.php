@@ -126,13 +126,13 @@
                     @forelse($bookings as $booking)
                         @php
                             $vehicle = $booking->vehicle;
-                            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('amount');
+                            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
                             $paymentStatus = $totalPaid >= $booking->total_price ? 'Fully Paid' : ($totalPaid > 0 ? 'Deposit Only' : 'Unpaid');
                             $latestPayment = $booking->payments()->orderBy('payment_date', 'desc')->first();
                         @endphp
                         <tr>
                             <td><strong>#{{ $booking->bookingID ?? $booking->id }}</strong></td>
-                            <td>{{ $booking->user->name ?? 'Unknown Customer' }}</td>
+                            <td>{{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'Unknown Customer' }}</td>
                             <td>
                                 @if($vehicle)
                                     {{ $vehicle->full_model ?? ($vehicle->vehicle_brand ?? '') . ' ' . ($vehicle->vehicle_model ?? '') }}

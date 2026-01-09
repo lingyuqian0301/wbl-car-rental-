@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard')
+@section('title', 'Staff IT Dashboard')
 
 @section('content')
     <style>
@@ -71,7 +71,7 @@
                 <div>
                     <div class="d-flex align-items-center gap-3">
                         <div>
-                            <h1 class="h3 mb-1 fw-bold">Hasta {{ isset($isStaffIT) && $isStaffIT ? 'Staff IT' : (isset($isStaff) && $isStaff ? 'Staff' : 'Admin') }} Dashboard</h1>
+                            <h1 class="h3 mb-1 fw-bold">Hasta Staff IT Dashboard</h1>
                         </div>
                     </div>
                     <p class="mb-0 mt-3 fw-semibold">Snapshot for {{ $today->format('d M Y') }}</p>
@@ -103,22 +103,6 @@
                     </div>
                 </a>
             </div>
-            @if((!isset($isStaff) || !$isStaff) && (!auth()->check() || !auth()->user()->isStaffIT()))
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.rentals', ['date_range' => 'monthly']) }}" class="text-decoration-none text-dark">
-                    <div class="card metric-card" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                        <div class="card-body d-flex gap-3 align-items-center">
-                            <div class="metric-icon"><i class="bi bi-cash-coin"></i></div>
-                            <div>
-                                <p class="text-muted mb-1">Revenue (This Month)</p>
-                                <h3 class="fw-bold mb-0">RM {{ number_format($metrics['revenueThisMonth'] ?? 0, 2) }}</h3>
-                                <small class="text-muted-small">All-time RM {{ number_format($metrics['revenueAllTime'] ?? 0, 2) }}</small>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            @endif
             <div class="col-12 col-md-6 col-xl-3">
                 <a href="{{ route('admin.payments.index', ['payment_isVerify' => '0']) }}" class="text-decoration-none text-dark">
                     <div class="card metric-card" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
@@ -146,6 +130,18 @@
                         </div>
                     </div>
                 </a>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card metric-card">
+                    <div class="card-body d-flex gap-3 align-items-center">
+                        <div class="metric-icon"><i class="bi bi-people"></i></div>
+                        <div>
+                            <p class="text-muted mb-1">Total Customers</p>
+                            <h3 class="fw-bold mb-0">{{ \App\Models\Customer::count() }}</h3>
+                            <small class="text-muted-small">Registered customers</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -181,40 +177,9 @@
             </div>
         </div>
 
-        <!-- Revenue trend + Fleet load -->
+        <!-- Fleet load only (no revenue/profit trend) -->
         <div class="row g-3 mb-4">
-            @if((!isset($isStaff) || !$isStaff) && (!auth()->check() || !auth()->user()->isStaffIT()))
-            <div class="col-lg-8">
-                <div class="card h-100">
-                    <div class="card-header card-header-red d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold">Profit Trend (last 3 months)</span>
-                        <i class="bi bi-graph-up"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="row row-cols-2 row-cols-md-3 g-3">
-                            @foreach($monthlyRevenue ?? [] as $point)
-                                <div class="col">
-                                    <a href="{{ route('admin.reports.rentals', ['date_range' => 'custom', 'date_from' => $point['date_from'], 'date_to' => $point['date_to']]) }}" class="text-decoration-none text-dark">
-                                        <div class="p-3 border rounded-3 text-center h-100" style="border-color: #fde2e2; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                                            <p class="mb-1 text-muted">{{ $point['label'] }}</p>
-                                            <h5 class="mb-2 fw-bold">RM {{ number_format($point['total'], 2) }}</h5>
-                                            <div class="progress" style="height: 6px;">
-                                                @php
-                                                    $max = max(1, collect($monthlyRevenue)->max('total'));
-                                                    $percent = ($point['total'] / $max) * 100;
-                                                @endphp
-                                                <div class="progress-bar progress-bar-red" role="progressbar" style="width: {{ $percent }}%;"></div>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-            <div class="{{ ((!isset($isStaff) || !$isStaff) && (!auth()->check() || !auth()->user()->isStaffIT())) ? 'col-lg-4' : 'col-lg-12' }}">
+            <div class="col-lg-12">
                 <a href="{{ route('admin.bookings.reservations', ['filter_pickup_date_from' => $startOfWeek->format('Y-m-d'), 'filter_pickup_date_to' => $endOfWeek->format('Y-m-d'), 'sort' => 'status_priority']) }}" class="text-decoration-none text-dark">
                     <div class="card h-100" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
                         <div class="card-header card-header-red d-flex justify-content-between align-items-center">
@@ -283,7 +248,7 @@
                                         <td>#{{ $payment->bookingID }}</td>
                                         <td>{{ $payment->booking->customer->user->name ?? 'Unknown' }}</td>
                                         <td>{{ $payment->booking->vehicle->plate_number ?? 'N/A' }}</td>
-                                        <td class="fw-semibold text-danger">RM {{ number_format($payment->total_amount ?? $payment->amount, 2) }}</td>
+                                        <td class="fw-semibold text-danger">RM {{ number_format($payment->total_amount ?? 0, 2) }}</td>
                                         <td>{{ $payment->payment_date?->format('d M Y') }}</td>
                                         <td class="text-end">
                                             <a href="{{ route('admin.payments.index', ['search' => $payment->bookingID, 'payment_isVerify' => '0']) }}" class="btn btn-outline-danger btn-sm pill-btn">
@@ -419,7 +384,9 @@
 
         <!-- Footer -->
         <div class="d-flex justify-content-between align-items-center py-3 text-muted-small">
-            <span>Hasta Travel Vehicle Rental System · Admin dashboard</span>
+            <span>Hasta Travel Vehicle Rental System · Staff IT dashboard</span>
         </div>
     </div>
 @endsection
+
+

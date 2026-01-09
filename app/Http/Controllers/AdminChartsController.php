@@ -62,26 +62,28 @@ class AdminChartsController extends Controller
         $facultyMonthEnd = $facultyMonthStart->copy()->endOfMonth();
         
         $facultyData = [];
-        // Get bookings and join with customer -> studentdetails to get faculty
+        // Get bookings and join with customer -> localStudent/internationalStudent -> studentDetails to get faculty
         $bookings = Booking::whereBetween('rental_start_date', [$facultyMonthStart, $facultyMonthEnd])
             ->where('booking_status', '!=', 'Cancelled')
-            ->with(['customer.studentDetail'])
+            ->with(['customer.localStudent.studentDetails', 'customer.internationalStudent.studentDetails'])
             ->get();
         
         foreach ($bookings as $booking) {
-            if ($booking->customer && $booking->customer->studentDetail) {
-                $faculty = $booking->customer->studentDetail->faculty ?? 'Unknown';
-                if (!isset($facultyData[$faculty])) {
-                    $facultyData[$faculty] = 0;
+            $faculty = 'Unknown';
+            if ($booking->customer) {
+                // Check local student first
+                if ($booking->customer->localStudent && $booking->customer->localStudent->studentDetails) {
+                    $faculty = $booking->customer->localStudent->studentDetails->faculty ?? 'Unknown';
                 }
-                $facultyData[$faculty]++;
-            } else {
-                $faculty = 'Unknown';
-                if (!isset($facultyData[$faculty])) {
-                    $facultyData[$faculty] = 0;
+                // Check international student if local student not found
+                elseif ($booking->customer->internationalStudent && $booking->customer->internationalStudent->studentDetails) {
+                    $faculty = $booking->customer->internationalStudent->studentDetails->faculty ?? 'Unknown';
                 }
-                $facultyData[$faculty]++;
             }
+            if (!isset($facultyData[$faculty])) {
+                $facultyData[$faculty] = 0;
+            }
+            $facultyData[$faculty]++;
         }
 
         // Brand rental data
@@ -218,23 +220,25 @@ class AdminChartsController extends Controller
         $facultyData = [];
         $bookings = Booking::whereBetween('rental_start_date', [$facultyMonthStart, $facultyMonthEnd])
             ->where('booking_status', '!=', 'Cancelled')
-            ->with(['customer.studentDetail'])
+            ->with(['customer.localStudent.studentDetails', 'customer.internationalStudent.studentDetails'])
             ->get();
         
         foreach ($bookings as $booking) {
-            if ($booking->customer && $booking->customer->studentDetail) {
-                $faculty = $booking->customer->studentDetail->faculty ?? 'Unknown';
-                if (!isset($facultyData[$faculty])) {
-                    $facultyData[$faculty] = 0;
+            $faculty = 'Unknown';
+            if ($booking->customer) {
+                // Check local student first
+                if ($booking->customer->localStudent && $booking->customer->localStudent->studentDetails) {
+                    $faculty = $booking->customer->localStudent->studentDetails->faculty ?? 'Unknown';
                 }
-                $facultyData[$faculty]++;
-            } else {
-                $faculty = 'Unknown';
-                if (!isset($facultyData[$faculty])) {
-                    $facultyData[$faculty] = 0;
+                // Check international student if local student not found
+                elseif ($booking->customer->internationalStudent && $booking->customer->internationalStudent->studentDetails) {
+                    $faculty = $booking->customer->internationalStudent->studentDetails->faculty ?? 'Unknown';
                 }
-                $facultyData[$faculty]++;
             }
+            if (!isset($facultyData[$faculty])) {
+                $facultyData[$faculty] = 0;
+            }
+            $facultyData[$faculty]++;
         }
 
         // Brand rental data

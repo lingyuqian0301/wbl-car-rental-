@@ -36,7 +36,7 @@
                                         <strong>New Booking</strong>
                                         @if($notification->booking)
                                             <div class="mt-1 small">
-                                                <div><strong>{{ $notification->booking->user->name }}</strong> booked <strong>{{ $notification->booking->vehicle->full_model }}</strong></div>
+                                                <div><strong>{{ $notification->booking->customer && $notification->booking->customer->user ? $notification->booking->customer->user->name : 'Unknown' }}</strong> booked <strong>{{ $notification->booking->vehicle->full_model ?? 'N/A' }}</strong></div>
                                                 <div class="text-muted">
                                                     Date: {{ $notification->booking->start_date->format('d M Y') }} - {{ $notification->booking->end_date->format('d M Y') }}
                                                     | Time: {{ $notification->created_at->format('h:i A') }}

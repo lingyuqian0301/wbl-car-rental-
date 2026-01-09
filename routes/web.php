@@ -55,6 +55,7 @@ use App\Http\Controllers\AdminVoucherController;
 use App\Http\Controllers\AgreementController;
 
 use App\Http\Controllers\StaffDashboardController;
+use App\Http\Controllers\StaffITDashboardController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
@@ -228,6 +229,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/staff/dashboard', StaffDashboardController::class)->name('staff.dashboard');
     });
 
+    // StaffIT dashboard route (separate from other staff)
+    Route::middleware('adminOrStaff')->group(function () {
+        Route::get('/staffit/dashboard', StaffITDashboardController::class)->name('staffit.dashboard');
+    });
+
     // Admin and Staff routes (shared access - except reports and settings)
     Route::middleware('adminOrStaff')->group(function () {
         Route::get('/admin/dashboard', AdminDashboardController::class)->name('admin.dashboard');
@@ -309,6 +315,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('admin/bookings')->name('admin.bookings.')->group(function () {
             Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations');
+            Route::get('/reservations/{booking}', [AdminReservationController::class, 'show'])->name('reservations.show');
             Route::post('/reservations/{booking}/update-status', [AdminReservationController::class, 'updateBookingStatus'])->name('reservations.update-status');
             Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
             Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
@@ -327,6 +334,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/delete-selected', [AdminCustomerController::class, 'deleteSelected'])->name('delete-selected');
             Route::get('/export-pdf', [AdminCustomerController::class, 'exportPdf'])->name('export-pdf');
             Route::get('/export-excel', [AdminCustomerController::class, 'exportExcel'])->name('export-excel');
+            Route::post('/{customer}/upload-license', [AdminCustomerController::class, 'uploadLicense'])->name('upload-license');
+            Route::post('/{customer}/upload-ic', [AdminCustomerController::class, 'uploadIc'])->name('upload-ic');
             Route::get('/{customer}/edit', [AdminCustomerController::class, 'edit'])->name('edit');
             Route::put('/{customer}', [AdminCustomerController::class, 'update'])->name('update');
             Route::delete('/{customer}', [AdminCustomerController::class, 'destroy'])->name('destroy');

@@ -8,14 +8,14 @@
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #dc2626;">Balance Payment Reminder</h2>
         
-        <p>Dear {{ $booking->user->name }},</p>
+        <p>Dear {{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'Customer' }},</p>
         
         <p>This is a reminder regarding your booking #{{ $booking->id }} for <strong>{{ $booking->vehicle->full_model }}</strong> ({{ $booking->vehicle->registration_number }}).</p>
         
         <div style="background: #fee2e2; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #dc2626;">Payment Summary</h3>
             <p><strong>Total Booking Amount:</strong> RM {{ number_format($booking->total_price, 2) }}</p>
-            <p><strong>Amount Paid:</strong> RM {{ number_format($booking->payments()->where('payment_status', 'Verified')->sum('amount'), 2) }}</p>
+            <p><strong>Amount Paid:</strong> RM {{ number_format($booking->payments()->where('payment_status', 'Verified')->sum('total_amount'), 2) }}</p>
             <p><strong style="color: #dc2626; font-size: 1.2em;">Balance Due:</strong> RM {{ number_format($balanceDue, 2) }}</p>
         </div>
         

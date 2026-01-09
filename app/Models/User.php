@@ -11,7 +11,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $table = 'users';
+    protected $table = 'user';
     protected $primaryKey = 'userID'; 
     public $incrementing = true;
     protected $keyType = 'int';
@@ -78,5 +78,14 @@ class User extends Authenticatable
     public function isStaff(): bool
     {
         return $this->staff()->exists() || $this->role == 2 || $this->role === 'staff';
+    }
+
+    public function isStaffIT(): bool
+    {
+        if ($this->staff()->exists()) {
+            $staff = $this->staff;
+            return $staff && $staff->staffIt()->exists();
+        }
+        return false;
     }
 }

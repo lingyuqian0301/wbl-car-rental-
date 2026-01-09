@@ -79,17 +79,26 @@
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $totalRequired = $depositAmount + $rentalAmount;
+                    $outstandingBalance = max(0, $totalRequired - $totalPaid);
+                @endphp
                 <tr>
                     <td>
-                        Car Rental Charges
-                        <br><small style="color:#777;">Rate per day: RM {{ number_format($booking->vehicle->price_per_day ?? 0, 2) }}</small>
+                        Total Payment Required
+                        <br><small style="color:#777;">Deposit: RM {{ number_format($depositAmount, 2) }} + Rental: RM {{ number_format($rentalAmount, 2) }}</small>
                     </td>
-                    <td class="text-right">{{ number_format($rentalAmount, 2) }}</td>
+                    <td class="text-right">{{ number_format($totalRequired, 2) }}</td>
                 </tr>
 
                 <tr>
-                    <td>Security Deposit <small>(Refundable)</small></td>
-                    <td class="text-right">{{ number_format($depositAmount, 2) }}</td>
+                    <td>Paid Amount</td>
+                    <td class="text-right" style="color: green;">{{ number_format($totalPaid, 2) }}</td>
+                </tr>
+
+                <tr>
+                    <td>Outstanding Balance</td>
+                    <td class="text-right" style="color: {{ $outstandingBalance > 0 ? '#d9534f' : 'green' }};">{{ number_format($outstandingBalance, 2) }}</td>
                 </tr>
 
                 @if(isset($voucher) && $voucher)

@@ -209,7 +209,11 @@
                                 $staffServed = $booking->staff_served ? \App\Models\User::find($booking->staff_served) : null;
                             @endphp
                             <tr>
-                                <td><strong>#{{ $booking->bookingID }}</strong></td>
+                                <td>
+                                    <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" class="text-decoration-none fw-bold text-primary">
+                                        #{{ $booking->bookingID }}
+                                    </a>
+                                </td>
                                 <td>{{ $user->name ?? 'Unknown' }}</td>
                                 <td>
                                     <strong>{{ $vehicle->plate_number ?? 'N/A' }}</strong>
@@ -245,10 +249,50 @@
                                         <div class="reservation-info-text">
                                             <div>
                                                 @if($latestPayment->transaction_reference)
-                                                    <a href="{{ asset('storage/' . $latestPayment->transaction_reference) }}" 
-                                                       target="_blank" class="text-primary">
-                                                        <i class="bi bi-image"></i> View Receipt
-                                                    </a>
+                                                    @php
+                                                        // Check if transaction_reference is a file path
+                                                        $receiptPath = $latestPayment->transaction_reference;
+                                                        $isImagePath = str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/') || str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf');
+                                                        
+                                                        if ($isImagePath) {
+                                                            if (str_starts_with($receiptPath, 'uploads/')) {
+                                                                $imageUrl = asset($receiptPath);
+                                                            } else {
+                                                                $imageUrl = asset('storage/' . $receiptPath);
+                                                            }
+                                                        } else {
+                                                            $imageUrl = null;
+                                                        }
+                                                    @endphp
+                                                    @if($imageUrl)
+                                                        <a href="{{ $imageUrl }}" 
+                                                           target="_blank" 
+                                                           class="text-primary"
+                                                           data-bs-toggle="modal" 
+                                                           data-bs-target="#receiptModal{{ $latestPayment->paymentID }}">
+                                                            <i class="bi bi-image"></i> View Receipt
+                                                        </a>
+                                                        <!-- Receipt Modal -->
+                                                        <div class="modal fade" id="receiptModal{{ $latestPayment->paymentID }}" tabindex="-1">
+                                                            <div class="modal-dialog modal-lg">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header">
+                                                                        <h5 class="modal-title">Receipt - Payment #{{ $latestPayment->paymentID }}</h5>
+                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                    </div>
+                                                                    <div class="modal-body text-center">
+                                                                        @if(str_contains(strtolower($receiptPath), '.pdf'))
+                                                                            <iframe src="{{ $imageUrl }}" style="width: 100%; height: 600px;"></iframe>
+                                                                        @else
+                                                                            <img src="{{ $imageUrl }}" alt="Receipt" class="img-fluid" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-muted small" title="Transaction Reference">{{ strlen($latestPayment->transaction_reference) > 20 ? substr($latestPayment->transaction_reference, 0, 20) . '...' : $latestPayment->transaction_reference }}</span>
+                                                    @endif
                                                 @else
                                                     <span class="text-muted">No receipt</span>
                                                 @endif

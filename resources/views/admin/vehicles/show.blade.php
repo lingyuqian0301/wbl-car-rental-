@@ -260,75 +260,107 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                            <dl class="row mb-0">
-                                        <dt class="col-auto">Vehicle Brand:</dt>
-                                        <dd class="col">{{ $vehicle->vehicle_brand ?? 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Vehicle Model:</dt>
-                                        <dd class="col">{{ $vehicle->vehicle_model ?? 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Plate Number:</dt>
-                                        <dd class="col">{{ $vehicle->plate_number ?? 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Registration Date:</dt>
-                                        <dd class="col">{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Available Status:</dt>
-                                <dd class="col">
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Vehicle Brand:</div>
+                                        <div>{{ $vehicle->vehicle_brand ?? 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Vehicle Model:</div>
+                                        <div>{{ $vehicle->vehicle_model ?? 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Plate Number:</div>
+                                        <div>{{ $vehicle->plate_number ?? 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Registration Date:</div>
+                                        <div>{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Available Status:</div>
+                                        <div>
                                             <span class="badge {{ $vehicle->availability_status === 'available' ? 'bg-success' : ($vehicle->availability_status === 'rented' ? 'bg-warning text-dark' : ($vehicle->availability_status === 'maintenance' ? 'bg-info' : 'bg-secondary')) }}">
                                                 {{ ucfirst($vehicle->availability_status ?? 'Unknown') }}
                                             </span>
-                                </dd>
-                                        
-                                        <dt class="col-auto">Created Date:</dt>
-                                        <dd class="col">{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Manufacturing Year:</dt>
-                                        <dd class="col">{{ $vehicle->manufacturing_year ?? 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Color:</dt>
-                                        <dd class="col">{{ $vehicle->color ?? 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Engine Capacity:</dt>
-                                        <dd class="col">{{ $vehicle->engineCapacity ? number_format($vehicle->engineCapacity, 2) . 'L' : 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Vehicle Type:</dt>
-                                        <dd class="col">{{ $vehicle->vehicleType ?? 'N/A' }}</dd>
-                                        
-                                        <dt class="col-auto">Rental Price:</dt>
-                                        <dd class="col">RM {{ number_format($vehicle->rental_price ?? 0, 2) }}</dd>
-                                        
-                                        <dt class="col-auto">Is Active:</dt>
-                                    <dd class="col">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Created Date:</div>
+                                        <div>{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Manufacturing Year:</div>
+                                        <div>{{ $vehicle->manufacturing_year ?? 'N/A' }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Color:</div>
+                                        <div>{{ $vehicle->color ?? 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Engine Capacity:</div>
+                                        <div>{{ $vehicle->engineCapacity ? number_format($vehicle->engineCapacity, 2) . 'L' : 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Vehicle Type:</div>
+                                        <div>{{ $vehicle->vehicleType ?? 'N/A' }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Rental Price:</div>
+                                        <div>RM {{ number_format($vehicle->rental_price ?? 0, 2) }}</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="fw-semibold text-muted small mb-1">Is Active:</div>
+                                        <div>
                                             <span class="badge {{ ($vehicle->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
                                                 {{ ($vehicle->isActive ?? false) ? 'Active' : 'Inactive' }}
                                             </span>
-                                    </dd>
-                                    </dl>
-                                </div>
-                                <div class="col-md-6">
+                                        </div>
+                                    </div>
+                                    
                                     @if($vehicle->car)
-                                        <h6 class="fw-semibold mb-3">Car Details</h6>
-                                        <dl class="row mb-0">
-                                            <dt class="col-auto">Seating Capacity:</dt>
-                                            <dd class="col">{{ $vehicle->car->seating_capacity ?? 'N/A' }}</dd>
+                                        <div class="mt-4 pt-3 border-top">
+                                            <h6 class="fw-semibold mb-3">Car Details</h6>
+                                            <div class="mb-3">
+                                                <div class="fw-semibold text-muted small mb-1">Seating Capacity:</div>
+                                                <div>{{ $vehicle->car->seating_capacity ?? 'N/A' }}</div>
+                                            </div>
                                             
-                                            <dt class="col-auto">Transmission:</dt>
-                                            <dd class="col">{{ $vehicle->car->transmission ?? 'N/A' }}</dd>
+                                            <div class="mb-3">
+                                                <div class="fw-semibold text-muted small mb-1">Transmission:</div>
+                                                <div>{{ $vehicle->car->transmission ?? 'N/A' }}</div>
+                                            </div>
                                             
-                                            <dt class="col-auto">Model:</dt>
-                                            <dd class="col">{{ $vehicle->car->model ?? 'N/A' }}</dd>
+                                            <div class="mb-3">
+                                                <div class="fw-semibold text-muted small mb-1">Model:</div>
+                                                <div>{{ $vehicle->car->model ?? 'N/A' }}</div>
+                                            </div>
                                             
-                                            <dt class="col-auto">Car Type:</dt>
-                                            <dd class="col">{{ $vehicle->car->car_type ?? 'N/A' }}</dd>
-                                        </dl>
+                                            <div class="mb-3">
+                                                <div class="fw-semibold text-muted small mb-1">Car Type:</div>
+                                                <div>{{ $vehicle->car->car_type ?? 'N/A' }}</div>
+                                            </div>
+                                        </div>
                                     @elseif($vehicle->motorcycle)
-                                        <h6 class="fw-semibold mb-3">Motorcycle Details</h6>
-                                        <dl class="row mb-0">
-                                            <dt class="col-auto">Motor Type:</dt>
-                                            <dd class="col">{{ $vehicle->motorcycle->motor_type ?? 'N/A' }}</dd>
-                                        </dl>
-                                @endif
+                                        <div class="mt-4 pt-3 border-top">
+                                            <h6 class="fw-semibold mb-3">Motorcycle Details</h6>
+                                            <div class="mb-3">
+                                                <div class="fw-semibold text-muted small mb-1">Motor Type:</div>
+                                                <div>{{ $vehicle->motorcycle->motor_type ?? 'N/A' }}</div>
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -800,16 +832,46 @@
                                     <div class="col-md-6">
                                         <dl class="row mb-0">
                                             <dt class="col-5">Registration Date:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->registration_date ? \Carbon\Carbon::parse($vehicle->owner->registration_date)->format('d M Y') : 'N/A' }}</dd>
+                                            <dd class="col-7">
+                                                @if($vehicle->owner->registration_date)
+                                                    @try
+                                                        {{ \Carbon\Carbon::parse($vehicle->owner->registration_date)->format('d M Y') }}
+                                                    @catch(\Exception $e)
+                                                        {{ $vehicle->owner->registration_date }}
+                                                    @endtry
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </dd>
                                             
                                             <dt class="col-5">Leasing Price:</dt>
                                             <dd class="col-7">RM {{ number_format($vehicle->owner->leasing_price ?? 0, 2) }}</dd>
                                             
                                             <dt class="col-5">Leasing Due Date:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->leasing_due_date ? \Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('d M Y') : 'N/A' }}</dd>
+                                            <dd class="col-7">
+                                                @if($vehicle->owner->leasing_due_date)
+                                                    @try
+                                                        {{ \Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('d M Y') }}
+                                                    @catch(\Exception $e)
+                                                        {{ $vehicle->owner->leasing_due_date }}
+                                                    @endtry
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </dd>
                                             
                                             <dt class="col-5">License Expiry Date:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->license_expirydate ? \Carbon\Carbon::parse($vehicle->owner->license_expirydate)->format('d M Y') : 'N/A' }}</dd>
+                                            <dd class="col-7">
+                                                @if($vehicle->owner->license_expirydate)
+                                                    @try
+                                                        {{ \Carbon\Carbon::parse($vehicle->owner->license_expirydate)->format('d M Y') }}
+                                                    @catch(\Exception $e)
+                                                        {{ $vehicle->owner->license_expirydate }}
+                                                    @endtry
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </dd>
                                             
                                             <dt class="col-5">Status:</dt>
                                             <dd class="col-7">
@@ -920,8 +982,8 @@
                                             <h6 class="fw-semibold">IC</h6>
                                             @php
                                                 $icImg = null;
-                                                if ($vehicle->owner && $vehicle->owner->personDetails) {
-                                                    $icImg = $vehicle->owner->personDetails->ic_img ?? null;
+                                                if ($vehicle->owner) {
+                                                    $icImg = $vehicle->owner->ic_img ?? null;
                                                 }
                                             @endphp
                                             @if($icImg)
@@ -1348,8 +1410,18 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Registration Date</label>
+                                @php
+                                    $registrationDateValue = '';
+                                    if ($vehicle->owner && $vehicle->owner->registration_date) {
+                                        try {
+                                            $registrationDateValue = \Carbon\Carbon::parse($vehicle->owner->registration_date)->format('Y-m-d');
+                                        } catch (\Exception $e) {
+                                            $registrationDateValue = '';
+                                        }
+                                    }
+                                @endphp
                                 <input type="date" name="registration_date" class="form-control @error('registration_date') is-invalid @enderror" 
-                                       value="{{ old('registration_date', ($vehicle->owner && $vehicle->owner->registration_date) ? \Carbon\Carbon::parse($vehicle->owner->registration_date)->format('Y-m-d') : '') }}">
+                                       value="{{ old('registration_date', $registrationDateValue) }}">
                                 @error('registration_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -1364,8 +1436,18 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Leasing Due Date</label>
+                                @php
+                                    $leasingDueDateValue = '';
+                                    if ($vehicle->owner && $vehicle->owner->leasing_due_date) {
+                                        try {
+                                            $leasingDueDateValue = \Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('Y-m-d');
+                                        } catch (\Exception $e) {
+                                            $leasingDueDateValue = '';
+                                        }
+                                    }
+                                @endphp
                                 <input type="date" name="leasing_due_date" class="form-control @error('leasing_due_date') is-invalid @enderror" 
-                                       value="{{ old('leasing_due_date', ($vehicle->owner && $vehicle->owner->leasing_due_date) ? \Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('Y-m-d') : '') }}">
+                                       value="{{ old('leasing_due_date', $leasingDueDateValue) }}">
                                 @error('leasing_due_date')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror

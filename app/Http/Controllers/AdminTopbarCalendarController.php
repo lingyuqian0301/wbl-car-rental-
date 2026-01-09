@@ -27,7 +27,7 @@ class AdminTopbarCalendarController extends Controller
 
         // Get bookings based on filters
         // Note: 'vehicle' is not a relationship, it's a custom accessor, so we can't eager load it
-        $bookingsQuery = Booking::with(['user', 'payments' => function($query) {
+        $bookingsQuery = Booking::with(['customer.user', 'payments' => function($query) {
                 // Use payment_date instead of created_at for ordering
                 $query->orderBy('payment_date', 'desc');
             }, 'confirmedByUser', 'completedByUser'])
@@ -143,7 +143,7 @@ class AdminTopbarCalendarController extends Controller
     public function markAsServed(Request $request, Booking $booking)
     {
         $request->validate([
-            'served_by_user_id' => 'required|exists:user,id',
+            'served_by_user_id' => 'required|exists:user,userID',
             'notes' => 'nullable|string',
         ]);
 
@@ -186,9 +186,13 @@ class AdminTopbarCalendarController extends Controller
     public function sendBalanceReminder(Request $request, Booking $booking)
     {
         try {
-            $booking->load('user');
-            Mail::to($booking->user->email)->send(new BalanceReminderMail($booking));
-            return response()->json(['success' => true, 'message' => 'Balance reminder email sent successfully.']);
+            $booking->load('customer.user');
+            if ($booking->customer && $booking->customer->user) {
+                Mail::to($booking->customer->user->email)->send(new BalanceReminderMail($booking));
+                return response()->json(['success' => true, 'message' => 'Balance reminder email sent successfully.']);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Customer or user not found for this booking.'], 404);
+            }
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Failed to send email: ' . $e->getMessage()], 500);
         }

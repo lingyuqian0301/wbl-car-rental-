@@ -85,7 +85,7 @@ class PaymentController extends Controller
         }
 
         // 4. Create Payment Record
-        Payment::create([
+        $payment = Payment::create([
             'bookingID'               => $booking->bookingID,
             'total_amount'            => $request->amount,
             'payment_bank_name'       => $request->bank_name,
@@ -104,16 +104,23 @@ class PaymentController extends Controller
             'keep_deposit'   => $request->boolean('keep_deposit', false),
         ]);
 
-        // 6. Notify Staff (WRAPPED IN TRY-CATCH TO PREVENT CRASH)
+        // 6. Create Admin Notification for New Payment
         try {
-            if (class_exists(\App\Models\Notification::class)) {
-                \App\Models\Notification::createForStaff(
-                    "New payment uploaded for Booking #{$booking->bookingID}. Amount: RM " . number_format($request->amount, 2),
-                    null
-                );
-            }
+            \App\Models\AdminNotification::create([
+                'type' => 'new_payment',
+                'notifiable_type' => 'admin',
+                'notifiable_id' => null,
+                'user_id' => Auth::id(),
+                'booking_id' => $booking->bookingID,
+                'payment_id' => $payment->paymentID ?? null,
+                'message' => "New payment uploaded for Booking #{$booking->bookingID}. Amount: RM " . number_format($request->amount, 2),
+                'data' => [
+                    'booking_id' => $booking->bookingID,
+                    'amount' => $request->amount,
+                ],
+                'is_read' => false,
+            ]);
         } catch (\Exception $e) {
-            // If the table is missing, just log the error and continue!
             Log::warning('Notification Error (Ignored): ' . $e->getMessage());
         }
 

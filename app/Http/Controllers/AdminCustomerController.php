@@ -555,6 +555,64 @@ class AdminCustomerController extends Controller
 
         return $query;
     }
+
+    public function uploadLicense(Request $request, Customer $customer): RedirectResponse
+    {
+        $request->validate([
+            'license_img' => 'required|file|mimes:jpeg,jpg,png,gif,pdf|max:5120', // 5MB max
+        ]);
+
+        try {
+            if ($request->hasFile('license_img')) {
+                $file = $request->file('license_img');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('customer_documents', $fileName, 'public');
+
+                // Update license image in customer table
+                $customer->update([
+                    'customer_license_img' => $filePath,
+                ]);
+
+                return redirect()->back()->with('success', 'License uploaded successfully.');
+            }
+
+            return redirect()->back()->with('error', 'No file uploaded.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to upload license: ' . $e->getMessage());
+        }
+    }
+
+    public function uploadIc(Request $request, Customer $customer): RedirectResponse
+    {
+        $request->validate([
+            'ic_img' => 'required|file|mimes:jpeg,jpg,png,gif,pdf|max:5120', // 5MB max
+        ]);
+
+        try {
+            if ($request->hasFile('ic_img')) {
+                $file = $request->file('ic_img');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('customer_documents', $fileName, 'public');
+
+                // Update IC image in local table if customer is local
+                if ($customer->local) {
+                    $customer->local->update([
+                        'ic_img' => $filePath,
+                    ]);
+                } else {
+                    // For international customers, passport image might be stored differently
+                    // You may need to adjust this based on your database structure
+                    return redirect()->back()->with('error', 'IC/Passport upload is only available for local customers.');
+                }
+
+                return redirect()->back()->with('success', ($customer->local ? 'IC' : 'Passport') . ' uploaded successfully.');
+            }
+
+            return redirect()->back()->with('error', 'No file uploaded.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to upload ' . ($customer->local ? 'IC' : 'Passport') . ': ' . $e->getMessage());
+        }
+    }
 }
 
 
