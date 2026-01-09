@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use Carbon\Carbon;
-// use App\Models\OwnerCar;
-// use App\Models\VehicleDocument;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // Added for Auth
+use Illuminate\Support\Facades\DB;   // Added for DB queries
 
 class VehicleController extends Controller
 {
-public function index(Request $request)
+    public function index(Request $request)
     {
         // 1. Start the query as usual
         $query = Vehicle::with('car')->whereIn('isActive', [1, 'true']);
@@ -46,7 +46,7 @@ public function index(Request $request)
             }
 
         } else {
-            // Return empty if no filters
+            // Return empty if no filters (or change to Vehicle::all() if you want to show all by default)
             $cars = collect([]); 
         }
 
@@ -65,79 +65,65 @@ public function index(Request $request)
             ->filter()
             ->values();
 
-        return view('welcome', compact('cars', 'vehicleTypes', 'brands'));
+        // ==========================================
+        // FETCH ACTIVE VOUCHER LOGIC (For Index Page)
+        // ==========================================
+        $activeVoucher = null;
+        if (Auth::check()) {
+            $customer = \App\Models\Customer::where('userID', Auth::id())->first();
+            if ($customer) {
+                // Join voucher table with loyalty card to find active vouchers for this customer
+                $activeVoucher = DB::table('voucher')
+                    ->join('loyaltycard', 'voucher.loyaltyCardID', '=', 'loyaltycard.loyaltyCardID')
+                    ->where('loyaltycard.customerID', $customer->customerID)
+                    ->where('voucher.voucher_isActive', 1)
+                    ->select('voucher.*')
+                    ->first();
+            }
+        }
+
+        // Pass 'activeVoucher' to the view
+        return view('welcome', compact('cars', 'vehicleTypes', 'brands', 'activeVoucher'));
     }
 
-
-    public function show($id)
+    public function show($id, Request $request)
     {
         $vehicle = Vehicle::with(['car', 'motorcycle'])->findOrFail($id);
 
-        // Calculate blocked dates (active bookings)
+        // 1. Calculate blocked dates (active bookings)
         $bookings = \App\Models\Booking::where('vehicleID', $vehicle->vehicleID)
             ->where('booking_status', '!=', 'Cancelled')
             ->select('rental_start_date', 'rental_end_date')
             ->get();
 
         $blockedDates = $bookings->map(function ($booking) {
-    return [
-        'from' => Carbon::parse($booking->rental_start_date)->format('Y-m-d'),
-        'to'   => Carbon::parse($booking->rental_end_date)->format('Y-m-d'),
-    ];
-});
+            return [
+                'from' => Carbon::parse($booking->rental_start_date)->format('Y-m-d'),
+                'to'   => Carbon::parse($booking->rental_end_date)->format('Y-m-d'),
+            ];
+        });
 
+        // 2. Capture dates from URL (if available) to pre-fill form
+        $start_date = $request->query('start_date');
+        $end_date   = $request->query('end_date');
 
-        return view('vehicles.show', compact('vehicle', 'blockedDates'));
+        // ==========================================
+        // FETCH ACTIVE VOUCHER LOGIC (For Show Page)
+        // ==========================================
+        $activeVoucher = null;
+        if (Auth::check()) {
+            $customer = \App\Models\Customer::where('userID', Auth::id())->first();
+            if ($customer) {
+                $activeVoucher = DB::table('voucher')
+                    ->join('loyaltycard', 'voucher.loyaltyCardID', '=', 'loyaltycard.loyaltyCardID')
+                    ->where('loyaltycard.customerID', $customer->customerID)
+                    ->where('voucher.voucher_isActive', 1)
+                    ->select('voucher.*')
+                    ->first();
+            }
+        }
+
+        // Pass everything to the view
+        return view('vehicles.show', compact('vehicle', 'blockedDates', 'start_date', 'end_date', 'activeVoucher'));
     }
-    // public function store(Request $request)
-//     {
-
-    //         $car = Car::create([
-//             'ownerID' => auth()->user()->ownerID,
-//             'model' => $request->model,
-//             'image' => $request->file('car_image')->store('cars', 'public'),
-//             'approval_status' => 'pending'
-//         ]);
-
-    //         VehicleDocument::create([
-//             'carID' => $car->carID,
-//             'roadtax_image' => $request->file('roadtax')->store('documents', 'public'),
-//             'insurance_image' => $request->file('insurance')->store('documents', 'public'),
-//             'verification_status' => 'pending'
-//         ]);
-
-    //         return redirect()->back()->with('success', 'Car submitted for verification');
-
-    //         // 1️⃣ Create owner (staff enters owner info)
-//     $owner = OwnerCar::create([
-//         'owner_name' => $request->owner_name,
-//         'owner_phone' => $request->owner_phone,
-//     ]);
-
-    //     // 2️⃣ Create car (linked to owner)
-//     $car = Car::create([
-//         'ownerID' => $owner->ownerID,
-//         'model' => $request->model,
-//         'plate_number' => $request->plate_number,
-//         'image' => $request->file('car_image')->store('cars', 'public'),
-//         'approval_status' => 'pending'
-//     ]);
-
-    //     // 3️⃣ Create vehicle documents
-//     VehicleDocument::create([
-//         'carID' => $car->vehicleID,
-//         'roadtax_image' => $request->file('roadtax')->store('documents', 'public'),
-//         'insurance_image' => $request->file('insurance')->store('documents', 'public'),
-//         'verification_status' => 'pending'
-//     ]);
-
-    //     return redirect()->route('home')->with('success', 'Car submitted for admin verification');
-
-    //     }
-// public function bookings()
-// {
-//     return $this->hasMany(Booking::class, 'car_id');
-// }
 }
-
-

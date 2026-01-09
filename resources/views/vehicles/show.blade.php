@@ -589,8 +589,6 @@
     }
     
     </style>
-    <!-- @include('components.header') -->
-    <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     @extends('layouts.app')
 
@@ -602,7 +600,6 @@
 
     <div class="container">
 
-        <!-- LEFT -->
         <div class="vehicle-main">
 
             @php
@@ -627,7 +624,6 @@
                 <img src="{{ asset('images/cars/browse/default.png') }}" alt="Default vehicle image">
                 @endif
             </div>
-            <!-- Vehicle Specifications -->
             <div class="specs-section">
                 <h3>Vehicle Specifications</h3>
 
@@ -675,31 +671,32 @@
                         <div class="spec-value">{{ $vehicle->color ?? 'N/A' }}</div>
                     </div>
 
-                    <!-- <div class="spec">
-            <div class="spec-label">Plate Number</div>
-            <div class="spec-value">{{ $vehicle->plate_number }}</div>
-        </div> -->
-
-                </div>
+                    </div>
             </div>
 
 
 
         </div>
 
-        <!-- RIGHT - BOOKING SECTION -->
         <div class="booking-box">
             <div class="price-section">
                 <div class="price">RM {{ $vehicle->rental_price }}<span>/day</span></div>
                 <p style="margin: 0; font-size: 0.9rem;">Premium Rental Rate</p>
             </div>
 
-
+            @if(isset($activeVoucher) && $activeVoucher)
+                <div style="background-color: #d1e7dd; border: 1px dashed #198754; color: #0f5132; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 10px;">
+                    <i style="font-style: normal; font-size: 1.5rem;">🎁</i>
+                    <div>
+                        <strong style="display: block; margin-bottom: 2px;">Loyalty Reward Available!</strong>
+                        Use code <span style="background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #198754;">{{ $activeVoucher->voucher_code }}</span> to book this car for <strong>FREE</strong>.
+                    </div>
+                </div>
+            @endif
             <form method="POST" action="{{ route('booking.store', $vehicle->vehicleID) }}" class="booking-form"
                 id="bookingForm">
                 @csrf
 
-                <!-- Display validation errors -->
                 @if ($errors->any())
                 <div id="errorBox" style="background-color: #fee; border: 2px solid #dc2626; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
                     <p style="color: #dc2626; font-weight: 600; margin: 0 0 0.5rem 0;">Booking Error:</p>
@@ -716,10 +713,8 @@
                 </div>
                 @endif
 
-                <!-- PICK-UP DETAILS -->
                 <h4>Pick-up Details</h4>
 
-                <!-- Pick-up Point Type (Radio Buttons) -->
                 <div class="form-group">
                     <label style="display: block; margin-bottom: 0.8rem; font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Pick-up Point Type</label>
                     <div style="display: flex; flex-direction: column; gap: 0.6rem;">
@@ -738,7 +733,6 @@
                     </div>
                 </div>
 
-                <!-- Pick-up Location (conditional) -->
                 <div class="form-group">
                     <div id="officeLocation" style="display: none;">
                         <input type="text" value="HASTA HQ Office" disabled style="background-color: #f0f0f0; cursor: not-allowed; width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
@@ -776,11 +770,9 @@
                     </div>
                 </div>
 
-                <!-- Hidden fields -->
                 <input type="hidden" id="pickup_point" name="pickup_point" value="">
                 <input type="hidden" id="pickup_surcharge" name="pickup_surcharge" value="0">
 
-                <!-- Date & Time -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Date</small>
@@ -794,7 +786,6 @@
                     </div>
                 </div>
 
-                <!-- RETURN DETAILS -->
                 <h4>Return Details</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                     <div class="form-group">
@@ -809,7 +800,6 @@
                     </div>
                 </div>
 
-                <!-- Return Point Type (Radio Buttons) -->
                 <div class="form-group">
                     <label style="display: block; margin-bottom: 0.8rem; font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">Return Point Type</label>
                     <div style="display: flex; flex-direction: column; gap: 0.6rem;">
@@ -828,7 +818,6 @@
                     </div>
                 </div>
 
-                <!-- Return Location (conditional) -->
                 <div class="form-group">
                     <div id="returnOfficeLocation" style="display: none;">
                         <input type="text" value="HASTA HQ Office" disabled style="background-color: #f0f0f0; cursor: not-allowed; width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
@@ -866,9 +855,7 @@
                     </div>
                 </div>
 
-                <!-- Hidden field for return point -->
                 <input type="hidden" id="return_point" name="return_point" value="">
-                <!-- Add-ons Options -->
                 <div class="addons-section">
                     <h3>Add-on Options</h3>
                     <label class="addon-option">
@@ -890,7 +877,6 @@
                     </label>
                 </div>
 
-                <!-- Real-time Price Breakdown -->
                 <div class="price-breakdown" id="priceBreakdown">
                     <div class="breakdown-item">
                         <span class="breakdown-label">Rental Duration:</span>
@@ -921,7 +907,6 @@
                     </div>
                 </div>
 
-                <!-- Hidden fields for addons will be added by JavaScript -->
                 <button type="submit" class="submit-btn">Proceed to Booking</button>
 
             </form>
@@ -936,7 +921,6 @@
 
     @include('components.footer')
 
-    <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
     // Vehicle rental price per day (for real-time display only)
