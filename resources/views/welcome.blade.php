@@ -552,12 +552,12 @@
 
                 <div class="capsule-field">
                     <label>Pick-up Date</label>
-                    <input type="date" name="start_date" value="{{ request('start_date') }}">
+                    <input type="date" name="start_date" value="{{ request('start_date') }}" autocomplete="off">
                 </div>
 
                 <div class="capsule-field">
                     <label>Return Date</label>
-                    <input type="date" name="end_date" value="{{ request('end_date') }}">
+                    <input type="date" name="end_date" value="{{ request('end_date') }}" autocomplete="off">
                 </div>
 
                 <div class="capsule-field">

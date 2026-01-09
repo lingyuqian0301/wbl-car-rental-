@@ -94,6 +94,19 @@
                 <input id="file_identity" name="file_identity" type="file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                 <x-input-error class="mt-2" :messages="$errors->get('file_identity')" />
             </div>
+
+            <div class="mt-4">
+                <x-input-label for="state" x-text="type === 'ic' ? 'State of Origin' : 'Country of Origin'" />
+                <select id="state" name="state" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <option value="">-- Select State/Country --</option>
+                    @foreach(config('utm.states', []) as $stateName)
+                        <option value="{{ $stateName }}" {{ old('state', $profileData['state'] ?? '') == $stateName ? 'selected' : '' }}>
+                            {{ $stateName }}
+                        </option>
+                    @endforeach
+                </select>
+                <x-input-error class="mt-2" :messages="$errors->get('state')" />
+            </div>
         </div>
 
         <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -169,9 +182,9 @@
             
             <div>
                 <x-input-label for="customer_license">
-                    {{ __('License Number') }} <span class="text-red-600">*</span>
+                    {{ __('License Expiry Date') }} <span class="text-red-600">*</span>
                 </x-input-label>
-                <x-text-input id="customer_license" name="customer_license" type="text" class="mt-1 block w-full" :value="old('customer_license', $profileData['customer_license'] ?? '')" />
+                <x-text-input id="customer_license" name="customer_license" type="date" class="mt-1 block w-full" :value="old('customer_license', $profileData['customer_license'] ?? '')" />
                 <x-input-error class="mt-2" :messages="$errors->get('customer_license')" />
             </div>
 
@@ -227,18 +240,6 @@
         <div>
             <x-input-label for="address" :value="__('Address')" />
             <textarea id="address" name="address" rows="3" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('address', $profileData['address'] ?? '') }}</textarea>
-        </div>
-
-        <div x-data="{ type: '{{ old('identity_type', $profileData['identity_type'] ?? 'ic') }}' }">
-             <x-input-label for="state" x-text="type === 'ic' ? 'State of Origin' : 'Country of Origin'" />
-            <select id="state" name="state" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
-                <option value="">-- State of Origin --</option>
-                @foreach(config('utm.states', []) as $stateName)
-                    <option value="{{ $stateName }}" {{ old('state', $profileData['state'] ?? '') == $stateName ? 'selected' : '' }}>
-                        {{ $stateName }}
-                    </option>
-                @endforeach
-            </select>
         </div>
 
         <div class="flex items-center gap-4">
