@@ -170,58 +170,59 @@ class AdminPaymentController extends Controller
         // STEP 4: LOYALTY LOGIC (The 5 Stamp Rule)
         // =========================================================
         try {
-            // 1. Calculate duration in hours
-            $start = \Carbon\Carbon::parse($booking->rental_start_date ?? $booking->start_date);
-            $end   = \Carbon\Carbon::parse($booking->rental_end_date ?? $booking->end_date);
-            $hours = $start->diffInHours($end);
+            // 1. Give 1 Stamp per Booking (Regardless of duration)
+            $stamps = 1;
 
-            // 2. Only give stamps if rental is at least 9 hours
-            if ($hours >= 9) {
-                // Formula: 1 Stamp per 3 Hours
-                $stamps = floor($hours / 3);
+            // 2. Find or Create Loyalty Card
+            $card = \Illuminate\Support\Facades\DB::table('loyaltycard')
+                ->where('customerID', $booking->customerID)
+                ->first();
 
-                // 3. Find or Create Loyalty Card
-                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')
-                    ->where('customerID', $booking->customerID)
-                    ->first();
-
-                if ($card) {
-                    \Illuminate\Support\Facades\DB::table('loyaltycard')
-                        ->where('loyaltyCardID', $card->loyaltyCardID)
-                        ->update([
-                            'total_stamps' => $card->total_stamps + $stamps,
-                            'loyalty_last_updated' => now()
-                        ]);
-                    // Refresh card data after update
-                    $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
-                } else {
-                    $newId = \Illuminate\Support\Facades\DB::table('loyaltycard')->insertGetId([
-                        'customerID'   => $booking->customerID,
-                        'total_stamps' => $stamps,
+            if ($card) {
+                \Illuminate\Support\Facades\DB::table('loyaltycard')
+                    ->where('loyaltyCardID', $card->loyaltyCardID)
+                    ->update([
+                        'total_stamps' => $card->total_stamps + $stamps,
                         'loyalty_last_updated' => now()
-                    ], 'loyaltyCardID');
-                    $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $newId)->first();
-                }
-
-                // 4. CHECK REWARD: If stamps >= 5, give Voucher
-                if ($card->total_stamps >= 5) {
-                    // A. Create the Voucher in database
-                    \Illuminate\Support\Facades\DB::table('voucher')->insert([
-                        'loyaltyCardID' => $card->loyaltyCardID,
-                        'discount_type' => '1 Free Day (Mon-Fri)',
-                        'voucher_isActive' => 1,
-                        'bookingID'     => $booking->bookingID,
                     ]);
-                    
-                    // B. Deduct the cost (5 stamps) from their card
-                    \Illuminate\Support\Facades\DB::table('loyaltycard')
-                        ->where('loyaltyCardID', $card->loyaltyCardID)
-                        ->decrement('total_stamps', 5);
-                }
+                // Refresh data
+                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
+            } else {
+                $newId = \Illuminate\Support\Facades\DB::table('loyaltycard')->insertGetId([
+                    'customerID'   => $booking->customerID,
+                    'total_stamps' => $stamps,
+                    'loyalty_last_updated' => now()
+                ], 'loyaltyCardID');
+                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $newId)->first();
             }
+
+            // 3. CHECK REWARD: If stamps >= 5, Auto-Claim Voucher
+            // (Use while loop in case they somehow have 10 stamps, they get 2 vouchers)
+            while ($card->total_stamps >= 5) {
+                
+                // A. Create the Voucher
+                \Illuminate\Support\Facades\DB::table('voucher')->insert([
+                    'loyaltyCardID' => $card->loyaltyCardID,
+                    'discount_type' => 'Loyalty Reward (Free Booking)',
+                    'voucher_isActive' => 1,
+                    'bookingID'     => $booking->bookingID,
+                    'voucher_code'  => 'LOYALTY-' . strtoupper(Str::random(6)),
+                    'created_at'    => now()
+                ]);
+                
+                // B. Deduct cost (5 stamps)
+                \Illuminate\Support\Facades\DB::table('loyaltycard')
+                    ->where('loyaltyCardID', $card->loyaltyCardID)
+                    ->decrement('total_stamps', 5); // <--- Changed from 2 to 5
+                
+                // Refresh card data for loop
+                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
+            }
+
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Loyalty Logic Error: ' . $e->getMessage());
         }
+      
 
         // =========================================================
         // STEP 5: WALLET LOGIC (Auto-Deduction)
