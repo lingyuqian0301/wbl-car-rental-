@@ -605,4 +605,38 @@ public function showExtendForm($id)
         // If all required fields are present, profile is complete
         return false;
     }
+
+    private function updateWalletAndNotify(Customer $customer, Booking $booking)
+    {
+        // 1. Create Admin Notification for the new booking
+        try {
+            $vehicle = $booking->vehicle;
+            $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . $vehicle->plate_number . ')') : 'N/A';
+            
+            \App\Models\AdminNotification::create([
+                'type' => 'new_booking',
+                'notifiable_type' => 'admin',
+                'notifiable_id' => null, // Null often implies 'all admins' or handled by scope
+                'user_id' => $customer->userID ?? Auth::id(),
+                'booking_id' => $booking->bookingID,
+                'payment_id' => null,
+                'message' => "New Booking Request: #{$booking->bookingID} - {$vehicleInfo}",
+                'data' => [
+                    'booking_id' => $booking->bookingID,
+                    'vehicle_info' => $vehicleInfo,
+                    'customer_name' => $customer->user->name ?? 'Customer',
+                    'amount' => $booking->rental_amount
+                ],
+                'is_read' => false,
+            ]);
+        } catch (\Exception $e) {
+            // Log the error but don't fail the booking entirely
+            Log::warning('Failed to create new booking notification: ' . $e->getMessage());
+        }
+
+        // 2. Wallet Logic (Optional)
+        // Since payment happens in the next step (payments.create), 
+        // you likely don't need to deduct funds here yet. 
+        // You can leave this empty or add specific logic if needed.
+    }
 }
