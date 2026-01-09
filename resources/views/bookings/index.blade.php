@@ -120,7 +120,12 @@
                                                         <x-dropdown-link :href="route('payments.create', $booking->bookingID)">
                                                             {{ $rejectedPayment ? __('Resubmit Payment') : __('Pay Now') }}
                                                         </x-dropdown-link>
+    
+                                                        <x-dropdown-link :href="route('payments.outstanding', $booking->bookingID)">
+                                                            {{ __('Pay Outstanding') }}
+                                                        </x-dropdown-link>
                                                     @endif
+                                                    
 
                                                     {{-- Invoice --}}
                                                     @if($verifiedPayment)

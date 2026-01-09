@@ -230,4 +230,30 @@ class PaymentController extends Controller
             return redirect()->back()->with('error', 'Payment failed. Please try again.');
         }
     }
+    public function outstanding(Request $request, Booking $booking): View
+{
+    $currentCustomer = \App\Models\Customer::where('userID', Auth::user()->userID)->first();
+
+    if (!$currentCustomer || $booking->customerID !== $currentCustomer->customerID) {
+        abort(403, 'UNAUTHORIZED ACCESS TO THIS BOOKING.');
+    }
+
+    $booking->load(['vehicle']);
+
+    $depositAmount = $this->paymentService->calculateDeposit($booking);
+    $canSkipDeposit = $this->paymentService->canSkipDepositWithWallet(Auth::user()->userID, $depositAmount);
+
+    $walletBalance = 0;
+    if($currentCustomer && $currentCustomer->walletAccount) {
+        $walletBalance = $currentCustomer->walletAccount->wallet_balance ?? 0;
+    }
+
+    // Return the specific outstanding view
+    return view('payments.outstanding', [
+        'booking' => $booking,
+        'depositAmount' => $depositAmount,
+        'canSkipDeposit' => $canSkipDeposit,
+        'walletBalance' => $walletBalance,
+    ]);
+}
 }

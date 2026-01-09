@@ -181,6 +181,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/store', [PaymentController::class, 'store'])->name('store');
         Route::post('/submit', [PaymentController::class, 'submitPayment'])->name('submit');
         Route::post('/wallet/{booking}', [PaymentController::class, 'payWithWallet'])->name('wallet');
+        Route::get('/outstanding/{booking}', [PaymentController::class, 'outstanding'])->name('outstanding');
     });
 
     // Fix Storage Link Route
