@@ -263,7 +263,7 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
 
 <a href="{{ route('loyalty.show') }}" class="header-status header-link header-metric">
     <span class="metric-label">Stamps</span>
-    <span class="metric-value">{{ $stamps }} / 48</span>
+    <span class="metric-value">{{ $stamps }} / 5</span>
 </a>
 
 
