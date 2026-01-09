@@ -80,7 +80,7 @@ select {
     font-size: .9rem;
 }
 
-input:focus {
+input:focus, select:focus {
     border-color: var(--hasta-maroon);
     box-shadow: 0 0 0 2px rgba(122, 0, 25, .15);
     outline: none;
@@ -108,6 +108,26 @@ input[readonly] {
     padding: .45rem 1.3rem;
     border-radius: 5px;
 }
+
+/* New Green Button Style */
+.btn-green {
+    background: #198754;
+    color: #fff;
+    border: none;
+    padding: .45rem 1.3rem;
+    border-radius: 5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-green:hover {
+    background: #157347;
+}
+
 .payment-option {
     background: #f9fafb;
     border: 1px solid #e5e7eb;
@@ -115,7 +135,6 @@ input[readonly] {
     padding: 1rem;
     margin-bottom: 1rem;
 }
-
 
 .btn-maroon:hover {
     background: #5e0014;
@@ -133,14 +152,7 @@ input[readonly] {
     }
 }
 
-.booking-stepper {
-    display: flex;
-    align-items: center;
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1.5rem;
-}
-
+/* ===== STEPPER STYLES ===== */
 .booking-stepper .step {
     display: flex;
     align-items: center;
@@ -187,31 +199,30 @@ input[readonly] {
     background: #800020;
 }
 
-.step-header {
-    background: #800020;
-    color: #fff;
-    padding: 0.75rem 1.25rem;
-    font-weight: 600;
-}
-
-.payment-option {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1rem;
-}
-
+/* ===== RADIO BUTTON & AMOUNT STYLES ===== */
 .radio-row {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.5rem;
+    gap: 1rem; /* More space between radio and text */
+    margin-bottom: 0.8rem;
     cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background 0.2s;
 }
 
+.radio-row:hover {
+    background: #f3f4f6;
+}
+
+/* MAKE RADIO BUTTON BIGGER */
 .radio-row input[type="radio"] {
+    width: 24px;   /* Specific width */
+    height: 24px;  /* Specific height */
     accent-color: #800020;
-    transform: scale(1.1);
+    transform: scale(1.2); /* Scale up slightly more */
+    cursor: pointer;
+    margin-right: 0.5rem;
 }
 
 .amount-input {
@@ -221,28 +232,23 @@ input[readonly] {
     font-weight: 600;
 }
 
-.text-maroon {
-    color: #800020;
-}
-
-.btn-maroon {
-    background-color: #800020;
-    border-color: #800020;
-    color: #fff;
-}
-
-.btn-maroon:hover {
-    background-color: #600018;
-    border-color: #600018;
-}
 #amountInput {
     background: #ecfdf5;
     border-color: #22c55e;
     color: #065f46;
     font-weight: 700;
+    font-size: 1.1rem; /* Make amount text slightly larger */
 }
-input[type="radio"] {
-    width: auto !important;
+
+/* Style for the "Remaining" text */
+.remaining-text {
+    font-size: 0.85rem;
+    color: #dc2626; /* Red color to indicate debt */
+    font-weight: 600;
+    margin-left: 0.5rem;
+    background: #fee2e2;
+    padding: 2px 8px;
+    border-radius: 12px;
 }
 
 </style>
@@ -252,13 +258,11 @@ input[type="radio"] {
 <div class="payment-wrapper">
     <div class="payment-card">
 
-        <!-- HEADER -->
         <div class="section-body text-center">
             <strong>HASTA TRAVEL & TOURS SDN. BHD.</strong><br>
             <small class="text-muted">Secure Payment Submission</small>
         </div>
 
-        <!-- BOOKING SUMMARY -->
         <div class="section-header-maroon">
             Booking Summary (ID: #{{ $booking->bookingID }})
         </div>
@@ -276,7 +280,6 @@ input[type="radio"] {
             </p>
         </div>
 
-        <!-- STEP 1 -->
         <div class="section-header-yellow">
             Step 1: Scan DuitNow QR to Pay
         </div>
@@ -288,7 +291,6 @@ input[type="radio"] {
             <small class="text-muted">Maybank: 5513 0654 1568</small>
         </div>
 
-        <!-- STEP 2 -->
         <div class="section-header-maroon">
             Step 2: Upload Proof & Details
         </div>
@@ -298,77 +300,97 @@ input[type="radio"] {
                 @csrf
                 <input type="hidden" name="bookingID" value="{{ $booking->bookingID }}">
 
-                <!-- PAYMENT OPTION -->
                 <div class="payment-option">
-    <div class="radio-row">
-        <input type="radio"
-               name="payment_type"
-               value="Deposit"
-               checked
-               onchange="updateAmount(this.value)">
-        <span>Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})</span>
-    </div>
+                    <label class="radio-row">
+                        <input type="radio"
+                               name="payment_type"
+                               value="Deposit"
+                               checked
+                               onchange="updateAmount(this.value)">
+                        <div>
+                            <span style="font-size: 1.05rem; font-weight: 600;">Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})</span>
+                            {{-- Remaining Amount Badge (Calculated: Total - Deposit) --}}
+                            @php
+                                $total = $booking->total_amount ?? $booking->rental_amount;
+                                $remaining = $total - $depositAmount;
+                            @endphp
+                            <span id="remainingBadge" class="remaining-text">
+                                (Remaining: RM {{ number_format($remaining, 2) }})
+                            </span>
+                        </div>
+                    </label>
 
-    <div class="radio-row">
-        <input type="radio"
-               name="payment_type"
-               value="Full Payment"
-               onchange="updateAmount(this.value)">
-        <span>Pay Full Amount (RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }})</span>
-    </div>
-</div>
+                    <label class="radio-row">
+                        <input type="radio"
+                               name="payment_type"
+                               value="Full Payment"
+                               onchange="updateAmount(this.value)">
+                        <div>
+                            <span style="font-size: 1.05rem; font-weight: 600;">Pay Full Amount (RM {{ number_format($total, 2) }})</span>
+                        </div>
+                    </label>
+                </div>
 
-
-
-                <!-- AMOUNT -->
                 <div class="mt-3">
                     <label class="fw-bold">Amount to Pay (RM)</label>
                     <input type="number" id="amountInput" name="amount" value="{{ $depositAmount }}" readonly>
                 </div>
 
-                <!-- DATE + REF -->
-                <div class="form-row mt-3">
-                    <div>
-                        <label class="fw-bold">Payment Date</label>
-                        <input type="date" name="payment_date" value="{{ date('Y-m-d') }}" required>
-                    </div>
-                    <div>
-                        <label class="fw-bold">Transaction Reference No.</label>
-                        <input type="text" name="transaction_reference" placeholder="e.g. 12345678" required>
-                    </div>
+                <div class="mt-3">
+                    <label class="fw-bold">Payment Date</label>
+                    <input type="date" name="payment_date" value="{{ date('Y-m-d') }}" required>
+                    
+                    <input type="hidden" name="transaction_reference" value="12345678">
                 </div>
 
-                <!-- RECEIPT -->
                 <div class="mt-3">
                     <label class="fw-bold">Upload Receipt</label>
                     <input type="file" name="receipt_image" required>
                 </div>
 
-                <!-- BANK -->
                 <div class="mt-4">
-                    <strong class="text-maroon">Bank Details (Refund)</strong>
+                    <strong class="text-maroon">Bank Details (For Refund)</strong>
                 </div>
 
                 <div class="form-row mt-2">
                     <div>
                         <label>Bank Name</label>
+                        <select name="bank_name" required>
+                            @php
+                                // Get logged-in customer's default bank
+                                $defaultBank = Auth::user()->customer->default_bank_name ?? '';
+                                $banks = ['Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank', 'Hong Leong Bank', 'AmBank', 'UOB Bank', 'Bank Rakyat', 'OCBC Bank', 'HSBC Bank', 'Bank Islam'];
+                            @endphp
 
-                        <input type="text" name="bank_name" placeholder="e.g. CIMB" required>
+                            <option value="" disabled {{ empty($defaultBank) ? 'selected' : '' }}>Select Bank</option>
+                            
+                            {{-- If default bank exists but isn't in our list, show it first --}}
+                            @if($defaultBank && !in_array($defaultBank, $banks))
+                                <option value="{{ $defaultBank }}" selected>{{ $defaultBank }} (Default)</option>
+                            @endif
+
+                            {{-- Loop through standard banks --}}
+                            @foreach($banks as $bank)
+                                <option value="{{ $bank }}" {{ $defaultBank == $bank ? 'selected' : '' }}>
+                                    {{ $bank }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                     <div>
                         <label>Account Number</label>
-
-                        <input type="text" name="bank_account_number" placeholder="e.g. 7654321098" required>
+                        <input type="text" name="bank_account_number" 
+                               value="{{ Auth::user()->customer->default_account_no ?? '' }}" 
+                               placeholder="e.g. 7654321098" required>
                     </div>
                 </div>
 
-                <!-- BUTTONS -->
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <a href="{{ route('bookings.show', $booking->bookingID) }}" class="btn btn-secondary">
                         Cancel
                     </a>
-                    <button class="btn-maroon">
-                        Submit Payment
+                    <button class="btn-green">
+                        <i class="bi bi-upload"></i> Upload Receipt
                     </button>
                 </div>
             </form>
@@ -382,13 +404,19 @@ function updateAmount(type) {
     let deposit = {{ $depositAmount }};
     let full = {{ $booking->total_amount ?? $booking->rental_amount }};
 
-    document.getElementById('amountInput').value =
-        type === 'Full Payment'
-            ? Number(full).toFixed(2)
-            : Number(deposit).toFixed(2);
+    // Get the remaining badge element
+    let badge = document.getElementById('remainingBadge');
+
+    if (type === 'Full Payment') {
+        document.getElementById('amountInput').value = Number(full).toFixed(2);
+        // Hide remaining balance if paying full
+        if(badge) badge.style.display = 'none';
+    } else {
+        document.getElementById('amountInput').value = Number(deposit).toFixed(2);
+        // Show remaining balance if paying deposit
+        if(badge) badge.style.display = 'inline-block';
+    }
 }
 </script>
-
-
 
 @endsection
