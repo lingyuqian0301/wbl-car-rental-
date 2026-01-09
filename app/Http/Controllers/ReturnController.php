@@ -43,7 +43,8 @@ class ReturnController extends Controller
         ]);
 
         // Redirect with completion message
-        return redirect()->route('booking.show', $booking)
+        // FIXED: Changed route from 'booking.show' to 'bookings.show'
+        return redirect()->route('bookings.show', $booking)
             ->with('success', 'Vehicle return confirmed! Your rental is now complete. Thank you for using HASTA Travel & Tours.');
     }
 }
