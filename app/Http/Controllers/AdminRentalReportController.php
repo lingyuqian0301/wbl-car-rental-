@@ -62,7 +62,8 @@ class AdminRentalReportController extends Controller
         if ($bookingStatus === 'done') {
             $query->where(function($q) {
                 $q->where('booking_status', 'Done')
-                  ->orWhere('booking_status', 'Completed');
+                  ->orWhere('booking_status', 'Completed')
+                  ->where('booking_status', 'Confirmed');
             });
         } elseif ($bookingStatus === 'upcoming') {
             $query->whereIn('booking_status', ['Pending', 'Confirmed'])
