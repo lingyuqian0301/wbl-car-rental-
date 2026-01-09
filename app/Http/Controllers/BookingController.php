@@ -4,6 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Customer;
+use App\Models\Local;
+use App\Models\International;
+use App\Models\LocalStudent;
+use App\Models\InternationalStudent;
+use App\Models\StudentDetails;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -117,6 +122,17 @@ class BookingController extends Controller
         if (!Auth::check()) {
             $request->session()->put('url.intended', url()->previous());
             return redirect()->route('login')->with('error', 'Please sign in to proceed with booking.');
+        }
+
+        // ===== PROFILE VALIDATION =====
+        // Check if user has completed required profile fields before booking
+        $user = Auth::user();
+        $customer = Customer::where('userID', $user->userID)->first();
+
+        if (!$customer || $this->isProfileIncomplete($customer)) {
+            return redirect()
+                ->route('profile.edit')
+                ->with('warning', 'Please complete your profile information before proceeding with booking.');
         }
 
         // Validate form inputs
@@ -561,5 +577,89 @@ public function showExtendForm($id)
         }
         
         return view('bookings.extend', compact('booking'));
+    }
+
+    /**
+     * Check if the customer's profile is incomplete (missing required fields)
+     * Required fields for booking:
+     * - phone_number (from Customer table)
+     * - customer_license (from Customer table)
+     * - address (from Customer table)
+     * - identity information via Local or International:
+     *   - ic_no (Local) OR passport_no (International)
+     *   - stateOfOrigin/countryOfOrigin
+     * - Student information (if applicable):
+     *   - matric_number
+     *   - college, faculty, programme (from StudentDetails)
+     */
+    private function isProfileIncomplete(Customer $customer): bool
+    {
+        // 1. Check basic customer fields are filled
+        if (empty($customer->phone_number)) {
+            return true; // Missing phone_number
+        }
+        if (empty($customer->customer_license)) {
+            return true; // Missing customer_license
+        }
+        if (empty($customer->address)) {
+            return true; // Missing address
+        }
+
+        // 2. Check identity information (Local or International)
+        $local = \App\Models\Local::where('customerID', $customer->customerID)->first();
+        $international = \App\Models\International::where('customerID', $customer->customerID)->first();
+
+        if (!$local && !$international) {
+            return true; // No identity record created
+        }
+
+        // Check Local identity
+        if ($local) {
+            if (empty($local->ic_no)) {
+                return true; // Missing IC number
+            }
+            if (empty($local->stateOfOrigin)) {
+                return true; // Missing state of origin
+            }
+            
+            // For Local users, check if they're students and validate student fields
+            $localStudent = \App\Models\LocalStudent::where('customerID', $customer->customerID)->first();
+            if ($localStudent && !empty($localStudent->matric_number)) {
+                $studentDetails = \App\Models\StudentDetails::where('matric_number', $localStudent->matric_number)->first();
+                if ($studentDetails) {
+                    if (empty($studentDetails->college) || empty($studentDetails->faculty) || empty($studentDetails->programme)) {
+                        return true; // Student fields incomplete
+                    }
+                } else {
+                    return true; // Matric number provided but no student details found
+                }
+            }
+        }
+
+        // Check International identity
+        if ($international) {
+            if (empty($international->passport_no)) {
+                return true; // Missing passport number
+            }
+            if (empty($international->countryOfOrigin)) {
+                return true; // Missing country of origin
+            }
+            
+            // For International students, check student fields
+            $intlStudent = \App\Models\InternationalStudent::where('customerID', $customer->customerID)->first();
+            if ($intlStudent && !empty($intlStudent->matric_number)) {
+                $studentDetails = \App\Models\StudentDetails::where('matric_number', $intlStudent->matric_number)->first();
+                if ($studentDetails) {
+                    if (empty($studentDetails->college) || empty($studentDetails->faculty) || empty($studentDetails->programme)) {
+                        return true; // Student fields incomplete
+                    }
+                } else {
+                    return true; // Matric number provided but no student details found
+                }
+            }
+        }
+
+        // If all required fields are present, profile is complete
+        return false;
     }
 }

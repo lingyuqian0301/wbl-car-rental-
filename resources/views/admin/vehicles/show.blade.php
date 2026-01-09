@@ -168,18 +168,22 @@
         </div>
         <div class="d-flex gap-2">
             @if($vehicle->car)
-                <a href="{{ route('admin.vehicles.cars.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-pencil"></i> Edit
+                <a href="{{ route('admin.vehicles.cars.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-danger">
+                    <i class="bi bi-pencil"></i> Edit Car
                 </a>
             @elseif($vehicle->motorcycle)
-                <a href="{{ route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-pencil"></i> Edit
+                <a href="{{ route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-danger">
+                    <i class="bi bi-pencil"></i> Edit Motorcycle
+                </a>
+            @else
+                <a href="{{ route('admin.vehicles.others.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-danger">
+                    <i class="bi bi-pencil"></i> Edit Vehicle
                 </a>
             @endif
-        <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back
-        </a>
-    </div>
+            <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -241,11 +245,15 @@
                             <h5 class="mb-0"><i class="bi bi-car-front"></i> Vehicle Information</h5>
                             @if($vehicle->car)
                                 <a href="{{ route('admin.vehicles.cars.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-light">
-                                    <i class="bi bi-pencil"></i> Edit
+                                    <i class="bi bi-pencil"></i> Edit Car
                                 </a>
                             @elseif($vehicle->motorcycle)
                                 <a href="{{ route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-light">
-                                    <i class="bi bi-pencil"></i> Edit
+                                    <i class="bi bi-pencil"></i> Edit Motorcycle
+                                </a>
+                            @else
+                                <a href="{{ route('admin.vehicles.others.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-light">
+                                    <i class="bi bi-pencil"></i> Edit Vehicle
                                 </a>
                             @endif
                         </div>

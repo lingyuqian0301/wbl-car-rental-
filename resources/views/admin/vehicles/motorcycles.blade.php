@@ -229,6 +229,10 @@
                                        class="btn btn-sm btn-outline-primary" title="Edit Motorcycle">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a>
+                                    <button onclick="deleteMotorcycle({{ $motorcycle->vehicleID }}, '{{ $motorcycle->plate_number }}')" 
+                                            class="btn btn-sm btn-outline-danger" title="Delete Motorcycle">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -358,16 +362,66 @@
         }
         
         // Delete each selected motorcycle
-        selected.forEach(vehicleId => {
-            fetch(`/admin/vehicles/motorcycles/${vehicleId}`, {
+        let deletePromises = selected.map(vehicleId => {
+            return fetch(`{{ url('/admin/vehicles/motorcycles') }}/${vehicleId}`, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 }
+            }).then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to delete motorcycle');
+                    });
+                }
+                return response.json();
             });
         });
         
-        setTimeout(() => location.reload(), 500);
+        Promise.all(deletePromises)
+            .then(() => {
+                alert('Selected motorcycles deleted successfully.');
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+                location.reload();
+            });
+    }
+
+    // Delete Single Motorcycle
+    function deleteMotorcycle(vehicleId, plateNumber) {
+        if (!confirm(`Are you sure you want to delete motorcycle with plate number "${plateNumber}"?\n\nNote: Motorcycles with existing bookings cannot be deleted.`)) {
+            return;
+        }
+        
+        fetch(`{{ url('/admin/vehicles/motorcycles') }}/${vehicleId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to delete motorcycle');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('Motorcycle deleted successfully.');
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error: ' + error.message);
+        });
     }
 </script>
 @endpush

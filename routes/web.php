@@ -263,10 +263,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/cars', [AdminVehicleController::class, 'storeCar'])->name('cars.store');
             Route::get('/motorcycles/create', [AdminVehicleController::class, 'createMotorcycle'])->name('motorcycles.create');
             Route::post('/motorcycles', [AdminVehicleController::class, 'storeMotorcycle'])->name('motorcycles.store');
+            Route::get('/others/create', [AdminVehicleController::class, 'createOther'])->name('others.create');
+            Route::post('/others', [AdminVehicleController::class, 'storeOther'])->name('others.store');
             Route::get('/cars/{vehicle}/edit', [AdminVehicleController::class, 'editCar'])->name('cars.edit');
             Route::put('/cars/{vehicle}', [AdminVehicleController::class, 'updateCar'])->name('cars.update');
             Route::get('/motorcycles/{vehicle}/edit', [AdminVehicleController::class, 'editMotorcycle'])->name('motorcycles.edit');
             Route::put('/motorcycles/{vehicle}', [AdminVehicleController::class, 'updateMotorcycle'])->name('motorcycles.update');
+            Route::get('/others/{vehicle}/edit', [AdminVehicleController::class, 'editOther'])->name('others.edit');
+            Route::put('/others/{vehicle}', [AdminVehicleController::class, 'updateOther'])->name('others.update');
             Route::post('/{vehicle}/status', [AdminVehicleController::class, 'updateStatus'])->name('status.update');
             Route::delete('/cars/{vehicle}', [AdminVehicleController::class, 'destroyCar'])->name('cars.destroy');
             Route::delete('/motorcycles/{vehicle}', [AdminVehicleController::class, 'destroyMotorcycle'])->name('motorcycles.destroy');

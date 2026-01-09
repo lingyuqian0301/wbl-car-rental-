@@ -834,6 +834,11 @@ class AdminVehicleController extends Controller
         return view('admin.vehicles.create-motorcycle');
     }
 
+    public function createOther(): View
+    {
+        return view('admin.vehicles.create-other');
+    }
+
     public function storeCar(Request $request)
     {
         $validated = $request->validate([
@@ -912,6 +917,39 @@ class AdminVehicleController extends Controller
         });
 
         return redirect()->route('admin.vehicles.motorcycles')->with('success', 'Motorcycle created successfully.');
+    }
+
+    public function storeOther(Request $request)
+    {
+        $validated = $request->validate([
+            'vehicle_brand' => 'required|string|max:255',
+            'vehicle_model' => 'required|string|max:255',
+            'plate_number' => 'required|string|max:20|unique:vehicle,plate_number',
+            'manufacturing_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'color' => 'nullable|string|max:50',
+            'engineCapacity' => 'nullable|numeric|min:0',
+            'rental_price' => 'required|numeric|min:0',
+            'availability_status' => 'required|string|in:available,rented,maintenance,unavailable',
+            'vehicleType' => 'nullable|string|max:50',
+        ]);
+
+        DB::transaction(function() use ($validated) {
+            Vehicle::create([
+                'vehicle_brand' => $validated['vehicle_brand'],
+                'vehicle_model' => $validated['vehicle_model'],
+                'plate_number' => $validated['plate_number'],
+                'manufacturing_year' => $validated['manufacturing_year'] ?? null,
+                'color' => $validated['color'] ?? null,
+                'engineCapacity' => $validated['engineCapacity'] ?? null,
+                'rental_price' => $validated['rental_price'],
+                'vehicleType' => $validated['vehicleType'] ?? 'Other',
+                'availability_status' => $validated['availability_status'],
+                'created_date' => Carbon::today(),
+                'isActive' => true,
+            ]);
+        });
+
+        return redirect()->route('admin.vehicles.others', ['tab' => 'vehicle'])->with('success', 'Vehicle created successfully.');
     }
 
     public function editCar(Vehicle $vehicle): View
@@ -1012,6 +1050,51 @@ class AdminVehicleController extends Controller
         return redirect()->route('admin.vehicles.motorcycles')->with('success', 'Motorcycle updated successfully.');
     }
 
+    public function editOther(Vehicle $vehicle): View
+    {
+        // Ensure this is an "other" vehicle (not a car or motorcycle)
+        if ($vehicle->car || $vehicle->motorcycle) {
+            abort(404, 'This vehicle is not an "other" type vehicle.');
+        }
+        return view('admin.vehicles.edit-other', [
+            'vehicle' => $vehicle,
+        ]);
+    }
+
+    public function updateOther(Request $request, Vehicle $vehicle)
+    {
+        // Ensure this is an "other" vehicle (not a car or motorcycle)
+        if ($vehicle->car || $vehicle->motorcycle) {
+            abort(404, 'This vehicle is not an "other" type vehicle.');
+        }
+
+        $validated = $request->validate([
+            'vehicle_brand' => 'required|string|max:255',
+            'vehicle_model' => 'required|string|max:255',
+            'plate_number' => 'required|string|max:20|unique:vehicle,plate_number,' . $vehicle->vehicleID . ',vehicleID',
+            'manufacturing_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+            'color' => 'nullable|string|max:50',
+            'engineCapacity' => 'nullable|numeric|min:0',
+            'rental_price' => 'required|numeric|min:0',
+            'availability_status' => 'required|string|in:available,rented,maintenance,unavailable',
+            'isActive' => 'nullable|boolean',
+        ]);
+
+        $vehicle->update([
+            'vehicle_brand' => $validated['vehicle_brand'],
+            'vehicle_model' => $validated['vehicle_model'],
+            'plate_number' => $validated['plate_number'],
+            'manufacturing_year' => $validated['manufacturing_year'] ?? null,
+            'color' => $validated['color'] ?? null,
+            'engineCapacity' => $validated['engineCapacity'] ?? null,
+            'rental_price' => $validated['rental_price'],
+            'availability_status' => $validated['availability_status'],
+            'isActive' => $request->has('isActive') ? ($validated['isActive'] ?? true) : $vehicle->isActive,
+        ]);
+
+        return redirect()->route('admin.vehicles.others', ['tab' => 'vehicle'])->with('success', 'Vehicle updated successfully.');
+    }
+
     public function updateStatus(Request $request, Vehicle $vehicle)
     {
         $validated = $request->validate([
@@ -1028,25 +1111,51 @@ class AdminVehicleController extends Controller
     public function destroyCar(Vehicle $vehicle)
     {
         if ($vehicle->bookings()->count() > 0) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Cannot delete car with existing bookings.'], 422);
+            }
             return redirect()->back()->with('error', 'Cannot delete car with existing bookings.');
         }
 
-        $vehicle->car()->delete();
-        $vehicle->delete();
+        try {
+            $vehicle->car()->delete();
+            $vehicle->delete();
 
-        return redirect()->route('admin.vehicles.cars')->with('success', 'Car deleted successfully.');
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Car deleted successfully.']);
+            }
+            return redirect()->route('admin.vehicles.cars')->with('success', 'Car deleted successfully.');
+        } catch (\Exception $e) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to delete car: ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Failed to delete car: ' . $e->getMessage());
+        }
     }
 
     public function destroyMotorcycle(Vehicle $vehicle)
     {
         if ($vehicle->bookings()->count() > 0) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Cannot delete motorcycle with existing bookings.'], 422);
+            }
             return redirect()->back()->with('error', 'Cannot delete motorcycle with existing bookings.');
         }
 
-        $vehicle->motorcycle()->delete();
-        $vehicle->delete();
+        try {
+            $vehicle->motorcycle()->delete();
+            $vehicle->delete();
 
-        return redirect()->route('admin.vehicles.motorcycles')->with('success', 'Motorcycle deleted successfully.');
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Motorcycle deleted successfully.']);
+            }
+            return redirect()->route('admin.vehicles.motorcycles')->with('success', 'Motorcycle deleted successfully.');
+        } catch (\Exception $e) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to delete motorcycle: ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Failed to delete motorcycle: ' . $e->getMessage());
+        }
     }
 
     public function exportCarsPdf(Request $request)
@@ -1313,14 +1422,32 @@ class AdminVehicleController extends Controller
     public function destroy(Vehicle $vehicle)
     {
         if ($vehicle->bookings()->count() > 0) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Cannot delete vehicle with existing bookings.'], 422);
+            }
             return redirect()->back()->with('error', 'Cannot delete vehicle with existing bookings.');
         }
 
-        $vehicle->car()->delete();
-        $vehicle->motorcycle()->delete();
-        $vehicle->delete();
+        try {
+            // Delete related records if they exist
+            if ($vehicle->car) {
+                $vehicle->car()->delete();
+            }
+            if ($vehicle->motorcycle) {
+                $vehicle->motorcycle()->delete();
+            }
+            $vehicle->delete();
 
-        return redirect()->back()->with('success', 'Vehicle deleted successfully.');
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Vehicle deleted successfully.']);
+            }
+            return redirect()->back()->with('success', 'Vehicle deleted successfully.');
+        } catch (\Exception $e) {
+            if (request()->expectsJson() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to delete vehicle: ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Failed to delete vehicle: ' . $e->getMessage());
+        }
     }
 
     public function updateOwner(Request $request, Vehicle $vehicle)
