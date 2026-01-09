@@ -3,12 +3,12 @@
 @section('content')
 <style>
     :root {
-        --primary-blue: #3b5998;
-        --primary-dark-blue: #2d4373;
-        --border-color: #e2e8f0;
-        --text-primary: #1e293b;
-        --text-secondary: #64748b;
-        --bg-light: #f8fafc;
+    --primary-blue: #dc2626;
+    --primary-dark-blue: #991b1b;
+    --border-color: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --bg-light: #f8fafc;
     }
 
     .inspection-container {
