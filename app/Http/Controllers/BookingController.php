@@ -48,7 +48,7 @@ class BookingController extends Controller
             }
 
             // Update status logic to handle bookings without payments explicitly
-            $status = 'Completed';
+            $status = 'Comfirmed';
             if ($bookings->isNotEmpty()) {
                 $firstBooking = $bookings->first();
                 if ($firstBooking->payments->where('status', 'Pending')->isNotEmpty() || $firstBooking->payments->where('status', 'Rejected')->isNotEmpty()) {
