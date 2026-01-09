@@ -28,12 +28,12 @@ class PickupController extends Controller
         $rentalStart = Carbon::parse($booking->rental_start_date);
         $allowedTime = $rentalStart->copy()->subHours(12);
 
-        // If current time is BEFORE the allowed time (e.g., trying to access 2 days early)
-        if (now()->lessThan($allowedTime)) {
-            $hoursLeft = now()->diffInHours($allowedTime);
-            return redirect()->route('bookings.index')
-                ->with('error', "The Pickup Form is not available yet. It will open 12 hours before your trip (in approx {$hoursLeft} hours).");
-        }
+        // // If current time is BEFORE the allowed time (e.g., trying to access 2 days early)
+        // if (now()->lessThan($allowedTime)) {
+        //     $hoursLeft = now()->diffInHours($allowedTime);
+        //     return redirect()->route('bookings.index')
+        //         ->with('error', "The Pickup Form is not available yet. It will open 12 hours before your trip (in approx {$hoursLeft} hours).");
+        // }
 
         // =========================================================
         // 2. PAYMENT CHECK: Full Payment Required
