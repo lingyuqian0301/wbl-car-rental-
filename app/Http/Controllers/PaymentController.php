@@ -98,13 +98,20 @@ class PaymentController extends Controller
             'latest_Update_Date_Time' => now(),
         ]);
 
-        // 5. Update Booking
+        // 5. Update Booking Status
         $booking->update([
             'booking_status' => 'Pending Payment Verification',
             'keep_deposit'   => $request->boolean('keep_deposit', false),
         ]);
 
-        // 6. Create Admin Notification for New Payment
+        // 6. Deduct Payment Amount from Wallet Outstanding Balance
+        if ($currentCustomer->walletAccount) {
+            $wallet = $currentCustomer->walletAccount;
+            $wallet->outstanding_amount = max(0, $wallet->outstanding_amount - $request->amount);
+            $wallet->save();
+        }
+
+        // 7. Create Admin Notification for New Payment
         try {
             \App\Models\AdminNotification::create([
                 'type' => 'new_payment',
@@ -124,14 +131,13 @@ class PaymentController extends Controller
             Log::warning('Notification Error (Ignored): ' . $e->getMessage());
         }
 
-        // 7. Redirect to Agreement Step with proper defensive checks
-        // Try to get the booking ID using the correct column name
+        // 8. Redirect to View Booking (bookings.show) instead of Agreement
         $bookingId = $booking->bookingID ?? $booking->id ?? null;
         
         if ($bookingId) {
             return redirect()
-                ->route('agreement.show', $bookingId)
-                ->with('success', 'Payment submitted successfully! Please review and accept the rental agreement.');
+                ->route('bookings.show', $bookingId)
+                ->with('success', 'Receipt uploaded! Payment status is now Pending.');
         } else {
             // Fallback if booking ID cannot be determined
             Log::error('Unable to determine booking ID after payment submission');
