@@ -154,7 +154,7 @@
                         <td>
                             <div class="btn-group btn-group-sm">
                                 @if($vehicleType === 'Car')
-                                    <a href="{{ route('admin.vehicles.cars') }}?search={{ $vehicle->vehicleID }}" 
+                                    <a href="{{ route('admin.vehicles.show', $vehicle->vehicleID) }}" 
                                        class="btn btn-outline-primary" title="View Vehicle">
                                         <i class="bi bi-eye"></i> View
                                     </a>
@@ -162,8 +162,12 @@
                                        class="btn btn-outline-secondary" title="Edit Vehicle">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a>
+                                    <button onclick="deleteVehicle({{ $vehicle->vehicleID }}, '{{ $vehicle->plate_number }}', 'car')" 
+                                            class="btn btn-outline-danger" title="Delete Vehicle">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
                                 @elseif($vehicleType === 'Motorcycle')
-                                    <a href="{{ route('admin.vehicles.motorcycles') }}?search={{ $vehicle->vehicleID }}" 
+                                    <a href="{{ route('admin.vehicles.show', $vehicle->vehicleID) }}" 
                                        class="btn btn-outline-primary" title="View Vehicle">
                                         <i class="bi bi-eye"></i> View
                                     </a>
@@ -171,11 +175,23 @@
                                        class="btn btn-outline-secondary" title="Edit Vehicle">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a>
+                                    <button onclick="deleteVehicle({{ $vehicle->vehicleID }}, '{{ $vehicle->plate_number }}', 'motorcycle')" 
+                                            class="btn btn-outline-danger" title="Delete Vehicle">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
                                 @else
                                     <a href="{{ route('admin.vehicles.show', $vehicle->vehicleID) }}" 
                                        class="btn btn-outline-primary" title="View Vehicle">
                                         <i class="bi bi-eye"></i> View
                                     </a>
+                                    <a href="{{ route('admin.vehicles.others.edit', $vehicle->vehicleID) }}" 
+                                       class="btn btn-outline-secondary" title="Edit Vehicle">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    <button onclick="deleteVehicle({{ $vehicle->vehicleID }}, '{{ $vehicle->plate_number }}', 'other')" 
+                                            class="btn btn-outline-danger" title="Delete Vehicle">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
                                 @endif
                             </div>
                         </td>
@@ -208,29 +224,26 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <ul class="nav nav-pills mb-3" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#createCar" type="button">
-                            <i class="bi bi-car-front"></i> Car
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#createMotorcycle" type="button">
-                            <i class="bi bi-bicycle"></i> Motorcycle
-                        </button>
-                    </li>
-                </ul>
-                <div class="tab-content">
-                    <div class="tab-pane fade show active" id="createCar">
-                        <a href="{{ route('admin.vehicles.cars.create') }}" class="btn btn-danger w-100">
-                            <i class="bi bi-plus-circle me-1"></i> Create New Car
-                        </a>
-                    </div>
-                    <div class="tab-pane fade" id="createMotorcycle">
-                        <a href="{{ route('admin.vehicles.motorcycles.create') }}" class="btn btn-danger w-100">
-                            <i class="bi bi-plus-circle me-1"></i> Create New Motorcycle
-                        </a>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Select Vehicle Type <span class="text-danger">*</span></label>
+                    <select id="vehicleTypeSelect" class="form-select" onchange="handleVehicleTypeChange()">
+                        <option value="">-- Choose Vehicle Type --</option>
+                        <option value="car">Car</option>
+                        <option value="motorcycle">Motorcycle</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <small class="text-muted">Choose the type of vehicle you want to register</small>
+                </div>
+                <div id="vehicleTypeActions" class="mt-3" style="display: none;">
+                    <a id="createCarBtn" href="{{ route('admin.vehicles.cars.create') }}" class="btn btn-danger w-100" style="display: none;">
+                        <i class="bi bi-car-front me-1"></i> Create New Car
+                    </a>
+                    <a id="createMotorcycleBtn" href="{{ route('admin.vehicles.motorcycles.create') }}" class="btn btn-danger w-100" style="display: none;">
+                        <i class="bi bi-bicycle me-1"></i> Create New Motorcycle
+                    </a>
+                    <a id="createOtherBtn" href="{{ route('admin.vehicles.others.create') }}" class="btn btn-danger w-100" style="display: none;">
+                        <i class="bi bi-plus-circle me-1"></i> Create New Vehicle (Other)
+                    </a>
                 </div>
             </div>
         </div>
@@ -239,6 +252,13 @@
 
 @push('scripts')
 <script>
+    // Base URLs for delete routes
+    const deleteRoutes = {
+        car: '{{ url("/admin/vehicles/cars") }}',
+        motorcycle: '{{ url("/admin/vehicles/motorcycles") }}',
+        other: '{{ url("/admin/vehicles") }}'
+    };
+
     // Select All Checkbox
     document.getElementById('selectAll')?.addEventListener('change', function() {
         document.querySelectorAll('.vehicle-checkbox').forEach(cb => {
@@ -260,22 +280,104 @@
         
         // Delete each selected vehicle
         let deletePromises = selected.map(vehicleId => {
-            return fetch(`/admin/vehicles/${vehicleId}`, {
+            let url = `${deleteRoutes.other}/${vehicleId}`;
+            return fetch(url, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 }
+            }).then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to delete vehicle');
+                    });
+                }
+                return response.json();
             });
         });
         
-        Promise.all(deletePromises).then(() => {
+        Promise.all(deletePromises)
+            .then(() => {
+                alert('Selected vehicles deleted successfully.');
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+                location.reload();
+            });
+    }
+
+    // Delete Single Vehicle
+    function deleteVehicle(vehicleId, plateNumber, vehicleType) {
+        let typeText = vehicleType === 'car' ? 'car' : (vehicleType === 'motorcycle' ? 'motorcycle' : 'vehicle');
+        if (!confirm(`Are you sure you want to delete ${typeText} with plate number "${plateNumber}"?\n\nNote: Vehicles with existing bookings cannot be deleted.`)) {
+            return;
+        }
+        
+        // Use the correct route based on vehicle type
+        let url;
+        if (vehicleType === 'car') {
+            url = `${deleteRoutes.car}/${vehicleId}`;
+        } else if (vehicleType === 'motorcycle') {
+            url = `${deleteRoutes.motorcycle}/${vehicleId}`;
+        } else {
+            url = `${deleteRoutes.other}/${vehicleId}`;
+        }
+        
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to delete vehicle');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert(`${typeText.charAt(0).toUpperCase() + typeText.slice(1)} deleted successfully.`);
             location.reload();
-        }).catch(error => {
+        })
+        .catch(error => {
             console.error('Error:', error);
-            alert('Some vehicles could not be deleted. Please refresh the page.');
-            location.reload();
+            alert('Error: ' + error.message);
         });
+    }
+
+    // Handle Vehicle Type Selection in Modal
+    function handleVehicleTypeChange() {
+        const select = document.getElementById('vehicleTypeSelect');
+        const actionsDiv = document.getElementById('vehicleTypeActions');
+        const carBtn = document.getElementById('createCarBtn');
+        const motorcycleBtn = document.getElementById('createMotorcycleBtn');
+        const otherBtn = document.getElementById('createOtherBtn');
+        
+        // Hide all buttons first
+        carBtn.style.display = 'none';
+        motorcycleBtn.style.display = 'none';
+        otherBtn.style.display = 'none';
+        actionsDiv.style.display = 'none';
+        
+        // Show the appropriate button based on selection
+        if (select.value === 'car') {
+            actionsDiv.style.display = 'block';
+            carBtn.style.display = 'block';
+        } else if (select.value === 'motorcycle') {
+            actionsDiv.style.display = 'block';
+            motorcycleBtn.style.display = 'block';
+        } else if (select.value === 'other') {
+            actionsDiv.style.display = 'block';
+            otherBtn.style.display = 'block';
+        }
     }
 </script>
 @endpush
