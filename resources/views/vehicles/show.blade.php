@@ -784,12 +784,12 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Date</small>
-                        <input type="date" id="startDate" name="start_date" required>
+                        <input type="date" id="startDate" name="start_date" value="{{ request('start_date') }}" required>
                     </div>
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
 <select id="startTime" name="start_time" required>
-    <option value="">Select time</option>
+    <option value="">Select time</option>   
 </select>
                     </div>
                 </div>
@@ -799,7 +799,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Date</small>
-                        <input type="date" id="endDate" name="end_date" required>
+                        <input type="date" id="endDate" name="end_date" value="{{ request('end_date') }}" required>
                     </div>
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
@@ -1089,19 +1089,21 @@
 
     // Initialize Flatpickr with blocked dates
     function initializeDatePickers() {
-        flatpickr('#startDate', {
-            minDate: 'today',
-            disable: blockedDates,
-            onChange: validateDates,
-            dateFormat: 'Y-m-d'
-        });
+    flatpickr('#startDate', {
+        minDate: 'today',
+        defaultDate: "{{ request('start_date') }}", // Add defaultDate
+        disable: blockedDates,
+        onChange: validateDates,
+        dateFormat: 'Y-m-d'
+    });
 
-        flatpickr('#endDate', {
-            minDate: 'today',
-            disable: blockedDates,
-            onChange: validateDates,
-            dateFormat: 'Y-m-d'
-        });
+    flatpickr('#endDate', {
+        minDate: 'today',
+        defaultDate: "{{ request('end_date') }}",   // Add defaultDate
+        disable: blockedDates,
+        onChange: validateDates,
+        dateFormat: 'Y-m-d'
+    });
     flatpickr('#startTime', {
     enableTime: true,
     noCalendar: true,
@@ -1189,8 +1191,17 @@ flatpickr('#endTime', {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+// 1. Generate time options
     generateTimeOptions(document.getElementById('startTime'));
     generateTimeOptions(document.getElementById('endTime'));
+
+    // 2. Initialize calendars
+    initializeDatePickers();
+
+    // 3. Trigger validation and price calculation if dates are present from URL
+    if (startDateInput.value && endDateInput.value) {
+        validateDates(); 
+    }
 });
 
 

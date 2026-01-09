@@ -552,12 +552,12 @@
 
                 <div class="capsule-field">
                     <label>Pick-up Date</label>
-                    <input type="date" name="start_date" value="{{ request('start_date') }}">
+                    <input type="date" name="start_date" value="{{ request('start_date') }}" autocomplete="off">
                 </div>
 
                 <div class="capsule-field">
                     <label>Return Date</label>
-                    <input type="date" name="end_date" value="{{ request('end_date') }}">
+                    <input type="date" name="end_date" value="{{ request('end_date') }}" autocomplete="off">
                 </div>
 
                 <div class="capsule-field">
@@ -646,9 +646,14 @@
                         RM {{ $car->rental_price }} <span>/day</span>
                     </p>
 
-                    <a href="{{ route('vehicles.show', $car->vehicleID) }}" class="car-btn">
-                        Book Now
-                    </a>
+                    <a href="{{ route('vehicles.show', [
+                            'id' => $car->vehicleID, 
+                            'start_date' => request('start_date'), 
+                            'end_date' => request('end_date')
+                        ]) }}" class="car-btn">
+                            Book Now
+                        </a>
+
                 </div>
             </div>
         @empty
