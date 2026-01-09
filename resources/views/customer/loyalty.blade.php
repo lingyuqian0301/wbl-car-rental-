@@ -28,14 +28,14 @@
 
                         @php 
                             $stamps = $card->total_stamps ?? 0;
-                            $percentage = min(($stamps / 48) * 100, 100);
+                            $percentage = min(($stamps / 5) * 100, 100);
                         @endphp
                         <div class="progress" style="height: 10px;">
                             <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $percentage }}%"></div>
                         </div>
                         <div class="d-flex justify-content-between mt-2 small">
                             <span>0</span>
-                            <span>Target: 48 Stamps for Free Day</span>
+                            <span>Target: 5 Stamps for Free Day</span>
                         </div>
                     </div>
                 </div>
