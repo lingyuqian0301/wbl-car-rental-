@@ -7,6 +7,7 @@ use App\Http\Controllers\VehicleController;
 Route::middleware(['auth'])->group(function () {
     Route::resource('vehicles', VehicleController::class);
     
+    
     // Photo Management
     Route::post('vehicles/{vehicle}/photos', [VehicleController::class, 'uploadPhoto'])->name('vehicles.photos.store');
     Route::delete('vehicles/photos/{photo}', [VehicleController::class, 'deletePhoto'])->name('vehicles.photos.destroy');
