@@ -28,7 +28,7 @@ class PickupController extends Controller
         $rentalStart = Carbon::parse($booking->rental_start_date);
         $allowedTime = $rentalStart->copy()->subHours(12);
 
-        // // If current time is BEFORE the allowed time (e.g., trying to access 2 days early)
+        // Uncomment this in production to enforce time restriction
         // if (now()->lessThan($allowedTime)) {
         //     $hoursLeft = now()->diffInHours($allowedTime);
         //     return redirect()->route('bookings.index')
@@ -54,23 +54,15 @@ class PickupController extends Controller
         }
 
         // =========================================================
-        // 3. KEY IMAGE LOGIC (From Previous Customer)
+        // 3. KEY IMAGE LOGIC (REMOVED)
         // =========================================================
+        // The table 'booking_form' and column 'photo_key_location' do not exist in the current schema.
+        // We set a default or null to prevent the SQL error.
+        $keyLocationImage = 'assets/dummy_key_location.jpg'; 
+
         // Get related data
         $customer = $booking->customer;
         $vehicle = $booking->vehicle;
-
-        // Find the last 'Return' form for THIS vehicle from PREVIOUS bookings
-        $lastReturnForm = DB::table('booking_form')
-            ->join('booking', 'booking.bookingID', '=', 'booking_form.bookingID')
-            ->where('booking.vehicleID', $vehicle->vehicleID) // Same car
-            ->where('booking_form.form_type', 'Return')       // Must be a return form
-            ->where('booking.bookingID', '<', $booking->bookingID) // From a past booking
-            ->orderBy('booking_form.submission_date', 'desc')
-            ->first();
-
-        // Use previous image or a default dummy image if it's the first time
-        $keyLocationImage = $lastReturnForm ? $lastReturnForm->photo_key_location : 'assets/dummy_key_location.jpg';
 
         return view('bookings.pickup', compact('booking', 'customer', 'vehicle', 'keyLocationImage'));
     }
@@ -78,26 +70,82 @@ class PickupController extends Controller
     /**
      * Handle pickup confirmation
      */
-    public function confirm(Request $request, Booking $booking)
+public function confirm(Request $request, Booking $booking)
     {
-        // Verify the booking belongs to the authenticated customer
+        // 1. Verify the booking belongs to the authenticated customer
         if ($booking->customer->userID !== auth()->id()) {
             abort(403, 'Unauthorized access');
         }
 
-        // Validate the confirmation checkbox
-        $request->validate([
+        // 2. Validate the request inputs
+        $validated = $request->validate([
             'confirm_pickup' => 'required|accepted',
+            'mileage' => 'required|integer|min:0',
+            'fuel_level' => 'required|integer|min:0|max:100', // Slider returns 0-100
+            'date_check' => 'required|date',
+            'remarks' => 'nullable|string',
+            // Image validation
+            'front_image' => 'nullable|image|max:5120',
+            'back_image' => 'nullable|image|max:5120',
+            'left_image' => 'nullable|image|max:5120',
+            'right_image' => 'nullable|image|max:5120',
+            'fuel_image' => 'nullable|image|max:5120',
+            'additional_images.*' => 'nullable|image|max:5120',
         ], [
             'confirm_pickup.required' => 'You must confirm the vehicle receipt',
             'confirm_pickup.accepted' => 'You must accept the confirmation',
         ]);
 
-        // Logic to save the actual form data (if you have input fields in bookings.pickup)
-        // If your view has mileage/fuel inputs, save them to 'booking_form' table here using DB::table('booking_form')->insert(...)
+        // 3. Map numeric fuel slider (0-100) to Database Enum
+        // Enum: ['EMPTY', '1/4', '1/2', '3/4', 'FULL']
+        $fuelVal = (int) $request->fuel_level;
+        $fuelEnum = 'EMPTY';
+        if ($fuelVal >= 88) $fuelEnum = 'FULL';
+        elseif ($fuelVal >= 63) $fuelEnum = '3/4';
+        elseif ($fuelVal >= 38) $fuelEnum = '1/2';
+        elseif ($fuelVal >= 13) $fuelEnum = '1/4';
 
-        // Redirect to return step
-        return redirect()->route('return.show', $booking)
+        // 4. Create the Vehicle Condition Form Record
+        // Make sure you have created the App\Models\VehicleConditionForm model
+        $form = \App\Models\VehicleConditionForm::create([
+            'form_type' => 'RECEIVE', // 'RECEIVE' corresponds to Pickup
+            'odometer_reading' => $request->mileage,
+            'fuel_level' => $fuelEnum, 
+            'scratches_notes' => $request->remarks,
+            'reported_dated_time' => $request->date_check,
+            'bookingID' => $booking->bookingID,
+        ]);
+
+        // 5. Handle Image Uploads (Save to vehicleconditionimage table)
+        // Ensure you have created the App\Models\VehicleConditionImage model
+        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
+        
+        foreach ($imageFields as $field) {
+            if ($request->hasFile($field)) {
+                $path = $request->file($field)->store('vehicle_conditions', 'public');
+                
+                \App\Models\VehicleConditionImage::create([
+                    'image_path' => $path,
+                    'image_taken_time' => now(),
+                    'formID' => $form->formID, // Link to the form created above
+                ]);
+            }
+        }
+
+        // Handle additional images array
+        if ($request->hasFile('additional_images')) {
+            foreach ($request->file('additional_images') as $file) {
+                $path = $file->store('vehicle_conditions', 'public');
+                \App\Models\VehicleConditionImage::create([
+                    'image_path' => $path,
+                    'image_taken_time' => now(),
+                    'formID' => $form->formID,
+                ]);
+            }
+        }
+
+        // 6. Redirect to return step (or dashboard)
+        return redirect()->route('bookings.show', $booking)
             ->with('success', 'Vehicle pickup confirmed. Please proceed to vehicle return.');
     }
 }
