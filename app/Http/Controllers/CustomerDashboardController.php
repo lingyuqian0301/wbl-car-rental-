@@ -5,40 +5,30 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-
+use App\Models\Customer;
 class CustomerDashboardController extends Controller
 {
    public function wallet()
 {
-    $user = Auth::user();
-    $customer = \App\Models\Customer::where('userID', $user->userID)->first();
-
-    if (!$customer) {
-        return redirect()->route('home')->with('error', 'Profile not found.');
-    }
-
-    $wallet = $customer->walletAccount;
+    $userID = Auth::id();
+    $customer = Customer::where('userID', $userID)->first();
     
-    // Just pass the raw value
-    $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
+    $balance = 0.00;
 
-    $transactions = [];
-    if ($wallet) {
-        // Check if wallettransaction table exists
-        try {
-            $transactions = \Illuminate\Support\Facades\DB::table('wallettransaction')
-                ->where('walletAccountID', $wallet->walletAccountID)
-                ->orderBy('transaction_date', 'desc')
-                ->get();
-        } catch (\Exception $e) {
-            // Table doesn't exist, return empty array
-            $transactions = [];
+    if ($customer) {
+        // Fetch the Wallet Balance
+        $wallet = DB::table('walletaccount')
+            ->where('customerID', $customer->customerID)
+            ->first();
+        
+        if ($wallet) {
+            $balance = $wallet->wallet_balance; 
         }
     }
 
-    return view('customer.wallet', compact('outstanding', 'transactions'));
+    // Make sure this matches your view folder structure: 'customer.wallet' based on your error log
+    return view('customer.wallet', compact('balance'));
 }
-
     public function loyalty()
     {
         $user = Auth::user();
