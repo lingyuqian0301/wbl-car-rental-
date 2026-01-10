@@ -469,6 +469,7 @@
     box-shadow: 0 3px 5px rgba(0,0,0,0.08);
 }
 
+
 .car-image {
     height: 150px; /* was 180px */
 }
