@@ -115,7 +115,47 @@ class BookingController extends Controller
             abort(500, 'System error while loading booking details.');
         }
     }
+/**
+     * Show the booking form/details for a specific vehicle.
+     * Corresponds to URL: http://127.0.0.1:8000/vehicles/{id}
+     */
+    public function create(Request $request, $vehicleID)
+    {
+        // 1. Fetch Vehicle Data
+        $vehicle = Vehicle::findOrFail($vehicleID);
 
+        // 2. Get Dates from URL (e.g. ?start_date=2026-01-10)
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        // ==============================================
+        // 3. VOUCHER CHECK LOGIC
+        // ==============================================
+        $activeVoucher = null;
+
+        if (Auth::check()) {
+            $user = Auth::user();
+            
+            // Ensure user has a customer profile
+            if ($user->customer) {
+                // Look for a voucher that belongs to this customer AND is active
+                $activeVoucher = DB::table('voucher')
+                    ->join('loyaltycard', 'voucher.loyaltyCardID', '=', 'loyaltycard.loyaltyCardID')
+                    ->where('loyaltycard.customerID', $user->customer->customerID)
+                    ->where('voucher.voucher_isActive', 1) // Must be unspent
+                    ->select('voucher.*')
+                    ->first();
+            }
+        }
+
+        // 4. Return the View with the Voucher data
+        return view('bookings.create', [
+            'vehicle' => $vehicle,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'activeVoucher' => $activeVoucher // <--- This enables the alert in your view
+        ]);
+    }
    public function store(Request $request, $vehicleID)
     {
         // Check if user is authenticated

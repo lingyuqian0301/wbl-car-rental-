@@ -328,38 +328,61 @@ class AdminPaymentController extends Controller
             // =========================================================
             // LOYALTY LOGIC (5 Bookings = 1 Voucher)
             // =========================================================
-            try {
-                $stamps = 1;
-                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('customerID', $booking->customerID)->first();
+                // =========================================================
+        // STEP 5: LOYALTY LOGIC (Corrected for your Table)
+        // =========================================================
+        try {
+            // 1. Give 1 Stamp
+            $stamps = 0;
+            
+            // 2. Find/Create Card
+            $card = \Illuminate\Support\Facades\DB::table('loyaltycard')
+                ->where('customerID', $booking->customerID)
+                ->first();
 
-                if ($card) {
-                    \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)
-                        ->update(['total_stamps' => $card->total_stamps + $stamps, 'loyalty_last_updated' => now()]);
-                    $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
-                } else {
-                    $newId = \Illuminate\Support\Facades\DB::table('loyaltycard')->insertGetId([
-                        'customerID' => $booking->customerID, 'total_stamps' => $stamps, 'loyalty_last_updated' => now()
-                    ], 'loyaltyCardID');
-                    $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $newId)->first();
-                }
-
-                while ($card->total_stamps >= 5) {
-                    \Illuminate\Support\Facades\DB::table('voucher')->insert([
-                        'loyaltyCardID' => $card->loyaltyCardID,
-                        'discount_type' => 'Loyalty Reward (Free Booking)',
-                        'voucher_isActive' => 1,
-                        'bookingID' => $booking->bookingID,
-                        'voucher_code'  => 'LOYALTY-' . strtoupper(Str::random(6)),
-                        'created_at'    => now()
+            if ($card) {
+                \Illuminate\Support\Facades\DB::table('loyaltycard')
+                    ->where('loyaltyCardID', $card->loyaltyCardID)
+                    ->update([
+                        'total_stamps' => $card->total_stamps + $stamps,
+                        'loyalty_last_updated' => now()
                     ]);
-                    \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)
-                        ->decrement('total_stamps', 5);
-                    
-                    $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
-                }
-            } catch (\Exception $e) { 
-                Log::warning('Loyalty Error: ' . $e->getMessage());
+                // Refresh data
+                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
+            } else {
+                $newId = \Illuminate\Support\Facades\DB::table('loyaltycard')->insertGetId([
+                    'customerID'   => $booking->customerID,
+                    'total_stamps' => $stamps,
+                    'loyalty_last_updated' => now()
+                ], 'loyaltyCardID'); // Assumes primary key is loyaltyCardID
+                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $newId)->first();
             }
+
+            // 3. CHECK REWARD (If > 5 stamps, convert to Voucher)
+            while ($card->total_stamps >= 5) {
+                
+                // A. Insert into 'voucher' using YOUR table structure
+                \Illuminate\Support\Facades\DB::table('voucher')->insert([
+                    'loyaltyCardID'    => $card->loyaltyCardID, // Links to the user
+                    'discount_type'    => 'PERCENT',            // Use 'PERCENT' for 100% off
+                    'discount_amount'  => 10,                  // 100% discount (Free Booking)
+                    'voucher_isActive' => 1
+                    // Removed 'voucher_code' and 'bookingID' as they might not exist in your DB
+                ]);
+                
+                // B. Deduct 5 stamps
+                \Illuminate\Support\Facades\DB::table('loyaltycard')
+                    ->where('loyaltyCardID', $card->loyaltyCardID)
+                    ->decrement('total_stamps', 5);
+                
+                // Refresh for loop
+                $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
+            }
+
+        } catch (\Exception $e) {
+            // If this fails, it will now log the specific error to your laravel.log file
+            \Illuminate\Support\Facades\Log::error('Loyalty Error: ' . $e->getMessage());
+        }
 
             // Wallet Logic
             try {

@@ -684,12 +684,22 @@
                 <p style="margin: 0; font-size: 0.9rem;">Premium Rental Rate</p>
             </div>
 
-            @if(isset($activeVoucher) && $activeVoucher)
+        @if(isset($activeVoucher) && $activeVoucher)
                 <div style="background-color: #d1e7dd; border: 1px dashed #198754; color: #0f5132; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 10px;">
                     <i style="font-style: normal; font-size: 1.5rem;">🎁</i>
                     <div>
                         <strong style="display: block; margin-bottom: 2px;">Loyalty Reward Available!</strong>
-                        Use code <span style="background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #198754;">{{ $activeVoucher->voucher_code }}</span> to book this car for <strong>FREE</strong>.
+                        <p style="margin: 0; font-size: 0.9rem;">
+                            You have a 
+                            <span style="font-weight: bold;">
+                                @if($activeVoucher->discount_type == 'PERCENT')
+                                    {{ intval($activeVoucher->discount_amount) }}% OFF
+                                @else
+                                    RM {{ number_format($activeVoucher->discount_amount, 2) }} OFF
+                                @endif
+                            </span>
+                            voucher. Proceed to booking to use it!
+                        </p>
                     </div>
                 </div>
             @endif
