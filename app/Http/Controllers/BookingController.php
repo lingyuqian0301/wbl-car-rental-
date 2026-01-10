@@ -508,35 +508,128 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
     /**
      * Download the invoice PDF for a specific booking.
      */
-    public function downloadInvoice($id)
+   public function downloadInvoice($id)
     {
-        // 1. Find the booking with all necessary relationships
-        $booking = \App\Models\Booking::with(['invoice', 'payments', 'vehicle', 'customer'])
-            ->findOrFail($id);
+        // 1. Fetch Booking with all necessary relationships
+        $booking = \App\Models\Booking::with([
+            'invoice', 
+            'payments', 
+            'vehicle', 
+            'customer.local', 
+            'customer.international'
+        ])->findOrFail($id);
 
-        // 2. Security Check: Ensure this booking belongs to the logged-in user
-        // We compare the booking's customer userID with the logged-in Auth ID
+        // 2. Security Check
         if ($booking->customer->userID !== \Illuminate\Support\Facades\Auth::id()) {
-            abort(403, 'Unauthorized action. This invoice does not belong to you.');
+            abort(403, 'Unauthorized action.');
         }
 
-        // 3. Check if invoice exists
+        // 3. Check Invoice
         $invoiceData = $booking->invoice;
         if (!$invoiceData) {
             return redirect()->back()->with('error', 'Invoice has not been generated yet.');
         }
 
-        // 4. Calculate Totals
-        $rentalAmount  = $booking->rental_amount;
-        $depositAmount = $booking->deposit_amount;
-        $totalPaid     = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+        // 4. PREPARE VIEW DATA
+        // ---------------------------------------------
+        
+        // A. Objects & Flags
+        $vehicle = $booking->vehicle;
+        $customer = $booking->customer;
+        $localCustomer = $customer->local ?? null;
+        $internationalCustomer = $customer->international ?? null;
+        $localstudent = $localCustomer ? true : false;
+        
+        $allPayments = $booking->payments; 
+
+        // B. Financial Basics
+        $dailyRate = $vehicle->rental_price ?? 0;
+        $duration = $booking->duration ?? 1;
+        $rentalBase = $dailyRate * $duration;
+        $pickupSurcharge = $booking->pickup_surcharge ?? 0;
+        $depositAmount = 50; 
+
+        // C. Add-ons Breakdown
+        $addonsBreakdown = [];
+        $addonsTotal = 0;
+        if (!empty($booking->addOns_item)) {
+            $addonItems = explode(',', $booking->addOns_item);
+            $addonPrices = ['power_bank' => 5, 'phone_holder' => 5, 'usb_wire' => 3];
+            $addonNames  = ['power_bank' => 'Power Bank', 'phone_holder' => 'Phone Holder', 'usb_wire' => 'USB Wire'];
+
+            foreach ($addonItems as $item) {
+                if (isset($addonPrices[$item])) {
+                    $itemTotal = $addonPrices[$item] * $duration;
+                    $addonsTotal += $itemTotal;
+                    
+                    $addonsBreakdown[] = [
+                        'name'  => $addonNames[$item] ?? ucfirst(str_replace('_', ' ', $item)),
+                        'price' => $addonPrices[$item],
+                        'total' => $itemTotal
+                    ];
+                }
+            }
+        }
+
+        // D. Base Amount (Before Discount & Deposit)
+        $baseAmount = $rentalBase + $addonsTotal + $pickupSurcharge;
+
+        // E. Discount Logic
+        $actualFinalTotal = $booking->rental_amount; 
+        $expectedTotal = $baseAmount + $depositAmount;
+        $diff = $expectedTotal - $actualFinalTotal;
+
+        $voucher = null;
+        $discountAmount = 0;
+
+        if ($diff > 0.01) {
+            $discountAmount = $diff;
+            $voucher = (object)[
+                'discount_type' => 'PERCENT', 
+                'discount_amount' => 'LOYALTY'
+            ];
+        }
+
+        // F. Final Totals
+        $finalTotal = $actualFinalTotal; 
+        $totalPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+        
+        // G. Outstanding Balance (FIX FOR YOUR ERROR)
+        // Calculates how much is left to pay. Max(0, ...) ensures it doesn't show negative if overpaid.
+        $outstandingBalance = max(0, $finalTotal - $totalPaid);
+
+        $rentalAmount = $booking->rental_amount; // Legacy support
 
         // 5. Generate PDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData', 'rentalAmount', 'depositAmount', 'totalPaid'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact(
+            'booking', 
+            'invoiceData', 
+            'vehicle',
+            'customer',
+            'localCustomer', 
+            'internationalCustomer', 
+            'localstudent',
+            // Financial Data
+            'dailyRate',
+            'rentalBase',
+            'pickupSurcharge',
+            'addonsBreakdown',
+            'baseAmount',
+            'voucher',
+            'discountAmount',
+            'depositAmount', 
+            'finalTotal',
+            'allPayments',
+            'totalPaid',
+            'outstandingBalance', // <--- FIX: Defined here
+            'rentalAmount'
+        ));
 
-        // 6. Download
         return $pdf->download('Invoice-' . $booking->bookingID . '.pdf');
     }
+    /**
+     * Cancel a booking with "12-Hour Rule" logic.
+     */
 public function cancel(Request $request, $id)
     {
         // 1. Fetch booking with dependencies
