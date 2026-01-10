@@ -12,7 +12,13 @@ class InvoiceController extends Controller
     {
         // Load Booking with relations
         // We load 'customer.user' because Name/Email are in the User table, Phone is in Customer table
-        $booking = Booking::with(['customer.user', 'vehicle', 'payments', 'invoice'])
+        $booking = Booking::with([
+            'customer.user', 
+            'vehicle.car', 
+            'vehicle.motorcycle', 
+            'payments', 
+            'invoice'
+        ])
             ->findOrFail($bookingId);
 
         // 1. CHECK PAYMENT STATUS (Using new DB column 'payment_status')
@@ -32,33 +38,122 @@ class InvoiceController extends Controller
         $customer = $booking->customer;
         $user = $customer ? $customer->user : null;
 
-        // 3. GET VOUCHER (If any) - Get voucher through voucher_usage table
-        $voucherUsage = \App\Models\VoucherUsage::where('bookingID', $booking->bookingID)->with('voucher')->first();
-        $voucher = $voucherUsage ? $voucherUsage->voucher : null;
+        // 3. GET VOUCHER (If any) - Check if voucher was used for this booking
+        // Since vouchers are deactivated when used, we need to check through loyalty card
+        $voucher = null;
+        $discountAmount = 0;
+        if ($customer) {
+            $loyaltyCard = \Illuminate\Support\Facades\DB::table('loyaltycard')
+                ->where('customerID', $customer->customerID)
+                ->first();
+            
+            // Try to find voucher that was used (check deactivated vouchers created around booking time)
+            // Since booking might not have created_at, we check vouchers created before booking's lastUpdateDate
+            if ($loyaltyCard) {
+                $bookingDate = $booking->lastUpdateDate ?? $booking->created_at ?? now();
+                $usedVoucher = \Illuminate\Support\Facades\DB::table('voucher')
+                    ->where('loyaltyCardID', $loyaltyCard->loyaltyCardID)
+                    ->where('voucher_isActive', 0)
+                    ->where(function($query) use ($bookingDate) {
+                        $query->where('created_at', '<=', $bookingDate)
+                              ->orWhereNull('created_at');
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if ($usedVoucher) {
+                    $voucher = $usedVoucher;
+                }
+            }
+        }
 
-        // 4. CALCULATE TOTALS (Using new DB column 'total_amount')
+        // 4. CALCULATE DETAILED TOTALS
         $verifiedPayments = $booking->payments()
             ->where('payment_status', 'Verified')
+            ->orderBy('payment_date', 'asc')
             ->get();
 
-        // FIX: db_new uses 'total_amount', not 'amount'
+        $allPayments = $booking->payments()
+            ->orderBy('payment_date', 'asc')
+            ->get();
+
         $totalPaid = $verifiedPayments->sum('total_amount');
 
-        // Setup Booking Financials (Assuming these exist on your Booking table)
-        $depositAmount = $booking->deposit_amount ?? 0;
-        $rentalAmount  = $booking->rental_amount ?? ($booking->total_price - $depositAmount);
+        // Calculate breakdown
+        $vehicle = $booking->vehicle;
+        $dailyRate = $vehicle->rental_price ?? 0;
+        $rentalBase = $dailyRate * ($booking->duration ?? 1);
+        
+        // Calculate addons breakdown
+        $addonPrices = ['power_bank' => 5, 'phone_holder' => 5, 'usb_wire' => 3];
+        $addonNames = ['power_bank' => 'Power Bank', 'phone_holder' => 'Phone Holder', 'usb_wire' => 'USB Wire'];
+        $addonsArray = !empty($booking->addOns_item) ? explode(',', $booking->addOns_item) : [];
+        $addonsBreakdown = [];
+        $addonsTotal = 0;
+        
+        foreach ($addonsArray as $addon) {
+            if (isset($addonPrices[$addon])) {
+                $addonPrice = $addonPrices[$addon];
+                $addonTotal = $addonPrice * ($booking->duration ?? 1);
+                $addonsBreakdown[] = [
+                    'name' => $addonNames[$addon],
+                    'daily_price' => $addonPrice,
+                    'duration' => $booking->duration ?? 1,
+                    'total' => $addonTotal
+                ];
+                $addonsTotal += $addonTotal;
+            }
+        }
 
-        // Prepare data for PDF
+        // Get pickup surcharge (if stored in booking or calculate from rental_amount)
+        // Since rental_amount is final total, we need to reverse calculate
+        $depositAmount = $booking->deposit_amount ?? 50;
+        $pickupSurcharge = 0; // Default, will be calculated if needed
+        
+        // Calculate base amount before discount
+        $baseAmount = $rentalBase + $addonsTotal;
+        
+        // If voucher was used, calculate discount
+        if ($voucher && $voucher->discount_type === 'PERCENT') {
+            $discountAmount = $baseAmount * ($voucher->discount_amount / 100);
+        } elseif ($voucher && $voucher->discount_type === 'FLAT') {
+            $discountAmount = min($voucher->discount_amount, $baseAmount);
+        }
+        
+        // Calculate final amounts
+        $subtotalAfterDiscount = $baseAmount - $discountAmount;
+        $finalTotal = $subtotalAfterDiscount + $depositAmount;
+        $outstandingBalance = max(0, $finalTotal - $totalPaid);
+
+        // Get customer identity details
+        $localCustomer = \App\Models\Local::where('customerID', $customer->customerID)->first();
+        $internationalCustomer = \App\Models\International::where('customerID', $customer->customerID)->first();
+
+        // Prepare comprehensive data for PDF
         $data = [
-            'booking'       => $booking,
-            'customer'      => $customer,
-            'user'          => $user,
-            'voucher'       => $voucher,
-            'depositAmount' => $depositAmount,
-            'rentalAmount'  => $rentalAmount,
-            'totalPaid'     => $totalPaid,
-            'invoiceData'   => $booking->invoice,
-            'invoiceDate'   => now(),
+            'booking'           => $booking,
+            'customer'          => $customer,
+            'user'              => $user,
+            'vehicle'           => $vehicle,
+            'voucher'           => $voucher,
+            'discountAmount'    => $discountAmount,
+            'depositAmount'     => $depositAmount,
+            'rentalBase'         => $rentalBase,
+            'dailyRate'          => $dailyRate,
+            'addonsBreakdown'    => $addonsBreakdown,
+            'addonsTotal'        => $addonsTotal,
+            'pickupSurcharge'    => $pickupSurcharge,
+            'baseAmount'        => $baseAmount,
+            'subtotalAfterDiscount' => $subtotalAfterDiscount,
+            'finalTotal'         => $finalTotal,
+            'totalPaid'          => $totalPaid,
+            'outstandingBalance' => $outstandingBalance,
+            'allPayments'        => $allPayments,
+            'verifiedPayments'   => $verifiedPayments,
+            'localCustomer'      => $localCustomer,
+            'internationalCustomer' => $internationalCustomer,
+            'invoiceData'        => $booking->invoice,
+            'invoiceDate'        => now(),
         ];
 
         try {

@@ -135,7 +135,7 @@ class BookingController extends Controller
 
         if (Auth::check()) {
             $user = Auth::user();
-            
+
             // Ensure user has a customer profile
             if ($user->customer) {
                 // Look for a voucher that belongs to this customer AND is active
@@ -262,7 +262,7 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
         foreach ($bookings as $booking) {
             $start = Carbon::parse($booking->rental_start_date);
             $end = Carbon::parse($booking->rental_end_date);
-            
+
             // Create array of all dates in range
             while ($start->lte($end)) {
                 $bookedRanges[] = $start->format('Y-m-d');
@@ -292,6 +292,35 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             $discountAmount = 0;
 
             if ($customer) {
+                // 1. Check if customer has loyalty card and enough stamps to auto-create voucher
+                $loyaltyCard = DB::table('loyaltycard')
+                    ->where('customerID', $customer->customerID)
+                    ->first();
+
+                // Auto-create voucher if customer has 5+ stamps and no active voucher
+                if ($loyaltyCard && $loyaltyCard->total_stamps >= 5) {
+                    // Check if customer already has an active voucher
+                    $existingVoucher = DB::table('voucher')
+                        ->join('loyaltycard', 'voucher.loyaltyCardID', '=', 'loyaltycard.loyaltyCardID')
+                        ->where('loyaltycard.customerID', $customer->customerID)
+                        ->where('voucher.voucher_isActive', 1)
+                        ->select('voucher.*')
+                        ->first();
+
+                    // If no active voucher exists, create one
+                    if (!$existingVoucher) {
+                        DB::table('voucher')->insert([
+                            'loyaltyCardID' => $loyaltyCard->loyaltyCardID,
+                            'discount_type' => 'PERCENT',
+                            'discount_amount' => 10, // 10% discount
+                            'voucher_isActive' => 1,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                    }
+                }
+
+                // 2. Get active voucher for this customer
                 $activeVoucher = DB::table('voucher')
                     ->join('loyaltycard', 'voucher.loyaltyCardID', '=', 'loyaltycard.loyaltyCardID')
                     ->where('loyaltycard.customerID', $customer->customerID)
@@ -302,20 +331,39 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
 
             // Recalculate Logic
             $rentalPrice = $vehicle->rental_price * $bookingData['duration'];
-            
-            // Apply Discount (Free Rental)
-            if ($activeVoucher) {
-                $discountAmount = $rentalPrice; 
+
+            // Calculate addons total
+            $addonsArray = !empty($bookingData['addOns_item']) ? explode(',', $bookingData['addOns_item']) : [];
+            $addonPrices = ['power_bank' => 5, 'phone_holder' => 5, 'usb_wire' => 3];
+            $addonsTotal = 0;
+            foreach ($addonsArray as $addon) {
+                if (isset($addonPrices[$addon])) {
+                    $addonsTotal += $addonPrices[$addon] * $bookingData['duration'];
+                }
+            }
+
+            // Calculate base amount (rental + addons + surcharge) - deposit is not included in discount calculation
+            $baseAmount = $rentalPrice + $addonsTotal + ($bookingData['pickup_surcharge'] ?? 0);
+
+            // Apply 10% Discount if voucher exists
+            if ($activeVoucher && $activeVoucher->discount_type === 'PERCENT' && $activeVoucher->discount_amount == 10) {
+                $discountAmount = $baseAmount * 0.10; // 10% discount
+            } elseif ($activeVoucher && $activeVoucher->discount_type === 'FLAT') {
+                $discountAmount = min($activeVoucher->discount_amount, $baseAmount); // Flat discount capped at base amount
             }
 
             // Re-calculate Total
-            // Note: Total in session usually includes rental + addons + surcharge + deposit
-            // We need to subtract the discount from the ORIGINAL total calculated in store()
-            $finalTotal = max(0, $bookingData['rental_amount'] - $discountAmount);
+            // Original total includes: rental + addons + surcharge + deposit
+            // Discount applies to: rental + addons + surcharge (not deposit)
+            // Final total = baseAmount - discountAmount + deposit
+            $depositAmount = 50; // Fixed deposit amount
+            $finalTotal = max(0, $baseAmount - $discountAmount + $depositAmount);
 
             // Update session for finalize step
             $bookingData['final_total'] = $finalTotal; // Store separately to avoid confusion
             $bookingData['discount_amount'] = $discountAmount;
+            $bookingData['base_amount'] = $baseAmount; // Store base amount for reference
+            $bookingData['deposit_amount'] = $depositAmount; // Store deposit amount
             session(['booking_data' => $bookingData]);
 
             // Addons Details for View
@@ -359,7 +407,9 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
                 'walletBalance' => $walletBalance,
                 'canSkipDeposit' => $canSkipDeposit,
                 'activeVoucher' => $activeVoucher,
-                'discountAmount' => $discountAmount
+                'discountAmount' => $discountAmount,
+                'baseAmount' => $baseAmount,
+                'pickupSurcharge' => $bookingData['pickup_surcharge'] ?? 0
             ]);
 
         } catch (\Exception $e) {
@@ -397,7 +447,7 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
 
             // 2. USE SESSION DATA FOR TOTAL (Safer than request input)
             $bookingData = session('booking_data');
-            $finalRentalAmount = $bookingData['final_total'] ?? $request->total_amount; 
+            $finalRentalAmount = $bookingData['final_total'] ?? $request->total_amount;
 
             // 3. CREATE BOOKING
             $booking = new Booking();
@@ -412,16 +462,31 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             $booking->addOns_item = $bookingData['addOns_item'] ?? null;
             $booking->booking_status = 'Pending';
             $booking->lastUpdateDate = now();
-            
+
             $booking->save();
 
-            // 4. DEACTIVATE VOUCHER
+            // 4. DEACTIVATE VOUCHER AND DEDUCT 5 STAMPS
             if ($activeVoucher && isset($bookingData['discount_amount']) && $bookingData['discount_amount'] > 0) {
+                // Deactivate the voucher
                 DB::table('voucher')
                     ->where('voucherID', $activeVoucher->voucherID)
-                    ->update(['voucher_isActive' => 0]); 
-                
-                Log::info("Voucher {$activeVoucher->voucher_code} applied to Booking #{$booking->bookingID}");
+                    ->update(['voucher_isActive' => 0]);
+
+                // Deduct 5 stamps from loyalty card
+                $loyaltyCard = DB::table('loyaltycard')
+                    ->where('loyaltyCardID', $activeVoucher->loyaltyCardID)
+                    ->first();
+
+                if ($loyaltyCard && $loyaltyCard->total_stamps >= 5) {
+                    DB::table('loyaltycard')
+                        ->where('loyaltyCardID', $activeVoucher->loyaltyCardID)
+                        ->update([
+                            'total_stamps' => max(0, $loyaltyCard->total_stamps - 5),
+                            'loyalty_last_updated' => now()
+                        ]);
+
+                    Log::info("Voucher {$activeVoucher->voucherID} applied to Booking #{$booking->bookingID}. 5 stamps deducted.");
+                }
             }
 
             // 5. WALLET & NOTIFICATION
@@ -483,7 +548,7 @@ public function cancel(Request $request, $id)
         }
 
         // 3. Logic: Allow cancel ONLY if status is NOT Confirmed AND Payment is NOT Verified
-        
+
         // Check if Payment is Verified
         $hasVerifiedPayment = $booking->payments->contains('payment_status', 'Verified');
 
@@ -508,7 +573,7 @@ public function cancel(Request $request, $id)
         try {
             $vehicle = $booking->vehicle;
             $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . $vehicle->plate_number . ')') : 'N/A';
-            
+
             \App\Models\AdminNotification::create([
                 'type' => 'booking_cancelled',
                 'notifiable_type' => 'admin',
@@ -558,7 +623,7 @@ public function showExtendForm($id)
         if (in_array($booking->booking_status, ['Cancelled', 'Completed'])) {
             return redirect()->route('bookings.index')->with('error', 'Cannot extend a completed or cancelled booking.');
         }
-        
+
         return view('bookings.extend', compact('booking'));
     }
 
@@ -604,7 +669,7 @@ public function showExtendForm($id)
             if (empty($local->stateOfOrigin)) {
                 return true; // Missing state of origin
             }
-            
+
             // For Local users, check if they're students and validate student fields
             $localStudent = \App\Models\LocalStudent::where('customerID', $customer->customerID)->first();
             if ($localStudent && !empty($localStudent->matric_number)) {
@@ -627,7 +692,7 @@ public function showExtendForm($id)
             if (empty($international->countryOfOrigin)) {
                 return true; // Missing country of origin
             }
-            
+
             // For International students, check student fields
             $intlStudent = \App\Models\InternationalStudent::where('customerID', $customer->customerID)->first();
             if ($intlStudent && !empty($intlStudent->matric_number)) {
@@ -652,7 +717,7 @@ public function showExtendForm($id)
         try {
             $vehicle = $booking->vehicle;
             $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . $vehicle->plate_number . ')') : 'N/A';
-            
+
             \App\Models\AdminNotification::create([
                 'type' => 'new_booking',
                 'notifiable_type' => 'admin',
@@ -675,8 +740,8 @@ public function showExtendForm($id)
         }
 
         // 2. Wallet Logic (Optional)
-        // Since payment happens in the next step (payments.create), 
-        // you likely don't need to deduct funds here yet. 
+        // Since payment happens in the next step (payments.create),
+        // you likely don't need to deduct funds here yet.
         // You can leave this empty or add specific logic if needed.
     }
 }

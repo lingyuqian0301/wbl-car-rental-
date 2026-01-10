@@ -31,9 +31,9 @@ class AdminPaymentController extends Controller
         $filterPaymentIsComplete = $request->get('filter_payment_is_complete');
         $filterPaymentIsVerify = $request->get('payment_isVerify');
         $filterVerifyBy = $request->get('filter_verify_by');
-        
+
         $query = Payment::with(['booking.customer.user', 'booking.vehicle']);
-        
+
         // Search by plate number or booking ID
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -43,32 +43,32 @@ class AdminPaymentController extends Controller
                   });
             });
         }
-        
+
         // Filter by payment date
         if ($filterPaymentDate) {
             $query->whereDate('payment_date', $filterPaymentDate);
         }
-        
+
         // Filter by payment status
         if ($filterPaymentStatus) {
             $query->where('payment_status', $filterPaymentStatus);
         }
-        
+
         // Filter by payment isComplete
         if ($filterPaymentIsComplete !== null && $filterPaymentIsComplete !== '') {
             $query->where('isPayment_complete', (bool)$filterPaymentIsComplete);
         }
-        
+
         // Filter by payment isVerify
         if ($filterPaymentIsVerify !== null && $filterPaymentIsVerify !== '') {
             $query->where('payment_isVerify', (bool)$filterPaymentIsVerify);
         }
-        
+
         // Filter by verify_by
         if ($filterVerifyBy) {
             $query->where('verify_by', $filterVerifyBy);
         }
-        
+
         // No sort function but usually display by desc payment time and date (default)
         $payments = $query->orderBy('payment_date', 'desc')
             ->orderBy('latest_Update_Date_Time', 'desc')
@@ -87,7 +87,7 @@ class AdminPaymentController extends Controller
                   });
             })->count();
         $totalToday = Payment::whereDate('payment_date', $today)->count();
-        
+
         // Get users who can verify (staff/admins) for verify_by filter
         $verifyByUsers = \App\Models\User::where(function($query) {
             $query->whereHas('staff')->orWhereHas('admin');
@@ -164,7 +164,7 @@ class AdminPaymentController extends Controller
                 ]);
 
                 // Mark payments as complete cycle (Optional, based on your DB column)
-                $booking->payments()->update(['isPayment_complete' => 1]); 
+                $booking->payments()->update(['isPayment_complete' => 1]);
 
             } else {
                 // Scenario: Partial Payment (Deposit Only)
@@ -184,7 +184,7 @@ class AdminPaymentController extends Controller
             [
                 'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
                 'issue_date'     => now(),
-                'totalAmount'    => $amountForInvoice, 
+                'totalAmount'    => $amountForInvoice,
             ]
         );
 
@@ -216,21 +216,21 @@ class AdminPaymentController extends Controller
                 $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $newId)->first();
             }
 
-            // Auto-Issue Voucher if > 5 stamps
+            // Auto-Issue Voucher if >= 5 stamps (10% discount)
             while ($card->total_stamps >= 5) {
                 \Illuminate\Support\Facades\DB::table('voucher')->insert([
                     'loyaltyCardID' => $card->loyaltyCardID,
-                    'discount_type' => 'Loyalty Reward (Free Booking)',
+                    'discount_type' => 'PERCENT',
+                    'discount_amount' => 10, // 10% discount
                     'voucher_isActive' => 1,
-                    'bookingID'     => $booking->bookingID,
-                    'voucher_code'  => 'LOYALTY-' . strtoupper(\Illuminate\Support\Str::random(6)),
-                    'created_at'    => now()
+                    'created_at' => now(),
+                    'updated_at' => now()
                 ]);
-                
+
                 \Illuminate\Support\Facades\DB::table('loyaltycard')
                     ->where('loyaltyCardID', $card->loyaltyCardID)
                     ->decrement('total_stamps', 5);
-                
+
                 $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
             }
         } catch (\Exception $e) {
@@ -272,9 +272,9 @@ class AdminPaymentController extends Controller
                 $depositAmount = $booking->deposit_amount;
                 // Re-calculate total paid for the PDF
                 $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
-                
+
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData', 'rentalAmount', 'depositAmount', 'totalPaid'));
-                
+
                 \Illuminate\Support\Facades\Mail::to($recipientEmail)
                     ->send(new \App\Mail\BookingInvoiceMail($booking, $pdf));
             } catch (\Exception $e) {
@@ -285,7 +285,7 @@ class AdminPaymentController extends Controller
         return redirect()->route('admin.payments.index')
             ->with('success', 'Payment Verified. Booking status updated based on total payment.');
     }
-   
+
 
     /**
      * Update Verify Toggle (Updated: 5 Bookings = 1 Voucher)
@@ -294,35 +294,72 @@ class AdminPaymentController extends Controller
     {
         $payment = \App\Models\Payment::with(['booking.customer.user'])->findOrFail($id);
         $booking = $payment->booking;
-        
+
         $isVerify = $request->input('payment_isVerify') == '1' || $request->input('payment_isVerify') === true;
         $verifyBy = $request->input('verify_by');
-        
+
         $updateData = [
             'payment_isVerify' => $isVerify,
             'latest_Update_Date_Time' => \Carbon\Carbon::now(),
         ];
-        
+
         // if ($isVerify && $verifyBy) {
         //     $updateData['verify_by'] = $verifyBy;
         // } elseif ($isVerify && Auth::check()) {
         //     $updateData['verify_by'] = Auth::user()->userID;
         // }
-        
+
         if ($isVerify) {
             $updateData['payment_status'] = 'Verified';
-            
+
             $invoiceData = \App\Models\Invoice::firstOrCreate(
                 ['bookingID' => $booking->bookingID],
                 [
                     'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
                     'issue_date'     => now(),
-                    'totalAmount'    => $booking->total_amount ?? $booking->rental_amount,
+                    'totalAmount'    => $booking->rental_amount ?? 0,
                 ]
             );
 
+            // Update booking status based on total verified payments
+            // NOTE: If customer pays deposit and balance separately, admin needs to verify twice:
+            // 1. First verification (deposit) → Status: 'Reserved' (partial payment)
+            // 2. Second verification (balance) → Status: 'Confirmed' (fully paid)
+            // If customer pays full amount in one payment, admin only verifies once → Status: 'Confirmed'
             if ($booking) {
-                $booking->update(['booking_status' => 'Confirmed']);
+                // First, update the payment status (so it's included in the query)
+                $payment->update($updateData);
+
+                // Calculate total verified amount (now includes the current payment)
+                $totalVerifiedPaid = $booking->payments()
+                    ->where('payment_status', 'Verified')
+                    ->sum('total_amount');
+
+                // Get grand total (rental_amount already includes everything)
+                $grandTotal = $booking->rental_amount ?? 0;
+
+                // Update status based on payment completion
+                if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
+                    // Fully Paid (deposit + balance both verified) - Set to Confirmed
+                    $booking->update([
+                        'booking_status' => 'Confirmed',
+                        'lastUpdateDate' => now()
+                    ]);
+                    // Mark payments as complete
+                    $booking->payments()->where('payment_status', 'Verified')->update(['isPayment_complete' => 1]);
+                } elseif ($totalVerifiedPaid > 0) {
+                    // Partial Payment (only deposit verified, balance pending) - Set to Reserved
+                    $booking->update([
+                        'booking_status' => 'Reserved',
+                        'lastUpdateDate' => now()
+                    ]);
+                } else {
+                    // No verified payments - Keep as Pending
+                    $booking->update([
+                        'booking_status' => 'Pending',
+                        'lastUpdateDate' => now()
+                    ]);
+                }
             }
 
             // =========================================================
@@ -334,7 +371,7 @@ class AdminPaymentController extends Controller
         try {
             // 1. Give 1 Stamp
             $stamps = 0;
-            
+
             // 2. Find/Create Card
             $card = \Illuminate\Support\Facades\DB::table('loyaltycard')
                 ->where('customerID', $booking->customerID)
@@ -358,23 +395,24 @@ class AdminPaymentController extends Controller
                 $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $newId)->first();
             }
 
-            // 3. CHECK REWARD (If > 5 stamps, convert to Voucher)
+            // 3. CHECK REWARD (If >= 5 stamps, convert to Voucher - 10% discount)
             while ($card->total_stamps >= 5) {
-                
+
                 // A. Insert into 'voucher' using YOUR table structure
                 \Illuminate\Support\Facades\DB::table('voucher')->insert([
                     'loyaltyCardID'    => $card->loyaltyCardID, // Links to the user
-                    'discount_type'    => 'PERCENT',            // Use 'PERCENT' for 100% off
-                    'discount_amount'  => 10,                  // 100% discount (Free Booking)
-                    'voucher_isActive' => 1
-                    // Removed 'voucher_code' and 'bookingID' as they might not exist in your DB
+                    'discount_type'    => 'PERCENT',            // Use 'PERCENT' for 10% discount
+                    'discount_amount'  => 10,                   // 10% discount
+                    'voucher_isActive' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now()
                 ]);
-                
+
                 // B. Deduct 5 stamps
                 \Illuminate\Support\Facades\DB::table('loyaltycard')
                     ->where('loyaltyCardID', $card->loyaltyCardID)
                     ->decrement('total_stamps', 5);
-                
+
                 // Refresh for loop
                 $card = \Illuminate\Support\Facades\DB::table('loyaltycard')->where('loyaltyCardID', $card->loyaltyCardID)->first();
             }
@@ -422,11 +460,38 @@ class AdminPaymentController extends Controller
         } else {
             $updateData['payment_status'] = 'Pending';
             $updateData['isPayment_complete'] = false;
+
+            // Update payment first
+            $payment->update($updateData);
+
+            // If unverifying, also update booking status based on remaining verified payments
+            if ($booking) {
+                $totalVerifiedPaid = $booking->payments()
+                    ->where('payment_status', 'Verified')
+                    ->sum('total_amount');
+
+                $grandTotal = $booking->rental_amount ?? 0;
+
+                if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
+                    $booking->update([
+                        'booking_status' => 'Confirmed',
+                        'lastUpdateDate' => now()
+                    ]);
+                } elseif ($totalVerifiedPaid > 0) {
+                    $booking->update([
+                        'booking_status' => 'Reserved',
+                        'lastUpdateDate' => now()
+                    ]);
+                } else {
+                    $booking->update([
+                        'booking_status' => 'Pending',
+                        'lastUpdateDate' => now()
+                    ]);
+                }
+            }
         }
-        
-        $payment->update($updateData);
-        
-        return redirect()->route('admin.payments.index')->with('success', 'Payment verification updated.');
+
+        return redirect()->route('admin.payments.index')->with('success', 'Payment verification updated. Booking status synchronized.');
     }
 
     public function reject($id): RedirectResponse
@@ -447,13 +512,14 @@ class AdminPaymentController extends Controller
         $rentalAmount = $booking->rental_amount ?? 0;
         $depositAmount = $booking->deposit_amount ?? 0;
         $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
-        
+
+        // Update invoice (create or update)
         $existingInvoice = Invoice::where('bookingID', $booking->bookingID)->first();
-        
+
         if ($existingInvoice) {
             $existingInvoice->update([
                 'issue_date' => now(),
-                'totalAmount' => $rentalAmount + $depositAmount,
+                'totalAmount' => $rentalAmount, // rental_amount already includes everything
             ]);
             $invoiceData = $existingInvoice->fresh();
         } else {
@@ -461,10 +527,41 @@ class AdminPaymentController extends Controller
                 'bookingID' => $booking->bookingID,
                 'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
                 'issue_date' => now(),
-                'totalAmount' => $rentalAmount + $depositAmount,
+                'totalAmount' => $rentalAmount, // rental_amount already includes everything
             ]);
         }
-        
+
+        // IMPORTANT: Update booking status based on verified payments
+        // This ensures invoice generation aligns with booking status
+        $totalVerifiedPaid = $booking->payments()
+            ->where('payment_status', 'Verified')
+            ->sum('total_amount');
+
+        $grandTotal = $booking->rental_amount ?? 0;
+
+        // Update booking status to match payment status
+        if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
+            // Fully Paid - Set to Confirmed
+            $booking->update([
+                'booking_status' => 'Confirmed',
+                'lastUpdateDate' => now()
+            ]);
+            // Mark payments as complete
+            $booking->payments()->where('payment_status', 'Verified')->update(['isPayment_complete' => 1]);
+        } elseif ($totalVerifiedPaid > 0) {
+            // Partial Payment - Set to Reserved
+            $booking->update([
+                'booking_status' => 'Reserved',
+                'lastUpdateDate' => now()
+            ]);
+        } else {
+            // No verified payments - Keep as Pending
+            $booking->update([
+                'booking_status' => 'Pending',
+                'lastUpdateDate' => now()
+            ]);
+        }
+
         $booking->load('invoice');
 
         $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData', 'rentalAmount', 'depositAmount', 'totalPaid'));

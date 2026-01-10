@@ -566,15 +566,15 @@
                 <span class="breakdown-label" style="font-weight: 700; color: var(--text-primary);">Subtotal (Base):</span>
                 <span class="breakdown-value" style="font-weight: 700;">RM {{ number_format((float)$vehicle->rental_price * $bookingData['duration'], 2) }}</span>
             </div>
-            
+
             @if(!empty($addons) && count($addons) > 0)
                 <div style="border-top: 1px solid var(--border-color); margin: 0.8rem 0; padding-top: 0.8rem;">
                     <div style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.6rem;">Add-ons:</div>
                     @php $addonTotal = 0; @endphp
                     @foreach($addons as $addon)
-                        @php 
+                        @php
                             $addonDailyPrice = $addon['total'] / $bookingData['duration'];
-                            $addonTotal += $addon['total']; 
+                            $addonTotal += $addon['total'];
                         @endphp
                         <div class="breakdown-item" style="padding: 0.5rem 0;">
                             <span class="breakdown-label">{{ $addon['name'] }}:</span>
@@ -587,19 +587,41 @@
                     </div>
                 </div>
             @endif
-            
+
             @if(!empty($bookingData['pickup_surcharge']) && $bookingData['pickup_surcharge'] > 0)
                 <div class="breakdown-item">
                     <span class="breakdown-label">Pick-up Surcharge:</span>
                     <span class="breakdown-value">RM {{ number_format((float)$bookingData['pickup_surcharge'], 2) }}</span>
                 </div>
             @endif
-            
+
+            @php
+                $subtotalBeforeDiscount = ($vehicle->rental_price * $bookingData['duration']) +
+                    (isset($addons) ? array_sum(array_column($addons, 'total')) : 0) +
+                    ($bookingData['pickup_surcharge'] ?? 0);
+            @endphp
+
+            <div class="breakdown-item" style="border-top: 2px solid var(--border-color); margin-top: 0.8rem; padding-top: 0.8rem;">
+                <span class="breakdown-label" style="font-weight: 700;">Subtotal:</span>
+                <span class="breakdown-value" style="font-weight: 700;">RM {{ number_format($subtotalBeforeDiscount, 2) }}</span>
+            </div>
+
+            @if(isset($discountAmount) && $discountAmount > 0 && isset($activeVoucher) && $activeVoucher)
+                <div class="breakdown-item" style="color: var(--success-green);">
+                    <span class="breakdown-label" style="color: var(--success-green); font-weight: 600;">
+                        <i class="bi bi-ticket-perforated"></i> Voucher Discount (10%):
+                    </span>
+                    <span class="breakdown-value" style="color: var(--success-green); font-weight: 700;">
+                        - RM {{ number_format((float)$discountAmount, 2) }}
+                    </span>
+                </div>
+            @endif
+
             <div class="breakdown-item">
                 <span class="breakdown-label">Deposit (Refundable):</span>
                 <span class="breakdown-value">RM {{ number_format((float)$depositAmount, 2) }}</span>
             </div>
-            
+
             <div class="breakdown-item breakdown-total">
                 <span class="breakdown-label">Total Amount Due:</span>
                 <span class="breakdown-value">RM {{ number_format((float)$bookingData['total_amount'], 2) }}</span>
@@ -609,7 +631,7 @@
         <!-- Action Buttons -->
         <div class="action-buttons">
             <button class="btn-back" type="button" onclick="history.back()">← Back</button>
-            
+
             <form method="post" action="{{ route('booking.finalize') }}" style="flex: 1;" id="confirmForm">
                 @csrf
                 <input type="hidden" name="vehicle_id" value="{{ $vehicle->vehicleID }}">
