@@ -12,9 +12,12 @@
 
 
     <style>
-        html {
-        font-size: 12px; /* try 13px if still big */
+    html {
+        font-size: 12px;
+        /* try 13px if still big */
+        height: 100%;
     }
+
     * {
         margin: 0;
         padding: 0;
@@ -25,6 +28,10 @@
         font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         line-height: 1.6;
         color: #333;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
     }
 
     :root {
@@ -38,12 +45,11 @@
         --error-red: #dc2626;
     }
 
-
     /* Hero Section */
     .hero {
         background: linear-gradient(to right, var(--primary-orange), var(--primary-dark-orange));
         color: white;
-        padding-bottom: 3rem;
+        padding: 3rem 2rem;
     }
 
     .hero-container {
@@ -78,9 +84,18 @@
         background-color: #f3f4f6;
     }
 
+    /* Main Content Wrapper - grows to fill space */
+    main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
     /* Section Styles */
     section {
         padding: 2rem 2rem 0.5rem 2rem;
+        flex-shrink: 0;
     }
 
     section h3 {
@@ -460,79 +475,85 @@
         border: 1.5px solid #d1d5db;
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
     }
+
     /* =========================
    COMPACT CAR CARD (SMALLER)
 ========================= */
 
-.car-card {
-    border-radius: 0.4rem;
-    box-shadow: 0 3px 5px rgba(0,0,0,0.08);
-}
+    .car-card {
+        border-radius: 0.4rem;
+        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08);
+    }
 
 
-.car-image {
-    height: 150px; /* was 180px */
-}
+    .car-image {
+        height: 150px;
+        /* was 180px */
+    }
 
-.car-image img {
-    transform: scale(1.1); /* was 1.20 */
-}
+    .car-image img {
+        transform: scale(1.1);
+        /* was 1.20 */
+    }
 
-.car-content {
-    padding: 1rem; /* was 1.5rem */
-}
+    .car-content {
+        padding: 1rem;
+        /* was 1.5rem */
+    }
 
-.car-content h4 {
-    font-size: 1.05rem; /* was 1.25rem */
-    min-height: 40px;
-}
+    .car-content h4 {
+        font-size: 1.05rem;
+        /* was 1.25rem */
+        min-height: 40px;
+    }
 
-.car-type {
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-}
+    .car-type {
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
 
-.car-specs {
-    gap: 0.4rem;
-    margin-bottom: 0.75rem;
-}
+    .car-specs {
+        gap: 0.4rem;
+        margin-bottom: 0.75rem;
+    }
 
-.spec-badge {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.55rem;
-}
+    .spec-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.55rem;
+    }
 
-.car-price {
-    font-size: 1.25rem; /* was 1.5rem */
-    margin-bottom: 0.75rem;
-}
+    .car-price {
+        font-size: 1.25rem;
+        /* was 1.5rem */
+        margin-bottom: 0.75rem;
+    }
 
-.car-btn {
-    padding: 0.45rem;
-    font-size: 0.85rem;
-}
-
+    .car-btn {
+        padding: 0.45rem;
+        font-size: 0.85rem;
+    }
     </style>
 </head>
 
 <body>
     @include('components.header')
 
-    @auth
-    @php
-    $currentCustomer = \App\Models\Customer::where('userID', auth()->id())->first();
+    <main>
+        @auth
+        @php
+        $currentCustomer = \App\Models\Customer::where('userID', auth()->id())->first();
 
-    $wallet = $currentCustomer ? \Illuminate\Support\Facades\DB::table('walletaccount')->where('customerID',
-    $currentCustomer->customerID)->first() : null;
-    $loyalty = $currentCustomer ? \Illuminate\Support\Facades\DB::table('loyaltycard')->where('customerID',
-    $currentCustomer->customerID)->first() : null;
+        $wallet = $currentCustomer ? \Illuminate\Support\Facades\DB::table('walletaccount')->where('customerID',
+        $currentCustomer->customerID)->first() : null;
+        $loyalty = $currentCustomer ? \Illuminate\Support\Facades\DB::table('loyaltycard')->where('customerID',
+        $currentCustomer->customerID)->first() : null;
 
-    // Read columns directly
-    $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
-    $stamps = $loyalty ? $loyalty->total_stamps : 0;
-    @endphp
+        // Read columns directly
+        $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
+        $stamps = $loyalty ? $loyalty->total_stamps : 0;
+        @endphp
 
-    <!-- <section style="padding: 1.5rem 2rem; background-color: #fff1f2;">
+        <!-- <section style="padding: 1.5rem 2rem; background-color: #fff1f2;">
         <div class="hero-container">
             <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
 
@@ -570,158 +591,154 @@
             </div>
         </div>
     </section> -->
-    @endauth
+        @endauth
 
-    <section class="hero">
-        <div class="hero-container">
-            <h2>Love your ride? Get rewarded</h2>
-            <p>Leave a quick review on google and receive an exclusive rental voucher for your next trip</p>
-            <a href="https://www.google.com/search?sca_esv=189c82b39954af99&sxsrf=ANbL-n5Anp80h8dYhG2xKm29JoOjA_C3Zw:1767841767647&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOXyCFa9BmMH0fGKt5MubrOT1JEHrQ0TPniYENBBGrBFLfRgjvbeReC2xOMTT6mEGYvM8guDbTO_ry31RsTNkKyT8Hj1GpBJ4BLResCU80OD7zcPEYjfWprqYwQS0Pm9kcyxNIc0h9S3iNQthbDiEjoEq5TTA&q=Hasta+Travel+%26+Tours+Sdn+Bhd+%28Car+Rental+UTM,+Johor%29+Reviews&sa=X&ved=2ahUKEwits9Hk-_qRAxXbwTgGHYnbOEcQ0bkNegQIJBAE&biw=1536&bih=730&dpr=1.25&aic=0" class="hero-btn" target="_blank">Share Your Review</a>
-            <!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
-        </div>
-    </section>
-    
+        <section class="hero">
+            <div class="hero-container">
+                <h2>Your Loyalty, Rewarded</h2>
+                <p>For every 5 bookings you complete, receive a voucher toward your next rental.</p>
+                <a href="{{ auth()->check() ? route('loyalty.show') : route('login') }}" class="hero-btn">Loyalty Rewards</a>
+            </div>
+        </section>
 
-   
+        <section>
+            <div class="filter-capsule-wrapper">
+                <form method="GET" action="{{ route('home') }}#carsGrid" class="filter-capsule-form" id="filterForm">
 
-    <section>
-        <div class="filter-capsule-wrapper">
-            <form method="GET" action="{{ route('home') }}#carsGrid" class="filter-capsule-form" id="filterForm">
-
-                <div class="capsule-field">
-                    <label>Pick-up Date</label>
-                    <input type="date" name="start_date" value="{{ request('start_date') }}" autocomplete="off">
-                </div>
-
-                <div class="capsule-field">
-                    <label>Return Date</label>
-                    <input type="date" name="end_date" value="{{ request('end_date') }}" autocomplete="off">
-                </div>
-
-                <div class="capsule-field">
-                    <label>Vehicle</label>
-                    <select name="vehicleType">
-                        <option value="">All Vehicles</option>
-                        @foreach ($vehicleTypes as $type)
-                        <option value="{{ $type }}" {{ request('vehicleType') == $type ? 'selected' : '' }}>
-                            {{ $type }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="capsule-field">
-                    <label>Brand</label>
-                    <select name="brand">
-                        <option value="">All Brands</option>
-                        @foreach ($brands as $brand)
-                        <option value="{{ $brand }}" {{ request('brand') == $brand ? 'selected' : '' }}>
-                            {{ $brand }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <a href="{{ route('home') }}#carsGrid" class="capsule-clear"
-                    onclick="sessionStorage.removeItem('filterScrollY')">
-                    Clear
-                </a>
-
-
-                <button type="submit" class="capsule-btn">
-                    Filter
-                </button>
-
-
-        </div>
-
-
-        </form>
-        </div>
-
-
-        <div id="carsGrid">
-    <div class="cars-grid">
-        @forelse($cars as $car)
-            <div class="car-card">
-                @php
-                    $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
-                    $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
-                    $imageName = trim($imageName, '-');
-                    $imageName .= '.png';
-                    $imagePath = public_path('images/cars/browse/' . $imageName);
-                @endphp
-
-                <div class="car-image">
-                    @if(file_exists($imagePath))
-                        <img src="{{ asset('images/cars/browse/' . $imageName) }}">
-                    @else
-                        <img src="{{ asset('images/cars/browse/default.png') }}">
-                    @endif
-                </div>
-
-                <div class="car-content">
-                    <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
-                    <p class="car-type">{{ $car->vehicleType }}</p>
-
-                    <div class="car-specs">
-                        @if ($car->car)
-                            <span class="spec-badge transmission">
-                                {{ $car->car->transmission }}
-                            </span>
-                            <span class="spec-badge seat">
-                                {{ $car->car->seating_capacity }} seats
-                            </span>
-                        @endif
-
-                        <span class="spec-badge color">
-                            <span class="dot" style="background-color: {{ $car->color ?? '#ccc' }}"></span>
-                            {{ $car->color ?? 'N/A' }}
-                        </span>
+                    <div class="capsule-field">
+                        <label>Pick-up Date</label>
+                        <input type="date" name="start_date" value="{{ request('start_date') }}" autocomplete="off">
                     </div>
 
-                    <p class="car-price">
-                        RM {{ $car->rental_price }} <span>/day</span>
-                    </p>
+                    <div class="capsule-field">
+                        <label>Return Date</label>
+                        <input type="date" name="end_date" value="{{ request('end_date') }}" autocomplete="off">
+                    </div>
 
-                    <a href="{{ route('vehicles.show', [
+                    <div class="capsule-field">
+                        <label>Vehicle</label>
+                        <select name="vehicleType">
+                            <option value="">All Vehicles</option>
+                            @foreach ($vehicleTypes as $type)
+                            <option value="{{ $type }}" {{ request('vehicleType') == $type ? 'selected' : '' }}>
+                                {{ $type }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="capsule-field">
+                        <label>Brand</label>
+                        <select name="brand">
+                            <option value="">All Brands</option>
+                            @foreach ($brands as $brand)
+                            <option value="{{ $brand }}" {{ request('brand') == $brand ? 'selected' : '' }}>
+                                {{ $brand }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <a href="{{ route('home') }}#carsGrid" class="capsule-clear"
+                        onclick="sessionStorage.removeItem('filterScrollY')">
+                        Clear
+                    </a>
+
+
+                    <button type="submit" class="capsule-btn">
+                        Filter
+                    </button>
+
+
+            </div>
+
+
+            </form>
+            </div>
+
+
+            <div id="carsGrid">
+                <div class="cars-grid">
+                    @forelse($cars as $car)
+                    <div class="car-card">
+                        @php
+                        $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
+                        $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
+                        $imageName = trim($imageName, '-');
+                        $imageName .= '.png';
+                        $imagePath = public_path('images/cars/browse/' . $imageName);
+                        @endphp
+
+                        <div class="car-image">
+                            @if(file_exists($imagePath))
+                            <img src="{{ asset('images/cars/browse/' . $imageName) }}">
+                            @else
+                            <img src="{{ asset('images/cars/browse/default.png') }}">
+                            @endif
+                        </div>
+
+                        <div class="car-content">
+                            <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
+                            <p class="car-type">{{ $car->vehicleType }}</p>
+
+                            <div class="car-specs">
+                                @if ($car->car)
+                                <span class="spec-badge transmission">
+                                    {{ $car->car->transmission }}
+                                </span>
+                                <span class="spec-badge seat">
+                                    {{ $car->car->seating_capacity }} seats
+                                </span>
+                                @endif
+
+                                <span class="spec-badge color">
+                                    <span class="dot" style="background-color: {{ $car->color ?? '#ccc' }}"></span>
+                                    {{ $car->color ?? 'N/A' }}
+                                </span>
+                            </div>
+
+                            <p class="car-price">
+                                RM {{ $car->rental_price }} <span>/day</span>
+                            </p>
+
+                            <a href="{{ route('vehicles.show', [
                             'id' => $car->vehicleID, 
                             'start_date' => request('start_date'), 
                             'end_date' => request('end_date')
                         ]) }}" class="car-btn">
-                            Book Now
-                        </a>
+                                Book Now
+                            </a>
 
+                        </div>
+                    </div>
+                    @empty
+                    <p style="text-align:center;">No cars available.</p>
+                    @endforelse
                 </div>
             </div>
-        @empty
-            <p style="text-align:center;">No cars available.</p>
-        @endforelse
-    </div>
-</div>
 
-    </section>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        </section>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-    flatpickr('input[name="start_date"]', {
-        minDate: 'today',
-        dateFormat: 'Y-m-d',
-        allowInput: true
-    });
+            flatpickr('input[name="start_date"]', {
+                minDate: 'today',
+                dateFormat: 'Y-m-d',
+                allowInput: true
+            });
 
-    flatpickr('input[name="end_date"]', {
-        minDate: 'today',
-        dateFormat: 'Y-m-d',
-        allowInput: true
-    });
+            flatpickr('input[name="end_date"]', {
+                minDate: 'today',
+                dateFormat: 'Y-m-d',
+                allowInput: true
+            });
 
-});
-</script>
+        });
+        </script>
 
-
+    </main>
     @include('components.footer')
 
 
