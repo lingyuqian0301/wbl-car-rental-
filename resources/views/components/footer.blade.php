@@ -1,6 +1,7 @@
 <footer style="background:#991b1b; color:#ffffff; margin-top:4rem;">
     <div style="max-width:1280px; margin:0 auto; padding:3rem 2rem; display:grid; grid-template-columns:repeat(4,1fr); gap:2rem;">
-
+       
+    
         <!-- Brand -->
         <div>
             <h3 style="color:#fff; font-size:1.2rem; margin-bottom:1rem;">HASTA Travel</h3>
