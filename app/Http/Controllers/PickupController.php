@@ -122,7 +122,7 @@ public function confirm(Request $request, Booking $booking)
             
             // KEY CHANGE: 'google' is the 2nd argument
             // This uploads the file to Drive and returns the Drive File ID/Path
-            $path = $file->store('vehicle_conditions', 'google'); 
+            $path = $file->store('vehicle_conditions', 'public'); 
 
             // Save that Google Drive ID to your database
             VehicleConditionImage::create([
@@ -136,7 +136,7 @@ public function confirm(Request $request, Booking $booking)
     // Handle extra images if you have them
     if ($request->hasFile('additional_images')) {
         foreach ($request->file('additional_images') as $file) {
-            $path = $file->store('vehicle_conditions', 'google');
+            $path = $file->store('vehicle_conditions', 'public');
             VehicleConditionImage::create([
                 'image_path' => $path,
                 'image_taken_time' => now(),
