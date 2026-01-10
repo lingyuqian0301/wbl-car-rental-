@@ -505,66 +505,130 @@ class AdminPaymentController extends Controller
         return redirect()->route('admin.payments.index')->with('success', 'Payment rejected.');
     }
 
-    public function generateInvoice($id)
+      public function generateInvoice($id)
     {
-        $payment = Payment::where('paymentID', $id)->firstOrFail();
-        $booking = $payment->booking;
-        $rentalAmount = $booking->rental_amount ?? 0;
-        $depositAmount = $booking->deposit_amount ?? 0;
-        $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+        // 1. FETCH MAIN DATA
+        $payment = \App\Models\Payment::where('paymentID', $id)->firstOrFail();
+        $booking = $payment->booking; // Assumes relation exists
+        
+        // Load relationships to avoid N+1 queries
+        $booking->load(['customer.user', 'vehicle', 'payments']);
+        
+        $customer = $booking->customer;
+        $user = $customer->user;
+        $vehicle = $booking->vehicle; // <--- Fixes "Undefined variable $vehicle"
 
-        // Update invoice (create or update)
-        $existingInvoice = Invoice::where('bookingID', $booking->bookingID)->first();
+        // 2. FETCH CUSTOMER IDENTITY DETAILS
+        $localCustomer = \App\Models\Local::where('customerID', $customer->customerID)->first();
+        $localstudent  = \App\Models\LocalStudent::where('customerID', $customer->customerID)->first();
+        $internationalCustomer = \App\Models\International::where('customerID', $customer->customerID)->first();
 
-        if ($existingInvoice) {
-            $existingInvoice->update([
-                'issue_date' => now(),
-                'totalAmount' => $rentalAmount, // rental_amount already includes everything
-            ]);
-            $invoiceData = $existingInvoice->fresh();
-        } else {
-            $invoiceData = Invoice::create([
-                'bookingID' => $booking->bookingID,
+        // 3. CALCULATE INVOICE ITEMS
+        // A. Vehicle Rental
+        $dailyRate = $vehicle->rental_price;
+        $duration = $booking->duration ?? 1;
+        $rentalBase = $dailyRate * $duration;
+
+        // B. Add-ons Breakdown
+        $addonsString = $booking->addOns_item; // e.g. "power_bank,usb_wire"
+        $addonsArray = $addonsString ? explode(',', $addonsString) : [];
+        $addonPrices = [
+            'power_bank' => 5,
+            'phone_holder' => 5,
+            'usb_wire' => 3,
+        ];
+        $addonNames = [
+            'power_bank' => 'Power Bank',
+            'phone_holder' => 'Phone Holder',
+            'usb_wire' => 'USB Wire',
+        ];
+        
+        $addonsBreakdown = [];
+        $addonsTotal = 0;
+        
+        foreach ($addonsArray as $item) {
+            $key = trim($item);
+            if (isset($addonPrices[$key])) {
+                $price = $addonPrices[$key];
+                $total = $price * $duration;
+                $addonsTotal += $total;
+                $addonsBreakdown[] = [
+                    'name' => $addonNames[$key] ?? ucwords(str_replace('_', ' ', $key)),
+                    'duration' => $duration,
+                    'daily_price' => $price,
+                    'total' => $total
+                ];
+            }
+        }
+
+        // C. Pickup Surcharge (Logic: RM10 if not HQ)
+        $pickupSurcharge = ($booking->pickup_point === 'HASTA HQ Office') ? 0 : 10;
+
+        // D. Deposit
+        $depositAmount = $booking->deposit_amount ?? 50; // Default 50 if null
+
+        // 4. CALCULATE TOTALS & DISCOUNT
+        $baseAmount = $rentalBase + $addonsTotal + $pickupSurcharge; // Subtotal before discount
+        $calculatedTotalWithDeposit = $baseAmount + $depositAmount;
+        
+        // The 'rental_amount' in DB is the FINAL amount the user agreed to pay.
+        // If Calculated > DB Amount, the difference is the Discount.
+        $finalTotal = $booking->rental_amount; 
+        $discountAmount = max(0, $calculatedTotalWithDeposit - $finalTotal);
+        
+        $subtotalAfterDiscount = $baseAmount - $discountAmount;
+
+        // Mock Voucher Object for View (if discount exists)
+        $voucher = null;
+        if ($discountAmount > 0) {
+            $voucher = (object)[
+                'discount_type' => 'FLAT', // Assumed for display
+                'discount_amount' => $discountAmount
+            ];
+        }
+
+        // 5. PAYMENTS STATUS
+        $allPayments = $booking->payments()->orderBy('payment_date', 'desc')->get();
+        $totalPaid = $allPayments->where('payment_status', 'Verified')->sum('total_amount');
+        $outstandingBalance = $finalTotal - $totalPaid;
+
+        // 6. UPDATE OR CREATE INVOICE RECORD
+        $invoiceData = \App\Models\Invoice::firstOrCreate(
+            ['bookingID' => $booking->bookingID],
+            [
                 'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
                 'issue_date' => now(),
-                'totalAmount' => $rentalAmount, // rental_amount already includes everything
-            ]);
-        }
+                'totalAmount' => $finalTotal,
+            ]
+        );
+        // Ensure date is updated to now if we are regenerating
+        $invoiceData->update(['issue_date' => now()]);
 
-        // IMPORTANT: Update booking status based on verified payments
-        // This ensures invoice generation aligns with booking status
-        $totalVerifiedPaid = $booking->payments()
-            ->where('payment_status', 'Verified')
-            ->sum('total_amount');
+        // 7. GENERATE PDF
+        $pdf = Pdf::loadView('pdf.invoice', compact(
+            'invoiceData',
+            'booking',
+            'user',
+            'customer',
+            'localCustomer',
+            'localstudent',
+            'internationalCustomer',
+            'vehicle',              // <--- Fixes error
+            'dailyRate',            // <--- Required by PDF
+            'rentalBase',           // <--- Required by PDF
+            'addonsBreakdown',      // <--- Required by PDF
+            'pickupSurcharge',      // <--- Required by PDF
+            'baseAmount',           // <--- Required by PDF
+            'voucher',
+            'discountAmount',
+            'subtotalAfterDiscount',
+            'depositAmount',
+            'finalTotal',
+            'allPayments',
+            'totalPaid',
+            'outstandingBalance'
+        ));
 
-        $grandTotal = $booking->rental_amount ?? 0;
-
-        // Update booking status to match payment status
-        if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
-            // Fully Paid - Set to Confirmed
-            $booking->update([
-                'booking_status' => 'Confirmed',
-                'lastUpdateDate' => now()
-            ]);
-            // Mark payments as complete
-            $booking->payments()->where('payment_status', 'Verified')->update(['isPayment_complete' => 1]);
-        } elseif ($totalVerifiedPaid > 0) {
-            // Partial Payment - Set to Reserved
-            $booking->update([
-                'booking_status' => 'Reserved',
-                'lastUpdateDate' => now()
-            ]);
-        } else {
-            // No verified payments - Keep as Pending
-            $booking->update([
-                'booking_status' => 'Pending',
-                'lastUpdateDate' => now()
-            ]);
-        }
-
-        $booking->load('invoice');
-
-        $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData', 'rentalAmount', 'depositAmount', 'totalPaid'));
-        return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');
+        return $pdf->download('Invoice-' . $booking->bookingID . '.pdf');
     }
 }
