@@ -307,29 +307,34 @@
                         `;
                     }
                     // Show success message
-                    showNotification(data.message || 'Runner updated successfully!', 'success');
+                    showNotification('Runner assigned successfully.', 'success');
                 } else {
-                    showNotification(data.message || 'Failed to update runner.', 'error');
+                    showNotification(data.message || 'Failed to update runner.', 'danger');
                     this.value = oldRunnerId || '';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showNotification('An error occurred while updating runner.', 'error');
+                showNotification('An error occurred while updating runner.', 'danger');
                 this.value = oldRunnerId || '';
             });
         });
     });
 
-    // Notification function
+    // Notification function (same style as payment page)
     function showNotification(message, type = 'success') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.floating-notification');
+        existingNotifications.forEach(n => n.remove());
+
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
         const notification = document.createElement('div');
-        notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = 'top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.className = `floating-notification alert ${alertClass} alert-dismissible fade show`;
+        notification.setAttribute('role', 'alert');
+        notification.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
         notification.innerHTML = `
             ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
         document.body.appendChild(notification);
         

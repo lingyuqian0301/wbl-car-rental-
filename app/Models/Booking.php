@@ -233,18 +233,41 @@ class Booking extends Model
     }
 
     /**
-     * Check if this booking is read by a specific user.
+     * Check if this booking is read by a specific user for a specific date type.
+     * @param int $userId
+     * @param string|null $dateType 'pickup', 'return', or null to check any
      */
-    public function isReadBy($userId): bool
+    public function isReadBy($userId, $dateType = null): bool
     {
         try {
-            return BookingReadStatus::where('booking_id', $this->bookingID)
+            $query = BookingReadStatus::where('booking_id', $this->bookingID)
                 ->where('user_id', $userId)
-                ->where('is_read', true)
-                ->exists();
+                ->where('is_read', true);
+            
+            if ($dateType) {
+                $query->where('date_type', $dateType);
+            }
+            
+            return $query->exists();
         } catch (\Exception $e) {
             // If table doesn't exist, return false (unread)
             return false;
         }
+    }
+
+    /**
+     * Check if pickup date is read by a specific user.
+     */
+    public function isPickupReadBy($userId): bool
+    {
+        return $this->isReadBy($userId, 'pickup');
+    }
+
+    /**
+     * Check if return date is read by a specific user.
+     */
+    public function isReturnReadBy($userId): bool
+    {
+        return $this->isReadBy($userId, 'return');
     }
 }

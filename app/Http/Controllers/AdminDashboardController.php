@@ -146,16 +146,19 @@ class AdminDashboardController extends Controller
         ];
 
         // Booking need runner: future bookings where pickup_point or return_point is not 'HASTA HQ Office'
+        // Show if: pickup_point is set AND != 'HASTA HQ Office', OR return_point is set AND != 'HASTA HQ Office'
         $bookingsNeedRunner = Booking::with(['vehicle', 'customer.user'])
             ->where('rental_start_date', '>', $today)
             ->whereIn('booking_status', ['Pending', 'Confirmed'])
             ->where(function($query) {
                 $query->where(function($q) {
-                    $q->where('pickup_point', '!=', 'HASTA HQ Office')
-                      ->orWhereNull('pickup_point');
+                    $q->whereNotNull('pickup_point')
+                      ->where('pickup_point', '!=', '')
+                      ->where('pickup_point', '!=', 'HASTA HQ Office');
                 })->orWhere(function($q) {
-                    $q->where('return_point', '!=', 'HASTA HQ Office')
-                      ->orWhereNull('return_point');
+                    $q->whereNotNull('return_point')
+                      ->where('return_point', '!=', '')
+                      ->where('return_point', '!=', 'HASTA HQ Office');
                 });
             })
             ->orderBy('rental_start_date', 'asc')

@@ -49,17 +49,31 @@ class AdminTopbarCalendarController extends Controller
 
         $bookings = $bookingsQuery->get();
 
-        // Check which bookings are unread by current user
-        $unreadBookings = [];
+        // Check which bookings are unread by current user (separate for pickup and return)
+        $unreadBookings = []; // For backward compatibility (any unread)
+        $unreadPickups = []; // Pickup dates that are unread
+        $unreadReturns = []; // Return dates that are unread
         try {
             foreach ($bookings as $booking) {
-                if (!$booking->isReadBy(Auth::id())) {
+                $isPickupUnread = !$booking->isPickupReadBy(Auth::id());
+                $isReturnUnread = !$booking->isReturnReadBy(Auth::id());
+                
+                if ($isPickupUnread) {
+                    $unreadPickups[] = $booking->bookingID;
+                }
+                if ($isReturnUnread) {
+                    $unreadReturns[] = $booking->bookingID;
+                }
+                // For overall count, booking is unread if either pickup or return is unread
+                if ($isPickupUnread || $isReturnUnread) {
                     $unreadBookings[] = $booking->bookingID;
                 }
             }
         } catch (\Exception $e) {
             // If read status table doesn't exist yet, treat all as unread
             $unreadBookings = $bookings->pluck('bookingID')->toArray();
+            $unreadPickups = $bookings->pluck('bookingID')->toArray();
+            $unreadReturns = $bookings->pluck('bookingID')->toArray();
         }
 
         // Group bookings by date for calendar display
@@ -138,6 +152,8 @@ class AdminTopbarCalendarController extends Controller
             'currentView' => $view,
             'currentDate' => $currentDate,
             'unreadBookings' => $unreadBookings,
+            'unreadPickups' => $unreadPickups,
+            'unreadReturns' => $unreadReturns,
             'staffAndAdmins' => $staffAndAdmins,
         ]);
     }
@@ -145,10 +161,19 @@ class AdminTopbarCalendarController extends Controller
     public function markAsRead(Request $request, Booking $booking)
     {
         try {
+            // Get date_type from request (pickup or return), default to pickup
+            $dateType = $request->input('date_type', 'pickup');
+            
+            // Validate date_type
+            if (!in_array($dateType, ['pickup', 'return'])) {
+                $dateType = 'pickup';
+            }
+            
             BookingReadStatus::updateOrCreate(
                 [
                     'booking_id' => $booking->bookingID,
                     'user_id' => Auth::id(),
+                    'date_type' => $dateType,
                 ],
                 [
                     'is_read' => true,
@@ -156,7 +181,7 @@ class AdminTopbarCalendarController extends Controller
                 ]
             );
 
-            return response()->json(['success' => true]);
+            return response()->json(['success' => true, 'date_type' => $dateType]);
         } catch (\Exception $e) {
             // If table doesn't exist, still return success
             return response()->json(['success' => true, 'message' => 'Marked as read (table may not exist)']);

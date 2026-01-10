@@ -159,13 +159,13 @@
         }
 
         .booking-floating-box {
-            position: absolute;
+            position: fixed;
             background: white;
             border: 2px solid var(--admin-red);
             border-radius: 8px;
             padding: 15px;
             min-width: 350px;
-            max-width: 450px;
+            max-width: 400px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.15);
             z-index: 1000;
             display: none;
@@ -178,7 +178,45 @@
         }
 
         .booking-floating-box.sticky {
+            cursor: default;
+        }
+
+        .floating-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--admin-red);
+        }
+
+        .floating-box-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #666;
             cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+            line-height: 1;
+        }
+
+        .floating-box-close:hover {
+            color: var(--admin-red);
+        }
+
+        .floating-box-buttons {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .floating-box-buttons .btn {
+            flex: 1;
+            min-width: 100px;
         }
 
         .booking-detail-row {
@@ -397,7 +435,23 @@
                             <div class="calendar-day-number">{{ $currentDay->format('j') }}</div>
                             @foreach($dayBookings as $booking)
                                 @php
-                                    $isUnread = in_array($booking->bookingID, $unreadBookings);
+                                    // Determine if this is pickup or return date for this cell
+                                    $pickupDateForCompare = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('Y-m-d') : '';
+                                    $returnDateForCompare = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('Y-m-d') : '';
+                                    $isPickupDateCell = $currentDay->format('Y-m-d') === $pickupDateForCompare;
+                                    $isReturnDateCell = $currentDay->format('Y-m-d') === $returnDateForCompare;
+                                    
+                                    // Check unread status based on which date type this cell represents
+                                    $isUnread = false;
+                                    if ($isPickupDateCell) {
+                                        $isUnread = in_array($booking->bookingID, $unreadPickups ?? []);
+                                    } elseif ($isReturnDateCell) {
+                                        $isUnread = in_array($booking->bookingID, $unreadReturns ?? []);
+                                    } else {
+                                        // For dates in between, use general unread status
+                                        $isUnread = in_array($booking->bookingID, $unreadBookings);
+                                    }
+                                    
                                     $paymentStatus = $booking->payment_status;
                                     $isCompleted = $booking->booking_status === 'Completed';
                                     
@@ -429,23 +483,21 @@
                                     $hasReceipt = $booking->payments()->whereNotNull('proof_of_payment')->exists();
                                     $firstPaymentWithReceipt = $booking->payments()->whereNotNull('proof_of_payment')->first();
                                     $latestPayment = $booking->payments()->orderBy('payment_date', 'desc')->first();
-                                @endphp
-                                @php
-                                    $pickupDateForCompare = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('Y-m-d') : '';
-                                    $returnDateForCompare = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('Y-m-d') : '';
-                                    $isPickupDateForLabel = $currentDay->format('Y-m-d') === $pickupDateForCompare;
-                                    $isReturnDateForLabel = $currentDay->format('Y-m-d') === $returnDateForCompare;
+                                    
+                                    // Determine the date type for this cell
+                                    $dateTypeForCell = $isPickupDateCell ? 'pickup' : ($isReturnDateCell ? 'return' : 'rental');
                                 @endphp
                                 <div class="booking-item {{ $colorClass }}"
                                      data-booking-id="{{ $booking->bookingID }}"
-                                     data-date-type="{{ $isPickupDateForLabel ? 'pickup' : ($isReturnDateForLabel ? 'return' : 'rental') }}"
-                                     onmouseenter="showBookingBox({{ $booking->bookingID }}, event)"
-                                     onmouseleave="hideBookingBox({{ $booking->bookingID }})"
-                                     onclick="event.stopPropagation(); toggleBookingBox({{ $booking->bookingID }})">
+                                     data-date-type="{{ $dateTypeForCell }}"
+                                     data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
+                                     onmouseenter="showBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}', event)"
+                                     onmouseleave="hideBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')"
+                                     onclick="event.stopPropagation(); toggleBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')">
                                     <div>
-                                        @if($isPickupDateForLabel)
+                                        @if($isPickupDateCell)
                                             <span class="date-label pickup-label">Pickup</span>
-                                        @elseif($isReturnDateForLabel)
+                                        @elseif($isReturnDateCell)
                                             <span class="date-label return-label">Return</span>
                                         @endif
                                     </div>
@@ -502,29 +554,33 @@
 
                                     <!-- Floating Booking Details Box -->
                                     <div class="booking-floating-box" 
-                                         id="booking-box-{{ $booking->bookingID }}" 
+                                         id="booking-box-{{ $booking->bookingID }}_{{ $dateTypeForCell }}" 
                                          data-booking-id="{{ $booking->bookingID }}"
-                                         onmouseenter="keepBookingBoxOpen({{ $booking->bookingID }})"
-                                         onmouseleave="hideBookingBox({{ $booking->bookingID }})"
-                                         onclick="navigateToBooking({{ $booking->bookingID }}, {{ $isUnread ? 'true' : 'false' }}, event)">
+                                         data-date-type="{{ $dateTypeForCell }}"
+                                         data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
+                                         onmouseenter="keepBookingBoxOpen('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')"
+                                         onmouseleave="hideBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')">
                                         @php
-                                            $isPickupDate = $isPickupDateForLabel;
-                                            $isReturnDate = $isReturnDateForLabel;
-                                            $eventType = $isPickupDate ? 'Pickup' : ($isReturnDate ? 'Return' : 'Rental');
+                                            $eventType = $isPickupDateCell ? 'Pickup' : ($isReturnDateCell ? 'Return' : 'Rental');
                                             $pickupDateTime = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date) : null;
                                             $returnDateTime = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date) : null;
                                         @endphp
-                                        <div style="padding-bottom: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--admin-red);">
-                                            <strong style="color: var(--admin-red); font-size: 1.1rem;">{{ $eventType }}</strong>
-                                            <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">
-                                                @if($isPickupDate && $pickupDateTime)
-                                                    {{ $pickupDateTime->format('d M Y H:i') }}
-                                                @elseif($isReturnDate && $returnDateTime)
-                                                    {{ $returnDateTime->format('d M Y H:i') }}
-                                                @else
-                                                    {{ $pickupDateTime ? $pickupDateTime->format('d M Y') : 'N/A' }} - {{ $returnDateTime ? $returnDateTime->format('d M Y') : 'N/A' }}
-                                                @endif
+                                        <div class="floating-box-header">
+                                            <div>
+                                                <strong style="color: var(--admin-red); font-size: 1.1rem;">{{ $eventType }}</strong>
+                                                <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">
+                                                    @if($isPickupDateCell && $pickupDateTime)
+                                                        {{ $pickupDateTime->format('d M Y H:i') }}
+                                                    @elseif($isReturnDateCell && $returnDateTime)
+                                                        {{ $returnDateTime->format('d M Y H:i') }}
+                                                    @else
+                                                        {{ $pickupDateTime ? $pickupDateTime->format('d M Y') : 'N/A' }} - {{ $returnDateTime ? $returnDateTime->format('d M Y') : 'N/A' }}
+                                                    @endif
+                                                </div>
                                             </div>
+                                            <button type="button" class="floating-box-close" onclick="event.stopPropagation(); closeAndMarkRead('{{ $booking->bookingID }}_{{ $dateTypeForCell }}', {{ $isUnread ? 'true' : 'false' }}, '{{ $dateTypeForCell }}')" title="Close">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
                                         </div>
                                         <div class="booking-detail-row">
                                             <span class="booking-detail-label">Booking ID:</span>
@@ -546,12 +602,12 @@
                                             <span class="booking-detail-label">Plate Number:</span>
                                             <span class="booking-detail-value">{{ $booking->vehicle->plate_number ?? ($booking->vehicle->plate_no ?? 'N/A') }}</span>
                                         </div>
-                                        @if($isPickupDate)
+                                        @if($isPickupDateCell)
                                             <div class="booking-detail-row">
                                                 <span class="booking-detail-label">Pickup Location:</span>
                                                 <span class="booking-detail-value">{{ $booking->pickup_point ?? 'Not set' }}</span>
                                             </div>
-                                        @elseif($isReturnDate)
+                                        @elseif($isReturnDateCell)
                                             <div class="booking-detail-row">
                                                 <span class="booking-detail-label">Return Location:</span>
                                                 <span class="booking-detail-value">{{ $booking->return_point ?? 'Not set' }}</span>
@@ -584,11 +640,23 @@
                                             </div>
                                         @endif
                                         
-                                        <div class="booking-actions" onclick="event.stopPropagation()">
+                                        <!-- Action Buttons -->
+                                        <div class="floating-box-buttons" onclick="event.stopPropagation()">
                                             @if($hasReceipt && $firstPaymentWithReceipt)
                                                 <button class="btn btn-sm btn-info" 
                                                         onclick="event.stopPropagation(); showReceipt('{{ getFileUrl($firstPaymentWithReceipt->transaction_reference ?? $firstPaymentWithReceipt->proof_of_payment ?? '') }}')">
                                                     <i class="bi bi-receipt"></i> Receipt
+                                                </button>
+                                            @endif
+                                            <button class="btn btn-sm btn-primary" 
+                                                    onclick="event.stopPropagation(); goToBookingDetail({{ $booking->bookingID }})">
+                                                <i class="bi bi-eye"></i> Booking Detail
+                                            </button>
+                                            @if($isUnread)
+                                                <button class="btn btn-sm btn-success mark-read-btn" 
+                                                        id="mark-read-btn-{{ $booking->bookingID }}_{{ $dateTypeForCell }}"
+                                                        onclick="event.stopPropagation(); closeAndMarkRead('{{ $booking->bookingID }}_{{ $dateTypeForCell }}', true, '{{ $dateTypeForCell }}')">
+                                                    <i class="bi bi-check-lg"></i> Mark as Read
                                                 </button>
                                             @endif
                                         </div>
@@ -616,19 +684,20 @@
         let hoveredBoxes = {};
         let hideTimeouts = {};
 
-        function showBookingBox(bookingId, event) {
-            const box = document.getElementById('booking-box-' + bookingId);
+        // boxId format: "bookingId_dateType" (e.g., "123_pickup" or "123_return")
+        function showBookingBox(boxId, event) {
+            const box = document.getElementById('booking-box-' + boxId);
             if (!box) return;
             
             // Clear any pending hide timeout
-            if (hideTimeouts[bookingId]) {
-                clearTimeout(hideTimeouts[bookingId]);
-                delete hideTimeouts[bookingId];
+            if (hideTimeouts[boxId]) {
+                clearTimeout(hideTimeouts[boxId]);
+                delete hideTimeouts[boxId];
             }
             
-            if (!stickyBoxes[bookingId]) {
+            if (!stickyBoxes[boxId]) {
                 box.style.display = 'block';
-                hoveredBoxes[bookingId] = true;
+                hoveredBoxes[boxId] = true;
                 // Position the box after it's displayed (using requestAnimationFrame for accurate measurements)
                 requestAnimationFrame(() => {
                     positionBookingBox(box, event);
@@ -636,34 +705,32 @@
             }
         }
 
-        function hideBookingBox(bookingId) {
-            hoveredBoxes[bookingId] = false;
+        function hideBookingBox(boxId) {
+            hoveredBoxes[boxId] = false;
             
             // Set a small delay before hiding to allow moving to the box
-            if (hideTimeouts[bookingId]) {
-                clearTimeout(hideTimeouts[bookingId]);
+            if (hideTimeouts[boxId]) {
+                clearTimeout(hideTimeouts[boxId]);
             }
             
-            hideTimeouts[bookingId] = setTimeout(() => {
-                const box = document.getElementById('booking-box-' + bookingId);
-                const bookingItem = document.querySelector(`[data-booking-id="${bookingId}"]`);
+            hideTimeouts[boxId] = setTimeout(() => {
+                const box = document.getElementById('booking-box-' + boxId);
                 
-                // Check if mouse is still over booking item or box
-                const isMouseOverItem = bookingItem && (bookingItem.matches(':hover') || bookingItem.querySelector(':hover'));
+                // Check if mouse is still over box
                 const isMouseOverBox = box && (box.matches(':hover') || box.querySelector(':hover'));
                 
-                if (box && !stickyBoxes[bookingId] && !hoveredBoxes[bookingId] && !isMouseOverItem && !isMouseOverBox) {
+                if (box && !stickyBoxes[boxId] && !hoveredBoxes[boxId] && !isMouseOverBox) {
                     box.style.display = 'none';
                 }
-                delete hideTimeouts[bookingId];
+                delete hideTimeouts[boxId];
             }, 200);
         }
 
-        function keepBookingBoxOpen(bookingId) {
-            hoveredBoxes[bookingId] = true;
-            if (hideTimeouts[bookingId]) {
-                clearTimeout(hideTimeouts[bookingId]);
-                delete hideTimeouts[bookingId];
+        function keepBookingBoxOpen(boxId) {
+            hoveredBoxes[boxId] = true;
+            if (hideTimeouts[boxId]) {
+                clearTimeout(hideTimeouts[boxId]);
+                delete hideTimeouts[boxId];
             }
         }
 
@@ -672,75 +739,87 @@
             
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
-            const margin = 10;
-            
-            // Reset position and styles
-            box.style.top = '100%';
-            box.style.left = '0';
-            box.style.right = 'auto';
-            box.style.bottom = 'auto';
-            box.style.maxHeight = '';
-            box.style.overflowY = '';
-            
-            // Get measurements after display
-            const rect = box.getBoundingClientRect();
+            const margin = 15;
+            const scrollY = window.scrollY || window.pageYOffset;
+            const scrollX = window.scrollX || window.pageXOffset;
             
             // Get the booking item element
             const bookingItem = box.closest('.booking-item');
             if (!bookingItem) return;
             
             const itemRect = bookingItem.getBoundingClientRect();
-            const calendarCell = bookingItem.closest('.calendar-day-cell');
-            if (!calendarCell) return;
             
-            const cellRect = calendarCell.getBoundingClientRect();
-            const cellTop = cellRect.top;
-            const cellBottom = cellRect.bottom;
+            // Reset position and styles first
+            box.style.top = 'auto';
+            box.style.left = 'auto';
+            box.style.right = 'auto';
+            box.style.bottom = 'auto';
+            box.style.maxHeight = '';
+            box.style.overflowY = '';
             
-            // Calculate position relative to the calendar cell
-            let top = itemRect.bottom - cellRect.top + 5; // 5px gap
-            let left = itemRect.left - cellRect.left;
+            // Get measurements after display
+            const boxRect = box.getBoundingClientRect();
+            const boxWidth = boxRect.width;
+            const boxHeight = boxRect.height;
             
-            // Adjust if box goes off right edge of cell
-            if (left + rect.width > cellRect.width - margin) {
-                left = cellRect.width - rect.width - margin;
-                if (left < margin) left = margin;
+            // Calculate initial position (below the item)
+            let top = itemRect.bottom + 5;
+            let left = itemRect.left;
+            
+            // Check if box goes off the right edge of viewport
+            if (left + boxWidth > viewportWidth - margin) {
+                left = viewportWidth - boxWidth - margin;
             }
             
-            // Adjust if box goes off bottom edge of viewport - show above instead
-            if (cellBottom + rect.height > viewportHeight - margin) {
-                top = itemRect.top - cellRect.top - rect.height - 5; // 5px gap above
-                if (top < 0) {
-                    // If can't fit above, position to fit in viewport
-                    top = itemRect.bottom - cellRect.top;
-                    const maxHeight = Math.max(200, viewportHeight - cellBottom - margin * 2);
-                    box.style.maxHeight = maxHeight + 'px';
-                    box.style.overflowY = 'auto';
-                }
-            }
-            
-            // Adjust if box goes off left edge of cell
+            // Check if box goes off the left edge of viewport
             if (left < margin) {
                 left = margin;
             }
             
-            // Adjust if box goes off right edge of viewport
-            if (cellRect.left + left + rect.width > viewportWidth - margin) {
-                left = viewportWidth - cellRect.left - rect.width - margin;
-                if (left < margin) left = margin;
+            // Check if box goes off the bottom edge of viewport
+            if (top + boxHeight > viewportHeight - margin) {
+                // Try to show above the item instead
+                const topAbove = itemRect.top - boxHeight - 5;
+                
+                if (topAbove >= margin) {
+                    // Can fit above
+                    top = topAbove;
+                } else {
+                    // Can't fit above, constrain height and show below or center
+                    const spaceBelow = viewportHeight - itemRect.bottom - margin;
+                    const spaceAbove = itemRect.top - margin;
+                    
+                    if (spaceBelow >= spaceAbove && spaceBelow > 150) {
+                        // Show below with constrained height
+                        top = itemRect.bottom + 5;
+                        box.style.maxHeight = (spaceBelow - 10) + 'px';
+                        box.style.overflowY = 'auto';
+                    } else if (spaceAbove > 150) {
+                        // Show above with constrained height
+                        top = margin;
+                        box.style.maxHeight = (spaceAbove - 10) + 'px';
+                        box.style.overflowY = 'auto';
+                    } else {
+                        // Center vertically with constrained height
+                        top = margin;
+                        box.style.maxHeight = (viewportHeight - margin * 2) + 'px';
+                        box.style.overflowY = 'auto';
+                    }
+                }
             }
             
+            // Apply position (using fixed positioning)
             box.style.top = top + 'px';
             box.style.left = left + 'px';
         }
 
-        function toggleBookingBox(bookingId) {
-            const box = document.getElementById('booking-box-' + bookingId);
+        function toggleBookingBox(boxId) {
+            const box = document.getElementById('booking-box-' + boxId);
             if (box) {
-                if (stickyBoxes[bookingId]) {
+                if (stickyBoxes[boxId]) {
                     box.classList.remove('sticky');
                     box.style.display = 'none';
-                    delete stickyBoxes[bookingId];
+                    delete stickyBoxes[boxId];
                 } else {
                     // Close all other sticky boxes
                     Object.keys(stickyBoxes).forEach(id => {
@@ -753,7 +832,7 @@
                     });
                     box.classList.add('sticky');
                     box.style.display = 'block';
-                    stickyBoxes[bookingId] = true;
+                    stickyBoxes[boxId] = true;
                     // Reposition when made sticky
                     const bookingItem = box.closest('.booking-item');
                     if (bookingItem) {
@@ -770,9 +849,11 @@
             if (cell) {
                 const bookingItems = cell.querySelectorAll('.booking-item');
                 bookingItems.forEach(item => {
-                    const bookingId = parseInt(item.dataset.bookingId);
-                    if (bookingId && !stickyBoxes[bookingId]) {
-                        hideBookingBox(bookingId);
+                    const bookingId = item.dataset.bookingId;
+                    const dateType = item.dataset.dateType;
+                    const boxId = bookingId + '_' + dateType;
+                    if (boxId && !stickyBoxes[boxId]) {
+                        hideBookingBox(boxId);
                     }
                 });
             }
@@ -908,8 +989,10 @@
                     const bookingItems = event.target.querySelectorAll('.booking-item');
                     bookingItems.forEach(item => {
                         const bookingId = item.dataset.bookingId;
-                        if (bookingId && !stickyBoxes[bookingId]) {
-                            hideBookingBox(parseInt(bookingId));
+                        const dateType = item.dataset.dateType;
+                        const boxId = bookingId + '_' + dateType;
+                        if (boxId && !stickyBoxes[boxId]) {
+                            hideBookingBox(boxId);
                         }
                     });
                 }
@@ -918,12 +1001,13 @@
             // Check if leaving a floating box (but not moving to its parent booking item)
             if (event.target.classList.contains('booking-floating-box')) {
                 const box = event.target;
-                const bookingId = parseInt(box.dataset.bookingId);
-                const bookingItem = document.querySelector(`[data-booking-id="${bookingId}"]`);
+                const bookingId = box.dataset.bookingId;
+                const dateType = box.dataset.dateType;
+                const boxId = bookingId + '_' + dateType;
                 
                 // If not moving to booking item or staying in box, hide it (unless sticky)
-                if (!stickyBoxes[bookingId] && (!relatedTarget || (!box.contains(relatedTarget) && (!bookingItem || !bookingItem.contains(relatedTarget))))) {
-                    hideBookingBox(bookingId);
+                if (!stickyBoxes[boxId] && (!relatedTarget || !box.contains(relatedTarget))) {
+                    hideBookingBox(boxId);
                 }
             }
         }, true);
@@ -934,48 +1018,128 @@
             new bootstrap.Modal(document.getElementById('receiptModal')).show();
         }
 
-        function closeBookingBox(bookingId) {
-            const box = document.getElementById('booking-box-' + bookingId);
+        function closeBookingBox(boxId) {
+            const box = document.getElementById('booking-box-' + boxId);
             if (box) {
                 box.classList.remove('sticky');
                 box.style.display = 'none';
-                delete stickyBoxes[bookingId];
-                delete hoveredBoxes[bookingId];
+                delete stickyBoxes[boxId];
+                delete hoveredBoxes[boxId];
             }
         }
 
-        function markAsRead(bookingId, navigateAfter = false) {
+        function goToBookingDetail(bookingId) {
+            window.location.href = `/admin/bookings/reservations/${bookingId}?tab=booking-detail`;
+        }
+
+        // boxId format: "bookingId_dateType", dateType is 'pickup' or 'return'
+        function closeAndMarkRead(boxId, isUnread, dateType) {
+            // Extract bookingId from boxId (format: "123_pickup" or "123_return")
+            const parts = boxId.split('_');
+            const bookingId = parts[0];
+            dateType = dateType || parts[1] || 'pickup';
+            
+            if (isUnread) {
+                // Mark as read, then close
+                fetch(`/admin/topbar-calendar/bookings/${bookingId}/mark-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ date_type: dateType })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the booking item appearance for this specific date type
+                        updateBookingItemToRead(boxId, dateType);
+                    }
+                    // Close the box regardless
+                    closeBookingBox(boxId);
+                })
+                .catch(error => {
+                    console.error('Error marking as read:', error);
+                    // Still close the box even if API call fails
+                    closeBookingBox(boxId);
+                });
+            } else {
+                // Just close the box
+                closeBookingBox(boxId);
+            }
+        }
+
+        // boxId format: "bookingId_dateType"
+        function updateBookingItemToRead(boxId, dateType) {
+            // Extract bookingId and dateType from boxId
+            const parts = boxId.split('_');
+            const bookingId = parts[0];
+            dateType = dateType || parts[1] || 'pickup';
+            
+            // Find the specific booking item for this date type
+            const bookingItems = document.querySelectorAll(`.booking-item[data-booking-id="${bookingId}"][data-date-type="${dateType}"]`);
+            
+            bookingItems.forEach(bookingItem => {
+                // Update color classes
+                bookingItem.classList.remove('unread');
+                bookingItem.classList.add('read');
+                
+                // Update data attribute
+                bookingItem.dataset.isUnread = 'false';
+                
+                // Remove unread indicator
+                const unreadIndicator = bookingItem.querySelector('.bi-circle-fill');
+                if (unreadIndicator) {
+                    unreadIndicator.remove();
+                }
+            });
+            
+            // Hide the "Mark as Read" button
+            const markReadBtn = document.getElementById('mark-read-btn-' + boxId);
+            if (markReadBtn) {
+                markReadBtn.style.display = 'none';
+            }
+            
+            // Update the floating box data attribute
+            const box = document.getElementById('booking-box-' + boxId);
+            if (box) {
+                box.dataset.isUnread = 'false';
+            }
+            
+            // Update unread badge count
+            const unreadBadge = document.querySelector('.unread-badge');
+            if (unreadBadge) {
+                const currentCount = parseInt(unreadBadge.textContent.match(/\d+/)?.[0] || '0');
+                if (currentCount > 1) {
+                    unreadBadge.innerHTML = `<i class="bi bi-exclamation-circle"></i> ${currentCount - 1} Unread`;
+                } else {
+                    unreadBadge.style.display = 'none';
+                }
+            }
+        }
+
+        // Mark as read with date type and navigate
+        function markAsRead(boxId, dateType, navigateAfter = false) {
+            const parts = boxId.split('_');
+            const bookingId = parts[0];
+            dateType = dateType || parts[1] || 'pickup';
+            
             return fetch(`/admin/topbar-calendar/bookings/${bookingId}/mark-as-read`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
+                },
+                body: JSON.stringify({ date_type: dateType })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     // Update the booking item appearance
-                    const bookingItem = document.querySelector(`[data-booking-id="${bookingId}"]`);
-                    if (bookingItem) {
-                        bookingItem.classList.remove('unread');
-                        bookingItem.classList.add('read');
-                        // Remove unread indicator
-                        const unreadIndicator = bookingItem.querySelector('.bi-circle-fill');
-                        if (unreadIndicator) {
-                            unreadIndicator.remove();
-                        }
-                    }
+                    updateBookingItemToRead(boxId, dateType);
                     
                     if (!navigateAfter) {
-                        // Hide the floating box
-                        const box = document.getElementById('booking-box-' + bookingId);
-                        if (box) {
-                            box.classList.remove('sticky');
-                            box.style.display = 'none';
-                            delete stickyBoxes[bookingId];
-                            delete hoveredBoxes[bookingId];
-                        }
+                        closeBookingBox(boxId);
                     }
                     return data;
                 } else {
@@ -985,20 +1149,14 @@
             .catch(error => {
                 console.error('Error marking as read:', error);
                 if (!navigateAfter) {
-                    // Still hide the box even if API call fails
-                    const box = document.getElementById('booking-box-' + bookingId);
-                    if (box) {
-                        box.classList.remove('sticky');
-                        box.style.display = 'none';
-                        delete stickyBoxes[bookingId];
-                        delete hoveredBoxes[bookingId];
-                    }
+                    closeBookingBox(boxId);
                 }
                 throw error;
             });
         }
     </script>
 @endsection
+
 
 
 

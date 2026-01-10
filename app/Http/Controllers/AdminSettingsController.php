@@ -364,20 +364,25 @@ class AdminSettingsController extends Controller
         }
 
         // For Runner: Get runner tasks (pickups/returns assigned to this runner)
+        // Only show tasks where the runner is assigned to the booking via staff_served
         $runnerTasks = collect();
         $runnerTotalCommission = 0;
         $runnerTaskCount = 0;
         
         if ($staff->runner && $staff->user) {
+            // Get bookings where this runner is assigned (staff_served = runner's userID)
+            // AND either pickup_point or return_point is not 'HASTA HQ Office'
             $runnerBookings = \App\Models\Booking::with(['vehicle', 'customer.user'])
                 ->where('staff_served', $staff->user->userID)
                 ->where(function($q) {
                     $q->where(function($subQ) {
-                        $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
-                             ->orWhereNull('pickup_point');
+                        $subQ->whereNotNull('pickup_point')
+                             ->where('pickup_point', '!=', '')
+                             ->where('pickup_point', '!=', 'HASTA HQ Office');
                     })->orWhere(function($subQ) {
-                        $subQ->where('return_point', '!=', 'HASTA HQ Office')
-                             ->orWhereNull('return_point');
+                        $subQ->whereNotNull('return_point')
+                             ->where('return_point', '!=', '')
+                             ->where('return_point', '!=', 'HASTA HQ Office');
                     });
                 })
                 ->when($filterMonth && $filterYear, function($q) use ($filterMonth, $filterYear) {
@@ -394,8 +399,8 @@ class AdminSettingsController extends Controller
 
             // Create task entries for pickup/return
             foreach ($runnerBookings as $booking) {
-                $pickupLocation = $booking->pickup_point ?? null;
-                $returnLocation = $booking->return_point ?? null;
+                $pickupLocation = !empty($booking->pickup_point) ? $booking->pickup_point : null;
+                $returnLocation = !empty($booking->return_point) ? $booking->return_point : null;
                 $pickupDate = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date) : null;
                 $returnDate = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date) : null;
                 

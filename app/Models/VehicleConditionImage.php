@@ -9,6 +9,9 @@ class VehicleConditionImage extends Model
 {
     use HasFactory;
 
+    // Specify the correct table name
+    protected $table = 'vehicleconditionimage';
+    
     // Assuming a primary key like imageID based on your project's naming convention
     protected $primaryKey = 'imageID';
 

@@ -279,12 +279,11 @@
                             </td>
                             <td>
                                 @if($customerEmail)
-                                    <button type="button" 
-                                            class="btn btn-sm btn-primary btn-email" 
-                                            onclick="sendEmail({{ $booking->bookingID }})"
-                                            title="Send email to {{ $customerEmail }}">
+                                    <a href="mailto:{{ $customerEmail }}?subject=Regarding Your Booking %23{{ $booking->bookingID }} Cancellation&body=Dear {{ $booking->customer->user->name ?? 'Customer' }},%0D%0A%0D%0AThis is regarding your booking %23{{ $booking->bookingID }} cancellation request.%0D%0A%0D%0ABooking Details:%0D%0A- Booking ID: %23{{ $booking->bookingID }}%0D%0A- Vehicle: {{ $vehiclePlate }}%0D%0A- Amount Paid: RM {{ number_format($totalPaid, 2) }}%0D%0A%0D%0A%0D%0ABest Regards,%0D%0AHASTA Travel %26 Tours Team" 
+                                       class="btn btn-sm btn-primary btn-email"
+                                       title="Draft email to {{ $customerEmail }}">
                                         <i class="bi bi-envelope"></i> Email
-                                    </button>
+                                    </a>
                                 @else
                                     <span class="text-muted small">No email</span>
                                 @endif
@@ -313,14 +312,23 @@
 
 <!-- Receipt Modal -->
 <div class="modal fade" id="receiptModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-receipt"></i> Payment Receipt</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-receipt me-2"></i> Payment Receipt</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center">
-                <p id="receiptText"></p>
+            <div class="modal-body text-center p-4">
+                <div id="receiptContent">
+                    <!-- Receipt image or content will be loaded here -->
+                </div>
+                <p id="receiptPaymentInfo" class="mt-3 text-muted small mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="receiptDownloadLink" class="btn btn-outline-success" target="_blank" style="display: none;">
+                    <i class="bi bi-download me-1"></i> Open in New Tab
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -330,7 +338,36 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
 
+    // Function to show a temporary notification (same style as payment page)
+    function showNotification(message, type = 'success') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.floating-notification');
+        existingNotifications.forEach(n => n.remove());
+
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const notification = document.createElement('div');
+        notification.className = `floating-notification alert ${alertClass} alert-dismissible fade show`;
+        notification.setAttribute('role', 'alert');
+        notification.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+
     function updateRefundStatus(bookingId, status) {
+        const selectElement = document.querySelector(`.refund-status-select[data-booking-id="${bookingId}"]`);
+        const originalValue = selectElement.dataset.originalValue || selectElement.value;
+        
         fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/update`, {
             method: 'POST',
             headers: {
@@ -345,20 +382,24 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                showNotification('Refund status updated successfully.', 'success');
+                selectElement.dataset.originalValue = status;
             } else {
-                alert(data.message || 'Failed to update status');
-                location.reload();
+                showNotification(data.message || 'Failed to update refund status.', 'danger');
+                selectElement.value = originalValue;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while updating the status.');
-            location.reload();
+            showNotification('An error occurred while updating the status.', 'danger');
+            selectElement.value = originalValue;
         });
     }
 
     function updateHandledBy(bookingId, staffId) {
+        const selectElement = document.querySelector(`.handled-by-select[data-booking-id="${bookingId}"]`);
+        const originalValue = selectElement.dataset.originalValue || selectElement.value;
+        
         fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/update`, {
             method: 'POST',
             headers: {
@@ -373,60 +414,81 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Success - no need to reload, just show a subtle notification
+                showNotification('Handled by updated successfully.', 'success');
+                selectElement.dataset.originalValue = staffId;
             } else {
-                alert(data.message || 'Failed to update handled by');
-                location.reload();
+                showNotification(data.message || 'Failed to update handled by.', 'danger');
+                selectElement.value = originalValue;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while updating handled by.');
-            location.reload();
-        });
-    }
-
-    function sendEmail(bookingId) {
-        if (!confirm('Send cancellation notification email to customer?')) {
-            return;
-        }
-
-        fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/send-email`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Email sent successfully!');
-            } else {
-                alert(data.message || 'Failed to send email');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while sending email.');
+            showNotification('An error occurred while updating handled by.', 'danger');
+            selectElement.value = originalValue;
         });
     }
 
     function showReceipt(proofOfPayment, paymentId) {
-        const modalBody = document.getElementById('receiptText');
-        if (proofOfPayment && (proofOfPayment.startsWith('http://') || proofOfPayment.startsWith('https://') || proofOfPayment.startsWith('/'))) {
-            // If it's a URL or path, show as image
-            modalBody.innerHTML = `
-                <img src="${proofOfPayment}" alt="Proof of Payment" class="img-fluid" style="max-width: 100%; height: auto;" onerror="this.outerHTML='<p class=\'text-muted\'>Proof of Payment: ${proofOfPayment}</p>'">
-                <p class="mt-2 text-muted small">Payment ID: ${paymentId}</p>
+        const receiptContent = document.getElementById('receiptContent');
+        const receiptPaymentInfo = document.getElementById('receiptPaymentInfo');
+        const downloadLink = document.getElementById('receiptDownloadLink');
+        
+        // Reset content
+        receiptContent.innerHTML = '';
+        receiptPaymentInfo.textContent = `Payment ID: #${paymentId}`;
+        downloadLink.style.display = 'none';
+        
+        if (!proofOfPayment) {
+            receiptContent.innerHTML = `
+                <div class="py-4">
+                    <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+                    <p class="mt-3 text-muted">No receipt image available</p>
+                </div>
             `;
+        } else if (proofOfPayment.match(/\.(jpeg|jpg|png|gif|webp|bmp)$/i) || 
+                   proofOfPayment.startsWith('http') || 
+                   proofOfPayment.startsWith('/') ||
+                   proofOfPayment.includes('drive.google.com')) {
+            // It's an image URL - display it
+            receiptContent.innerHTML = `
+                <div class="position-relative">
+                    <div class="spinner-border text-success mb-3" role="status" id="receiptSpinner">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <img src="${proofOfPayment}" 
+                         alt="Proof of Payment" 
+                         class="img-fluid rounded shadow-sm" 
+                         style="max-height: 70vh; object-fit: contain; display: none;"
+                         onload="this.style.display='block'; document.getElementById('receiptSpinner').style.display='none';"
+                         onerror="this.style.display='none'; document.getElementById('receiptSpinner').style.display='none'; document.getElementById('receiptContent').innerHTML='<div class=\\'py-4\\'><i class=\\'bi bi-exclamation-triangle text-warning\\' style=\\'font-size: 4rem;\\'></i><p class=\\'mt-3 text-muted\\'>Failed to load image</p><a href=\\'' + '${proofOfPayment}' + '\\' target=\\'_blank\\' class=\\'btn btn-sm btn-outline-primary mt-2\\'>Open Link</a></div>';">
+                </div>
+            `;
+            downloadLink.href = proofOfPayment;
+            downloadLink.style.display = 'inline-block';
+        } else if (proofOfPayment.match(/\.pdf$/i)) {
+            // It's a PDF
+            receiptContent.innerHTML = `
+                <div class="py-4">
+                    <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 4rem;"></i>
+                    <p class="mt-3">PDF Receipt</p>
+                    <a href="${proofOfPayment}" target="_blank" class="btn btn-danger">
+                        <i class="bi bi-eye me-1"></i> View PDF
+                    </a>
+                </div>
+            `;
+            downloadLink.href = proofOfPayment;
+            downloadLink.style.display = 'inline-block';
         } else {
-            // Otherwise show as text
-            modalBody.innerHTML = `
-                <p>Proof of Payment: ${proofOfPayment || 'N/A'}</p>
-                <p class="text-muted small">Payment ID: ${paymentId}</p>
+            // Text reference
+            receiptContent.innerHTML = `
+                <div class="py-4">
+                    <i class="bi bi-file-text text-secondary" style="font-size: 4rem;"></i>
+                    <p class="mt-3">Transaction Reference:</p>
+                    <code class="bg-light p-2 rounded d-inline-block">${proofOfPayment}</code>
+                </div>
             `;
         }
+        
         const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
         modal.show();
     }

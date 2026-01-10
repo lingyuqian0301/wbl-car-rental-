@@ -294,6 +294,12 @@ class AdminRentalReportController extends Controller
 
         $bookings = $query->orderBy('rental_start_date', 'desc')->get();
 
+        // Vehicle type filter - handle 'motor' as 'motorcycle'
+        $vehicleTypeFilter = $vehicleType;
+        if ($vehicleType === 'motor') {
+            $vehicleTypeFilter = 'motorcycle';
+        }
+
         // Apply same filters
         $filteredBookings = $bookings->filter(function($booking) use ($vehicleType, $vehicleTypeFilter, $paymentStatus) {
             $vehicle = $booking->vehicle;

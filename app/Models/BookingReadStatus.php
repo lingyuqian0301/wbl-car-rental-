@@ -11,6 +11,7 @@ class BookingReadStatus extends Model
     
     protected $fillable = [
         'booking_id',
+        'date_type', // 'pickup' or 'return'
         'user_id',
         'is_read',
         'read_at',
