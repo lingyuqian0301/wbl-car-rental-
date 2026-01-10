@@ -221,27 +221,31 @@
         </div>
 
         <div class="card">
-            <div class="card-body">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-calculator me-1"></i> Expenses and Profit</h5>
+                <span class="badge bg-light text-dark">{{ count($vehicles ?? []) }} vehicles</span>
+            </div>
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
                                 <th>Vehicle ID</th>
                                 <th>Vehicle</th>
                                 <th>Plate Number</th>
-                                <th class="text-right">Owner Leasing Price</th>
-                                <th class="text-right">Expenses (Maintenance)</th>
-                                <th class="text-right">Expenses (Staff)</th>
-                                <th class="text-right">Profit</th>
+                                <th class="text-end">Owner Leasing Price</th>
+                                <th class="text-end">Expenses (Maintenance)</th>
+                                <th class="text-end">Expenses (Staff)</th>
+                                <th class="text-end">Profit</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($vehicles ?? [] as $vehicle)
                                 <tr>
-                                    <td>#{{ $vehicle['vehicleID'] }}</td>
+                                    <td><strong>#{{ $vehicle['vehicleID'] }}</strong></td>
                                     <td>{{ $vehicle['vehicle'] }}</td>
                                     <td>{{ $vehicle['plate_number'] ?? 'N/A' }}</td>
-                                    <td class="text-right">
+                                    <td class="text-end">
                                         <span class="editable-leasing-price" 
                                               data-owner-id="{{ $vehicle['ownerID'] ?? '' }}"
                                               data-current-value="{{ $vehicle['leasing_price'] ?? 0 }}"
@@ -249,9 +253,9 @@
                                             RM {{ number_format($vehicle['leasing_price'], 2) }}
                                         </span>
                                     </td>
-                                    <td class="text-right">RM {{ number_format($vehicle['expenses'], 2) }}</td>
-                                    <td class="text-right">RM {{ number_format($vehicle['staff_expenses'] ?? 0, 2) }}</td>
-                                    <td class="text-right {{ $vehicle['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                    <td class="text-end">RM {{ number_format($vehicle['expenses'], 2) }}</td>
+                                    <td class="text-end">RM {{ number_format($vehicle['staff_expenses'] ?? 0, 2) }}</td>
+                                    <td class="text-end {{ $vehicle['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
                                         <span class="fw-bold">
                                             RM {{ number_format($vehicle['profit'], 2) }}
                                         </span>
@@ -259,14 +263,17 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-5 text-muted">No vehicles found</td>
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        No vehicles found
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>
-                        <tfoot>
-                            <tr style="background-color: #e9ecef; font-weight: bold;">
-                                <td colspan="6" class="text-right">Total Profit:</td>
-                                <td class="text-right {{ ($totalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                        <tfoot class="table-light">
+                            <tr style="font-weight: bold;">
+                                <td colspan="6" class="text-end">Total Profit:</td>
+                                <td class="text-end {{ ($totalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
                                     RM {{ number_format($totalProfit ?? 0, 2) }}
                                 </td>
                             </tr>
@@ -311,16 +318,20 @@
         </div>
 
         <div class="card">
-            <div class="card-body">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-calendar-month me-1"></i> Monthly Income</h5>
+                <span class="badge bg-light text-dark">{{ $selectedYear ?? date('Y') }}</span>
+            </div>
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
                                 <th>Month</th>
                                 <th>Total No. of Rental</th>
-                                <th>Total Expenses</th>
-                                <th>Total Earning Amount</th>
-                                <th>Profit Amount</th>
+                                <th class="text-end">Total Expenses</th>
+                                <th class="text-end">Total Earning Amount</th>
+                                <th class="text-end">Profit Amount</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -328,9 +339,9 @@
                                 <tr>
                                     <td><strong>{{ $month['monthName'] }}</strong></td>
                                     <td>{{ $month['totalRentals'] }}</td>
-                                    <td>RM {{ number_format($month['totalExpenses'], 2) }}</td>
-                                    <td>RM {{ number_format($month['totalEarnings'], 2) }}</td>
-                                    <td>
+                                    <td class="text-end">RM {{ number_format($month['totalExpenses'], 2) }}</td>
+                                    <td class="text-end">RM {{ number_format($month['totalEarnings'], 2) }}</td>
+                                    <td class="text-end">
                                         <span class="fw-bold {{ $month['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
                                             RM {{ number_format($month['profit'], 2) }}
                                         </span>
@@ -338,24 +349,29 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">No data found</td>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        No data found
+                                    </td>
                                 </tr>
                             @endforelse
-                            <!-- Year Total Row -->
-                            @if(isset($months) && count($months) > 0)
-                                <tr class="table-info fw-bold">
+                        </tbody>
+                        <!-- Year Total Row -->
+                        @if(isset($months) && count($months) > 0)
+                            <tfoot class="table-light">
+                                <tr class="fw-bold">
                                     <td><strong>Total (Year {{ $selectedYear ?? date('Y') }})</strong></td>
                                     <td>{{ $yearTotalRentals ?? 0 }}</td>
-                                    <td>RM {{ number_format($yearTotalExpenses ?? 0, 2) }}</td>
-                                    <td>RM {{ number_format($yearTotalEarnings ?? 0, 2) }}</td>
-                                    <td>
+                                    <td class="text-end">RM {{ number_format($yearTotalExpenses ?? 0, 2) }}</td>
+                                    <td class="text-end">RM {{ number_format($yearTotalEarnings ?? 0, 2) }}</td>
+                                    <td class="text-end">
                                         <span class="{{ ($yearTotalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
                                             RM {{ number_format($yearTotalProfit ?? 0, 2) }}
                                         </span>
                                     </td>
                                 </tr>
-                            @endif
-                        </tbody>
+                            </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>
@@ -405,24 +421,28 @@
         </div>
 
         <div class="card">
-            <div class="card-body">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-calendar-day me-1"></i> Daily Income</h5>
+                <span class="badge bg-light text-dark">{{ \Carbon\Carbon::create($selectedYear ?? date('Y'), $selectedMonth ?? date('m'), 1)->format('F Y') }}</span>
+            </div>
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
                                 <th>Date</th>
-                                <th>Total Earning Amount</th>
-                                <th>Total Expenses</th>
-                                <th>Total Profit</th>
+                                <th class="text-end">Total Earning Amount</th>
+                                <th class="text-end">Total Expenses</th>
+                                <th class="text-end">Total Profit</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($days ?? [] as $day)
                                 <tr>
-                                    <td>{{ $day['dateFormatted'] }}</td>
-                                    <td>RM {{ number_format($day['totalEarnings'], 2) }}</td>
-                                    <td>RM {{ number_format($day['totalExpenses'], 2) }}</td>
-                                    <td>
+                                    <td><strong>{{ $day['dateFormatted'] }}</strong></td>
+                                    <td class="text-end">RM {{ number_format($day['totalEarnings'], 2) }}</td>
+                                    <td class="text-end">RM {{ number_format($day['totalExpenses'], 2) }}</td>
+                                    <td class="text-end">
                                         <span class="fw-bold {{ $day['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
                                             RM {{ number_format($day['profit'], 2) }}
                                         </span>
@@ -430,7 +450,10 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">No data found</td>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        No data found
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -474,24 +497,28 @@
         </div>
 
         <div class="card">
-            <div class="card-body">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-calendar-week me-1"></i> Weekly Income</h5>
+                <span class="badge bg-light text-dark">{{ \Carbon\Carbon::parse($startDate ?? Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d'))->format('d M Y') }} - {{ \Carbon\Carbon::parse($startDate ?? Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d'))->addDays(6)->format('d M Y') }}</span>
+            </div>
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
                                 <th>Date</th>
-                                <th>Total Earning Amount</th>
-                                <th>Total Expenses</th>
-                                <th>Total Profit</th>
+                                <th class="text-end">Total Earning Amount</th>
+                                <th class="text-end">Total Expenses</th>
+                                <th class="text-end">Total Profit</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($days ?? [] as $day)
                                 <tr>
-                                    <td>{{ $day['dateFormatted'] }}</td>
-                                    <td>RM {{ number_format($day['totalEarnings'], 2) }}</td>
-                                    <td>RM {{ number_format($day['totalExpenses'], 2) }}</td>
-                                    <td>
+                                    <td><strong>{{ $day['dateFormatted'] }}</strong></td>
+                                    <td class="text-end">RM {{ number_format($day['totalEarnings'], 2) }}</td>
+                                    <td class="text-end">RM {{ number_format($day['totalExpenses'], 2) }}</td>
+                                    <td class="text-end">
                                         <span class="fw-bold {{ $day['profit'] >= 0 ? 'text-success' : 'text-danger' }}">
                                             RM {{ number_format($day['profit'], 2) }}
                                         </span>
@@ -499,23 +526,28 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">No data found</td>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        No data found
+                                    </td>
                                 </tr>
                             @endforelse
-                            <!-- Week Total Row -->
-                            @if(isset($days) && count($days) > 0)
-                                <tr class="table-info fw-bold">
+                        </tbody>
+                        <!-- Week Total Row -->
+                        @if(isset($days) && count($days) > 0)
+                            <tfoot class="table-light">
+                                <tr class="fw-bold">
                                     <td><strong>Total (Week)</strong></td>
-                                    <td>RM {{ number_format($weekTotalEarnings ?? 0, 2) }}</td>
-                                    <td>RM {{ number_format($weekTotalExpenses ?? 0, 2) }}</td>
-                                    <td>
+                                    <td class="text-end">RM {{ number_format($weekTotalEarnings ?? 0, 2) }}</td>
+                                    <td class="text-end">RM {{ number_format($weekTotalExpenses ?? 0, 2) }}</td>
+                                    <td class="text-end">
                                         <span class="{{ ($weekTotalProfit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
                                             RM {{ number_format($weekTotalProfit ?? 0, 2) }}
                                         </span>
                                     </td>
                                 </tr>
-                            @endif
-                        </tbody>
+                            </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>

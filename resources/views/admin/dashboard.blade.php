@@ -232,20 +232,26 @@
                         <h4 class="fw-bold mb-1">{{ $weeklyStats['total'] }} bookings this week</h4>
                         <p class="text-muted mb-3">Weekly booking schedule (Mon - Sun)</p>
                         <div class="progress mb-3" style="height: 20px; border-radius: 8px; overflow: hidden;">
-                            @if($weeklyStats['upcoming'] > 0)
-                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ $upcomingPercent }}%;" title="Upcoming: {{ $weeklyStats['upcoming'] }} bookings"></div>
+                            @if($weeklyStats['done'] > 0)
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ $donePercent }}%;" title="Done: {{ $weeklyStats['done'] }} bookings"></div>
                             @endif
                             @if($weeklyStats['current'] > 0)
                             <div class="progress-bar bg-danger" role="progressbar" style="width: {{ $currentPercent }}%;" title="Current: {{ $weeklyStats['current'] }} bookings"></div>
                             @endif
-                            @if($weeklyStats['done'] > 0)
-                            <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ $donePercent }}%;" title="Done: {{ $weeklyStats['done'] }} bookings"></div>
+                            @if($weeklyStats['upcoming'] > 0)
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ $upcomingPercent }}%;" title="Upcoming: {{ $weeklyStats['upcoming'] }} bookings"></div>
                             @endif
                         </div>
-                        <div class="d-flex justify-content-between text-muted-small">
-                            <span><span class="badge bg-success me-1">Upcoming</span> {{ $weeklyStats['upcoming'] }}</span>
-                            <span><span class="badge bg-danger me-1">Current</span> {{ $weeklyStats['current'] }}</span>
-                            <span><span class="badge bg-secondary me-1">Done</span> {{ $weeklyStats['done'] }}</span>
+                        <div class="d-flex flex-column gap-2 text-muted-small">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><span class="badge bg-secondary me-2">Done</span> {{ $weeklyStats['done'] }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><span class="badge bg-danger me-2">Current</span> {{ $weeklyStats['current'] }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><span class="badge bg-success me-2">Upcoming</span> {{ $weeklyStats['upcoming'] }}</span>
+                            </div>
                         </div>
                     </div>
                     </div>
@@ -314,15 +320,17 @@
                         </div>
                         <div class="card-body">
                             @forelse($recentBookings as $booking)
-                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                    <div>
-                                        <p class="mb-0 fw-semibold">#{{ $booking->bookingID }} · {{ $booking->vehicle->plate_number ?? 'N/A' }}</p>
-                                        <small class="text-muted">{{ $booking->customer->user->name ?? 'Unknown' }} · {{ $booking->rental_start_date?->format('d M') ?? 'N/A' }} - {{ $booking->rental_end_date?->format('d M Y') ?? 'N/A' }}</small>
+                                <a href="{{ route('admin.bookings.reservations.show', ['booking' => $booking->bookingID]) }}" class="text-decoration-none text-dark">
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom hover-bg">
+                                        <div>
+                                            <p class="mb-0 fw-semibold">#{{ $booking->bookingID }} · {{ $booking->vehicle->plate_number ?? 'N/A' }}</p>
+                                            <small class="text-muted">{{ $booking->customer->user->name ?? 'Unknown' }} · {{ $booking->rental_start_date?->format('d M') ?? 'N/A' }} - {{ $booking->rental_end_date?->format('d M Y') ?? 'N/A' }}</small>
+                                        </div>
+                                        <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
+                                            {{ $booking->booking_status }}
+                                        </span>
                                     </div>
-                                    <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
-                                        {{ $booking->booking_status }}
-                                    </span>
-                                </div>
+                                </a>
                             @empty
                                 <p class="mb-0 text-muted">No bookings yet.</p>
                             @endforelse
@@ -354,6 +362,56 @@
                         </div>
                     </div>
                 </a>
+            </div>
+        </div>
+
+        <!-- Booking need runner -->
+        <div class="card mb-4">
+            <div class="card-header card-header-red d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Booking need runner</span>
+                <a href="{{ route('admin.runner.tasks', ['filter_assigned' => 'unassigned', 'sort' => 'pickup_asc']) }}" class="btn btn-light btn-sm pill-btn">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                @if($bookingsNeedRunner->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Pickup Date</th>
+                                    <th>Pickup Time</th>
+                                    <th>Plate No</th>
+                                    <th>Assigned Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($bookingsNeedRunner as $booking)
+                                    <tr style="cursor: pointer;" onclick="window.location.href='{{ route('admin.runner.tasks', ['filter_assigned' => 'unassigned', 'sort' => 'pickup_asc']) }}'">
+                                        <td>{{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</td>
+                                        <td>{{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('H:i') : 'N/A' }}</td>
+                                        <td>{{ $booking->vehicle->plate_number ?? 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge {{ ($booking->assigned_status ?? 'unassigned') === 'assigned' ? 'bg-success' : 'bg-warning text-dark' }}">
+                                                {{ ucfirst($booking->assigned_status ?? 'unassigned') }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{{ route('admin.runner.tasks', ['filter_assigned' => 'unassigned', 'sort' => 'pickup_asc']) }}" class="btn btn-outline-danger btn-sm pill-btn" onclick="event.stopPropagation()">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="alert alert-light border-0 text-muted mb-0">
+                        No bookings need runner at the moment.
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -400,7 +458,7 @@
                                             </span>
                                         </td>
                                         <td class="text-end">
-                                            <a href="{{ route('admin.bookings.reservations') }}?booking_id={{ $booking->bookingID }}" class="btn btn-outline-danger btn-sm pill-btn">
+                                            <a href="{{ route('admin.bookings.reservations.show', ['booking' => $booking->bookingID]) }}" class="btn btn-outline-danger btn-sm pill-btn">
                                                 View
                                             </a>
                                         </td>

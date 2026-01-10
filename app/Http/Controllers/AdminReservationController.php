@@ -43,12 +43,12 @@ class AdminReservationController extends Controller
             });
         }
 
-        // Filter by pickup date
+        // Filter by pickup date (handle datetime)
         if ($filterPickupDate) {
             $query->whereDate('rental_start_date', $filterPickupDate);
         }
 
-        // Filter by return date
+        // Filter by return date (handle datetime)
         if ($filterReturnDate) {
             $query->whereDate('rental_end_date', $filterReturnDate);
         }
@@ -120,10 +120,12 @@ class AdminReservationController extends Controller
 
         // Get unique values for filters
         $plateNumbers = \App\Models\Vehicle::distinct()->pluck('plate_number')->filter()->sort()->values();
-        // Get users who are staff or admins (using relationships instead of role column)
+        // Get users who are staffit or admins (exclude runner)
         $staffUsers = \App\Models\User::where(function($query) {
-            $query->whereHas('staff')->orWhereHas('admin');
-        })->get();
+            $query->whereHas('staff', function($q) {
+                $q->whereDoesntHave('runner'); // Exclude runners
+            })->orWhereHas('admin');
+        })->with(['staff.runner', 'staff.staffIt', 'admin'])->orderBy('name')->get();
         $bookingStatuses = ['Pending', 'Confirmed', 'Request Cancellation', 'Refunding', 'Cancelled', 'Done'];
         $paymentStatuses = ['Full', 'Deposit', 'Unpaid'];
 
@@ -216,15 +218,23 @@ class AdminReservationController extends Controller
     public function updateBookingStatus(Request $request, Booking $booking)
     {
         $request->validate([
-            'booking_status' => 'required|string',
+            'booking_status' => 'nullable|string',
             'staff_served' => 'nullable|integer',
         ]);
 
-        $booking->update([
-            'booking_status' => $request->booking_status,
-            'staff_served' => $request->staff_served ?? $booking->staff_served,
+        $updateData = [
             'lastUpdateDate' => Carbon::now(),
-        ]);
+        ];
+
+        if ($request->has('booking_status')) {
+            $updateData['booking_status'] = $request->booking_status;
+        }
+
+        if ($request->has('staff_served')) {
+            $updateData['staff_served'] = $request->staff_served ?: null;
+        }
+
+        $booking->update($updateData);
 
         // if ($request->booking_status === 'Confirmed') {
         //     \App\Models\Invoice::firstOrCreate(
@@ -239,7 +249,7 @@ class AdminReservationController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Booking status updated successfully.',
+            'message' => $request->has('staff_served') ? 'Served by updated successfully.' : 'Booking status updated successfully.',
         ]);
     }
 
@@ -250,8 +260,17 @@ class AdminReservationController extends Controller
     {
         $booking->load([
             'customer.user',
+            'customer.local',
+            'customer.international',
+            'customer.localStudent.studentDetails',
+            'customer.internationalStudent.studentDetails',
+            'customer.localUtmStaff.staffDetails',
+            'customer.internationalUtmStaff.staffDetails',
+            'customer.bookings',
             'vehicle.car',
             'vehicle.motorcycle',
+            'vehicle.owner.personDetails',
+            'vehicle.documents',
             'payments',
             'invoice',
             'review',
@@ -271,8 +290,11 @@ class AdminReservationController extends Controller
             $query->whereHas('staff')->orWhereHas('admin');
         })->orderBy('name')->get();
 
-        // Get active tab from query parameter
-        $activeTab = request()->get('tab', 'booking-info');
+        // Get all transactions/payments for transaction detail tab
+        $transactions = $booking->payments()->orderBy('payment_date', 'desc')->get();
+
+        // Get active tab from query parameter - default to 'booking-detail'
+        $activeTab = request()->get('tab', 'booking-detail');
 
         return view('admin.reservations.show', [
             'booking' => $booking,
@@ -281,6 +303,7 @@ class AdminReservationController extends Controller
             'outstandingBalance' => $outstandingBalance,
             'staffServed' => $staffServed,
             'verifyByUsers' => $verifyByUsers,
+            'transactions' => $transactions,
             'activeTab' => $activeTab,
         ]);
     }

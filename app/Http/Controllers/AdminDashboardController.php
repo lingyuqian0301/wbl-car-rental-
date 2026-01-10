@@ -145,6 +145,31 @@ class AdminDashboardController extends Controller
             'total' => $weeklyBookings->count(),
         ];
 
+        // Booking need runner: future bookings where pickup_point or return_point is not 'HASTA HQ Office'
+        // Show if: pickup_point is set AND != 'HASTA HQ Office', OR return_point is set AND != 'HASTA HQ Office'
+        $bookingsNeedRunner = Booking::with(['vehicle', 'customer.user'])
+            ->where('rental_start_date', '>', $today)
+            ->whereIn('booking_status', ['Pending', 'Confirmed'])
+            ->where(function($query) {
+                $query->where(function($q) {
+                    $q->whereNotNull('pickup_point')
+                      ->where('pickup_point', '!=', '')
+                      ->where('pickup_point', '!=', 'HASTA HQ Office');
+                })->orWhere(function($q) {
+                    $q->whereNotNull('return_point')
+                      ->where('return_point', '!=', '')
+                      ->where('return_point', '!=', 'HASTA HQ Office');
+                });
+            })
+            ->orderBy('rental_start_date', 'asc')
+            ->take(10)
+            ->get()
+            ->map(function($booking) {
+                // Determine assigned status based on staff_served (runner)
+                $booking->assigned_status = $booking->staff_served ? 'assigned' : 'unassigned';
+                return $booking;
+            });
+
         return view('admin.dashboard', [
             'metrics' => $metrics,
             'recentBookings' => $recentBookings,
@@ -152,6 +177,7 @@ class AdminDashboardController extends Controller
             'pendingPayments' => $pendingPayments,
             'upcomingBookingsToServe' => $upcomingBookingsToServe,
             'cancellationRequests' => $cancellationRequests,
+            'bookingsNeedRunner' => $bookingsNeedRunner,
             'monthlyRevenue' => $this->monthlyRevenueData(),
             'today' => $today,
             'weeklyBookingStats' => $weeklyBookingStats,
@@ -163,8 +189,9 @@ class AdminDashboardController extends Controller
     }
 
     /**
-     * Build a three-month revenue trend showing profit (including current month).
-     * Profit = Earnings (rental_amount + deposit_fine_amount) - Expenses (maintenance + staff commission)
+     * Build a three-month revenue trend showing payment amount received.
+     * 1. Payment amount (excluding deposit payments)
+     * 2. Deposit minus refund (deposit payments - refunded amounts)
      */
     private function monthlyRevenueData(): array
     {
@@ -176,49 +203,49 @@ class AdminDashboardController extends Controller
         return $months->map(function (Carbon $month) {
             $dateFrom = $month->copy()->startOfMonth();
             $dateTo = $month->copy()->endOfMonth();
-            $key = $month->format('Y-m');
             $label = $month->format('M');
 
-            // Get bookings for this month (excluding cancelled)
-            $bookings = Booking::whereBetween('rental_start_date', [$dateFrom, $dateTo])
-                ->where('booking_status', '!=', 'Cancelled')
+            // Get verified payments for this month with booking relationship
+            $verifiedPayments = Payment::with('booking')
+                ->where('payment_status', 'Verified')
+                ->whereBetween('payment_date', [$dateFrom, $dateTo])
                 ->get();
 
-            // Calculate earnings: rental_amount + deposit_fine_amount
-            $totalEarnings = $bookings->sum('rental_amount') + $bookings->sum('deposit_fine_amount');
+            // 1. Payment amounts (excluding deposit payments)
+            // A deposit payment is one where the payment amount exactly matches the booking's deposit_amount
+            $regularPaymentAmount = $verifiedPayments->filter(function($payment) {
+                if (!$payment->booking) return true;
+                $paymentAmount = $payment->total_amount ?? 0;
+                $depositAmount = $payment->booking->deposit_amount ?? 0;
+                // If amounts match exactly (within 0.01 tolerance), it's a deposit
+                return abs($paymentAmount - $depositAmount) >= 0.01;
+            })->sum('total_amount');
 
-            // Calculate expenses
-            // 1. Maintenance expenses
-            $maintenanceExpenses = \App\Models\VehicleMaintenance::whereBetween('service_date', [$dateFrom, $dateTo])
-                ->sum('cost');
-
-            // 2. Staff commission
-            // Booking commission: 10% of rental_amount for bookings served by staff
-            $bookingCommission = $bookings->filter(function($booking) {
-                return !is_null($booking->staff_served);
-            })->sum(function($booking) {
-                return ($booking->rental_amount ?? 0) * 0.10;
+            // 2. Deposit minus refund
+            // Get deposit payments (payments where amount matches booking deposit_amount)
+            $depositPayments = $verifiedPayments->filter(function($payment) {
+                if (!$payment->booking) return false;
+                $paymentAmount = $payment->total_amount ?? 0;
+                $depositAmount = $payment->booking->deposit_amount ?? 0;
+                return abs($paymentAmount - $depositAmount) < 0.01;
             });
+            
+            $depositAmount = $depositPayments->sum('total_amount');
+            
+            // Get refunded amounts for this month (refunds are negative amounts or status 'Refunded')
+            $refundedAmount = Payment::where('payment_status', 'Refunded')
+                ->whereBetween('payment_date', [$dateFrom, $dateTo])
+                ->sum(DB::raw('ABS(total_amount)'));
+            
+            // Deposit minus refund (deposit fine might be deducted, but refund is what we subtract)
+            $depositNetAmount = max(0, $depositAmount - $refundedAmount);
 
-            // Maintenance commission
-            $maintenanceCommission = \App\Models\VehicleMaintenance::whereBetween('service_date', [$dateFrom, $dateTo])
-                ->whereNotNull('staffID')
-                ->sum('commission_amount');
-
-            // Fuel commission: RM2 per fuel record
-            $fuelCommission = \App\Models\Fuel::whereBetween('fuel_date', [$dateFrom, $dateTo])
-                ->whereNotNull('handled_by')
-                ->count() * 2;
-
-            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission;
-            $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
-
-            // Calculate profit: earnings - expenses
-            $profit = $totalEarnings - $totalExpenses;
+            // Total payment amount received = regular payments + (deposit - refund)
+            $totalPaymentReceived = $regularPaymentAmount + $depositNetAmount;
 
             return [
                 'label' => $label,
-                'total' => round((float) max(0, $profit), 2), // Ensure profit is not negative for display
+                'total' => round((float) $totalPaymentReceived, 2),
                 'month' => $month->month,
                 'year' => $month->year,
                 'date_from' => $dateFrom->format('Y-m-d'),

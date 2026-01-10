@@ -23,5 +23,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register Booking Observer for Keep Deposit logic
         Booking::observe(BookingObserver::class);
+
+        // Register Blade directive for file URLs
+        \Blade::directive('fileUrl', function ($expression) {
+            return "<?php echo getFileUrl($expression); ?>";
+        });
     }
 }

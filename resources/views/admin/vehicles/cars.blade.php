@@ -8,6 +8,12 @@
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
     }
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:last-child .page-link {
+        padding: 0.35rem 0.6rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
     .status-btn {
         min-width: 100px;
         font-weight: 500;

@@ -43,8 +43,8 @@ class Booking extends Model
     {
         return [
             'lastUpdateDate' => 'datetime',
-            'rental_start_date' => 'date',
-            'rental_end_date' => 'date',
+            'rental_start_date' => 'datetime',
+            'rental_end_date' => 'datetime',
             'duration' => 'integer',
             'deposit_amount' => 'decimal:2',
             'rental_amount' => 'decimal:2',
@@ -230,5 +230,44 @@ class Booking extends Model
             'route' => route('pickup.show', $this->bookingID),
             'label' => 'Proceed to Pickup',
         ];
+    }
+
+    /**
+     * Check if this booking is read by a specific user for a specific date type.
+     * @param int $userId
+     * @param string|null $dateType 'pickup', 'return', or null to check any
+     */
+    public function isReadBy($userId, $dateType = null): bool
+    {
+        try {
+            $query = BookingReadStatus::where('booking_id', $this->bookingID)
+                ->where('user_id', $userId)
+                ->where('is_read', true);
+            
+            if ($dateType) {
+                $query->where('date_type', $dateType);
+            }
+            
+            return $query->exists();
+        } catch (\Exception $e) {
+            // If table doesn't exist, return false (unread)
+            return false;
+        }
+    }
+
+    /**
+     * Check if pickup date is read by a specific user.
+     */
+    public function isPickupReadBy($userId): bool
+    {
+        return $this->isReadBy($userId, 'pickup');
+    }
+
+    /**
+     * Check if return date is read by a specific user.
+     */
+    public function isReturnReadBy($userId): bool
+    {
+        return $this->isReadBy($userId, 'return');
     }
 }

@@ -199,13 +199,16 @@
     // Weekly Chart
     @if($activeTab === 'weekly')
     const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+    const weeklyLabels = {!! json_encode(array_column($weeklyData, 'date')) !!};
+    const weeklyCounts = {!! json_encode(array_column($weeklyData, 'count')) !!};
+    
     new Chart(weeklyCtx, {
         type: 'line',
         data: {
-            labels: {!! json_encode(array_column($weeklyData, 'date')) !!},
+            labels: weeklyLabels.length > 0 ? weeklyLabels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [{
                 label: 'Number of Bookings',
-                data: {!! json_encode(array_column($weeklyData, 'count')) !!},
+                data: weeklyCounts.length > 0 ? weeklyCounts : [0, 0, 0, 0, 0, 0, 0],
                 borderColor: '#dc3545',
                 backgroundColor: 'rgba(220, 53, 69, 0.1)',
                 tension: 0.4,
@@ -225,10 +228,24 @@
                 }
             },
             scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Day'
+                    }
+                },
                 y: {
                     beginAtZero: true,
+                    min: 0,
+                    max: Math.max(...(weeklyCounts.length > 0 ? weeklyCounts : [0])) > 0 ? undefined : 10,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Bookings'
                     }
                 }
             }
@@ -239,13 +256,16 @@
     // Monthly Chart
     @if($activeTab === 'monthly')
     const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    const monthlyLabels = {!! json_encode(array_column($monthlyData, 'date')) !!};
+    const monthlyCounts = {!! json_encode(array_column($monthlyData, 'count')) !!};
+    
     new Chart(monthlyCtx, {
         type: 'line',
         data: {
-            labels: {!! json_encode(array_column($monthlyData, 'date')) !!},
+            labels: monthlyLabels.length > 0 ? monthlyLabels : Array.from({length: 31}, (_, i) => i + 1),
             datasets: [{
                 label: 'Number of Bookings',
-                data: {!! json_encode(array_column($monthlyData, 'count')) !!},
+                data: monthlyCounts.length > 0 ? monthlyCounts : Array(31).fill(0),
                 borderColor: '#dc3545',
                 backgroundColor: 'rgba(220, 53, 69, 0.1)',
                 tension: 0.4,
@@ -265,10 +285,24 @@
                 }
             },
             scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Day of Month'
+                    }
+                },
                 y: {
                     beginAtZero: true,
+                    min: 0,
+                    max: Math.max(...(monthlyCounts.length > 0 ? monthlyCounts : [0])) > 0 ? undefined : 10,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Bookings'
                     }
                 }
             }
@@ -279,12 +313,15 @@
     // Faculty Chart
     @if($activeTab === 'faculty')
     const facultyCtx = document.getElementById('facultyChart').getContext('2d');
+    const facultyLabels = {!! json_encode(array_keys($facultyData)) !!};
+    const facultyValues = {!! json_encode(array_values($facultyData)) !!};
+    
     new Chart(facultyCtx, {
         type: 'pie',
         data: {
-            labels: {!! json_encode(array_keys($facultyData)) !!},
+            labels: facultyLabels.length > 0 ? facultyLabels : ['No Data'],
             datasets: [{
-                data: {!! json_encode(array_values($facultyData)) !!},
+                data: facultyValues.length > 0 ? facultyValues : [1],
                 backgroundColor: [
                     '#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0d6efd', '#6f42c1', '#e83e8c'
                 ]
@@ -297,8 +334,15 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
+                            if (facultyValues.length === 0) {
+                                return 'No Data';
+                            }
                             return context.label + ': ' + context.parsed + ' bookings';
                         }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'right'
                     }
                 }
             }
@@ -309,12 +353,15 @@
     // Brand Chart
     @if($activeTab === 'brand')
     const brandCtx = document.getElementById('brandChart').getContext('2d');
+    const brandLabels = {!! json_encode(array_keys($brandData)) !!};
+    const brandValues = {!! json_encode(array_values($brandData)) !!};
+    
     new Chart(brandCtx, {
         type: 'pie',
         data: {
-            labels: {!! json_encode(array_keys($brandData)) !!},
+            labels: brandLabels.length > 0 ? brandLabels : ['No Data'],
             datasets: [{
-                data: {!! json_encode(array_values($brandData)) !!},
+                data: brandValues.length > 0 ? brandValues : [1],
                 backgroundColor: [
                     '#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0d6efd', '#6f42c1', '#e83e8c', '#198754'
                 ]
@@ -327,8 +374,15 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
+                            if (brandValues.length === 0) {
+                                return 'No Data';
+                            }
                             return context.label + ': ' + context.parsed + ' bookings';
                         }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'right'
                     }
                 }
             }
@@ -339,24 +393,29 @@
     // Comparison Chart
     @if($activeTab === 'comparison')
     const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+    const comparisonLabels = {!! json_encode(array_column($comparisonData, 'month')) !!};
+    const comparisonTotal = {!! json_encode(array_column($comparisonData, 'total')) !!};
+    const comparisonCars = {!! json_encode(array_column($comparisonData, 'cars')) !!};
+    const comparisonMotorcycles = {!! json_encode(array_column($comparisonData, 'motorcycles')) !!};
+    
     new Chart(comparisonCtx, {
         type: 'bar',
         data: {
-            labels: {!! json_encode(array_column($comparisonData, 'month')) !!},
+            labels: comparisonLabels.length > 0 ? comparisonLabels : ['Month 1', 'Month 2', 'Month 3', 'Month 4'],
             datasets: [
                 {
                     label: 'Total',
-                    data: {!! json_encode(array_column($comparisonData, 'total')) !!},
+                    data: comparisonTotal.length > 0 ? comparisonTotal : [0, 0, 0, 0],
                     backgroundColor: '#dc3545'
                 },
                 {
                     label: 'Cars',
-                    data: {!! json_encode(array_column($comparisonData, 'cars')) !!},
+                    data: comparisonCars.length > 0 ? comparisonCars : [0, 0, 0, 0],
                     backgroundColor: '#0d6efd'
                 },
                 {
                     label: 'Motorcycles',
-                    data: {!! json_encode(array_column($comparisonData, 'motorcycles')) !!},
+                    data: comparisonMotorcycles.length > 0 ? comparisonMotorcycles : [0, 0, 0, 0],
                     backgroundColor: '#198754'
                 }
             ]
@@ -365,11 +424,31 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                },
                 y: {
                     beginAtZero: true,
+                    min: 0,
+                    max: Math.max(...(comparisonTotal.length > 0 ? comparisonTotal : [0])) > 0 ? undefined : 10,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Bookings'
                     }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
                 }
             }
         }

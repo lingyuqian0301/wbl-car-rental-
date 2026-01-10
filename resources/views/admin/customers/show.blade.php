@@ -80,12 +80,12 @@
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#detail" type="button" role="tab">
+            <button class="nav-link {{ ($activeTab ?? 'detail') === 'detail' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#detail" type="button" role="tab">
                 <i class="bi bi-info-circle"></i> Detail
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#booking-history" type="button" role="tab">
+            <button class="nav-link {{ ($activeTab ?? '') === 'booking-history' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#booking-history" type="button" role="tab">
                 <i class="bi bi-clock-history"></i> Booking History
             </button>
         </li>
@@ -93,7 +93,7 @@
 
     <div class="tab-content">
         <!-- Detail Tab -->
-        <div class="tab-pane fade show active" id="detail" role="tabpanel">
+        <div class="tab-pane fade {{ ($activeTab ?? 'detail') === 'detail' ? 'show active' : '' }}" id="detail" role="tabpanel">
             <div class="row g-3">
                 <!-- User Info Grouping Box -->
                 <div class="col-12">
@@ -103,45 +103,60 @@
                         </div>
                         <div class="card-body">
                             <dl class="mb-0">
-                                <dt>User ID:</dt>
-                                <dd>{{ $customer->user->userID ?? 'N/A' }}</dd>
-                                
-                                <dt>Username:</dt>
-                                <dd>{{ $customer->user->username ?? 'N/A' }}</dd>
-                                
-                                <dt>Email:</dt>
-                                <dd>{{ $customer->user->email ?? 'N/A' }}</dd>
-                                
-                                <dt>Phone:</dt>
-                                <dd>{{ $customer->user->phone ?? 'N/A' }}</dd>
-                                
-                                <dt>Name:</dt>
-                                <dd>{{ $customer->user->name ?? 'N/A' }}</dd>
-                                
-                                <dt>Last Login:</dt>
-                                <dd>{{ $customer->user->lastLogin ? \Carbon\Carbon::parse($customer->user->lastLogin)->format('d M Y H:i') : 'N/A' }}</dd>
-                                
-                                <dt>Date Registered:</dt>
-                                <dd>{{ $customer->user->dateRegistered ? \Carbon\Carbon::parse($customer->user->dateRegistered)->format('d M Y') : 'N/A' }}</dd>
-                                
-                                <dt>Date of Birth:</dt>
-                                <dd>{{ $customer->user->DOB ? \Carbon\Carbon::parse($customer->user->DOB)->format('d M Y') : 'N/A' }}</dd>
-                                
-                                <dt>Age:</dt>
-                                <dd>
-                                    @if($customer->user->DOB)
-                                        {{ \Carbon\Carbon::parse($customer->user->DOB)->age }} years
-                                    @else
-                                        N/A
-                                    @endif
-                                </dd>
-                                
-                                <dt>Status:</dt>
-                                <dd>
-                                    <span class="badge {{ ($customer->user->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                        {{ ($customer->user->isActive ?? false) ? 'Active' : 'Inactive' }}
-                                    </span>
-                                </dd>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Customer ID:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->customerID ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">User ID:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->userID ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Username:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->username ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Email:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->email ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Phone:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->phone ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Name:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->name ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Last Login:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->lastLogin ? \Carbon\Carbon::parse($customer->user->lastLogin)->format('d M Y H:i') : 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Date Registered:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->dateRegistered ? \Carbon\Carbon::parse($customer->user->dateRegistered)->format('d M Y') : 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Date of Birth:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->user->DOB ? \Carbon\Carbon::parse($customer->user->DOB)->format('d M Y') : 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Age:</dt>
+                                    <dd class="d-inline ms-2">
+                                        @if($customer->user->DOB)
+                                            {{ \Carbon\Carbon::parse($customer->user->DOB)->age }} years
+                                        @else
+                                            N/A
+                                        @endif
+                                    </dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Status:</dt>
+                                    <dd class="d-inline ms-2">
+                                        <span class="badge {{ ($customer->user->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
+                                            {{ ($customer->user->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </dd>
+                                </div>
                             </dl>
                         </div>
                     </div>
@@ -154,11 +169,14 @@
                             <h5 class="mb-0"><i class="bi bi-person-badge"></i> Customer Detail</h5>
                         </div>
                         <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <dl class="row mb-0">
-                                    <dt class="col-5">Type:</dt>
-                                    <dd class="col-7">
+                            <dl class="mb-0">
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Customer ID:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->customerID ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Type:</dt>
+                                    <dd class="d-inline ms-2">
                                         @if($customer->local)
                                             Local
                                         @elseif($customer->international)
@@ -172,91 +190,107 @@
                                             / Staff
                                         @endif
                                     </dd>
-                                    
-                                    <dt class="col-5">{{ $customer->local ? 'IC No' : 'Passport No' }}:</dt>
-                                    <dd class="col-7">
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">{{ $customer->local ? 'IC No' : 'Passport No' }}:</dt>
+                                    <dd class="d-inline ms-2">
                                         {{ $customer->local->ic_no ?? ($customer->international->passport_no ?? 'N/A') }}
                                     </dd>
-                                    
-                                    <dt class="col-5">{{ $customer->local ? 'State of Origin' : 'Country of Origin' }}:</dt>
-                                    <dd class="col-7">
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">{{ $customer->local ? 'State of Origin' : 'Country of Origin' }}:</dt>
+                                    <dd class="d-inline ms-2">
                                         {{ $customer->local->stateOfOrigin ?? ($customer->international->countryOfOrigin ?? 'N/A') }}
                                     </dd>
-                                    
-                                    <dt class="col-5">Address:</dt>
-                                    <dd class="col-7">{{ $customer->address ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">License Expiry Date:</dt>
-                                    <dd class="col-7">
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Address:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->address ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">License Expiry Date:</dt>
+                                    <dd class="d-inline ms-2">
                                         @if($customer->customer_license)
                                             {{ \Carbon\Carbon::parse($customer->customer_license)->format('d M Y') }}
                                         @else
                                             N/A
                                         @endif
                                     </dd>
-                                    
-                                    <dt class="col-5">Emergency Contact:</dt>
-                                    <dd class="col-7">{{ $customer->emergency_contact ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Default Bank Name:</dt>
-                                    <dd class="col-7">{{ $customer->default_bank_name ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Default Account No:</dt>
-                                    <dd class="col-7">{{ $customer->default_account_no ?? 'N/A' }}</dd>
-                                    
-                                    <dt class="col-5">Booking Times:</dt>
-                                    <dd class="col-7">{{ $customer->bookings->count() ?? 0 }}</dd>
-                                </dl>
-                            </div>
-                            <div class="col-md-6">
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Emergency Contact:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->emergency_contact ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Default Bank Name:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->default_bank_name ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Default Account No:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->default_account_no ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Booking Times:</dt>
+                                    <dd class="d-inline ms-2">{{ $customer->bookings->count() ?? 0 }}</dd>
+                                </div>
                                 @if($customer->localStudent || $customer->internationalStudent)
+                                <div class="mt-3 pt-3 border-top">
                                     <h6 class="fw-semibold mb-3">Student Details</h6>
-                                    <dl class="row mb-0">
-                                        <dt class="col-5">Matric Number:</dt>
-                                        <dd class="col-7">
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">Matric Number:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localStudent->matric_number ?? ($customer->internationalStudent->matric_number ?? 'N/A') }}
                                         </dd>
-                                        
-                                        <dt class="col-5">College:</dt>
-                                        <dd class="col-7">
+                                    </div>
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">College:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localStudent->studentDetails->college ?? ($customer->internationalStudent->studentDetails->college ?? 'N/A') }}
                                         </dd>
-                                        
-                                        <dt class="col-5">Faculty:</dt>
-                                        <dd class="col-7">
+                                    </div>
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">Faculty:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localStudent->studentDetails->faculty ?? ($customer->internationalStudent->studentDetails->faculty ?? 'N/A') }}
                                         </dd>
-                                        
-                                        <dt class="col-5">Programme:</dt>
-                                        <dd class="col-7">
+                                    </div>
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">Programme:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localStudent->studentDetails->programme ?? ($customer->internationalStudent->studentDetails->programme ?? 'N/A') }}
                                         </dd>
-                                        
-                                        <dt class="col-5">Year of Study:</dt>
-                                        <dd class="col-7">
+                                    </div>
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">Year of Study:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localStudent->studentDetails->yearOfStudy ?? ($customer->internationalStudent->studentDetails->yearOfStudy ?? 'N/A') }}
                                         </dd>
-                                    </dl>
+                                    </div>
+                                </div>
                                 @elseif($customer->localUtmStaff || $customer->internationalUtmStaff)
+                                <div class="mt-3 pt-3 border-top">
                                     <h6 class="fw-semibold mb-3">Staff Details</h6>
-                                    <dl class="row mb-0">
-                                        <dt class="col-5">Staff No:</dt>
-                                        <dd class="col-7">
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">Staff No:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localUtmStaff->staffID ?? ($customer->internationalUtmStaff->staffID ?? 'N/A') }}
                                         </dd>
-                                        
-                                        <dt class="col-5">Position:</dt>
-                                        <dd class="col-7">
+                                    </div>
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">Position:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localUtmStaff->staffDetails->position ?? ($customer->internationalUtmStaff->staffDetails->position ?? 'N/A') }}
                                         </dd>
-                                        
-                                        <dt class="col-5">College:</dt>
-                                        <dd class="col-7">
+                                    </div>
+                                    <div class="mb-2">
+                                        <dt class="d-inline fw-semibold">College:</dt>
+                                        <dd class="d-inline ms-2">
                                             {{ $customer->localUtmStaff->staffDetails->college ?? ($customer->internationalUtmStaff->staffDetails->college ?? 'N/A') }}
                                         </dd>
-                                    </dl>
+                                    </div>
+                                </div>
                                 @endif
-                            </div>
+                            </dl>
                         </div>
                     </div>
                 </div>
@@ -282,7 +316,7 @@
                                         @endphp
                                         @if($licenseImg)
                                             <div class="mb-2">
-                                                <img src="{{ asset('storage/' . $licenseImg) }}" 
+                                                <img src="{{ getFileUrl($licenseImg) }}" 
                                                      alt="License" 
                                                      class="img-fluid mb-2" 
                                                      style="max-height: 150px; border-radius: 6px;"
@@ -315,14 +349,14 @@
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
                                                         <div class="modal-body text-center" style="min-height: 400px;">
-                                                            <img src="{{ asset('storage/' . $licenseImg) }}" 
+                                                            <img src="{{ getFileUrl($licenseImg) }}" 
                                                                  alt="License Document" 
                                                                  class="img-fluid" 
                                                                  style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                  onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <a href="{{ asset('storage/' . $licenseImg) }}" 
+                                                            <a href="{{ getFileUrl($licenseImg) }}" 
                                                                target="_blank" 
                                                                class="btn btn-primary">
                                                                 <i class="bi bi-download"></i> Open in New Tab
@@ -353,15 +387,12 @@
                                         <i class="bi bi-person-badge fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                         <h6 class="fw-semibold">{{ $customer->local ? 'IC' : 'Passport' }}</h6>
                                         @php
-                                            // Get IC image from local table if local
-                                            $icImg = null;
-                                            if ($customer->local && isset($customer->local->ic_img)) {
-                                                $icImg = $customer->local->ic_img;
-                                            }
+                                            // Get IC image from customer table
+                                            $icImg = $customer->customer_ic_img ?? null;
                                         @endphp
                                         @if($icImg)
                                             <div class="mb-2">
-                                                <img src="{{ asset('storage/' . $icImg) }}" 
+                                                <img src="{{ getFileUrl($icImg) }}" 
                                                      alt="{{ $customer->local ? 'IC' : 'Passport' }}" 
                                                      class="img-fluid mb-2" 
                                                      style="max-height: 150px; border-radius: 6px;"
@@ -394,14 +425,14 @@
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
                                                         <div class="modal-body text-center" style="min-height: 400px;">
-                                                            <img src="{{ asset('storage/' . $icImg) }}" 
+                                                            <img src="{{ getFileUrl($icImg) }}" 
                                                                  alt="{{ $customer->local ? 'IC' : 'Passport' }} Document" 
                                                                  class="img-fluid" 
                                                                  style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                  onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <a href="{{ asset('storage/' . $icImg) }}" 
+                                                            <a href="{{ getFileUrl($icImg) }}" 
                                                                target="_blank" 
                                                                class="btn btn-primary">
                                                                 <i class="bi bi-download"></i> Open in New Tab
@@ -483,18 +514,25 @@
         </div>
 
         <!-- Booking History Tab -->
-        <div class="tab-pane fade" id="booking-history" role="tabpanel">
-            <x-admin-page-header 
-                title="{{ $customer->user->name ?? 'Customer' }}" 
-                description="Booking history and payment information"
-                :stats="[
-                    ['label' => 'Username', 'value' => $customer->user->username ?? 'N/A', 'icon' => 'bi-person'],
-                    ['label' => 'Total Bookings', 'value' => $totalBookings ?? 0, 'icon' => 'bi-calendar-check'],
-                    ['label' => 'Outstanding Amount', 'value' => 'RM ' . number_format($totalOutstanding ?? 0, 2), 'icon' => 'bi-currency-dollar'],
-                    ['label' => 'Wallet Amount', 'value' => 'RM ' . number_format($totalWalletAmount ?? 0, 2), 'icon' => 'bi-wallet']
-                ]"
-            />
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'booking-history' ? 'show active' : '' }}" id="booking-history" role="tabpanel">
+            <!-- Header Box (similar to car detail page) -->
+            <div class="grouping-box mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h1 class="h4 mb-1">{{ $customer->user->name ?? 'Customer' }}</h1>
+                        <div class="text-muted small mb-2">
+                            <div class="mb-1">
+                                <i class="bi bi-person"></i> Username: <strong>{{ $customer->user->username ?? 'N/A' }}</strong>
+                            </div>
+                            <div>
+                                <i class="bi bi-calendar-check"></i> Number of Bookings: <strong>{{ $totalBookings ?? 0 }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Booking List -->
             <div class="card">
                 <div class="card-header bg-danger text-white">
                     <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Booking History</h5>
@@ -507,40 +545,60 @@
                                     <th>Booking ID</th>
                                     <th>Booking Date</th>
                                     <th>Plate No</th>
+                                    <th>Duration</th>
+                                    <th>Pickup Date</th>
+                                    <th>Return Date</th>
                                     <th>Payment Amount</th>
-                                    <th>Status Deposit</th>
                                     <th>Booking Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($customer->bookings as $booking)
+                                @php
+                                    $sortedBookings = $customer->bookings->sortBy(function($booking) {
+                                        return $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->timestamp : 0;
+                                    });
+                                @endphp
+                                @forelse($sortedBookings as $booking)
                                     @php
-                                        $totalPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
-                                        $depositStatus = $booking->deposit_customer_choice ?? ($booking->deposit_refund_status === 'refunded' ? 'refunded' : 'hold');
+                                        $pickupDate = $booking->rental_start_date ?? null;
+                                        $returnDate = $booking->rental_end_date ?? null;
+                                        $duration = $pickupDate && $returnDate ? \Carbon\Carbon::parse($pickupDate)->diffInDays(\Carbon\Carbon::parse($returnDate)) + 1 : 'N/A';
+                                        $bookingDate = $booking->lastUpdateDate ?? $booking->created_at ?? null;
+                                        
+                                        // Calculate total payment amount
+                                        $totalPaid = $booking->payments ? $booking->payments->where('payment_status', 'Verified')->sum('total_amount') : 0;
+                                        $totalAmount = ($booking->deposit_amount ?? 0) + ($booking->rental_amount ?? 0);
                                     @endphp
                                     <tr>
                                         <td>
-                                            <a href="{{ route('admin.bookings.reservations', ['search' => $booking->bookingID]) }}" class="text-decoration-none fw-bold text-primary">
+                                            <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" class="text-decoration-none fw-bold text-primary">
                                                 #{{ $booking->bookingID }}
                                             </a>
                                         </td>
                                         <td>
-                                            {{ $booking->lastUpdateDate ? \Carbon\Carbon::parse($booking->lastUpdateDate)->format('d M Y') : 'N/A' }}
+                                            {{ $bookingDate ? \Carbon\Carbon::parse($bookingDate)->format('d M Y') : 'N/A' }}
                                         </td>
                                         <td>
-                                            {{ $booking->vehicle->plate_number ?? 'N/A' }}
+                                            <strong>{{ $booking->vehicle->plate_number ?? ($booking->vehicle->plate_no ?? 'N/A') }}</strong>
                                         </td>
                                         <td>
-                                            <strong>RM {{ number_format($totalPaid, 2) }}</strong>
-                                        </td>
-                                        <td>
-                                            @if($depositStatus)
-                                                <span class="badge {{ $depositStatus === 'hold' ? 'bg-info' : 'bg-warning text-dark' }}">
-                                                    {{ ucfirst($depositStatus) }}
-                                                </span>
+                                            @if($duration !== 'N/A')
+                                                {{ $duration }} {{ $duration == 1 ? 'day' : 'days' }}
                                             @else
-                                                <span class="text-muted">-</span>
+                                                N/A
                                             @endif
+                                        </td>
+                                        <td>
+                                            {{ $pickupDate ? \Carbon\Carbon::parse($pickupDate)->format('d M Y') : 'N/A' }}
+                                        </td>
+                                        <td>
+                                            {{ $returnDate ? \Carbon\Carbon::parse($returnDate)->format('d M Y') : 'N/A' }}
+                                        </td>
+                                        <td>
+                                            <strong>RM {{ number_format($totalAmount, 2) }}</strong>
+                                            <div class="reservation-info-text">
+                                                <div>Paid: RM {{ number_format($totalPaid, 2) }}</div>
+                                            </div>
                                         </td>
                                         <td>
                                             <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
@@ -550,7 +608,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
+                                        <td colspan="8" class="text-center text-muted py-4">
                                             <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
                                             No booking history recorded yet.
                                         </td>

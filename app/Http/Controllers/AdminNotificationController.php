@@ -26,13 +26,24 @@ class AdminNotificationController extends Controller
                 ]);
             }
             
+            // Check for upcoming bookings without full payment (pickup date in 3 days)
+            $this->checkUpcomingBookingsWithoutFullPayment();
+            
             $limit = $request->get('limit');
             
-            $query = AdminNotification::where(function($query) {
+            // Get current user ID - use userID instead of Auth::id()
+            $userId = auth()->check() ? auth()->user()->userID : null;
+            
+            $query = AdminNotification::where(function($query) use ($userId) {
                     $query->where('notifiable_type', 'admin')
-                          ->orWhere(function($q) {
-                              $q->where('notifiable_type', 'user')
-                                ->where('notifiable_id', Auth::id());
+                          ->orWhere(function($q) use ($userId) {
+                              if ($userId) {
+                                  $q->where('notifiable_type', 'user')
+                                    ->where('notifiable_id', $userId);
+                              } else {
+                                  // If no user, exclude user notifications
+                                  $q->whereRaw('1 = 0');
+                              }
                           });
                 })
                 ->with(['user', 'booking.customer.user', 'payment'])
@@ -44,11 +55,19 @@ class AdminNotificationController extends Controller
                 $notifications = $query->paginate(20);
             }
 
-            $unreadCount = AdminNotification::where(function($query) {
+            // Get current user ID - use userID instead of Auth::id()
+            $userId = auth()->check() ? auth()->user()->userID : null;
+            
+            $unreadCount = AdminNotification::where(function($query) use ($userId) {
                     $query->where('notifiable_type', 'admin')
-                          ->orWhere(function($q) {
-                              $q->where('notifiable_type', 'user')
-                                ->where('notifiable_id', Auth::id());
+                          ->orWhere(function($q) use ($userId) {
+                              if ($userId) {
+                                  $q->where('notifiable_type', 'user')
+                                    ->where('notifiable_id', $userId);
+                              } else {
+                                  // If no user, exclude user notifications
+                                  $q->whereRaw('1 = 0');
+                              }
                           });
                 })
                 ->where('is_read', false)
@@ -66,6 +85,83 @@ class AdminNotificationController extends Controller
                 'notifications' => collect([]),
                 'unreadCount' => 0,
             ]);
+        }
+    }
+
+    /**
+     * Check for bookings with pickup date in 3 days that don't have full payment
+     * This should repeat from 3 days before until the day or customer settles payment
+     */
+    private function checkUpcomingBookingsWithoutFullPayment()
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('notification')) {
+                return;
+            }
+            
+            $today = \Carbon\Carbon::today();
+            $threeDaysFromNow = $today->copy()->addDays(3);
+            
+            // Get bookings with pickup date between today and 3 days from now
+            // Using whereDate for proper date comparison
+            $upcomingBookings = Booking::with(['customer.user', 'vehicle', 'payments'])
+                ->whereDate('rental_start_date', '>=', $today)
+                ->whereDate('rental_start_date', '<=', $threeDaysFromNow)
+                ->whereIn('booking_status', ['Pending', 'Confirmed'])
+                ->get();
+            
+            foreach ($upcomingBookings as $booking) {
+                // Calculate total required and total paid
+                $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                $totalPaid = $booking->payments()
+                    ->where('payment_status', 'Verified')
+                    ->sum('total_amount');
+                
+                // Check if payment is not full
+                if ($totalPaid < $totalRequired) {
+                    $pickupDate = \Carbon\Carbon::parse($booking->rental_start_date);
+                    $daysUntilPickup = $today->diffInDays($pickupDate);
+                    
+                    // Only create notification if pickup is within 3 days (from today until 3 days from now)
+                    if ($daysUntilPickup >= 0 && $daysUntilPickup <= 3) {
+                        // Check if notification already exists for today (to avoid duplicates, but allow daily reminders)
+                        $existingNotification = AdminNotification::where('booking_id', $booking->bookingID)
+                            ->where('type', 'upcoming_booking_payment_incomplete')
+                            ->whereDate('created_at', $today)
+                            ->first();
+                        
+                        if (!$existingNotification) {
+                            $vehicle = $booking->vehicle;
+                            $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . ($vehicle->plate_number ?? 'N/A') . ')') : 'N/A';
+                            $customer = $booking->customer;
+                            $outstandingAmount = $totalRequired - $totalPaid;
+                            
+                            AdminNotification::create([
+                                'type' => 'upcoming_booking_payment_incomplete',
+                                'notifiable_type' => 'admin',
+                                'notifiable_id' => null,
+                                'user_id' => $customer->userID ?? null,
+                                'booking_id' => $booking->bookingID,
+                                'payment_id' => null,
+                                'message' => "Booking #{$booking->bookingID} - {$vehicleInfo} pickup in {$daysUntilPickup} day(s). Outstanding: RM " . number_format($outstandingAmount, 2),
+                                'data' => [
+                                    'booking_id' => $booking->bookingID,
+                                    'vehicle_info' => $vehicleInfo,
+                                    'customer_name' => $customer->user->name ?? 'Customer',
+                                    'pickup_date' => $booking->rental_start_date,
+                                    'days_until_pickup' => $daysUntilPickup,
+                                    'outstanding_amount' => $outstandingAmount,
+                                    'total_required' => $totalRequired,
+                                    'total_paid' => $totalPaid,
+                                ],
+                                'is_read' => false,
+                            ]);
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to check upcoming bookings without full payment: ' . $e->getMessage());
         }
     }
 
@@ -94,11 +190,19 @@ class AdminNotificationController extends Controller
                 return response()->json(['success' => false, 'message' => 'Notification table does not exist']);
             }
             
-            AdminNotification::where(function($query) {
+            // Get current user ID - use userID instead of Auth::id()
+            $userId = auth()->check() ? auth()->user()->userID : null;
+            
+            AdminNotification::where(function($query) use ($userId) {
                     $query->where('notifiable_type', 'admin')
-                          ->orWhere(function($q) {
-                              $q->where('notifiable_type', 'user')
-                                ->where('notifiable_id', Auth::id());
+                          ->orWhere(function($q) use ($userId) {
+                              if ($userId) {
+                                  $q->where('notifiable_type', 'user')
+                                    ->where('notifiable_id', $userId);
+                              } else {
+                                  // If no user, exclude user notifications
+                                  $q->whereRaw('1 = 0');
+                              }
                           });
                 })
                 ->where('is_read', false)
@@ -121,11 +225,19 @@ class AdminNotificationController extends Controller
                 return response()->json(['count' => 0]);
             }
             
-            $count = AdminNotification::where(function($query) {
+            // Get current user ID - use userID instead of Auth::id()
+            $userId = auth()->check() ? auth()->user()->userID : null;
+            
+            $count = AdminNotification::where(function($query) use ($userId) {
                     $query->where('notifiable_type', 'admin')
-                          ->orWhere(function($q) {
-                              $q->where('notifiable_type', 'user')
-                                ->where('notifiable_id', Auth::id());
+                          ->orWhere(function($q) use ($userId) {
+                              if ($userId) {
+                                  $q->where('notifiable_type', 'user')
+                                    ->where('notifiable_id', $userId);
+                              } else {
+                                  // If no user, exclude user notifications
+                                  $q->whereRaw('1 = 0');
+                              }
                           });
                 })
                 ->where('is_read', false)
@@ -133,6 +245,7 @@ class AdminNotificationController extends Controller
 
             return response()->json(['count' => $count]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to get unread notification count: ' . $e->getMessage());
             // If table doesn't exist or any error, return 0
             return response()->json(['count' => 0]);
         }
@@ -146,11 +259,19 @@ class AdminNotificationController extends Controller
                 return response()->json(['notifications' => []]);
             }
             
-            $notifications = AdminNotification::where(function($query) {
+            // Get current user ID - use userID instead of Auth::id()
+            $userId = auth()->check() ? auth()->user()->userID : null;
+            
+            $notifications = AdminNotification::where(function($query) use ($userId) {
                     $query->where('notifiable_type', 'admin')
-                          ->orWhere(function($q) {
-                              $q->where('notifiable_type', 'user')
-                                ->where('notifiable_id', Auth::id());
+                          ->orWhere(function($q) use ($userId) {
+                              if ($userId) {
+                                  $q->where('notifiable_type', 'user')
+                                    ->where('notifiable_id', $userId);
+                              } else {
+                                  // If no user, exclude user notifications
+                                  $q->whereRaw('1 = 0');
+                              }
                           });
                 })
                 ->with(['user', 'booking.customer.user', 'payment'])
@@ -160,22 +281,33 @@ class AdminNotificationController extends Controller
 
             return response()->json([
                 'notifications' => $notifications->map(function($notification) {
+                    $bookingData = null;
+                    if ($notification->booking) {
+                        $vehicle = $notification->booking->vehicle;
+                        $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . ($vehicle->plate_number ?? 'N/A') . ')') : 'N/A';
+                        $bookingData = [
+                            'id' => $notification->booking->bookingID ?? $notification->booking->id,
+                            'vehicle' => $vehicleInfo,
+                            'user' => $notification->booking->customer && $notification->booking->customer->user ? $notification->booking->customer->user->name : null,
+                        ];
+                    }
+                    
+                    $paymentData = null;
+                    if ($notification->payment) {
+                        $paymentData = [
+                            'id' => $notification->payment->paymentID ?? $notification->payment->id,
+                            'amount' => $notification->payment->total_amount ?? $notification->payment->amount ?? 0,
+                        ];
+                    }
+                    
                     return [
                         'id' => $notification->id,
                         'type' => $notification->type,
                         'message' => $notification->message,
                         'is_read' => $notification->is_read,
                         'created_at' => $notification->created_at->diffForHumans(),
-                        'booking' => $notification->booking ? [
-                            'id' => $notification->booking->bookingID ?? $notification->booking->id,
-                            'vehicle' => $notification->booking->vehicle->full_model ?? null,
-                            'user' => $notification->booking->customer && $notification->booking->customer->user ? $notification->booking->customer->user->name : null,
-                        ] : null,
-                        'payment' => $notification->payment ? [
-                            'id' => $notification->payment->id,
-                            'amount' => $notification->payment->amount,
-                            'type' => $notification->payment->payment_type,
-                        ] : null,
+                        'booking' => $bookingData,
+                        'payment' => $paymentData,
                     ];
                 })
             ]);

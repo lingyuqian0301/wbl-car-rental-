@@ -140,22 +140,11 @@
                     </select>
                 </div>
                 
-                <!-- Verify By Filter -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Verify By</label>
-                    <select name="filter_verify_by" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        @foreach($verifyByUsers ?? [] as $user)
-                            <option value="{{ $user->userID }}" {{ ($filterVerifyBy ?? '') == $user->userID ? 'selected' : '' }}>{{ $user->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
                 <div class="col-md-12 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-danger btn-sm">
                         <i class="bi bi-funnel"></i> Apply Filters
                     </button>
-                    @if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify || $filterVerifyBy)
+                    @if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify)
                         <a href="{{ route('admin.payments.index') }}" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-x-circle"></i> Clear
                         </a>
@@ -174,17 +163,20 @@
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
+                        <th>Booking ID</th>
                         <th>Payment ID</th>
                         <th>Payment Bank Name</th>
                         <th>Payment Bank Account No</th>
                         <th>Payment Date</th>
-                        <th>Payment Status</th>
+                        <th>Payment Type</th>
                         <th>Payment Amount</th>
-                        <th>Transaction Reference (Receipt)</th>
+                        <th>Transaction Reference</th>
+                        <th>Payment Receipt</th>
                         <th>Is Payment Complete</th>
+                        <th>Payment Status</th>
                         <th>Payment is Verify</th>
+                        <th>Verified By</th>
                         <th>Generate Invoice</th>
-                        <th>Verify By</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -194,10 +186,43 @@
                             $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
                             $paidAmount = $payment->total_amount ?? 0;
                             $isFullPayment = $paidAmount >= $totalRequired;
+                            
+                            // Determine payment type
+                            $depositAmount = $booking->deposit_amount ?? 0;
+                            $paymentType = 'Balance';
+                            if ($paidAmount <= $depositAmount && $depositAmount > 0) {
+                                $paymentType = 'Deposit';
+                            } elseif ($paidAmount >= $totalRequired) {
+                                $paymentType = 'Full Payment';
+                            }
+                            
+                            // Calculate total paid so far for this booking
+                            $totalPaidSoFar = $booking->payments()
+                                ->where('paymentID', '<=', $payment->paymentID)
+                                ->where('payment_status', 'Verified')
+                                ->sum('total_amount');
+                            
+                            // If this is the first payment and it's less than or equal to deposit, it's deposit
+                            if ($totalPaidSoFar <= $depositAmount && $depositAmount > 0) {
+                                $paymentType = 'Deposit';
+                            } elseif ($totalPaidSoFar > $depositAmount && $totalPaidSoFar < $totalRequired) {
+                                $paymentType = 'Balance';
+                            }
                         @endphp
                         <tr>
                             <td>
-                                <strong>#{{ $payment->paymentID }}</strong>
+                                <a href="{{ route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'booking-detail']) }}" 
+                                   class="text-decoration-none fw-bold text-primary"
+                                   target="_blank">
+                                    #{{ $booking->bookingID ?? 'N/A' }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{{ route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'transaction-detail']) }}" 
+                                   class="text-decoration-none fw-bold text-primary"
+                                   target="_blank">
+                                    <strong>#{{ $payment->paymentID }}</strong>
+                                </a>
                             </td>
                             <td>
                                 {{ $payment->payment_bank_name ?? 'N/A' }}
@@ -211,6 +236,83 @@
                                 @else
                                     <span class="text-muted">N/A</span>
                                 @endif
+                            </td>
+                            <td>
+                                <span class="badge {{ $paymentType === 'Deposit' ? 'bg-info' : ($paymentType === 'Balance' ? 'bg-warning text-dark' : 'bg-success') }}">
+                                    {{ $paymentType }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>RM {{ number_format($payment->total_amount ?? 0, 2) }}</strong>
+                            </td>
+                            <td>
+                                @if($payment->transaction_reference)
+                                    <span class="text-muted small" title="Transaction Reference">{{ strlen($payment->transaction_reference) > 30 ? substr($payment->transaction_reference, 0, 30) . '...' : $payment->transaction_reference }}</span>
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
+                            <td>
+                                @php
+                                    // Get receipt from proof_of_payment, fallback to transaction_reference
+                                    $receiptPath = $payment->proof_of_payment ?? $payment->transaction_reference ?? null;
+                                    if ($receiptPath) {
+                                        // Check if it's a file path (image or PDF)
+                                        $isImagePath = str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/') || str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf');
+                                        
+                                        if ($isImagePath) {
+                                            $imageUrl = getFileUrl($receiptPath);
+                                        } else {
+                                            $imageUrl = null;
+                                        }
+                                    } else {
+                                        $imageUrl = null;
+                                    }
+                                @endphp
+                                @if($imageUrl)
+                                    <a href="{{ $imageUrl }}" target="_blank" data-bs-toggle="modal" data-bs-target="#receiptModal{{ $payment->paymentID }}">
+                                        <img src="{{ $imageUrl }}" alt="Receipt" class="receipt-image" title="Click to view full size" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                        <span class="text-muted small" style="display:none;">{{ $receiptPath }}</span>
+                                    </a>
+                                    <!-- Receipt Modal -->
+                                    <div class="modal fade" id="receiptModal{{ $payment->paymentID }}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Receipt - Payment #{{ $payment->paymentID }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body text-center">
+                                                    @if(str_contains(strtolower($receiptPath ?? ''), '.pdf'))
+                                                        <iframe src="{{ $imageUrl }}" style="width: 100%; height: 600px; border: none;"></iframe>
+                                                    @else
+                                                        <img src="{{ $imageUrl }}" alt="Receipt" class="img-fluid" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                    @endif
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <a href="{{ $imageUrl }}" target="_blank" class="btn btn-primary">
+                                                        <i class="bi bi-download"></i> Open in New Tab
+                                                    </a>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="text-muted small">No receipt</span>
+                                @endif
+                            </td>
+                            <td>
+                                @php
+                                    $isComplete = $payment->isPayment_complete ?? false;
+                                    // Auto-determine if full payment based on amount
+                                    if (!$isComplete && $isFullPayment) {
+                                        $isComplete = true;
+                                    }
+                                @endphp
+                                <span class="badge {{ $isComplete ? 'bg-success' : 'bg-warning text-dark' }}">
+                                    {{ $isComplete ? 'Yes' : 'No' }}
+                                </span>
                             </td>
                             <td>
                                 @php
@@ -227,70 +329,26 @@
                                 </span>
                             </td>
                             <td>
-                                <strong>RM {{ number_format($payment->total_amount ?? 0, 2) }}</strong>
-                            </td>
-                            <td>
-                                @if($payment->transaction_reference)
-                                    @php
-                                        // Check if transaction_reference is a file path
-                                        $receiptPath = $payment->transaction_reference;
-                                        $isImagePath = str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/') || str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png');
-                                        
-                                        if ($isImagePath) {
-                                            if (str_starts_with($receiptPath, 'uploads/')) {
-                                                $imageUrl = asset($receiptPath);
-                                            } else {
-                                                $imageUrl = asset('storage/' . $receiptPath);
-                                            }
-                                        } else {
-                                            $imageUrl = null;
-                                        }
-                                    @endphp
-                                    @if($imageUrl)
-                                        <a href="{{ $imageUrl }}" target="_blank" data-bs-toggle="modal" data-bs-target="#receiptModal{{ $payment->paymentID }}">
-                                            <img src="{{ $imageUrl }}" alt="Receipt" class="receipt-image" title="Click to view full size" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                                            <span class="text-muted small" style="display:none;">{{ $payment->transaction_reference }}</span>
-                                        </a>
-                                        <!-- Receipt Modal -->
-                                        <div class="modal fade" id="receiptModal{{ $payment->paymentID }}" tabindex="-1">
-                                            <div class="modal-dialog modal-lg">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Receipt - Payment #{{ $payment->paymentID }}</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body text-center">
-                                                        <img src="{{ $imageUrl }}" alt="Receipt" class="img-fluid" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <span class="text-muted small" title="Transaction Reference">{{ strlen($payment->transaction_reference) > 20 ? substr($payment->transaction_reference, 0, 20) . '...' : $payment->transaction_reference }}</span>
-                                    @endif
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </td>
-                            <td>
-                                @php
-                                    $isComplete = $payment->isPayment_complete ?? false;
-                                    // Auto-determine if full payment based on amount
-                                    if (!$isComplete && $isFullPayment) {
-                                        $isComplete = true;
-                                    }
-                                @endphp
-                                <span class="badge {{ $isComplete ? 'bg-success' : 'bg-warning text-dark' }}">
-                                    {{ $isComplete ? 'Yes' : 'No' }}
-                                </span>
-                            </td>
-                            <td>
                                 <form action="{{ route('admin.payments.update-verify', $payment->paymentID) }}" method="POST" class="d-inline" id="verifyForm{{ $payment->paymentID }}">
                                     @csrf
                                     @method('PUT')
                                     <select name="payment_isVerify" class="form-select form-select-sm verify-dropdown" onchange="this.form.submit();">
                                         <option value="0" {{ ($payment->payment_isVerify ?? false) ? '' : 'selected' }}>False</option>
                                         <option value="1" {{ ($payment->payment_isVerify ?? false) ? 'selected' : '' }}>True</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                <form action="{{ route('admin.payments.update-verified-by', $payment->paymentID) }}" method="POST" class="d-inline" id="verifiedByForm{{ $payment->paymentID }}">
+                                    @csrf
+                                    @method('PUT')
+                                    <select name="verified_by" class="form-select form-select-sm verify-dropdown" onchange="this.form.submit();">
+                                        <option value="">Not Set</option>
+                                        @foreach($staffUsers ?? [] as $staff)
+                                            <option value="{{ $staff->userID }}" {{ ($payment->verified_by ?? null) == $staff->userID ? 'selected' : '' }}>
+                                                {{ $staff->name }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </form>
                             </td>
@@ -307,23 +365,10 @@
                                     <span class="text-muted small">Verify first</span>
                                 @endif
                             </td>
-                            <td>
-                                <form action="{{ route('admin.payments.update-verify', $payment->paymentID) }}" method="POST" class="d-inline" id="verifyByForm{{ $payment->paymentID }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <input type="hidden" name="payment_isVerify" value="{{ ($payment->payment_isVerify ?? false) ? '1' : '0' }}">
-                                    <select name="verify_by" class="form-select form-select-sm verify-dropdown" onchange="document.getElementById('verifyByForm{{ $payment->paymentID }}').submit();" {{ !($payment->payment_isVerify ?? false) ? 'disabled' : '' }}>
-                                        <option value="">Select Staff</option>
-                                        @foreach($verifyByUsers ?? [] as $user)
-                                            <option value="{{ $user->userID }}" {{ ($payment->verify_by ?? null) == $user->userID ? 'selected' : '' }}>{{ $user->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </form>
-                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="text-center py-5 text-muted">
+                            <td colspan="14" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-3 mb-0">No payments available.</p>
                             </td>

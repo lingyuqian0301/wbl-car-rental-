@@ -306,18 +306,19 @@ class AdminSettingsController extends Controller
             'runner'
         ]);
 
-        // For tasks handled tab (only for staffit)
+        // Get filter parameters
+        $filterMonth = $request->get('month', date('m'));
+        $filterYear = $request->get('year', date('Y'));
+        $filterTaskType = $request->get('type', '');
+
+        // Get tasks from maintenance, fuel, and other sources
         $tasks = collect();
         $totalCommission = 0;
         $taskCount = 0;
-        $filterMonth = $request->get('filter_month', date('m'));
-        $filterYear = $request->get('filter_year', date('Y'));
-        $filterTaskType = $request->get('filter_task_type', '');
 
-        if ($staff->staffIt && $activeTab === 'tasks-handled') {
-            // Get tasks from maintenance, fuel, and other sources
-            // This is a placeholder - you'll need to create a tasks table or use existing tables
-            // For now, we'll use maintenance and fuel records
+        // For StaffIT: Get maintenance and fuel tasks
+        if ($staff->staffIt && $staff->user) {
+            // Get maintenance tasks
             $maintenanceTasks = \App\Models\VehicleMaintenance::where('staffID', $staff->user->userID)
                 ->whereMonth('service_date', $filterMonth)
                 ->whereYear('service_date', $filterYear)
@@ -333,10 +334,11 @@ class AdminSettingsController extends Controller
                         'task_date' => $m->service_date,
                         'task_type' => 'Maintenance',
                         'description' => $m->service_type . ($m->description ? ': ' . $m->description : ''),
-                        'commission_amount' => $m->cost * 0.1, // 10% commission example
+                        'commission_amount' => ($m->cost ?? 0) * 0.1, // 10% commission
                     ];
                 });
 
+            // Get fuel tasks
             $fuelTasks = \App\Models\Fuel::where('handled_by', $staff->user->userID)
                 ->whereMonth('fuel_date', $filterMonth)
                 ->whereYear('fuel_date', $filterYear)
@@ -352,13 +354,96 @@ class AdminSettingsController extends Controller
                         'task_date' => $f->fuel_date,
                         'task_type' => 'Fuel',
                         'description' => 'Fuel refill',
-                        'commission_amount' => $f->cost * 0.05, // 5% commission example
+                        'commission_amount' => ($f->cost ?? 0) * 0.05, // 5% commission
                     ];
                 });
 
             $tasks = $maintenanceTasks->merge($fuelTasks)->sortByDesc('task_date');
             $totalCommission = $tasks->sum('commission_amount');
             $taskCount = $tasks->count();
+        }
+
+        // For Runner: Get runner tasks (pickups/returns assigned to this runner)
+        // Only show tasks where the runner is assigned to the booking via staff_served
+        $runnerTasks = collect();
+        $runnerTotalCommission = 0;
+        $runnerTaskCount = 0;
+        
+        if ($staff->runner && $staff->user) {
+            // Get bookings where this runner is assigned (staff_served = runner's userID)
+            // AND either pickup_point or return_point is not 'HASTA HQ Office'
+            $runnerBookings = \App\Models\Booking::with(['vehicle', 'customer.user'])
+                ->where('staff_served', $staff->user->userID)
+                ->where(function($q) {
+                    $q->where(function($subQ) {
+                        $subQ->whereNotNull('pickup_point')
+                             ->where('pickup_point', '!=', '')
+                             ->where('pickup_point', '!=', 'HASTA HQ Office');
+                    })->orWhere(function($subQ) {
+                        $subQ->whereNotNull('return_point')
+                             ->where('return_point', '!=', '')
+                             ->where('return_point', '!=', 'HASTA HQ Office');
+                    });
+                })
+                ->when($filterMonth && $filterYear, function($q) use ($filterMonth, $filterYear) {
+                    $q->where(function($dateQ) use ($filterMonth, $filterYear) {
+                        $dateQ->whereMonth('rental_start_date', $filterMonth)
+                              ->whereYear('rental_start_date', $filterYear);
+                    })->orWhere(function($dateQ) use ($filterMonth, $filterYear) {
+                        $dateQ->whereMonth('rental_end_date', $filterMonth)
+                              ->whereYear('rental_end_date', $filterYear);
+                    });
+                })
+                ->orderBy('rental_start_date', 'desc')
+                ->get();
+
+            // Create task entries for pickup/return
+            foreach ($runnerBookings as $booking) {
+                $pickupLocation = !empty($booking->pickup_point) ? $booking->pickup_point : null;
+                $returnLocation = !empty($booking->return_point) ? $booking->return_point : null;
+                $pickupDate = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date) : null;
+                $returnDate = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date) : null;
+                
+                // Check if pickup is not at HASTA HQ Office and within selected month/year
+                if ($pickupLocation && $pickupLocation !== 'HASTA HQ Office' && $pickupDate) {
+                    if ($pickupDate->month == $filterMonth && $pickupDate->year == $filterYear) {
+                        $runnerTasks->push([
+                            'num' => 0, // Will be set later
+                            'booking_id' => $booking->bookingID,
+                            'task_date' => $pickupDate,
+                            'task_type' => 'Pickup',
+                            'location' => $pickupLocation,
+                            'plate_number' => $booking->vehicle->plate_number ?? 'N/A',
+                            'commission_amount' => 2.00, // Fixed commission per pickup
+                        ]);
+                    }
+                }
+                
+                // Check if return is not at HASTA HQ Office and within selected month/year
+                if ($returnLocation && $returnLocation !== 'HASTA HQ Office' && $returnDate) {
+                    if ($returnDate->month == $filterMonth && $returnDate->year == $filterYear) {
+                        $runnerTasks->push([
+                            'num' => 0, // Will be set later
+                            'booking_id' => $booking->bookingID,
+                            'task_date' => $returnDate,
+                            'task_type' => 'Return',
+                            'location' => $returnLocation,
+                            'plate_number' => $booking->vehicle->plate_number ?? 'N/A',
+                            'commission_amount' => 2.00, // Fixed commission per return
+                        ]);
+                    }
+                }
+            }
+
+            // Sort by date and add row numbers
+            $runnerTasks = $runnerTasks->sortBy('task_date')->values();
+            $runnerTasks = $runnerTasks->map(function($task, $index) {
+                $task['num'] = $index + 1;
+                return $task;
+            });
+
+            $runnerTotalCommission = $runnerTasks->sum('commission_amount');
+            $runnerTaskCount = $runnerTasks->count();
         }
 
         // For login logs tab
@@ -368,10 +453,7 @@ class AdminSettingsController extends Controller
         if ($activeTab === 'login-logs') {
             // This would require a login_logs table
             // For now, we'll use a placeholder structure
-            // You'll need to create a migration for login_logs table
-            $loginLogs = collect([
-                // Placeholder data structure
-            ]);
+            $loginLogs = collect([]);
         }
 
         return view('admin.settings.staff.show', [
@@ -380,6 +462,9 @@ class AdminSettingsController extends Controller
             'tasks' => $tasks,
             'totalCommission' => $totalCommission,
             'taskCount' => $taskCount,
+            'runnerTasks' => $runnerTasks,
+            'runnerTotalCommission' => $runnerTotalCommission,
+            'runnerTaskCount' => $runnerTaskCount,
             'filterMonth' => $filterMonth,
             'filterYear' => $filterYear,
             'filterTaskType' => $filterTaskType,

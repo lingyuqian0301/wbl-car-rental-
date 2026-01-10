@@ -21,6 +21,7 @@ class Customer extends Model
         'address',
         'customer_license',
         'customer_license_img',
+        'customer_ic_img',
         'emergency_contact',
         'booking_times',
         'default_bank_name',

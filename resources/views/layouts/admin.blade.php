@@ -380,9 +380,13 @@
                     <div class="submenu-item {{ request()->routeIs('admin.bookings.cancellation') ? 'active' : '' }}">
                         <a href="{{ route('admin.bookings.cancellation') }}"><i class="bi bi-x-circle"></i> Cancellation</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.bookings.reviews') ? 'active' : '' }}">
-                        <a href="{{ route('admin.bookings.reviews') }}"><i class="bi bi-star"></i> Review</a>
+                    <div class="submenu-item {{ request()->routeIs('admin.runner.tasks') ? 'active' : '' }}">
+                        <a href="{{ route('admin.runner.tasks') }}"><i class="bi bi-truck"></i> Runner task</a>
                     </div>
+                    {{-- Review menu item hidden as per user request --}}
+                    {{-- <div class="submenu-item {{ request()->routeIs('admin.bookings.reviews') ? 'active' : '' }}">
+                        <a href="{{ route('admin.bookings.reviews') }}"><i class="bi bi-star"></i> Review</a>
+                    </div> --}}
                 </div>
             </div>
 

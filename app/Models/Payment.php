@@ -23,12 +23,12 @@ class Payment extends Model
         'total_amount',
         'payment_status',
         'transaction_reference',
+        'proof_of_payment',
         'isPayment_complete',
         'payment_isVerify',
         'latest_Update_Date_Time',
-        // 'verify_by', // Keep only if you added this column to your DB
         'bookingID',
-        'proof_of_payment', // <--- ✅ ADDED THIS (Crucial for uploads)
+        'verified_by',
     ];
 
     protected function casts(): array

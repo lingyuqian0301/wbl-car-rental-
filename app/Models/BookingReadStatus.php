@@ -11,6 +11,7 @@ class BookingReadStatus extends Model
     
     protected $fillable = [
         'booking_id',
+        'date_type', // 'pickup' or 'return'
         'user_id',
         'is_read',
         'read_at',
@@ -26,7 +27,7 @@ class BookingReadStatus extends Model
 
     public function booking(): BelongsTo
     {
-        return $this->belongsTo(Booking::class, 'booking_id', 'id');
+        return $this->belongsTo(Booking::class, 'booking_id', 'bookingID');
     }
 
     public function user(): BelongsTo

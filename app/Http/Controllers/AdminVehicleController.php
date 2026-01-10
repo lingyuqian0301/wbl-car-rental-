@@ -7,16 +7,20 @@ use App\Models\Vehicle;
 use App\Models\Voucher;
 use App\Models\VoucherUsage;
 use App\Models\AdminNotification;
+use App\Traits\HandlesGoogleDriveUploads;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Schema\Blueprint;
 use Carbon\Carbon;
 
 class AdminVehicleController extends Controller
 {
+    use HandlesGoogleDriveUploads;
     public function cars(Request $request): View
     {
         $search = $request->get('search');
@@ -385,7 +389,73 @@ class AdminVehicleController extends Controller
                 $query->orderBy('service_date', 'desc');
             },
             'documents'
+            // Don't eager load carImages since vehicleID column might not exist yet
         ]);
+
+        // Get car images from car_img table
+        // Check which table exists and if vehicleID column exists
+        $carImages = collect([]);
+        $tableName = null;
+        
+        // Determine which table exists: Car_Img or car_img
+        if (Schema::hasTable('Car_Img')) {
+            $tableName = 'Car_Img';
+        } elseif (Schema::hasTable('car_img')) {
+            $tableName = 'car_img';
+        }
+        
+        if ($tableName) {
+            // Check if vehicleID column exists
+            $hasVehicleID = Schema::hasColumn($tableName, 'vehicleID');
+            
+            if ($hasVehicleID) {
+                // If vehicleID column exists, use it directly
+                try {
+                    // Use raw query to handle both table name cases
+                    $carImages = DB::table($tableName)
+                        ->where('vehicleID', $vehicle->vehicleID)
+                        ->orderBy('imgID', 'desc')
+                        ->get()
+                        ->map(function($item) {
+                            return new \App\Models\CarImg((array)$item);
+                        });
+                } catch (\Exception $e) {
+                    Log::warning('Failed to load car images by vehicleID: ' . $e->getMessage());
+                    $carImages = collect([]);
+                }
+            } else {
+                // If vehicleID doesn't exist yet (migration not run), try to load through VehicleDocument
+                try {
+                    // Try to get through VehicleDocument relationship if documentID is still a foreign key
+                    $vehicleDocumentIds = \App\Models\VehicleDocument::where('vehicleID', $vehicle->vehicleID)
+                        ->where(function($query) {
+                            if (Schema::hasColumn('VehicleDocument', 'document_type')) {
+                                $query->where('document_type', 'photo');
+                            }
+                        })
+                        ->pluck('documentID')
+                        ->filter()
+                        ->toArray();
+                    
+                    if (!empty($vehicleDocumentIds)) {
+                        // Convert documentID to integers if they are foreign keys
+                        $carImages = DB::table($tableName)
+                            ->whereIn('documentID', $vehicleDocumentIds)
+                            ->orderBy('imgID', 'desc')
+                            ->get()
+                            ->map(function($item) {
+                                return new \App\Models\CarImg((array)$item);
+                            });
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to load car images through VehicleDocument: ' . $e->getMessage());
+                    $carImages = collect([]);
+                }
+            }
+        }
+        
+        // Fallback: Also load photos from VehicleDocument for backward compatibility
+        $vehiclePhotos = $vehicle->documents->where('document_type', 'photo');
 
         // Check for due services and create notifications
         $this->checkServiceReminders($vehicle);
@@ -410,6 +480,8 @@ class AdminVehicleController extends Controller
             'vehicle' => $vehicle,
             'bookedDates' => $bookedDates,
             'activeTab' => $activeTab,
+            'carImages' => $carImages,
+            'vehiclePhotos' => $vehiclePhotos, // For backward compatibility
         ]);
     }
 
@@ -528,7 +600,8 @@ class AdminVehicleController extends Controller
             if ($request->hasFile('receipt_img')) {
                 $file = $request->file('receipt_img');
                 $filename = 'fuel_receipt_' . $vehicle->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
-                $receiptImgPath = $file->storeAs('fuel_receipts', $filename, 'public');
+                // Upload to Google Drive
+                $receiptImgPath = $this->uploadToGoogleDrive($file, 'fuel_receipts', $filename);
             }
 
             \App\Models\Fuel::create([
@@ -539,9 +612,9 @@ class AdminVehicleController extends Controller
                 'handled_by' => $validated['handled_by'] ?? Auth::user()->userID ?? null,
             ]);
 
-            return redirect()->back()->with('success', 'Fuel record added successfully.');
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'fuel'])->with('success', 'Fuel record added successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Failed to add fuel record: ' . $e->getMessage());
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'fuel'])->withInput()->with('error', 'Failed to add fuel record: ' . $e->getMessage());
         }
     }
 
@@ -562,20 +635,21 @@ class AdminVehicleController extends Controller
             if ($request->hasFile('receipt_img')) {
                 // Delete old image if exists
                 if ($fuel->receipt_img) {
-                    Storage::disk('public')->delete($fuel->receipt_img);
+                    $this->deleteFile($fuel->receipt_img);
                 }
                 
                 $file = $request->file('receipt_img');
                 $filename = 'fuel_receipt_' . $fuel->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
-                $receiptImgPath = $file->storeAs('fuel_receipts', $filename, 'public');
+                // Upload to Google Drive
+                $receiptImgPath = $this->uploadToGoogleDrive($file, 'fuel_receipts', $filename);
                 $validated['receipt_img'] = $receiptImgPath;
             }
 
             $fuel->update($validated);
 
-            return redirect()->back()->with('success', 'Fuel record updated successfully.');
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $fuel->vehicleID, 'tab' => 'fuel'])->with('success', 'Fuel record updated successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Failed to update fuel record: ' . $e->getMessage());
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $fuel->vehicleID, 'tab' => 'fuel'])->withInput()->with('error', 'Failed to update fuel record: ' . $e->getMessage());
         }
     }
 
@@ -585,15 +659,16 @@ class AdminVehicleController extends Controller
     public function destroyFuel(\App\Models\Fuel $fuel): \Illuminate\Http\RedirectResponse
     {
         try {
+            $vehicleId = $fuel->vehicleID;
             // Delete receipt image if exists
             if ($fuel->receipt_img) {
-                Storage::disk('public')->delete($fuel->receipt_img);
+                $this->deleteFile($fuel->receipt_img);
             }
             
             $fuel->delete();
-            return redirect()->back()->with('success', 'Fuel record deleted successfully.');
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicleId, 'tab' => 'fuel'])->with('success', 'Fuel record deleted successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to delete fuel record: ' . $e->getMessage());
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $fuel->vehicleID ?? $vehicleId, 'tab' => 'fuel'])->with('error', 'Failed to delete fuel record: ' . $e->getMessage());
         }
     }
 
@@ -643,7 +718,8 @@ class AdminVehicleController extends Controller
             if ($request->hasFile('maintenance_img')) {
                 $file = $request->file('maintenance_img');
                 $filename = 'maintenance_' . $vehicle->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
-                $maintenanceImgPath = $file->storeAs('maintenance_images', $filename, 'public');
+                // Upload to Google Drive
+                $maintenanceImgPath = $this->uploadToGoogleDrive($file, 'maintenance_images', $filename);
             }
 
             $maintenance = \App\Models\VehicleMaintenance::create([
@@ -725,10 +801,10 @@ class AdminVehicleController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Maintenance record added successfully.');
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'maintenance'])->with('success', 'Maintenance record added successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Failed to add maintenance record: ' . $e->getMessage());
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'maintenance'])->withInput()->with('error', 'Failed to add maintenance record: ' . $e->getMessage());
         }
     }
 
@@ -754,8 +830,9 @@ class AdminVehicleController extends Controller
 
     public function destroyMaintenance(\App\Models\VehicleMaintenance $maintenance)
     {
+        $vehicleId = $maintenance->vehicleID;
         $maintenance->delete();
-        return redirect()->back()->with('success', 'Maintenance record deleted successfully.');
+        return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicleId, 'tab' => 'maintenance'])->with('success', 'Maintenance record deleted successfully.');
     }
 
     public function storeDocument(Request $request, Vehicle $vehicle)
@@ -767,12 +844,14 @@ class AdminVehicleController extends Controller
 
         $file = $request->file('file');
         $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('vehicle_documents', $fileName, 'public');
+        
+        // Upload to Google Drive
+        $fileId = $this->uploadToGoogleDrive($file, 'vehicle_documents/' . $validated['document_type'], $fileName);
 
         // Check if document type column exists, if not use a different approach
         $documentData = [
             'vehicleID' => $vehicle->vehicleID,
-            'fileURL' => $filePath,
+            'fileURL' => $fileId, // Store Google Drive file ID
             'upload_date' => Carbon::today(),
         ];
 
@@ -783,7 +862,7 @@ class AdminVehicleController extends Controller
 
         $document = \App\Models\VehicleDocument::create($documentData);
 
-        return redirect()->back()->with('success', 'Document uploaded successfully.');
+        return redirect()->back()->with('success', 'Document uploaded successfully to Google Drive.');
     }
 
     public function storePhoto(Request $request, Vehicle $vehicle)
@@ -794,25 +873,117 @@ class AdminVehicleController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $file = $request->file('photo');
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('vehicle_photos', $fileName, 'public');
+        try {
+            DB::beginTransaction();
+            
+            $file = $request->file('photo');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            
+            // Upload to specific Google Drive folder: 1DhcVFFK9GpqLpQKOsFuj2mSXSexHZd0G
+            $driveFolderId = '1DhcVFFK9GpqLpQKOsFuj2mSXSexHZd0G';
+            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, $driveFolderId, $fileName, true);
+            
+            $fileId = $uploadResult['fileId'];
+            $fileUrl = $uploadResult['fileUrl']; // Google Drive URL
 
-        // Store photo using VehicleDocument with document_type = 'photo'
-        $documentData = [
-            'vehicleID' => $vehicle->vehicleID,
-            'fileURL' => $filePath,
-            'upload_date' => Carbon::today(),
-        ];
+            // Determine table name (check both Car_Img and car_img)
+            $tableName = Schema::hasTable('Car_Img') ? 'Car_Img' : (Schema::hasTable('car_img') ? 'car_img' : 'Car_Img');
+            
+            // Check if vehicleID column exists, if not, add it
+            $hasVehicleIdColumn = Schema::hasColumn($tableName, 'vehicleID');
+            if (!$hasVehicleIdColumn) {
+                try {
+                    // First, modify documentID to TEXT if needed
+                    try {
+                        DB::statement("ALTER TABLE `{$tableName}` MODIFY COLUMN `documentID` TEXT NULL");
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to modify documentID column: ' . $e->getMessage());
+                    }
+                    
+                    // Add vehicleID column
+                    DB::statement("ALTER TABLE `{$tableName}` ADD COLUMN `vehicleID` INT UNSIGNED NULL AFTER `imgID`");
+                    $hasVehicleIdColumn = true;
+                    Log::info("Added vehicleID column to {$tableName} table");
+                } catch (\Exception $e) {
+                    Log::warning('Failed to add vehicleID column: ' . $e->getMessage());
+                    // Continue without vehicleID column
+                }
+            }
+            
+            // Create Car_Img record directly with Google Drive URL stored in documentID
+            // Note: documentID should now be TEXT to store URL, if migration ran or we modified it above
+            $carImgData = [
+                'imageType' => $validated['photo_type'] ?? 'other',
+                'img_description' => $validated['description'] ?? null,
+            ];
+            
+            // Add vehicleID if column exists
+            if ($hasVehicleIdColumn) {
+                $carImgData['vehicleID'] = $vehicle->vehicleID;
+            }
+            
+            // Add documentID - try as TEXT first, if that fails, try as integer (legacy)
+            try {
+                $carImgData['documentID'] = $fileUrl; // Store Google Drive URL as TEXT
+                if ($hasVehicleIdColumn) {
+                    \App\Models\CarImg::create($carImgData);
+                } else {
+                    DB::table($tableName)->insert($carImgData);
+                }
+            } catch (\Exception $e) {
+                // If documentID is still INT, we need to store in VehicleDocument and reference that
+                Log::warning('Failed to insert with URL in documentID (might be INT): ' . $e->getMessage());
+                try {
+                    // Store in VehicleDocument first and get its ID
+                    $vehicleDoc = \App\Models\VehicleDocument::create([
+                        'vehicleID' => $vehicle->vehicleID,
+                        'fileURL' => $fileUrl,
+                        'upload_date' => Carbon::today(),
+                        'document_type' => 'photo',
+                    ]);
+                    
+                    // Use VehicleDocument ID instead
+                    unset($carImgData['documentID']);
+                    $carImgData['documentID'] = $vehicleDoc->documentID; // Use integer ID
+                    
+                    if ($hasVehicleIdColumn) {
+                        $carImgData['vehicleID'] = $vehicle->vehicleID;
+                    }
+                    
+                    DB::table($tableName)->insert($carImgData);
+                } catch (\Exception $e2) {
+                    Log::error('Failed to insert into Car_Img table: ' . $e2->getMessage());
+                    throw $e2;
+                }
+            }
 
-        // Add document_type if column exists
-        if (Schema::hasColumn('VehicleDocument', 'document_type')) {
-            $documentData['document_type'] = 'photo';
+            // Also create VehicleDocument record to maintain vehicle relationship for reference
+            // This helps link the image to the vehicle even if Car_Img structure changes
+            try {
+                $documentData = [
+                    'vehicleID' => $vehicle->vehicleID,
+                    'fileURL' => $fileUrl, // Store Google Drive URL
+                    'upload_date' => Carbon::today(),
+                ];
+
+                if (Schema::hasColumn('VehicleDocument', 'document_type')) {
+                    $documentData['document_type'] = 'photo';
+                }
+
+                \App\Models\VehicleDocument::create($documentData);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create VehicleDocument record: ' . $e->getMessage());
+                // Continue even if VehicleDocument creation fails
+            }
+
+            DB::commit();
+            
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'car-photo'])->with('success', 'Photo uploaded successfully to Google Drive folder and saved to car_img table. URL stored in VehicleDocument.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Photo upload failed: ' . $e->getMessage());
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'car-photo'])->with('error', 'Failed to upload photo: ' . $e->getMessage());
         }
-
-        $document = \App\Models\VehicleDocument::create($documentData);
-
-        return redirect()->back()->with('success', 'Photo uploaded successfully.');
     }
 
     public function destroyDocument(\App\Models\VehicleDocument $document)
@@ -820,8 +991,148 @@ class AdminVehicleController extends Controller
         if ($document->fileURL && \Storage::disk('public')->exists($document->fileURL)) {
             \Storage::disk('public')->delete($document->fileURL);
         }
+        
+        // If fileURL is a Google Drive file ID or URL, delete from Google Drive
+        if ($document->fileURL && (strpos($document->fileURL, 'drive.google.com') !== false || !strpos($document->fileURL, '/') && !strpos($document->fileURL, '\\'))) {
+            try {
+                $this->deleteFile($document->fileURL);
+            } catch (\Exception $e) {
+                Log::warning('Failed to delete from Google Drive: ' . $e->getMessage());
+            }
+        }
+        
         $document->delete();
         return redirect()->back()->with('success', 'Document deleted successfully.');
+    }
+
+    /**
+     * Delete a car image from car_img table
+     */
+    public function destroyPhoto($imgId)
+    {
+        try {
+            DB::beginTransaction();
+            
+            // Try to find in car_img table
+            $carImg = null;
+            
+            // Try using CarImg model first
+            try {
+                $carImg = \App\Models\CarImg::find($imgId);
+            } catch (\Exception $e) {
+                Log::warning('CarImg model find failed: ' . $e->getMessage());
+            }
+            
+            // If not found, try direct DB query
+            if (!$carImg) {
+                try {
+                    $carImgRecord = DB::table('Car_Img')->where('imgID', $imgId)->first();
+                    if ($carImgRecord) {
+                        $carImg = (object) $carImgRecord;
+                    } else {
+                        $carImgRecord = DB::table('car_img')->where('imgID', $imgId)->first();
+                        if ($carImgRecord) {
+                            $carImg = (object) $carImgRecord;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Direct DB query failed: ' . $e->getMessage());
+                }
+            }
+
+            if (!$carImg) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Photo not found.');
+            }
+
+            // Get vehicleID before deletion
+            $vehicleId = null;
+            if ($carImg instanceof \App\Models\CarImg) {
+                $vehicleId = $carImg->vehicleID;
+            } elseif (is_object($carImg) && isset($carImg->vehicleID)) {
+                $vehicleId = $carImg->vehicleID;
+            } elseif (is_array($carImg) && isset($carImg['vehicleID'])) {
+                $vehicleId = $carImg['vehicleID'];
+            }
+
+            // If vehicleID not found in carImg, try to get from VehicleDocument via documentID
+            if (!$vehicleId) {
+                $documentId = is_object($carImg) && isset($carImg->documentID) 
+                    ? $carImg->documentID 
+                    : (is_array($carImg) ? ($carImg['documentID'] ?? null) : null);
+                
+                if ($documentId) {
+                    // Try to find vehicle from VehicleDocument
+                    $vehicleDoc = \App\Models\VehicleDocument::where('documentID', $documentId)
+                        ->orWhere('fileURL', $documentId)
+                        ->first();
+                    if ($vehicleDoc) {
+                        $vehicleId = $vehicleDoc->vehicleID;
+                    }
+                }
+            }
+
+            // Get the documentID (Google Drive URL) before deletion
+            $documentId = is_object($carImg) && isset($carImg->documentID) 
+                ? $carImg->documentID 
+                : (is_array($carImg) ? ($carImg['documentID'] ?? null) : null);
+
+            // Delete from Google Drive if documentID is a Google Drive URL or file ID
+            if ($documentId) {
+                try {
+                    $driveService = new \App\Services\GoogleDriveService();
+                    // deleteFile method now handles URL extraction
+                    $driveService->deleteFile($documentId);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to delete from Google Drive: ' . $e->getMessage());
+                    // Continue with database deletion even if Google Drive delete fails
+                }
+            }
+
+            // Delete from database
+            if ($carImg instanceof \App\Models\CarImg) {
+                $carImg->delete();
+            } else {
+                // Direct DB delete
+                $deleted = false;
+                if (Schema::hasTable('Car_Img')) {
+                    $deleted = DB::table('Car_Img')->where('imgID', $imgId)->delete() > 0;
+                }
+                if (!$deleted && Schema::hasTable('car_img')) {
+                    DB::table('car_img')->where('imgID', $imgId)->delete();
+                }
+            }
+
+            DB::commit();
+            
+            // Redirect to car-photo tab if vehicleId is available, otherwise back
+            if ($vehicleId) {
+                return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicleId, 'tab' => 'car-photo'])->with('success', 'Photo deleted successfully.');
+            }
+            return redirect()->back()->with('success', 'Photo deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to delete photo: ' . $e->getMessage());
+            
+            // Try to get vehicleId from request or carImg for error redirect
+            $errorVehicleId = $vehicleId ?? null;
+            if (!$errorVehicleId) {
+                // Try to get from request if available
+                try {
+                    $carImg = \App\Models\CarImg::find($imgId);
+                    if ($carImg && isset($carImg->vehicleID)) {
+                        $errorVehicleId = $carImg->vehicleID;
+                    }
+                } catch (\Exception $e2) {
+                    // Ignore
+                }
+            }
+            
+            if ($errorVehicleId) {
+                return redirect()->route('admin.vehicles.show', ['vehicle' => $errorVehicleId, 'tab' => 'car-photo'])->with('error', 'Failed to delete photo: ' . $e->getMessage());
+            }
+            return redirect()->back()->with('error', 'Failed to delete photo: ' . $e->getMessage());
+        }
     }
 
     public function createCar(): View
@@ -1488,29 +1799,27 @@ class AdminVehicleController extends Controller
                 ]
             );
 
-            // Update owner if it already exists
-            if ($owner->wasRecentlyCreated === false) {
-                $owner->update([
-                    'contact_number' => $validated['contact_number'] ?? $owner->contact_number,
-                    'email' => $validated['email'] ?? $owner->email,
-                    'bankname' => $validated['bankname'] ?? $owner->bankname,
-                    'bank_acc_number' => $validated['bank_acc_number'] ?? $owner->bank_acc_number,
-                    'registration_date' => $validated['registration_date'] ?? $owner->registration_date,
-                    'leasing_price' => $validated['leasing_price'] ?? $owner->leasing_price,
-                    'leasing_due_date' => $validated['leasing_due_date'] ?? $owner->leasing_due_date,
-                    'isActive' => $request->has('isActive') ? ($validated['isActive'] ?? true) : $owner->isActive,
-                ]);
-            }
+            // Always update owner fields (even if just created, in case form has more updated data)
+            $owner->update([
+                'contact_number' => $validated['contact_number'] ?? $owner->contact_number,
+                'email' => $validated['email'] ?? $owner->email,
+                'bankname' => $validated['bankname'] ?? $owner->bankname,
+                'bank_acc_number' => $validated['bank_acc_number'] ?? $owner->bank_acc_number,
+                'registration_date' => $validated['registration_date'] ?? $owner->registration_date,
+                'leasing_price' => $validated['leasing_price'] ?? $owner->leasing_price,
+                'leasing_due_date' => $validated['leasing_due_date'] ?? $owner->leasing_due_date,
+                'isActive' => $request->has('isActive') ? ($validated['isActive'] ?? true) : $owner->isActive,
+            ]);
 
             // Update vehicle to link to owner
             $vehicle->update(['ownerID' => $owner->ownerID]);
 
             DB::commit();
 
-            return redirect()->back()->with('success', 'Owner information updated successfully.');
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner information updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Failed to update owner: ' . $e->getMessage());
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->withInput()->with('error', 'Failed to update owner: ' . $e->getMessage());
         }
     }
 
@@ -1527,13 +1836,19 @@ class AdminVehicleController extends Controller
         try {
             $file = $request->file('license_img');
             $filename = 'owner_license_' . $vehicle->owner->ownerID . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('owner_documents', $filename, 'public');
+            
+            // Upload to Google Drive - specific folder ID: 1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd
+            $driveFolderId = '1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd';
+            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, $driveFolderId, $filename, true);
+            
+            $fileId = $uploadResult['fileId'];
+            $fileUrl = $uploadResult['fileUrl'];
 
             $vehicle->owner->update([
-                'license_img' => $path,
+                'license_img' => $fileUrl, // Store Google Drive URL
             ]);
 
-            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner license uploaded successfully.');
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner license uploaded successfully to Google Drive.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to upload license: ' . $e->getMessage());
         }
@@ -1552,12 +1867,48 @@ class AdminVehicleController extends Controller
         try {
             $file = $request->file('ic_img');
             $filename = 'owner_ic_' . $vehicle->owner->ownerID . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('owner_documents', $filename, 'public');
+            
+            // Upload to Google Drive - specific folder ID: 1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd
+            $driveFolderId = '1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd';
+            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, $driveFolderId, $filename, true);
+            
+            $fileId = $uploadResult['fileId'];
+            $fileUrl = $uploadResult['fileUrl'];
+
+            // Check if ic_img column exists, if not, add it
+            if (!Schema::hasColumn('ownercar', 'ic_img')) {
+                try {
+                    Schema::table('ownercar', function (Blueprint $table) {
+                        $table->string('ic_img', 500)->nullable()->after('license_img');
+                    });
+                } catch (\Exception $e) {
+                    Log::warning('Failed to add ic_img column: ' . $e->getMessage());
+                    // Try using raw SQL
+                    try {
+                        DB::statement('ALTER TABLE `ownercar` ADD COLUMN `ic_img` VARCHAR(500) NULL AFTER `license_img`');
+                    } catch (\Exception $e2) {
+                        Log::error('Failed to add ic_img column using raw SQL: ' . $e2->getMessage());
+                        return redirect()->back()->with('error', 'Failed to add ic_img column to database. Please run migration manually.');
+                    }
+                }
+            }
 
             // Update OwnerCar table with IC image
-            $vehicle->owner->update([
-                'ic_img' => $path,
-            ]);
+            try {
+                $vehicle->owner->update([
+                    'ic_img' => $fileUrl, // Store Google Drive URL
+                ]);
+            } catch (\Exception $e) {
+                // If update fails, try direct DB update
+                try {
+                    DB::table('ownercar')
+                        ->where('ownerID', $vehicle->owner->ownerID)
+                        ->update(['ic_img' => $fileUrl]);
+                } catch (\Exception $e2) {
+                    Log::error('Failed to update ownercar ic_img: ' . $e2->getMessage());
+                    throw $e2;
+                }
+            }
 
             return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner IC uploaded successfully.');
         } catch (\Exception $e) {

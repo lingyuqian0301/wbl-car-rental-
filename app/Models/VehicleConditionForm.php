@@ -9,10 +9,11 @@ class VehicleConditionForm extends Model
 {
     use HasFactory;
 
+    // Specify the correct table name
+    protected $table = 'vehicleconditionform';
+    
     // Based on usage in PickupController: $form->formID
     protected $primaryKey = 'formID';
-    
-    // Assuming table name follows convention, or you can specify protected $table = 'vehicle_condition_forms';
     
     protected $fillable = [
         'form_type',

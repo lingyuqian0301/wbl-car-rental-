@@ -11,18 +11,6 @@
         padding: 15px;
         margin-bottom: 25px;
     }
-    .report-table {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-    .table-header {
-        background: var(--admin-red);
-        color: white;
-        padding: 15px 20px;
-        font-weight: 600;
-    }
     .summary-card {
         background: white;
         border-radius: 12px;
@@ -177,13 +165,15 @@
     </div>
 
     <!-- Report Table -->
-    <div class="report-table">
-        <div class="table-header">
-            <i class="bi bi-calendar-range"></i> Rental Report ({{ $bookings->count() }} bookings)
+    <div class="card">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Rental Report</h5>
+            <span class="badge bg-light text-dark">{{ $bookings->count() }} total</span>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                     <tr>
                         <th>Booking ID</th>
                         <th>Customer Name</th>
@@ -195,8 +185,8 @@
                         <th>Duration</th>
                         <th>Payment Amount</th>
                     </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                     @forelse($bookings as $booking)
                         @php
                             $vehicle = $booking->vehicle;
@@ -204,7 +194,7 @@
                         @endphp
                         <tr>
                             <td><strong>#{{ $booking->bookingID ?? $booking->id }}</strong></td>
-                            <td>{{ $booking->user->name ?? 'Unknown' }}</td>
+                            <td>{{ $booking->customer->user->name ?? ($booking->user->name ?? 'Unknown') }}</td>
                             <td>
                                 @if($vehicle)
                                     {{ $vehicle->vehicle_brand ?? '' }} {{ $vehicle->vehicle_model ?? '' }}
@@ -240,20 +230,26 @@
                                     <span class="text-muted">N/A</span>
                                 @endif
                             </td>
-                            <td>{{ $booking->duration_days ?? 0 }} days</td>
+                            <td>{{ $booking->duration ?? $booking->duration_days ?? 0 }} days</td>
                             <td><strong>RM {{ number_format($totalPaid, 2) }}</strong></td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                <p class="mt-3 mb-0">No bookings found with the selected filters</p>
+                            <td colspan="9" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No bookings found with the selected filters
                             </td>
                         </tr>
                     @endforelse
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
+        @if(method_exists($bookings, 'hasPages') && $bookings->hasPages())
+            <div class="card-footer">
+                {{ $bookings->withQueryString()->links() }}
+            </div>
+        @endif
     </div>
 </div>
 
