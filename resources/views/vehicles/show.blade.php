@@ -929,8 +929,6 @@
 
     </div>
 
-    @include('components.footer')
-
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
     // Vehicle rental price per day (for real-time display only)
