@@ -230,6 +230,8 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
     Route::prefix('return')->name('return.')->group(function () {
         Route::get('/{booking}', [ReturnController::class, 'show'])->name('show');
         Route::post('/{booking}/confirm', [ReturnController::class, 'confirm'])->name('confirm');
+        Route::get('/{booking}/deposit', [ReturnController::class, 'showDepositOptions'])->name('deposit');
+        Route::post('/{booking}/deposit/handle', [ReturnController::class, 'handleDeposit'])->name('handleDeposit');
     });
 
     // Staff-only routes
