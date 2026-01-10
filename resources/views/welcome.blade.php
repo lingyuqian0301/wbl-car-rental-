@@ -10,579 +10,449 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-
     <style>
         html {
-        font-size: 12px; /* try 13px if still big */
-    }
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+            font-size: 12px;
+        }
 
-    body {
-        font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        line-height: 1.6;
-        color: #333;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    :root {
-        --primary-orange: #dc2626;
-        --primary-dark-orange: #991b1b;
-        --success-green: #059669;
-        --text-primary: #1e293b;
-        --text-secondary: #64748b;
-        --border-color: #e2e8f0;
-        --bg-light: #f8fafc;
-        --error-red: #dc2626;
-    }
+        body {
+            font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
 
+        :root {
+            --primary-orange: #dc2626;
+            --primary-dark-orange: #991b1b;
+            --success-green: #059669;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --bg-light: #f8fafc;
+            --error-red: #dc2626;
+        }
 
-    /* Hero Section */
-    .hero {
-        background: linear-gradient(to right, var(--primary-orange), var(--primary-dark-orange));
-        color: white;
-        padding-bottom: 3rem;
-    }
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(to right, var(--primary-orange), var(--primary-dark-orange));
+            color: white;
+            padding-bottom: 3rem;
+        }
 
-    .hero-container {
-        max-width: 1280px;
-        margin: 0 auto;
-    }
+        .hero-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
 
-    .hero h2 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-    }
+        .hero h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
 
-    .hero p {
-        font-size: 1.125rem;
-        margin-bottom: 2rem;
-        opacity: 0.9;
-    }
+        .hero p {
+            font-size: 1.125rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
 
-    .hero-btn {
-        display: inline-block;
-        padding: 0.75rem 2rem;
-        background-color: #ffffff;
-        color: var(--primary-orange);
-        font-weight: 700;
-        text-decoration: none;
-        border-radius: 0.5rem;
-        transition: background-color 0.3s;
-    }
+        .hero-btn {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background-color: #ffffff;
+            color: var(--primary-orange);
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s;
+        }
 
-    .hero-btn:hover {
-        background-color: #f3f4f6;
-    }
+        .hero-btn:hover {
+            background-color: #f3f4f6;
+        }
 
-    /* Section Styles */
-    section {
-        padding: 2rem 2rem 0.5rem 2rem;
-    }
+        /* Section Styles */
+        section {
+            padding: 2rem 2rem 0.5rem 2rem;
+        }
 
-    section h3 {
-        font-size: 1.875rem;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
+        section h3 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
 
-    /* Features Grid */
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        max-width: 900px;
-        margin: 0 auto;
-    }
+        /* Filter Capsule */
+        .filter-capsule-wrapper {
+            max-width: 1200px;
+            margin: 0 auto 3rem auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 999;
+            transition: box-shadow 0.3s ease;
+        }
 
-    .feature-card {
-        background-color: #f9fafb;
-        padding: 1.25rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        text-align: center;
-    }
-
-    .feature-icon {
-        font-size: 2rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .feature-card h4 {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: 0.25rem;
-    }
-
-    .feature-card p {
-        color: #6b7280;
-        font-size: 0.9rem;
-    }
-
-    /* Cars Grid */
-    /* Cars Grid - FIXED */
-    .cars-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 2rem;
-    }
-
-    /* Hide non-card elements in grid */
-    .cars-grid> :not(.car-card) {
-        display: none;
-    }
-
-    .car-card {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        background-color: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-    }
-
-
-
-    .car-image {
-        height: 180px;
-        width: 100%;
-        background-color: #f3f4f6;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-
-    .car-card.green .car-image {
-        background-color: #d1fae5;
-    }
-
-    .car-card.yellow .car-image {
-        background-color: #fef3c7;
-    }
-
-    .car-content {
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-    }
-
-    .car-content h4 {
-        min-height: 48px;
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 0.1rem;
-        color: #1f2937;
-        line-height: 1.3;
-    }
-
-    .car-type {
-        color: #6b7280;
-        margin-bottom: 0.75rem;
-        font-size: 0.9rem;
-    }
-
-    /* .car-content h4 {
-    margin-bottom: 0;
-}
-
-.car-type {
-    margin-top: 0;
-    margin-bottom: 0.4rem;
-} */
-
-
-    .car-image img {
-        width: 100%;
-        height: 100%;
-        transform: scale(1.20);
-        object-fit: contain;
-        object-position: center;
-    }
-
-    .car-specs {
-        margin-bottom: 1rem;
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        min-height: 28px;
-    }
-
-    .car-specs p {
-        font-size: 0.875rem;
-        color: #6b7280;
-        margin-bottom: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .car-specs strong {
-        font-weight: 600;
-        color: #374151;
-    }
-
-    .spec-icon {
-        font-size: 1.2rem;
-    }
-
-    .color-dot {
-        display: inline-block;
-        width: 1rem;
-        height: 1rem;
-        border-radius: 50%;
-        border: 1px solid #d1d5db;
-    }
-
-    .car-price {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--primary-orange);
-        margin-bottom: 1rem;
-        min-height: 40px;
-    }
-
-    .car-price span {
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .car-btn {
-        display: block;
-        width: 100%;
-        padding: 0.5rem;
-        background-color: var(--primary-orange);
-        color: white;
-        text-align: center;
-        text-decoration: none;
-        border-radius: 0.375rem;
-        transition: background-color 0.3s;
-        margin-top: auto;
-    }
-
-    .car-btn:hover {
-        background-color: var(--primary-dark-orange);
-    }
-
-    /* Filter Styles */
-    /* ===========================
-   OPTION 3 – HORIZONTAL CAPSULE FILTER
-=========================== */
-
-    .filter-capsule-wrapper {
-        max-width: 1200px;
-        margin: 0 auto 3rem auto;
-        padding: 0 2rem;
-        position: relative;
-        z-index: 999;
-        transition: box-shadow 0.3s ease;
-    }
-
-    /* Sticky capsule behavior */
-    /* .filter-capsule-wrapper {
-    
-} */
-
-    .filter-capsule-form {
-        background: #ffffff;
-        display: flex;
-        align-items: flex-end;
-        gap: 1rem;
-        padding: 1.25rem 1.5rem;
-        border-radius: 999px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-        flex-wrap: wrap;
-    }
-
-    .capsule-field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        min-width: 160px;
-    }
-
-    .capsule-field label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #6b7280;
-        padding-left: 0.25rem;
-    }
-
-    .capsule-field input,
-    .capsule-field select {
-        border: none;
-        background: #f9fafb;
-        padding: 0.65rem 0.9rem;
-        border-radius: 999px;
-        font-size: 0.9rem;
-        min-height: 42px;
-    }
-
-    .capsule-field input:focus,
-    .capsule-field select:focus {
-        outline: none;
-        background: #ffffff;
-        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
-    }
-
-    /* Filter Button */
-    .capsule-btn {
-        background: linear-gradient(135deg,
-                var(--primary-orange),
-                var(--primary-dark-orange));
-        color: white;
-        border: none;
-        padding: 0 2.25rem;
-        height: 42px;
-        border-radius: 999px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: all 0.25s ease;
-    }
-
-    .capsule-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
         .filter-capsule-form {
-            border-radius: 20px;
+            background: #ffffff;
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            border-radius: 999px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            flex-wrap: wrap;
         }
 
         .capsule-field {
-            flex: 1 1 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 160px;
+        }
+
+        .capsule-field label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+            padding-left: 0.25rem;
+        }
+
+        .capsule-field input,
+        .capsule-field select {
+            border: none;
+            background: #f9fafb;
+            padding: 0.65rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            min-height: 42px;
+        }
+
+        .capsule-field input:focus,
+        .capsule-field select:focus {
+            outline: none;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
         }
 
         .capsule-btn {
-            width: 100%;
+            background: linear-gradient(135deg, var(--primary-orange), var(--primary-dark-orange));
+            color: white;
+            border: none;
+            padding: 0 2.25rem;
+            height: 42px;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.25s ease;
         }
-    }
 
-    .capsule-actions {
-        display: flex;
-        gap: 0.75rem;
-    }
+        .capsule-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
+        }
 
-    .capsule-clear {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 42px;
-        padding: 0 1.5rem;
-        border-radius: 999px;
-        background: #f3f4f6;
-        color: #374151;
-        font-size: 0.9rem;
-        font-weight: 500;
-        text-decoration: none;
-        transition: background 0.2s ease;
-    }
+        .capsule-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
 
-    .capsule-clear:hover {
-        background: #e5e7eb;
-    }
+        .capsule-clear {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 42px;
+            padding: 0 1.5rem;
+            border-radius: 999px;
+            background: #f3f4f6;
+            color: #374151;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
 
-    /* Add shadow when stuck */
-    .filter-capsule-wrapper.is-sticky {
-        box-shadow: 0 18px 35px rgba(0, 0, 0, 0.18);
-    }
+        .capsule-clear:hover {
+            background: #e5e7eb;
+        }
 
+        /* Cars Grid - List Style */
+        .cars-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
+        .car-card {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
 
-    /* CUSTOM DASHBOARD STYLES */
-    .dashboard-link {
-        text-decoration: none;
-        color: inherit;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
+        .car-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+        }
 
-    .dashboard-link:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-    }
+        .car-image {
+            height: 100px;
+            width: 140px;
+            min-width: 140px;
+            background-color: #f3f4f6;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    /* ===== Spec Badges ===== */
-    .car-specs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
+        .car-card.green .car-image {
+            background-color: #d1fae5;
+        }
 
-    .spec-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.3rem 0.65rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border-radius: 999px;
-        background-color: #f1f5f9;
-        color: #334155;
-        border: 1px solid #e2e8f0;
-        white-space: nowrap;
-    }
+        .car-card.yellow .car-image {
+            background-color: #fef3c7;
+        }
 
-    /* Transmission styles */
-    .spec-badge.transmission {
-        background-color: #eef2ff;
-        color: #3730a3;
-        border-color: #c7d2fe;
-    }
+        .car-image img {
+            width: 100%;
+            height: 100%;
+            transform: scale(1.1);
+            object-fit: contain;
+            object-position: center;
+        }
 
-    /* Seating styles */
-    .spec-badge.seat {
-        background-color: #ecfeff;
-        color: #155e75;
-        border-color: #a5f3fc;
-    }
+        .car-content {
+            padding: 1rem 1.5rem;
+            display: flex;
+            flex-direction: row;
+            flex: 1;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
 
-    /* Color badge */
-    .spec-badge.color {
-        background-color: #f8fafc;
-    }
+        .car-info-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
 
-    .spec-badge .dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        border: 1.5px solid #d1d5db;
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
-    }
-    /* =========================
-   COMPACT CAR CARD (SMALLER)
-========================= */
+        .car-info-right {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
 
-.car-card {
-    border-radius: 0.4rem;
-    box-shadow: 0 3px 5px rgba(0,0,0,0.08);
-}
+        .car-content h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: #1f2937;
+            line-height: 1.3;
+        }
 
+        .car-type {
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
 
-.car-image {
-    height: 150px; /* was 180px */
-}
+        .car-id {
+            color: #9ca3af;
+            font-size: 0.75rem;
+        }
 
-.car-image img {
-    transform: scale(1.1); /* was 1.20 */
-}
+        .car-specs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
 
-.car-content {
-    padding: 1rem; /* was 1.5rem */
-}
+        .car-details-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
 
-.car-content h4 {
-    font-size: 1.05rem; /* was 1.25rem */
-    min-height: 40px;
-}
+        .car-datetime {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 180px;
+        }
 
-.car-type {
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-}
+        .datetime-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
 
-.car-specs {
-    gap: 0.4rem;
-    margin-bottom: 0.75rem;
-}
+        .datetime-icon {
+            font-size: 1rem;
+            color: #9ca3af;
+        }
 
-.spec-badge {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.55rem;
-}
+        .spec-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 999px;
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
 
-.car-price {
-    font-size: 1.25rem; /* was 1.5rem */
-    margin-bottom: 0.75rem;
-}
+        .spec-badge.transmission {
+            background-color: #eef2ff;
+            color: #3730a3;
+            border-color: #c7d2fe;
+        }
 
-.car-btn {
-    padding: 0.45rem;
-    font-size: 0.85rem;
-}
+        .spec-badge.seat {
+            background-color: #ecfeff;
+            color: #155e75;
+            border-color: #a5f3fc;
+        }
 
+        .spec-badge.color {
+            background-color: #f8fafc;
+        }
+
+        .spec-badge .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1.5px solid #d1d5db;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+
+        .car-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-orange);
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 120px;
+        }
+
+        .car-price span {
+            font-size: 0.75rem;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .payment-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .payment-status.unpaid {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .car-btn {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background-color: transparent;
+            color: #3b82f6;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            transition: background-color 0.3s;
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .car-btn:hover {
+            background-color: #eff6ff;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .filter-capsule-form {
+                border-radius: 20px;
+            }
+
+            .capsule-field {
+                flex: 1 1 100%;
+            }
+
+            .capsule-btn {
+                width: 100%;
+            }
+
+            .car-card {
+                flex-direction: column;
+            }
+
+            .car-image {
+                width: 100%;
+                height: 150px;
+            }
+
+            .car-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .car-info-right {
+                width: 100%;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .car-price {
+                text-align: left;
+            }
+        }
     </style>
 </head>
 
 <body>
     @include('components.header')
 
-    @auth
-    @php
-    $currentCustomer = \App\Models\Customer::where('userID', auth()->id())->first();
-
-    $wallet = $currentCustomer ? \Illuminate\Support\Facades\DB::table('walletaccount')->where('customerID',
-    $currentCustomer->customerID)->first() : null;
-    $loyalty = $currentCustomer ? \Illuminate\Support\Facades\DB::table('loyaltycard')->where('customerID',
-    $currentCustomer->customerID)->first() : null;
-
-    // Read columns directly
-    $outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
-    $stamps = $loyalty ? $loyalty->total_stamps : 0;
-    @endphp
-
-    <!-- <section style="padding: 1.5rem 2rem; background-color: #fff1f2;">
-        <div class="hero-container">
-            <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-
-                <a href="{{ route('wallet.show') }}" class="feature-card dashboard-link"
-                    style="background: white; border-left: 5px solid var(--primary-orange); text-align: left; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div class="feature-icon" style="font-size: 1.5rem; margin-bottom: 0;">💳</div>
-                        <h4 style="margin: 0; font-size: 1rem;">My Wallet</h4>
-                        <p style="margin: 0; font-size: 0.85rem;">Click for details</p>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="font-size: 0.85rem; color: #666;">Outstanding</span>
-                        <h3
-                            style="margin: 0; color: {{ $outstanding > 0 ? 'var(--primary-orange)' : 'var(--success-green)' }}; font-size: 1.5rem;">
-                            RM {{ number_format($outstanding, 2) }}
-                        </h3>
-                    </div>
-                </a>
-
-                <a href="{{ route('loyalty.show') }}" class="feature-card dashboard-link"
-                    style="background: white; border-left: 5px solid var(--success-green); text-align: left; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div class="feature-icon" style="font-size: 1.5rem; margin-bottom: 0;">🎁</div>
-                        <h4 style="margin: 0; font-size: 1rem;">Loyalty Card</h4>
-                        <p style="margin: 0; font-size: 0.85rem;">View Rewards</p>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="font-size: 0.85rem; color: #666;">Stamps Earned</span>
-                        <h3 style="margin: 0; color: #333; font-size: 1.5rem;">
-                            {{ $stamps }} <span style="font-size: 1rem; color: #999;">/ 48</span>
-                        </h3>
-                    </div>
-                </a>
-
-            </div>
-        </div>
-    </section> -->
-    @endauth
-
     <section class="hero">
         <div class="hero-container">
             <h2>Love your ride? Get rewarded</h2>
             <p>Leave a quick review on google and receive an exclusive rental voucher for your next trip</p>
             <a href="https://www.google.com/search?sca_esv=189c82b39954af99&sxsrf=ANbL-n5Anp80h8dYhG2xKm29JoOjA_C3Zw:1767841767647&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOXyCFa9BmMH0fGKt5MubrOT1JEHrQ0TPniYENBBGrBFLfRgjvbeReC2xOMTT6mEGYvM8guDbTO_ry31RsTNkKyT8Hj1GpBJ4BLResCU80OD7zcPEYjfWprqYwQS0Pm9kcyxNIc0h9S3iNQthbDiEjoEq5TTA&q=Hasta+Travel+%26+Tours+Sdn+Bhd+%28Car+Rental+UTM,+Johor%29+Reviews&sa=X&ved=2ahUKEwits9Hk-_qRAxXbwTgGHYnbOEcQ0bkNegQIJBAE&biw=1536&bih=730&dpr=1.25&aic=0" class="hero-btn" target="_blank">Share Your Review</a>
-            <!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
         </div>
     </section>
-    
-
-   
 
     <section>
         <div class="filter-capsule-wrapper">
@@ -627,107 +497,122 @@
                     Clear
                 </a>
 
-
                 <button type="submit" class="capsule-btn">
                     Filter
                 </button>
 
-
+            </form>
         </div>
-
-
-        </form>
-        </div>
-
 
         <div id="carsGrid">
-    <div class="cars-grid">
-        @forelse($cars as $car)
-            <div class="car-card">
-                @php
-                    $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
-                    $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
-                    $imageName = trim($imageName, '-');
-                    $imageName .= '.png';
-                    $imagePath = public_path('images/cars/browse/' . $imageName);
-                @endphp
+            <div class="cars-grid">
+                @forelse($cars as $car)
+                    <div class="car-card">
+                        @php
+                            $imageName = strtolower($car->vehicle_brand . '-' . $car->vehicle_model);
+                            $imageName = preg_replace('/[^a-z0-9]+/i', '-', $imageName);
+                            $imageName = trim($imageName, '-');
+                            $imageName .= '.png';
+                            $imagePath = public_path('images/cars/browse/' . $imageName);
+                        @endphp
 
-                <div class="car-image">
-                    @if(file_exists($imagePath))
-                        <img src="{{ asset('images/cars/browse/' . $imageName) }}">
-                    @else
-                        <img src="{{ asset('images/cars/browse/default.png') }}">
-                    @endif
-                </div>
+                        <div class="car-image">
+                            @if(file_exists($imagePath))
+                                <img src="{{ asset('images/cars/browse/' . $imageName) }}" alt="{{ $car->vehicle_brand }} {{ $car->vehicle_model }}">
+                            @else
+                                <img src="{{ asset('images/cars/browse/default.png') }}" alt="Car">
+                            @endif
+                        </div>
 
-                <div class="car-content">
-                    <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
-                    <p class="car-type">{{ $car->vehicleType }}</p>
+                        <div class="car-content">
+                            <div class="car-info-left">
+                                <div>
+                                    <h4>{{ $car->vehicle_brand }} {{ $car->vehicle_model }}</h4>
+                                    <p class="car-type">{{ $car->vehicleType }}</p>
+                                    
+                                </div>
 
-                    <div class="car-specs">
-                        @if ($car->car)
-                            <span class="spec-badge transmission">
-                                {{ $car->car->transmission }}
-                            </span>
-                            <span class="spec-badge seat">
-                                {{ $car->car->seating_capacity }} seats
-                            </span>
-                        @endif
+                                <div class="car-specs">
+                                    @if ($car->car)
+                                        <span class="spec-badge transmission">
+                                            {{ $car->car->transmission }}
+                                        </span>
+                                        <span class="spec-badge seat">
+                                            {{ $car->car->seating_capacity }} seats
+                                        </span>
+                                    @endif
 
-                        <span class="spec-badge color">
-                            <span class="dot" style="background-color: {{ $car->color ?? '#ccc' }}"></span>
-                            {{ $car->color ?? 'N/A' }}
-                        </span>
+                                    <span class="spec-badge color">
+                                        <span class="dot" style="background-color: {{ $car->color ?? '#ccc' }}"></span>
+                                        {{ $car->color ?? 'N/A' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="car-info-right">
+                                @if(request('start_date') && request('end_date'))
+                                    <div class="car-datetime">
+                                        <div class="datetime-item">
+                                            <span class="datetime-icon">📅</span>
+                                            <div>
+                                                <div style="font-weight: 600; color: #374151;">Pickup</div>
+                                                <div>{{ \Carbon\Carbon::parse(request('start_date'))->format('d M Y') }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="datetime-item">
+                                            <span class="datetime-icon">📅</span>
+                                            <div>
+                                                <div style="font-weight: 600; color: #374151;">Return</div>
+                                                <div>{{ \Carbon\Carbon::parse(request('end_date'))->format('d M Y') }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <div class="car-price">
+                                    <span class="payment-status">Available</span>
+                                    <div>
+                                        MYR {{ number_format($car->rental_price, 2) }}
+                                        <span></span>
+                                    </div>
+                                </div>
+
+                                <a href="{{ route('vehicles.show', [
+                                        'id' => $car->vehicleID, 
+                                        'start_date' => request('start_date'), 
+                                        'end_date' => request('end_date')
+                                    ]) }}" class="car-btn">
+                                        View
+                                    </a>
+                            </div>
+                        </div>
                     </div>
-
-                    <p class="car-price">
-                        RM {{ $car->rental_price }} <span>/day</span>
-                    </p>
-
-                    <a href="{{ route('vehicles.show', [
-                            'id' => $car->vehicleID, 
-                            'start_date' => request('start_date'), 
-                            'end_date' => request('end_date')
-                        ]) }}" class="car-btn">
-                            Book Now
-                        </a>
-
-                </div>
+                @empty
+                    <p style="text-align:center; padding: 2rem;">Please choose eligable date</p>
+                @endforelse
             </div>
-        @empty
-            <p style="text-align:center;">No cars available.</p>
-        @endforelse
-    </div>
-</div>
+        </div>
 
     </section>
+
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            flatpickr('input[name="start_date"]', {
+                minDate: 'today',
+                dateFormat: 'Y-m-d',
+                allowInput: true
+            });
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    flatpickr('input[name="start_date"]', {
-        minDate: 'today',
-        dateFormat: 'Y-m-d',
-        allowInput: true
-    });
-
-    flatpickr('input[name="end_date"]', {
-        minDate: 'today',
-        dateFormat: 'Y-m-d',
-        allowInput: true
-    });
-
-});
-</script>
-
+            flatpickr('input[name="end_date"]', {
+                minDate: 'today',
+                dateFormat: 'Y-m-d',
+                allowInput: true
+            });
+        });
+    </script>
 
     @include('components.footer')
-
-
-
-
-
 
 </body>
 
