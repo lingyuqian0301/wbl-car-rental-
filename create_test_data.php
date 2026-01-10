@@ -30,7 +30,7 @@ $admin = User::firstOrCreate(
 if ($admin->role !== 'admin') {
     $admin->update(['role' => 'admin']);
 }
-
+/*
 $customer = User::firstOrCreate(
     ['email' => 'customer@hasta.com'],
     [
@@ -180,4 +180,4 @@ echo "✅ Test data ready! You can now:\n";
 echo "   1. Login as customer and test payment submission\n";
 echo "   2. Login as admin and test payment verification\n";
 echo "   3. Download invoice for Booking #{$booking4->id}\n";
-
+*/
