@@ -539,61 +539,81 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
     }
 public function cancel(Request $request, $id)
     {
-        // 1. Fetch booking with payments
-        $booking = Booking::with(['customer', 'payments'])->findOrFail($id);
+        // 1. Fetch booking with dependencies
+        $booking = Booking::with(['customer.walletAccount', 'payments', 'vehicle'])->findOrFail($id);
 
-        // 2. Security: Ensure it belongs to the user
+        // 2. Security Check
         if ($booking->customer->userID !== Auth::id()) {
             abort(403, 'Unauthorized action.');
         }
 
-        // 3. Logic: Allow cancel ONLY if status is NOT Confirmed AND Payment is NOT Verified
-
-        // Check if Payment is Verified
-        $hasVerifiedPayment = $booking->payments->contains('payment_status', 'Verified');
-
-        if ($booking->booking_status === 'Confirmed') {
-            return back()->with('error', 'Cannot cancel a booking that has already been Confirmed.');
-        }
-
-        if ($hasVerifiedPayment) {
-            return back()->with('error', 'Cannot cancel a booking once payment has been Verified.');
-        }
-
-        // Also prevent cancelling if it's already cancelled or completed
+        // 3. Status Check
         if (in_array($booking->booking_status, ['Cancelled', 'Completed'])) {
-            return back()->with('error', 'Booking cannot be cancelled.');
+            return back()->with('error', 'Booking is already cancelled or completed.');
         }
 
-        // Proceed to Cancel
+        // 4. THE 12-HOUR RULE Logic
+        $pickupTime = Carbon::parse($booking->rental_start_date);
+        $hoursUntilPickup = now()->diffInHours($pickupTime, false); // false allows negative numbers
+
+        // Check if user has actually paid anything (Verified payments only)
+        $totalPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+        $hasPaid = $totalPaid > 0;
+
+        $message = "Booking cancelled successfully.";
+
+        if ($hasPaid) {
+            if ($hoursUntilPickup < 12) {
+                // === SCENARIO A: BURN DEPOSIT (< 12 Hours) ===
+                // We DO NOT refund the wallet. The money is forfeited.
+                $message = "Booking cancelled. Since this is within 12 hours of pickup, your payment of RM " . number_format($totalPaid, 2) . " has been forfeited (non-refundable).";
+                
+                Log::info("Booking #{$booking->bookingID} cancelled late (<12h). RM {$totalPaid} forfeited.");
+            } else {
+                // === SCENARIO B: REFUND DEPOSIT (> 12 Hours) ===
+                // Refund money to Wallet
+                $wallet = $booking->customer->walletAccount;
+                if ($wallet) {
+                    $wallet->wallet_balance += $totalPaid;
+                    $wallet->save();
+
+                    // Create Wallet Transaction Record
+                    \App\Models\WalletTransaction::create([
+                        'walletAccountID'  => $wallet->walletAccountID,
+                        'amount'           => $totalPaid,
+                        'transaction_type' => 'Refund',
+                        'description'      => "Refund for cancellation of Booking #{$booking->bookingID}",
+                        'transaction_date' => now(),
+                        'reference_id'     => $booking->bookingID
+                    ]);
+
+                    $message = "Booking cancelled. RM " . number_format($totalPaid, 2) . " has been refunded to your wallet.";
+                }
+            }
+        }
+
+        // 5. Update Status
         $booking->booking_status = 'Cancelled';
         $booking->save();
 
-        // Create Admin Notification for Cancellation
+        // 6. Admin Notification
         try {
             $vehicle = $booking->vehicle;
-            $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . $vehicle->plate_number . ')') : 'N/A';
-
+            $info = $vehicle ? "{$vehicle->vehicle_brand} {$vehicle->vehicle_model}" : 'Vehicle';
+            
             \App\Models\AdminNotification::create([
                 'type' => 'booking_cancelled',
                 'notifiable_type' => 'admin',
-                'notifiable_id' => null,
                 'user_id' => Auth::id(),
                 'booking_id' => $booking->bookingID,
-                'payment_id' => null,
-                'message' => "Booking cancelled: Booking #{$booking->bookingID} - {$vehicleInfo}",
-                'data' => [
-                    'booking_id' => $booking->bookingID,
-                    'vehicle_info' => $vehicleInfo,
-                    'customer_id' => $booking->customer->customerID ?? null,
-                ],
+                'message' => "Booking #{$booking->bookingID} cancelled by user. ({$info})",
                 'is_read' => false,
             ]);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Notification Error (Ignored): ' . $e->getMessage());
+            Log::warning('Notification Error: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Booking cancelled successfully.');
+        return back()->with($hoursUntilPickup < 12 ? 'warning' : 'success', $message);
     }
 
     /**
@@ -743,5 +763,77 @@ public function showExtendForm($id)
         // Since payment happens in the next step (payments.create),
         // you likely don't need to deduct funds here yet.
         // You can leave this empty or add specific logic if needed.
+    }
+    /**
+     * Process the booking extension/reschedule request.
+     */
+    public function processExtend(Request $request, $id)
+    {
+        $booking = Booking::with('vehicle')->findOrFail($id);
+
+        // Security check
+        if ($booking->customer->userID !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        // 1. Validate New Dates
+        $request->validate([
+            'start_date' => 'required|date|after:now',
+            'end_date'   => 'required|date|after:start_date',
+        ]);
+
+        $newStart = Carbon::parse($request->start_date);
+        $newEnd   = Carbon::parse($request->end_date);
+
+        // 2. Check Availability (Exclude current booking ID from check)
+        $isConflict = Booking::where('vehicleID', $booking->vehicleID)
+            ->where('bookingID', '!=', $booking->bookingID) 
+            ->where('booking_status', '!=', 'Cancelled')
+            ->where(function ($query) use ($newStart, $newEnd) {
+                $query->whereBetween('rental_start_date', [$newStart, $newEnd])
+                      ->orWhereBetween('rental_end_date', [$newStart, $newEnd])
+                      ->orWhere(function ($q) use ($newStart, $newEnd) {
+                          $q->where('rental_start_date', '<', $newStart)
+                            ->where('rental_end_date', '>', $newEnd);
+                      });
+            })
+            ->exists();
+
+        if ($isConflict) {
+            return back()->with('error', 'The vehicle is unavailable for these new dates. Please choose another range.');
+        }
+
+        // 3. Recalculate Price
+        // Calculate new duration
+        $newDuration = $newStart->diffInDays($newEnd) + 1;
+        
+        // Get base rental price
+        $vehiclePrice = $booking->vehicle->rental_price;
+        
+        // Recalculate Add-ons cost (if you want to keep addons)
+        $addonsCost = 0;
+        if ($booking->addOns_item) {
+            $addons = explode(',', $booking->addOns_item);
+            $addonPrices = ['power_bank' => 5, 'phone_holder' => 5, 'usb_wire' => 3];
+            foreach ($addons as $addon) {
+                $addonsCost += ($addonPrices[$addon] ?? 0);
+            }
+        }
+
+        // Calculate New Total
+        // Note: We keep the original deposit/surcharge logic or recalculate it
+        $newRentalAmount = ($vehiclePrice + $addonsCost) * $newDuration + ($booking->pickup_surcharge ?? 0) + 50; // +50 Deposit
+
+        // 4. Update Booking
+        $booking->update([
+            'rental_start_date' => $newStart,
+            'rental_end_date'   => $newEnd,
+            'duration'          => $newDuration,
+            'rental_amount'     => $newRentalAmount,
+            'lastUpdateDate'    => now()
+        ]);
+
+        return redirect()->route('bookings.show', $id)
+            ->with('success', 'Booking rescheduled successfully! Your deposit is safe.');
     }
 }
