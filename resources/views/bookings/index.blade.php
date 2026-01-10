@@ -21,8 +21,7 @@
                 <div class="p-6 text-gray-900">
                     @if($bookings->count() > 0)
                         
-                        {{-- Fixed: Added overflow-y-visible and proper spacing --}}
-                        <div class="overflow-x-auto overflow-y-visible pb-60 min-h-[500px]">
+                        <div class="relative" style="overflow-x: auto; overflow-y: visible; padding-bottom: 15rem; min-height: 500px;">
                             
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
@@ -125,11 +124,10 @@
                                                 </div>
                                             </td>
 
-                                            {{-- Fixed: Removed overflow-visible, use static positioning --}}
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div class="relative z-10">
-                                                    <x-dropdown align="right" width="48">
-                                                        <x-slot name="trigger">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="position: static;">
+                                                <div style="position: static;">
+                                                    <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                                                        <div @click="open = !open">
                                                             <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                                                                 <div>Actions</div>
                                                                 <div class="ml-1">
@@ -138,41 +136,60 @@
                                                                     </svg>
                                                                 </div>
                                                             </button>
-                                                        </x-slot>
+                                                        </div>
 
-                                                        <x-slot name="content">
-                                                            <x-dropdown-link :href="route('bookings.show', $booking->bookingID)">
-                                                                {{ __('View Details') }}
-                                                            </x-dropdown-link>
+                                                        <div x-show="open"
+                                                             x-transition:enter="transition ease-out duration-200"
+                                                             x-transition:enter-start="opacity-0 scale-95"
+                                                             x-transition:enter-end="opacity-100 scale-100"
+                                                             x-transition:leave="transition ease-in duration-75"
+                                                             x-transition:leave-start="opacity-100 scale-100"
+                                                             x-transition:leave-end="opacity-0 scale-95"
+                                                             class="absolute z-50 mt-2 w-48 rounded-md shadow-lg end-0"
+                                                             style="display: none;"
+                                                             @click="open = false">
+                                                            <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
+                                                                {{-- Always show View Details --}}
+                                                                <a href="{{ route('bookings.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                    {{ __('View Details') }}
+                                                                </a>
 
-                                                            @if($verifiedPaid < ($totalPrice - 1) && $booking->booking_status != 'Cancelled')
-                                                                @if($hasPending)
-                                                                    <div class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-400 cursor-not-allowed">
-                                                                        {{ __('Verifying Payment...') }}
-                                                                    </div>
-                                                                @else
-                                                                    <x-dropdown-link :href="route('payments.create', ['booking' => $booking->bookingID])">
-                                                                        {{ $verifiedPaid > 0 ? __('Pay Balance') : __('Pay Deposit') }}
-                                                                    </x-dropdown-link>
+                                                                {{-- Show payment options if not fully paid and not cancelled --}}
+                                                                @if($verifiedPaid < ($totalPrice - 1) && $booking->booking_status != 'Cancelled')
+                                                                    @if($hasPending)
+                                                                        <div class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-400 cursor-not-allowed">
+                                                                            {{ __('Verifying Payment...') }}
+                                                                        </div>
+                                                                    @else
+                                                                        <a href="{{ route('payments.create', ['booking' => $booking->bookingID]) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                            {{ $verifiedPaid > 0 ? __('Pay Balance') : __('Pay Deposit') }}
+                                                                        </a>
+                                                                    @endif
                                                                 @endif
-                                                            @endif
 
-                                                            @if($verifiedPaid >= ($totalPrice - 1))
-                                                                <x-dropdown-link :href="route('booking.invoice', $booking->bookingID)">
-                                                                    {{ __('Download Invoice') }}
-                                                                </x-dropdown-link>
-                                                            @endif
+                                                                {{-- Show continue booking and invoice if fully paid --}}
+                                                                @if($verifiedPaid >= ($totalPrice - 1))
+                                                                    <a href="{{ route('agreement.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        {{ __('Continue Booking') }}
+                                                                    </a>
+                                                                    
+                                                                    <a href="{{ route('booking.invoice', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        {{ __('Download Invoice') }}
+                                                                    </a>
+                                                                @endif
 
-                                                            @if($verifiedPaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled')
-                                                                <form method="POST" action="{{ route('bookings.cancel', $booking->bookingID) }}">
-                                                                    @csrf
-                                                                    <x-dropdown-link href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to cancel?')) { this.closest('form').submit(); }">
-                                                                        {{ __('Cancel Booking') }}
-                                                                    </x-dropdown-link>
-                                                                </form>
-                                                            @endif
-                                                        </x-slot>
-                                                    </x-dropdown>
+                                                                {{-- Show cancel option if no payment made and not confirmed/cancelled --}}
+                                                                @if($verifiedPaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled')
+                                                                    <form method="POST" action="{{ route('bookings.cancel', $booking->bookingID) }}">
+                                                                        @csrf
+                                                                        <button type="submit" onclick="return confirm('Are you sure you want to cancel this booking?')" class="block w-full text-left px-4 py-2 text-sm leading-5 text-red-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                            {{ __('Cancel Booking') }}
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -195,25 +212,20 @@
         </div>
     </div>
 
-    {{-- Add custom styles to handle dropdown visibility --}}
     <style>
-        /* Ensure dropdowns are always visible */
-        .relative {
-            position: relative;
+        /* Force static positioning on table cells to allow dropdown to overflow */
+        table tbody tr td {
+            position: static !important;
         }
         
-        /* Prevent table from clipping dropdowns */
-        table {
-            position: relative;
+        /* Ensure dropdown menu has high z-index and proper positioning */
+        [x-show] {
+            z-index: 9999 !important;
         }
         
-        tbody tr {
-            position: relative;
-        }
-        
-        /* Make sure dropdown menus appear above other content */
-        [role="menu"] {
-            z-index: 50 !important;
+        /* Make sure the dropdown parent div doesn't clip content */
+        .relative > div[x-show] {
+            position: fixed !important;
         }
     </style>
 </x-app-layout>
