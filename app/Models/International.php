@@ -18,6 +18,7 @@ class International extends Model
         'customerID',
         'passport_no',
         'countryOfOrigin',
+        'passport_img',
         'license_img',
     ];
 

@@ -89,24 +89,190 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
-    {
+//     public function update(ProfileUpdateRequest $request): RedirectResponse
+//     {
         
+//         try {
+//             \Log::info('Profile update request received', $request->all());
+            
+//             DB::beginTransaction();
+            
+//             $user = $request->user();
+//             \Log::info("Updating profile for user: {$user->userID}");
+            
+//             // ===== PART A: UPDATE USER TABLE =====
+//             $user->update([
+//                 'name' => $request->name,
+//             ]);
+//             \Log::info("User updated: {$user->userID}");
+            
+//             // ===== PART B: UPDATE CUSTOMER TABLE (ONLY VALID CUSTOMER COLUMNS) =====
+//             $customerData = [
+//                 'phone_number' => $request->phone_number,
+//                 'address' => $request->address,
+//                 'customer_license' => $request->customer_license,
+//                 'emergency_contact' => $request->emergency_contact_number,
+//                 'default_bank_name' => $request->bank_name,
+//                 'default_account_no' => $request->bank_account_number,
+//             ];
+            
+//             \Log::info("Customer data to save", $customerData);
+            
+//             $customer = Customer::updateOrCreate(
+//                 ['userID' => $user->userID],
+//                 $customerData
+//             );
+            
+//             \Log::info("Customer record updated/created: {$customer->customerID}");
+            
+//             // ===== PART C: HANDLE IDENTITY RECORDS (LOCAL / INTERNATIONAL) =====
+//      // ===== PART C: HANDLE IDENTITY RECORDS (LOCAL / INTERNATIONAL) =====
+// $identityType = $request->identity_type ?? 'ic';
+// $identityValue = $request->identity_value;
+// $state = $request->state;
+
+// if ($identityType === 'ic') {
+
+//     /**
+//      * 🔥 CRITICAL FIX
+//      * PersonDetails MUST exist before Local
+//      * because Local.ic_no is a FOREIGN KEY
+//      */
+//     DB::table('persondetails')->updateOrInsert(
+//         ['ic_no' => $identityValue],
+//         ['fullname' => $request->name]
+//     );
+
+//     // Now it is SAFE to write to Local
+//     Local::updateOrCreate(
+//         ['customerID' => $customer->customerID],
+//         [
+//             'ic_no' => $identityValue,
+//             'stateOfOrigin' => $state,
+//         ]
+//     );
+
+//     // Clean up International + student records
+//     International::where('customerID', $customer->customerID)->delete();
+//     InternationalStudent::where('customerID', $customer->customerID)->delete();
+
+// } else {
+
+//     // Passport users (NO PersonDetails relation)
+//     International::updateOrCreate(
+//         ['customerID' => $customer->customerID],
+//         [
+//             'passport_no' => $identityValue,
+//             'countryOfOrigin' => $state,
+//         ]
+//     );
+
+//     Local::where('customerID', $customer->customerID)->delete();
+//     LocalStudent::where('customerID', $customer->customerID)->delete();
+// }
+
+
+//             if ($identityType === 'ic') {
+//                 // Create/update Local identity
+//                 Local::updateOrCreate(
+//                     ['customerID' => $customer->customerID],
+//                     [
+//                         'ic_no' => $identityValue,
+//                         'stateOfOrigin' => $state,
+//                     ]
+//                 );
+                
+//                 \Log::info("Local identity created/updated for customer: {$customer->customerID}");
+                
+//                 // Clean up International and related student records if switching
+//                 International::where('customerID', $customer->customerID)->delete();
+//                 InternationalStudent::where('customerID', $customer->customerID)->delete();
+//             } else {
+//                 // Create/update International identity
+//                 International::updateOrCreate(
+//                     ['customerID' => $customer->customerID],
+//                     [
+//                         'passport_no' => $identityValue,
+//                         'countryOfOrigin' => $state,
+//                     ]
+//                 );
+                
+//                 \Log::info("International identity created/updated for customer: {$customer->customerID}");
+                
+//                 // Clean up Local and related student records if switching
+//                 Local::where('customerID', $customer->customerID)->delete();
+//                 LocalStudent::where('customerID', $customer->customerID)->delete();
+//             }
+            
+//             // ===== PART D: HANDLE STUDENT INFORMATION =====
+//             if ($request->filled('matric_number')) {
+//                 \Log::info("Processing student information for matric: {$request->matric_number}");
+                
+//                 // Create/update StudentDetails
+//                 StudentDetails::updateOrCreate(
+//                     ['matric_number' => $request->matric_number],
+//                     [
+//                         'college' => $request->college,
+//                         'faculty' => $request->faculty,
+//                         'programme' => $request->program,
+//                     ]
+//                 );
+                
+//                 \Log::info("StudentDetails created/updated: {$request->matric_number}");
+                
+//                 // Link student to identity type
+//                 if ($identityType === 'ic') {
+//                     LocalStudent::updateOrCreate(
+//                         ['customerID' => $customer->customerID],
+//                         ['matric_number' => $request->matric_number]
+//                     );
+//                     \Log::info("LocalStudent linked for customer: {$customer->customerID}");
+                    
+//                     // Clean up international student if switching
+//                     InternationalStudent::where('customerID', $customer->customerID)->delete();
+//                 } else {
+//                     InternationalStudent::updateOrCreate(
+//                         ['customerID' => $customer->customerID],
+//                         ['matric_number' => $request->matric_number]
+//                     );
+//                     \Log::info("InternationalStudent linked for customer: {$customer->customerID}");
+                    
+//                     // Clean up local student if switching
+//                     LocalStudent::where('customerID', $customer->customerID)->delete();
+//                 }
+//             } else {
+//                 \Log::info("No matric number provided, removing student links");
+                
+//                 // Remove student links if matric_number is empty
+//                 LocalStudent::where('customerID', $customer->customerID)->delete();
+//                 InternationalStudent::where('customerID', $customer->customerID)->delete();
+//             }
+            
+//             DB::commit();
+//             \Log::info("Profile update transaction committed successfully");
+            
+//             return Redirect::route('profile.edit')->with('status', 'profile-updated');
+            
+//         } catch (\Exception $e) {
+//             DB::rollBack();
+//             \Log::error('Profile update error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), [
+//                 'exception' => $e,
+//                 'trace' => $e->getTraceAsString(),
+//             ]);
+//             return Redirect::route('profile.edit')->with('error', 'Failed to update profile. Error: ' . $e->getMessage());
+//         }
+//     }
+public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
         try {
-            \Log::info('Profile update request received', $request->all());
-            
             DB::beginTransaction();
-            
+
             $user = $request->user();
-            \Log::info("Updating profile for user: {$user->userID}");
-            
-            // ===== PART A: UPDATE USER TABLE =====
-            $user->update([
-                'name' => $request->name,
-            ]);
-            \Log::info("User updated: {$user->userID}");
-            
-            // ===== PART B: UPDATE CUSTOMER TABLE (ONLY VALID CUSTOMER COLUMNS) =====
+
+            // 1. Update User Name
+            $user->update(['name' => $request->name]);
+
+            // 2. Prepare Customer Data
             $customerData = [
                 'phone_number' => $request->phone_number,
                 'address' => $request->address,
@@ -115,100 +281,89 @@ class ProfileController extends Controller
                 'default_bank_name' => $request->bank_name,
                 'default_account_no' => $request->bank_account_number,
             ];
-            
-            \Log::info("Customer data to save", $customerData);
-            
+
+            // ---------------------------------------------------------
+            // 📂 HANDLE LICENSE IMAGE UPLOAD (file_license)
+            // ---------------------------------------------------------
+            if ($request->hasFile('file_license')) {
+                // Save to 'storage/app/public/licenses'
+                $path = $request->file('file_license')->store('licenses', 'public');
+                $customerData['customer_license_img'] = $path; // Add to data
+            }
+
+            // Update or Create Customer Record
             $customer = Customer::updateOrCreate(
                 ['userID' => $user->userID],
                 $customerData
             );
-            
-            \Log::info("Customer record updated/created: {$customer->customerID}");
-            
-            // ===== PART C: HANDLE IDENTITY RECORDS (LOCAL / INTERNATIONAL) =====
-     // ===== PART C: HANDLE IDENTITY RECORDS (LOCAL / INTERNATIONAL) =====
-$identityType = $request->identity_type ?? 'ic';
-$identityValue = $request->identity_value;
-$state = $request->state;
 
-if ($identityType === 'ic') {
+            // ---------------------------------------------------------
+            // 📂 HANDLE IDENTITY IMAGE UPLOAD (file_identity)
+            // ---------------------------------------------------------
+            $identityImgPath = null;
+            if ($request->hasFile('file_identity')) {
+                $identityImgPath = $request->file('file_identity')->store('identity_docs', 'public');
+            }
 
-    /**
-     * 🔥 CRITICAL FIX
-     * PersonDetails MUST exist before Local
-     * because Local.ic_no is a FOREIGN KEY
-     */
-    DB::table('persondetails')->updateOrInsert(
-        ['ic_no' => $identityValue],
-        ['fullname' => $request->name]
-    );
+            // 3. Handle Identity (Local vs International)
+            $identityType = $request->identity_type ?? 'ic';
+            $identityValue = $request->identity_value;
+            $state = $request->state;
 
-    // Now it is SAFE to write to Local
-    Local::updateOrCreate(
-        ['customerID' => $customer->customerID],
-        [
-            'ic_no' => $identityValue,
-            'stateOfOrigin' => $state,
-        ]
-    );
+            if ($identityValue) {
+                if ($identityType === 'ic') {
+                    // IC Logic
+                    DB::table('persondetails')->updateOrInsert(
+                        ['ic_no' => $identityValue],
+                        ['fullname' => $request->name]
+                    );
 
-    // Clean up International + student records
-    International::where('customerID', $customer->customerID)->delete();
-    InternationalStudent::where('customerID', $customer->customerID)->delete();
-
-} else {
-
-    // Passport users (NO PersonDetails relation)
-    International::updateOrCreate(
-        ['customerID' => $customer->customerID],
-        [
-            'passport_no' => $identityValue,
-            'countryOfOrigin' => $state,
-        ]
-    );
-
-    Local::where('customerID', $customer->customerID)->delete();
-    LocalStudent::where('customerID', $customer->customerID)->delete();
-}
-
-
-            if ($identityType === 'ic') {
-                // Create/update Local identity
-                Local::updateOrCreate(
-                    ['customerID' => $customer->customerID],
-                    [
+                    // Prepare data for Local
+                    $localData = [
                         'ic_no' => $identityValue,
                         'stateOfOrigin' => $state,
-                    ]
-                );
-                
-                \Log::info("Local identity created/updated for customer: {$customer->customerID}");
-                
-                // Clean up International and related student records if switching
-                International::where('customerID', $customer->customerID)->delete();
-                InternationalStudent::where('customerID', $customer->customerID)->delete();
-            } else {
-                // Create/update International identity
-                International::updateOrCreate(
-                    ['customerID' => $customer->customerID],
-                    [
+                    ];
+                    // Only update image if a new one was uploaded
+                    if ($identityImgPath) {
+                        $localData['ic_img'] = $identityImgPath;
+                    }
+
+                    Local::updateOrCreate(
+                        ['customerID' => $customer->customerID],
+                        $localData
+                    );
+
+                    // Cleanup International
+                    International::where('customerID', $customer->customerID)->delete();
+                    InternationalStudent::where('customerID', $customer->customerID)->delete();
+
+                } else {
+                    // Passport Logic
+                    $passportData = [
                         'passport_no' => $identityValue,
                         'countryOfOrigin' => $state,
-                    ]
-                );
-                
-                \Log::info("International identity created/updated for customer: {$customer->customerID}");
-                
-                // Clean up Local and related student records if switching
-                Local::where('customerID', $customer->customerID)->delete();
-                LocalStudent::where('customerID', $customer->customerID)->delete();
+                    ];
+                    // Only update image if a new one was uploaded
+                    if ($identityImgPath) {
+                        $passportData['passport_img'] = $identityImgPath;
+                    }
+
+                    International::updateOrCreate(
+                        ['customerID' => $customer->customerID],
+                        $passportData
+                    );
+
+                    // Cleanup Local
+                    Local::where('customerID', $customer->customerID)->delete();
+                    LocalStudent::where('customerID', $customer->customerID)->delete();
+                }
             }
-            
-            // ===== PART D: HANDLE STUDENT INFORMATION =====
+
+            // 4. Handle Student Info
             if ($request->filled('matric_number')) {
-                \Log::info("Processing student information for matric: {$request->matric_number}");
+                // Note: Your database schema provided earlier does not have a column
+                // for 'file_matric' images, so we are only saving the text data here.
                 
-                // Create/update StudentDetails
                 StudentDetails::updateOrCreate(
                     ['matric_number' => $request->matric_number],
                     [
@@ -217,52 +372,34 @@ if ($identityType === 'ic') {
                         'programme' => $request->program,
                     ]
                 );
-                
-                \Log::info("StudentDetails created/updated: {$request->matric_number}");
-                
-                // Link student to identity type
+
                 if ($identityType === 'ic') {
                     LocalStudent::updateOrCreate(
                         ['customerID' => $customer->customerID],
                         ['matric_number' => $request->matric_number]
                     );
-                    \Log::info("LocalStudent linked for customer: {$customer->customerID}");
-                    
-                    // Clean up international student if switching
                     InternationalStudent::where('customerID', $customer->customerID)->delete();
                 } else {
                     InternationalStudent::updateOrCreate(
                         ['customerID' => $customer->customerID],
                         ['matric_number' => $request->matric_number]
                     );
-                    \Log::info("InternationalStudent linked for customer: {$customer->customerID}");
-                    
-                    // Clean up local student if switching
                     LocalStudent::where('customerID', $customer->customerID)->delete();
                 }
             } else {
-                \Log::info("No matric number provided, removing student links");
-                
-                // Remove student links if matric_number is empty
                 LocalStudent::where('customerID', $customer->customerID)->delete();
                 InternationalStudent::where('customerID', $customer->customerID)->delete();
             }
-            
+
             DB::commit();
-            \Log::info("Profile update transaction committed successfully");
-            
-            return Redirect::route('profile.edit')->with('status', 'profile-updated');
-            
+            return Redirect::route('profile.edit')->with('success', 'Profile updated successfully!');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Profile update error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return Redirect::route('profile.edit')->with('error', 'Failed to update profile. Error: ' . $e->getMessage());
+            \Log::error('Update failed: ' . $e->getMessage());
+            return Redirect::route('profile.edit')->with('error', 'Failed: ' . $e->getMessage());
         }
     }
-
     /**
      * Delete the user's account.
      */
