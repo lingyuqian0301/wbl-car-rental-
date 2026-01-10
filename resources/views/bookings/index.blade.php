@@ -60,23 +60,43 @@
                                                 $textColor = 'text-gray-500';
                                             }
 
-                                            // 3. BOOKING STATUS LABELS
-                                            $displayStatus = $booking->booking_status;
-                                            
+                                            // 3. BOOKING STATUS LABELS - UPDATED LOGIC
+                                            $dbStatus = $booking->booking_status; // Store actual DB status
+                                            $displayStatus = $dbStatus;
                                             $statusBadge = 'bg-gray-100 text-gray-800';
 
-                                            if ($booking->booking_status == 'Cancelled') {
+                                            // Priority: Show actual database status first
+                                            if ($dbStatus == 'Ongoing') {
+                                                $displayStatus = 'Ongoing';
+                                                $statusBadge = 'bg-blue-100 text-blue-800';
+                                            } elseif ($dbStatus == 'Cancelled') {
                                                 $displayStatus = 'Cancelled';
                                                 $statusBadge = 'bg-red-100 text-red-800';
-                                            } elseif ($verifiedPaid >= ($totalPrice - 1)) {
+                                            } elseif ($dbStatus == 'Completed') {
+                                                $displayStatus = 'Completed';
+                                                $statusBadge = 'bg-gray-100 text-gray-800';
+                                            } elseif ($dbStatus == 'Confirmed' && $verifiedPaid >= ($totalPrice - 1)) {
+                                                // Confirmed + Fully Paid = Ready for Pickup
                                                 $displayStatus = 'Ready for Pickup';
                                                 $statusBadge = 'bg-green-100 text-green-800';
-                                            } elseif ($verifiedPaid > 0) {
-                                                $displayStatus = 'Reserved'; 
+                                            } elseif ($dbStatus == 'Confirmed') {
+                                                $displayStatus = 'Confirmed';
+                                                $statusBadge = 'bg-green-100 text-green-800';
+                                            } elseif ($dbStatus == 'Reserved') {
+                                                $displayStatus = 'Reserved';
                                                 $statusBadge = 'bg-yellow-100 text-yellow-800';
                                             } else {
-                                                $displayStatus = 'Pending';
-                                                $statusBadge = 'bg-gray-100 text-gray-800';
+                                                // For other statuses, determine based on payment
+                                                if ($verifiedPaid >= ($totalPrice - 1)) {
+                                                    $displayStatus = 'Ready for Pickup';
+                                                    $statusBadge = 'bg-green-100 text-green-800';
+                                                } elseif ($verifiedPaid > 0) {
+                                                    $displayStatus = 'Reserved'; 
+                                                    $statusBadge = 'bg-yellow-100 text-yellow-800';
+                                                } else {
+                                                    $displayStatus = 'Pending';
+                                                    $statusBadge = 'bg-gray-100 text-gray-800';
+                                                }
                                             }
                                         @endphp
 
@@ -104,7 +124,6 @@
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusBadge }}">
                                                     {{ $displayStatus }}
-                                                    
                                                 </span>
                                                 <br>
     <div style="font-size: 10px; margin-top: 5px; border: 1px solid red; padding: 2px;">
@@ -162,8 +181,22 @@
                                                                     {{ __('View Details') }}
                                                                 </a>
 
-                                                                {{-- Show payment options if not fully paid and not cancelled --}}
-                                                                @if($verifiedPaid < ($totalPrice - 1) && $booking->booking_status != 'Cancelled')
+                                                                <!-- {{-- REFUND OPTION: Show if cancelled AND fully paid --}} -->
+                                                                @if($booking->booking_status == 'Cancelled' && $verifiedPaid >= ($totalPrice - 1))
+                                                                    {{-- TODO: Implement refund functionality --}}
+                                                                    {{-- Uncomment when refunds.create route is ready --}}
+                                                                    {{-- <a href="{{ route('refunds.create', ['booking' => $booking->bookingID]) }}" class="block px-4 py-2 text-sm leading-5 text-purple-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        {{ __('Proceed to Refund') }}
+                                                                    </a> --}}
+                                                                    
+                                                                    {{-- Temporary placeholder --}}
+                                                                    <div class="block w-full px-4 py-2 text-left text-sm leading-5 text-purple-600 cursor-not-allowed opacity-50">
+                                                                        {{ __('Refund Available (Contact Support)') }}
+                                                                    </div>
+                                                                @endif
+
+                                                                {{-- Show payment options if not fully paid and not cancelled and not ongoing --}}
+                                                                @if($verifiedPaid < ($totalPrice - 1) && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
                                                                     @if($hasPending)
                                                                         <div class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-400 cursor-not-allowed">
                                                                             {{ __('Verifying Payment...') }}
@@ -175,8 +208,8 @@
                                                                     @endif
                                                                 @endif
 
-                                                                {{-- Show continue booking and invoice if fully paid --}}
-                                                                @if($verifiedPaid >= ($totalPrice - 1))
+                                                                {{-- Show continue booking and invoice if fully paid and not cancelled and not ongoing --}}
+                                                                @if($verifiedPaid >= ($totalPrice - 1) && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
                                                                     <a href="{{ route('agreement.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                                                         {{ __('Continue Booking') }}
                                                                     </a>
@@ -186,8 +219,19 @@
                                                                     </a>
                                                                 @endif
 
-                                                                {{-- Show cancel option if no payment made and not confirmed/cancelled --}}
-                                                                @if($verifiedPaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled')
+                                                                {{-- Show pickup form for ONGOING bookings --}}
+                                                                @if($booking->booking_status == 'Ongoing')
+                                                                    <a href="{{ route('return.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-blue-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        {{ __('Return Vehicle') }}
+                                                                    </a>
+                                                                    
+                                                                    <a href="{{ route('booking.invoice', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        {{ __('Download Invoice') }}
+                                                                    </a>
+                                                                @endif
+
+                                                                {{-- Show cancel option if no payment made and not confirmed/cancelled/ongoing --}}
+                                                                @if($verifiedPaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
                                                                     <form method="POST" action="{{ route('bookings.cancel', $booking->bookingID) }}">
                                                                         @csrf
                                                                         <button type="submit" onclick="return confirm('Are you sure you want to cancel this booking?')" class="block w-full text-left px-4 py-2 text-sm leading-5 text-red-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
@@ -219,6 +263,4 @@
             </div>
         </div>
     </div>
-
-
 </x-app-layout>
