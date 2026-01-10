@@ -12,6 +12,9 @@
 
 
     <style>
+        html {
+        font-size: 12px; /* try 13px if still big */
+    }
     * {
         margin: 0;
         padding: 0;
@@ -457,6 +460,57 @@
         border: 1.5px solid #d1d5db;
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
     }
+    /* =========================
+   COMPACT CAR CARD (SMALLER)
+========================= */
+
+.car-card {
+    border-radius: 0.4rem;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.08);
+}
+
+.car-image {
+    height: 150px; /* was 180px */
+}
+
+.car-image img {
+    transform: scale(1.1); /* was 1.20 */
+}
+
+.car-content {
+    padding: 1rem; /* was 1.5rem */
+}
+
+.car-content h4 {
+    font-size: 1.05rem; /* was 1.25rem */
+    min-height: 40px;
+}
+
+.car-type {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.car-specs {
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+}
+
+.spec-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.55rem;
+}
+
+.car-price {
+    font-size: 1.25rem; /* was 1.5rem */
+    margin-bottom: 0.75rem;
+}
+
+.car-btn {
+    padding: 0.45rem;
+    font-size: 0.85rem;
+}
+
     </style>
 </head>
 
@@ -516,6 +570,7 @@
         </div>
     </section> -->
     @endauth
+
     <section class="hero">
         <div class="hero-container">
             <h2>Love your ride? Get rewarded</h2>
@@ -524,27 +579,9 @@
             <!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
         </div>
     </section>
+    
 
-    <section>
-        <h3>Why Choose HASTA?</h3>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">📍</div>
-                <h4>Availability</h4>
-                <p>Wide selection of vehicles available 24/7 for your convenience</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">✓</div>
-                <h4>Comfort</h4>
-                <p>Clean, well-maintained cars with modern amenities</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">💰</div>
-                <h4>Savings</h4>
-                <p>Competitive pricing with special discounts for loyalty members</p>
-            </div>
-        </div>
-    </section>
+   
 
     <section>
         <div class="filter-capsule-wrapper">
