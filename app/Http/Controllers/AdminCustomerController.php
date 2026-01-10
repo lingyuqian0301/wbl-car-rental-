@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Booking;
+use App\Traits\HandlesGoogleDriveUploads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 
 class AdminCustomerController extends Controller
 {
+    use HandlesGoogleDriveUploads;
     public function index(Request $request): View
     {
         $query = Customer::withCount('bookings')
@@ -232,8 +234,10 @@ class AdminCustomerController extends Controller
         }
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View
     {
+        $activeTab = $request->get('tab', 'detail');
+        
         $customer->load([
             'user',
             'local',
@@ -244,7 +248,7 @@ class AdminCustomerController extends Controller
             'internationalUtmStaff.staffDetails',
             'bookings' => function($q) {
                 $q->with(['vehicle', 'payments'])
-                  ->orderBy('rental_start_date', 'desc');
+                  ->orderBy('rental_start_date', 'asc');
             }
         ]);
 
@@ -270,6 +274,7 @@ class AdminCustomerController extends Controller
             'totalBookings' => $totalBookings,
             'totalOutstanding' => $totalOutstanding,
             'totalWalletAmount' => $totalWalletAmount,
+            'activeTab' => $activeTab,
         ]);
     }
 
@@ -300,8 +305,8 @@ class AdminCustomerController extends Controller
 
         $customer->update($validated);
 
-            return redirect()->route('admin.manage.client')
-                ->with('success', 'Customer updated successfully.');
+        return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])
+            ->with('success', 'Customer updated successfully.');
     }
 
     public function destroy(Customer $customer): RedirectResponse
@@ -566,19 +571,20 @@ class AdminCustomerController extends Controller
             if ($request->hasFile('license_img')) {
                 $file = $request->file('license_img');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $filePath = $file->storeAs('customer_documents', $fileName, 'public');
+                // Upload to Google Drive
+                $fileId = $this->uploadToGoogleDrive($file, 'customer_documents/licenses', $fileName);
 
                 // Update license image in customer table
                 $customer->update([
-                    'customer_license_img' => $filePath,
+                    'customer_license_img' => $fileId, // Store Google Drive file ID
                 ]);
 
-                return redirect()->back()->with('success', 'License uploaded successfully.');
+                return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('success', 'License uploaded successfully to Google Drive.');
             }
 
-            return redirect()->back()->with('error', 'No file uploaded.');
+            return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('error', 'No file uploaded.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to upload license: ' . $e->getMessage());
+            return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('error', 'Failed to upload license: ' . $e->getMessage());
         }
     }
 
@@ -592,25 +598,20 @@ class AdminCustomerController extends Controller
             if ($request->hasFile('ic_img')) {
                 $file = $request->file('ic_img');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $filePath = $file->storeAs('customer_documents', $fileName, 'public');
+                // Upload to Google Drive
+                $fileId = $this->uploadToGoogleDrive($file, 'customer_documents/ic_passport', $fileName);
 
-                // Update IC image in local table if customer is local
-                if ($customer->local) {
-                    $customer->local->update([
-                        'ic_img' => $filePath,
-                    ]);
-                } else {
-                    // For international customers, passport image might be stored differently
-                    // You may need to adjust this based on your database structure
-                    return redirect()->back()->with('error', 'IC/Passport upload is only available for local customers.');
-                }
+                // Update IC image in customer table
+                $customer->update([
+                    'customer_ic_img' => $fileId, // Store Google Drive file ID
+                ]);
 
-                return redirect()->back()->with('success', ($customer->local ? 'IC' : 'Passport') . ' uploaded successfully.');
+                return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('success', ($customer->local ? 'IC' : 'Passport') . ' uploaded successfully to Google Drive.');
             }
 
-            return redirect()->back()->with('error', 'No file uploaded.');
+            return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('error', 'No file uploaded.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to upload ' . ($customer->local ? 'IC' : 'Passport') . ': ' . $e->getMessage());
+            return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('error', 'Failed to upload ' . ($customer->local ? 'IC' : 'Passport') . ': ' . $e->getMessage());
         }
     }
 }

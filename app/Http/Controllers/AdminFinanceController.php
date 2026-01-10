@@ -90,7 +90,34 @@ class AdminFinanceController extends Controller
                     ->whereNotNull('handled_by')
                     ->count() * 2; // RM2 per fuel record
 
-                $totalStaffExpenses = $bookingCommission + $maintenanceCommission + $fuelCommission;
+                // 4. Runner commission: RM2 per pickup/return at non-HASTA HQ Office locations
+                $runnerCommission = 0;
+                $runnerBookings = $vehicle->bookings()
+                    ->whereBetween('rental_start_date', [$dateFrom, $dateTo])
+                    ->whereNotNull('staff_served')
+                    ->where(function($q) {
+                        $q->where(function($subQ) {
+                            $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                                 ->whereNotNull('pickup_point');
+                        })->orWhere(function($subQ) {
+                            $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                                 ->whereNotNull('return_point');
+                        });
+                    })
+                    ->get();
+
+                foreach ($runnerBookings as $runnerBooking) {
+                    // RM2 for pickup if not at HASTA HQ Office
+                    if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                        $runnerCommission += 2;
+                    }
+                    // RM2 for return if not at HASTA HQ Office
+                    if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                        $runnerCommission += 2;
+                    }
+                }
+
+                $totalStaffExpenses = $bookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
 
                 // Total expenses = maintenance expenses + staff commission
                 $totalExpenses = $maintenanceExpenses + $totalStaffExpenses;
@@ -183,7 +210,31 @@ class AdminFinanceController extends Controller
                 ->whereNotNull('handled_by')
                 ->count() * 2;
 
-            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission;
+            // 4. Runner commission: RM2 per pickup/return at non-HASTA HQ Office locations
+            $runnerCommission = 0;
+            $runnerBookings = Booking::whereBetween('rental_start_date', [$dateFrom, $dateTo])
+                ->whereNotNull('staff_served')
+                ->where(function($q) {
+                    $q->where(function($subQ) {
+                        $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('pickup_point');
+                    })->orWhere(function($subQ) {
+                        $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('return_point');
+                    });
+                })
+                ->get();
+
+            foreach ($runnerBookings as $runnerBooking) {
+                if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+                if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+            }
+
+            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
 
             // Total expenses = staff commission + maintenance cost
             $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
@@ -259,7 +310,31 @@ class AdminFinanceController extends Controller
                 ->whereNotNull('handled_by')
                 ->count() * 2;
 
-            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission;
+            // 4. Runner commission: RM2 per pickup/return at non-HASTA HQ Office locations
+            $runnerCommission = 0;
+            $runnerBookings = Booking::whereBetween('rental_start_date', [$dayStart, $dayEnd])
+                ->whereNotNull('staff_served')
+                ->where(function($q) {
+                    $q->where(function($subQ) {
+                        $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('pickup_point');
+                    })->orWhere(function($subQ) {
+                        $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('return_point');
+                    });
+                })
+                ->get();
+
+            foreach ($runnerBookings as $runnerBooking) {
+                if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+                if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+            }
+
+            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
 
             // Total expenses = staff commission + maintenance cost
             $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
@@ -333,7 +408,31 @@ class AdminFinanceController extends Controller
                 ->whereNotNull('handled_by')
                 ->count() * 2;
 
-            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission;
+            // 4. Runner commission: RM2 per pickup/return at non-HASTA HQ Office locations
+            $runnerCommission = 0;
+            $runnerBookings = Booking::whereBetween('rental_start_date', [$dayStart, $dayEnd])
+                ->whereNotNull('staff_served')
+                ->where(function($q) {
+                    $q->where(function($subQ) {
+                        $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('pickup_point');
+                    })->orWhere(function($subQ) {
+                        $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('return_point');
+                    });
+                })
+                ->get();
+
+            foreach ($runnerBookings as $runnerBooking) {
+                if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+                if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+            }
+
+            $totalStaffCommission = $bookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
 
             // Total expenses = staff commission + maintenance cost
             $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
@@ -429,7 +528,36 @@ class AdminFinanceController extends Controller
                 }
                 $fuelCommission = $fuelQuery->whereNotNull('handled_by')->count() * 2;
                 
-                $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission;
+                // Runner commission for this vehicle
+                $runnerCommission = 0;
+                $runnerBookingsQuery = $vehicle->bookings()
+                    ->whereNotNull('staff_served')
+                    ->where(function($q) {
+                        $q->where(function($subQ) {
+                            $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                                 ->whereNotNull('pickup_point');
+                        })->orWhere(function($subQ) {
+                            $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                                 ->whereNotNull('return_point');
+                        });
+                    });
+                if ($selectedMonth) {
+                    $runnerBookingsQuery->whereMonth('rental_start_date', $selectedMonth);
+                }
+                if ($selectedYear) {
+                    $runnerBookingsQuery->whereYear('rental_start_date', $selectedYear);
+                }
+                $runnerBookings = $runnerBookingsQuery->get();
+                foreach ($runnerBookings as $runnerBooking) {
+                    if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                        $runnerCommission += 2;
+                    }
+                    if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                        $runnerCommission += 2;
+                    }
+                }
+                
+                $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
                 $totalExpenses = $maintenanceCost + $totalStaffCommission;
                 $profit = $earnings - $totalExpenses - $leasingPrice;
 
@@ -491,7 +619,30 @@ class AdminFinanceController extends Controller
 
             $fuelCommission = Fuel::whereBetween('fuel_date', [$dateFrom, $dateTo])->whereNotNull('handled_by')->count() * 2;
 
-            $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission;
+            // Runner commission
+            $runnerCommission = 0;
+            $runnerBookings = Booking::whereBetween('rental_start_date', [$dateFrom, $dateTo])
+                ->whereNotNull('staff_served')
+                ->where(function($q) {
+                    $q->where(function($subQ) {
+                        $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('pickup_point');
+                    })->orWhere(function($subQ) {
+                        $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('return_point');
+                    });
+                })
+                ->get();
+            foreach ($runnerBookings as $runnerBooking) {
+                if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+                if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+            }
+
+            $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
             $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
 
             $profit = $totalEarnings - $totalExpenses;
@@ -559,7 +710,30 @@ class AdminFinanceController extends Controller
 
             $fuelCommission = Fuel::whereBetween('fuel_date', [$dayStart, $dayEnd])->whereNotNull('handled_by')->count() * 2;
 
-            $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission;
+            // Runner commission
+            $runnerCommission = 0;
+            $runnerBookings = Booking::whereBetween('rental_start_date', [$dayStart, $dayEnd])
+                ->whereNotNull('staff_served')
+                ->where(function($q) {
+                    $q->where(function($subQ) {
+                        $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('pickup_point');
+                    })->orWhere(function($subQ) {
+                        $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('return_point');
+                    });
+                })
+                ->get();
+            foreach ($runnerBookings as $runnerBooking) {
+                if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+                if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+            }
+
+            $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
             $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
 
             $profit = $totalEarnings - $totalExpenses;
@@ -625,7 +799,30 @@ class AdminFinanceController extends Controller
 
             $fuelCommission = Fuel::whereBetween('fuel_date', [$dayStart, $dayEnd])->whereNotNull('handled_by')->count() * 2;
 
-            $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission;
+            // Runner commission
+            $runnerCommission = 0;
+            $runnerBookings = Booking::whereBetween('rental_start_date', [$dayStart, $dayEnd])
+                ->whereNotNull('staff_served')
+                ->where(function($q) {
+                    $q->where(function($subQ) {
+                        $subQ->where('pickup_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('pickup_point');
+                    })->orWhere(function($subQ) {
+                        $subQ->where('return_point', '!=', 'HASTA HQ Office')
+                             ->whereNotNull('return_point');
+                    });
+                })
+                ->get();
+            foreach ($runnerBookings as $runnerBooking) {
+                if ($runnerBooking->pickup_point && $runnerBooking->pickup_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+                if ($runnerBooking->return_point && $runnerBooking->return_point !== 'HASTA HQ Office') {
+                    $runnerCommission += 2;
+                }
+            }
+
+            $totalStaffCommission = $staffBookingCommission + $maintenanceCommission + $fuelCommission + $runnerCommission;
             $totalExpenses = $maintenanceExpenses + $totalStaffCommission;
 
             $profit = $totalEarnings - $totalExpenses;

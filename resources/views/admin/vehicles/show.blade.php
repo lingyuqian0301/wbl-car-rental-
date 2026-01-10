@@ -258,111 +258,83 @@
                             @endif
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Vehicle Brand:</div>
-                                        <div>{{ $vehicle->vehicle_brand ?? 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Vehicle Model:</div>
-                                        <div>{{ $vehicle->vehicle_model ?? 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Plate Number:</div>
-                                        <div>{{ $vehicle->plate_number ?? 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Registration Date:</div>
-                                        <div>{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Available Status:</div>
-                                        <div>
-                                            <span class="badge {{ $vehicle->availability_status === 'available' ? 'bg-success' : ($vehicle->availability_status === 'rented' ? 'bg-warning text-dark' : ($vehicle->availability_status === 'maintenance' ? 'bg-info' : 'bg-secondary')) }}">
-                                                {{ ucfirst($vehicle->availability_status ?? 'Unknown') }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Created Date:</div>
-                                        <div>{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Manufacturing Year:</div>
-                                        <div>{{ $vehicle->manufacturing_year ?? 'N/A' }}</div>
-                                    </div>
+                            <dl class="mb-0">
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Vehicle Brand:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->vehicle_brand ?? 'N/A' }}</dd>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Color:</div>
-                                        <div>{{ $vehicle->color ?? 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Engine Capacity:</div>
-                                        <div>{{ $vehicle->engineCapacity ? number_format($vehicle->engineCapacity, 2) . 'L' : 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Vehicle Type:</div>
-                                        <div>{{ $vehicle->vehicleType ?? 'N/A' }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Rental Price:</div>
-                                        <div>RM {{ number_format($vehicle->rental_price ?? 0, 2) }}</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="fw-semibold text-muted small mb-1">Is Active:</div>
-                                        <div>
-                                            <span class="badge {{ ($vehicle->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                                {{ ($vehicle->isActive ?? false) ? 'Active' : 'Inactive' }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    @if($vehicle->car)
-                                        <div class="mt-4 pt-3 border-top">
-                                            <h6 class="fw-semibold mb-3">Car Details</h6>
-                                            <div class="mb-3">
-                                                <div class="fw-semibold text-muted small mb-1">Seating Capacity:</div>
-                                                <div>{{ $vehicle->car->seating_capacity ?? 'N/A' }}</div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <div class="fw-semibold text-muted small mb-1">Transmission:</div>
-                                                <div>{{ $vehicle->car->transmission ?? 'N/A' }}</div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <div class="fw-semibold text-muted small mb-1">Model:</div>
-                                                <div>{{ $vehicle->car->model ?? 'N/A' }}</div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <div class="fw-semibold text-muted small mb-1">Car Type:</div>
-                                                <div>{{ $vehicle->car->car_type ?? 'N/A' }}</div>
-                                            </div>
-                                        </div>
-                                    @elseif($vehicle->motorcycle)
-                                        <div class="mt-4 pt-3 border-top">
-                                            <h6 class="fw-semibold mb-3">Motorcycle Details</h6>
-                                            <div class="mb-3">
-                                                <div class="fw-semibold text-muted small mb-1">Motor Type:</div>
-                                                <div>{{ $vehicle->motorcycle->motor_type ?? 'N/A' }}</div>
-                                            </div>
-                                        </div>
-                                    @endif
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Vehicle Model:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->vehicle_model ?? 'N/A' }}</dd>
                                 </div>
-                            </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Plate Number:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->plate_number ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Registration Date:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Available Status:</dt>
+                                    <dd class="d-inline ms-2">
+                                        <span class="badge {{ $vehicle->availability_status === 'available' ? 'bg-success' : ($vehicle->availability_status === 'rented' ? 'bg-warning text-dark' : ($vehicle->availability_status === 'maintenance' ? 'bg-info' : 'bg-secondary')) }}">
+                                            {{ ucfirst($vehicle->availability_status ?? 'Unknown') }}
+                                        </span>
+                                    </dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Created Date:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Manufacturing Year:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->manufacturing_year ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Color:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->color ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Engine Capacity:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->engineCapacity ? number_format($vehicle->engineCapacity, 2) . 'L' : 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Vehicle Type:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->vehicleType ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Rental Price:</dt>
+                                    <dd class="d-inline ms-2">RM {{ number_format($vehicle->rental_price ?? 0, 2) }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Is Active:</dt>
+                                    <dd class="d-inline ms-2">
+                                        <span class="badge {{ ($vehicle->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
+                                            {{ ($vehicle->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </dd>
+                                </div>
+                                @if($vehicle->car)
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Seating Capacity:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->car->seating_capacity ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Transmission:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->car->transmission ?? 'N/A' }}</dd>
+                                </div>
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Car Type:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->car->car_type ?? 'N/A' }}</dd>
+                                </div>
+                                @elseif($vehicle->motorcycle)
+                                <div class="mb-2">
+                                    <dt class="d-inline fw-semibold">Motor Type:</dt>
+                                    <dd class="d-inline ms-2">{{ $vehicle->motorcycle->motor_type ?? 'N/A' }}</dd>
+                                </div>
+                                @endif
+                            </dl>
                         </div>
                     </div>
                 </div>
@@ -394,7 +366,7 @@
                                                             <i class="bi bi-file-earmark-pdf" style="font-size: 4rem; color: var(--hasta-red);"></i>
                                                         </div>
                                                     @else
-                                                        <img src="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
+                                                        <img src="{{ getFileUrl($insuranceDoc->fileURL, true) }}" 
                                                              alt="Insurance" 
                                                              class="img-fluid mb-2" 
                                                              style="max-height: 150px; border-radius: 6px;">
@@ -437,12 +409,12 @@
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
                                                                 @if($isPdf)
-                                                                    <iframe src="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
+                                                                    <iframe src="{{ getFileUrl($insuranceDoc->fileURL) }}" 
                                                                             style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
                                                                             onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
                                                                     </iframe>
                                                                 @else
-                                                                    <img src="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
+                                                                    <img src="{{ getFileUrl($insuranceDoc->fileURL, true) }}" 
                                                                          alt="Insurance Document" 
                                                                          class="img-fluid" 
                                                                          style="max-height: 70vh; width: auto; border-radius: 6px;"
@@ -450,7 +422,7 @@
                                                                 @endif
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ asset('storage/' . $insuranceDoc->fileURL) }}" 
+                                                                <a href="{{ getFileUrl($insuranceDoc->fileURL) }}" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab
@@ -492,7 +464,7 @@
                                                             <i class="bi bi-file-earmark-pdf" style="font-size: 4rem; color: var(--hasta-red);"></i>
                                                         </div>
                                                     @else
-                                                        <img src="{{ asset('storage/' . $grantDoc->fileURL) }}" 
+                                                        <img src="{{ getFileUrl($grantDoc->fileURL, true) }}" 
                                                              alt="Grant" 
                                                              class="img-fluid mb-2" 
                                                              style="max-height: 150px; border-radius: 6px;">
@@ -535,12 +507,12 @@
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
                                                                 @if($isPdf)
-                                                                    <iframe src="{{ asset('storage/' . $grantDoc->fileURL) }}" 
+                                                                    <iframe src="{{ getFileUrl($grantDoc->fileURL) }}" 
                                                                             style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
                                                                             onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
                                                                     </iframe>
                                                                 @else
-                                                                    <img src="{{ asset('storage/' . $grantDoc->fileURL) }}" 
+                                                                    <img src="{{ getFileUrl($grantDoc->fileURL, true) }}" 
                                                                          alt="Grant Document" 
                                                                          class="img-fluid" 
                                                                          style="max-height: 70vh; width: auto; border-radius: 6px;"
@@ -1143,55 +1115,88 @@
                 <div class="card-body">
                     <div class="row g-3" id="photoGallery">
                         @php
-                            $photos = $vehicle->documents->where('document_type', 'photo');
+                            // Use carImages from car_img table if available, otherwise fallback to VehicleDocument
+                            $photos = isset($carImages) && $carImages->count() > 0 ? $carImages : (isset($vehiclePhotos) ? $vehiclePhotos : $vehicle->documents->where('document_type', 'photo'));
+                            $isCarImg = isset($carImages) && $carImages->count() > 0;
                         @endphp
                         @forelse($photos as $photo)
                         <div class="col-md-4">
                             <div class="card">
                                     <div class="card-body text-center">
-                                        @if($photo->fileURL)
-                                            <img src="{{ asset('storage/' . $photo->fileURL) }}" 
+                                        @php
+                                            // Get image URL: if car_img table, use documentID (Google Drive URL), otherwise use fileURL
+                                            $imageUrl = $isCarImg ? ($photo->documentID ?? '') : ($photo->fileURL ?? '');
+                                            $photoId = $isCarImg ? ($photo->imgID ?? $photo->documentID ?? '') : ($photo->documentID ?? '');
+                                        @endphp
+                                        @if($imageUrl)
+                                            <img src="{{ getFileUrl($imageUrl, true) }}" 
                                                  alt="Vehicle Photo" 
                                                  class="img-fluid mb-2" 
                                                  style="max-height: 250px; width: 100%; object-fit: cover; border-radius: 6px;">
-                                            <div class="upload-date">
-                                                <i class="bi bi-calendar3"></i> Uploaded: {{ $photo->upload_date ? \Carbon\Carbon::parse($photo->upload_date)->format('d M Y') : 'N/A' }}
-                                            </div>
+                                            @if($isCarImg)
+                                                <div class="mb-2">
+                                                    <span class="badge bg-primary">{{ ucfirst($photo->imageType ?? 'other') }}</span>
+                                                    @if($photo->img_description)
+                                                        <p class="small text-muted mt-1 mb-0">{{ $photo->img_description }}</p>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                <div class="upload-date">
+                                                    <i class="bi bi-calendar3"></i> Uploaded: {{ $photo->upload_date ? \Carbon\Carbon::parse($photo->upload_date)->format('d M Y') : 'N/A' }}
+                                                </div>
+                                            @endif
                                             <div class="d-flex gap-2 justify-content-center mt-2">
                                                 <button type="button" 
                                                         class="btn btn-sm" 
                                                         style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                         data-bs-toggle="modal" 
-                                                        data-bs-target="#viewImageModal{{ $photo->documentID }}">
+                                                        data-bs-target="#viewImageModal{{ $photoId }}">
                                                     <i class="bi bi-eye"></i> View
                                                 </button>
-                                                <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $photo->documentID) }}" 
-                                                      onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                        <i class="bi bi-trash"></i> Delete
-                                                    </button>
-                                                </form>
+                                                @if($isCarImg)
+                                                    @php
+                                                        $photoImgId = is_object($photo) ? $photo->imgID : ($photo['imgID'] ?? $photoId);
+                                                    @endphp
+                                                    <form method="POST" action="{{ route('admin.vehicles.photos.destroy', $photoImgId) }}" 
+                                                          onsubmit="return confirm('Are you sure?');" class="d-inline">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-trash"></i> Delete
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $photo->documentID) }}" 
+                                                          onsubmit="return confirm('Are you sure?');" class="d-inline">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-trash"></i> Delete
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
                                             
                                             <!-- View Image Modal -->
-                            <div class="modal fade" id="viewImageModal{{ $photo->documentID }}" tabindex="-1">
+                            <div class="modal fade" id="viewImageModal{{ $photoId }}" tabindex="-1">
                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Vehicle Photo</h5>
+                                            <h5 class="modal-title">Vehicle Photo{{ $isCarImg && $photo->imageType ? ' - ' . ucfirst($photo->imageType) : '' }}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body text-center">
-                                            <img src="{{ asset('storage/' . $photo->fileURL) }}" 
+                                            <img src="{{ getFileUrl($imageUrl, true) }}" 
                                                  alt="Vehicle Photo" 
                                                  class="img-fluid" 
                                                  style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                  onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                            @if($isCarImg && $photo->img_description)
+                                                <p class="text-muted mt-3">{{ $photo->img_description }}</p>
+                                            @endif
                                         </div>
                                         <div class="modal-footer">
-                                            <a href="{{ asset('storage/' . $photo->fileURL) }}" 
+                                            <a href="{{ getFileUrl($imageUrl) }}" 
                                                target="_blank" 
                                                class="btn btn-primary">
                                                 <i class="bi bi-download"></i> Open in New Tab

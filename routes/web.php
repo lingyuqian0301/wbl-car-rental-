@@ -42,12 +42,14 @@ use App\Http\Controllers\AdminTopbarCalendarController;
 use App\Http\Controllers\AdminReservationController;
 use App\Http\Controllers\AdminCalendarController;
 use App\Http\Controllers\AdminCancellationController;
+use App\Http\Controllers\AdminRunnerTaskController;
 use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AdminCustomerController;
 use App\Http\Controllers\AdminInvoiceController;
 use App\Http\Controllers\AdminRentalReportController;
 use App\Http\Controllers\AdminChartsController;
 use App\Http\Controllers\AdminFinanceController;
+use App\Http\Controllers\GoogleDriveAuthController;
 use App\Http\Controllers\AdminLeasingController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\AdminSettingsController;
@@ -246,6 +248,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{payment}/approve', [AdminPaymentController::class, 'approve'])->name('approve');
             Route::post('/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('reject');
             Route::put('/{payment}/update-verify', [AdminPaymentController::class, 'updateVerify'])->name('update-verify');
+            Route::put('/{id}/update-verified-by', [AdminPaymentController::class, 'updateVerifiedBy'])->name('update-verified-by');
         });
 
         Route::prefix('admin/deposits')->name('admin.deposits.')->group(function () {
@@ -260,6 +263,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/mark-all-as-read', [AdminNotificationController::class, 'markAllAsRead'])->name('mark-all-as-read');
             Route::get('/unread-count', [AdminNotificationController::class, 'getUnreadCount'])->name('unread-count');
             Route::get('/dropdown-list', [AdminNotificationController::class, 'getDropdownList'])->name('dropdown-list');
+        });
+
+        // Google Drive OAuth routes
+        Route::prefix('admin/google-drive')->name('admin.google-drive.')->group(function () {
+            Route::get('/auth', [GoogleDriveAuthController::class, 'auth'])->name('auth');
+            Route::get('/callback', [GoogleDriveAuthController::class, 'callback'])->name('callback');
         });
 
         Route::prefix('admin/vehicles')->name('admin.vehicles.')->group(function () {
@@ -300,6 +309,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{vehicle}/documents', [AdminVehicleController::class, 'storeDocument'])->name('documents.store');
             Route::delete('/documents/{document}', [AdminVehicleController::class, 'destroyDocument'])->name('documents.destroy');
             Route::post('/{vehicle}/photos', [AdminVehicleController::class, 'storePhoto'])->name('photos.store');
+            Route::delete('/photos/{imgId}', [AdminVehicleController::class, 'destroyPhoto'])->name('photos.destroy');
             Route::post('/{vehicle}/owner', [AdminVehicleController::class, 'updateOwner'])->name('owner.update');
             Route::post('/{vehicle}/owner/upload-license', [AdminVehicleController::class, 'uploadOwnerLicense'])->name('owner.upload-license');
             Route::post('/{vehicle}/owner/upload-ic', [AdminVehicleController::class, 'uploadOwnerIc'])->name('owner.upload-ic');
@@ -321,8 +331,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
             Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
             Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews');
+            Route::get('/reviews/get-by-booking', [AdminReviewController::class, 'getByBookingId'])->name('reviews.get-by-booking');
             Route::post('/cancellation/{booking}/update', [AdminCancellationController::class, 'updateCancellation'])->name('cancellation.update');
             Route::post('/cancellation/{booking}/send-email', [AdminCancellationController::class, 'sendEmail'])->name('cancellation.send-email');
+        });
+
+        Route::prefix('admin/runner')->name('admin.runner.')->group(function () {
+            Route::get('/tasks', [AdminRunnerTaskController::class, 'index'])->name('tasks');
+            Route::post('/tasks/{booking}/update-runner', [AdminRunnerTaskController::class, 'updateRunner'])->name('tasks.update-runner');
         });
 
         Route::prefix('admin/manage')->name('admin.manage.')->group(function () {

@@ -30,7 +30,6 @@ class AdminPaymentController extends Controller
         $filterPaymentStatus = $request->get('filter_payment_status');
         $filterPaymentIsComplete = $request->get('filter_payment_is_complete');
         $filterPaymentIsVerify = $request->get('payment_isVerify');
-        $filterVerifyBy = $request->get('filter_verify_by');
         
         $query = Payment::with(['booking.customer.user', 'booking.vehicle']);
         
@@ -64,11 +63,6 @@ class AdminPaymentController extends Controller
             $query->where('payment_isVerify', (bool)$filterPaymentIsVerify);
         }
         
-        // Filter by verify_by
-        if ($filterVerifyBy) {
-            $query->where('verify_by', $filterVerifyBy);
-        }
-        
         // No sort function but usually display by desc payment time and date (default)
         $payments = $query->orderBy('payment_date', 'desc')
             ->orderBy('latest_Update_Date_Time', 'desc')
@@ -87,11 +81,16 @@ class AdminPaymentController extends Controller
                   });
             })->count();
         $totalToday = Payment::whereDate('payment_date', $today)->count();
-        
-        // Get users who can verify (staff/admins) for verify_by filter
-        $verifyByUsers = \App\Models\User::where(function($query) {
-            $query->whereHas('staff')->orWhereHas('admin');
-        })->orderBy('name')->get();
+
+        // Get all active staffit and admins for verified by dropdown (exclude runner)
+        $staffUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff', function($q) {
+                $q->where('isActive', true)
+                  ->whereDoesntHave('runner'); // Exclude runners
+            })->orWhereHas('admin', function($q) {
+                $q->where('isActive', true);
+            });
+        })->where('isActive', true)->with(['staff.runner', 'staff.staffIt', 'admin'])->orderBy('name')->get();
 
         return view('admin.payments.index', [
             'payments' => $payments,
@@ -100,14 +99,13 @@ class AdminPaymentController extends Controller
             'filterPaymentStatus' => $filterPaymentStatus,
             'filterPaymentIsComplete' => $filterPaymentIsComplete,
             'filterPaymentIsVerify' => $filterPaymentIsVerify,
-            'filterVerifyBy' => $filterVerifyBy,
-            'verifyByUsers' => $verifyByUsers,
             'totalPayments' => $totalPayments,
             'totalPending' => $totalPending,
             'totalVerified' => $totalVerified,
             'totalFullPayment' => $totalFullPayment,
             'totalToday' => $totalToday,
             'today' => $today,
+            'staffUsers' => $staffUsers,
         ]);
     }
 
@@ -144,6 +142,27 @@ class AdminPaymentController extends Controller
 
         if ($booking) {
             $booking->update(['booking_status' => 'Confirmed']);
+            
+            // Check if full payment is made - if so, mark upcoming booking notifications as read
+            $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+            $totalPaid = $booking->payments()
+                ->where('payment_status', 'Verified')
+                ->sum('total_amount');
+            
+            if ($totalPaid >= $totalRequired) {
+                // Mark upcoming booking payment incomplete notifications as read
+                try {
+                    \App\Models\AdminNotification::where('booking_id', $booking->bookingID)
+                        ->where('type', 'upcoming_booking_payment_incomplete')
+                        ->where('is_read', false)
+                        ->update([
+                            'is_read' => true,
+                            'read_at' => now(),
+                        ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to mark upcoming booking notifications as read: ' . $e->getMessage());
+                }
+            }
         }
 
         // =========================================================
@@ -270,18 +289,11 @@ class AdminPaymentController extends Controller
         $booking = $payment->booking;
         
         $isVerify = $request->input('payment_isVerify') == '1' || $request->input('payment_isVerify') === true;
-        $verifyBy = $request->input('verify_by');
         
         $updateData = [
             'payment_isVerify' => $isVerify,
             'latest_Update_Date_Time' => \Carbon\Carbon::now(),
         ];
-        
-        if ($isVerify && $verifyBy) {
-            $updateData['verify_by'] = $verifyBy;
-        } elseif ($isVerify && Auth::check()) {
-            $updateData['verify_by'] = Auth::user()->userID;
-        }
         
         if ($isVerify) {
             $updateData['payment_status'] = 'Verified';
@@ -297,6 +309,27 @@ class AdminPaymentController extends Controller
 
             if ($booking) {
                 $booking->update(['booking_status' => 'Confirmed']);
+                
+                // Check if full payment is made - if so, mark upcoming booking notifications as read
+                $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                $totalPaid = $booking->payments()
+                    ->where('payment_status', 'Verified')
+                    ->sum('total_amount');
+                
+                if ($totalPaid >= $totalRequired) {
+                    // Mark upcoming booking payment incomplete notifications as read
+                    try {
+                        \App\Models\AdminNotification::where('booking_id', $booking->bookingID)
+                            ->where('type', 'upcoming_booking_payment_incomplete')
+                            ->where('is_read', false)
+                            ->update([
+                                'is_read' => true,
+                                'read_at' => now(),
+                            ]);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::warning('Failed to mark upcoming booking notifications as read: ' . $e->getMessage());
+                    }
+                }
             }
 
             // =========================================================
@@ -420,5 +453,24 @@ class AdminPaymentController extends Controller
 
         $pdf = Pdf::loadView('pdf.invoice', compact('booking', 'invoiceData', 'rentalAmount', 'depositAmount', 'totalPaid'));
         return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');
+    }
+
+    /**
+     * Update verified by field for a payment
+     */
+    public function updateVerifiedBy(Request $request, $id): RedirectResponse
+    {
+        $payment = Payment::where('paymentID', $id)->firstOrFail();
+        
+        $validated = $request->validate([
+            'verified_by' => 'nullable|exists:user,userID',
+        ]);
+        
+        $payment->update([
+            'verified_by' => $validated['verified_by'] ?? null,
+            'latest_Update_Date_Time' => now(),
+        ]);
+        
+        return redirect()->route('admin.payments.index')->with('success', 'Verified by updated successfully.');
     }
 }

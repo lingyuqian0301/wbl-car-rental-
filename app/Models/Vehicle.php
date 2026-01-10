@@ -58,6 +58,23 @@ class Vehicle extends Model
     }
 
     /**
+     * Get car images for this vehicle.
+     * Note: Only works if vehicleID column exists in Car_Img table (after migration)
+     */
+    public function carImages(): HasMany
+    {
+        // Only define relationship if vehicleID column exists
+        if (\Illuminate\Support\Facades\Schema::hasColumn('Car_Img', 'vehicleID') || 
+            \Illuminate\Support\Facades\Schema::hasColumn('car_img', 'vehicleID')) {
+            $tableName = \Illuminate\Support\Facades\Schema::hasTable('Car_Img') ? 'Car_Img' : 'car_img';
+            return $this->hasMany(\App\Models\CarImg::class, 'vehicleID', 'vehicleID');
+        }
+        
+        // Return empty relationship if column doesn't exist
+        return $this->hasMany(\App\Models\CarImg::class, 'vehicleID', 'vehicleID')->whereRaw('1 = 0');
+    }
+
+    /**
      * Get the car details for this vehicle (if it's a car).
      */
     public function car()

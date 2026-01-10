@@ -59,6 +59,42 @@
                                                 </div>
                                             </div>
                                         @endif
+                                    @elseif($notification->type === 'new_payment')
+                                        <i class="bi bi-cash-coin text-success"></i>
+                                        <strong>New Payment</strong>
+                                        @if($notification->booking)
+                                            <div class="mt-1 small">
+                                                <div><strong>Booking #{{ $notification->booking->bookingID ?? 'N/A' }}</strong></div>
+                                                <div class="text-muted">{{ $notification->message }}</div>
+                                            </div>
+                                        @endif
+                                    @elseif($notification->type === 'booking_cancelled')
+                                        <i class="bi bi-x-circle text-danger"></i>
+                                        <strong>Booking Cancelled</strong>
+                                        @if($notification->booking)
+                                            <div class="mt-1 small">
+                                                <div><strong>Booking #{{ $notification->booking->bookingID ?? 'N/A' }}</strong></div>
+                                                <div class="text-muted">{{ $notification->message }}</div>
+                                            </div>
+                                        @endif
+                                    @elseif($notification->type === 'deposit_return_request')
+                                        <i class="bi bi-arrow-counterclockwise text-warning"></i>
+                                        <strong>Deposit Return Request</strong>
+                                        @if($notification->booking)
+                                            <div class="mt-1 small">
+                                                <div><strong>Booking #{{ $notification->booking->bookingID ?? 'N/A' }}</strong></div>
+                                                <div class="text-muted">{{ $notification->message }}</div>
+                                            </div>
+                                        @endif
+                                    @elseif($notification->type === 'upcoming_booking_payment_incomplete')
+                                        <i class="bi bi-exclamation-triangle text-warning"></i>
+                                        <strong>Upcoming Booking - Payment Incomplete</strong>
+                                        @if($notification->booking)
+                                            <div class="mt-1 small">
+                                                <div><strong>Booking #{{ $notification->booking->bookingID ?? 'N/A' }}</strong></div>
+                                                <div class="text-muted">{{ $notification->message }}</div>
+                                            </div>
+                                        @endif
                                     @elseif($notification->type === 'new_customer')
                                         <i class="bi bi-person-plus text-info"></i>
                                         <strong>New Customer Registered</strong>

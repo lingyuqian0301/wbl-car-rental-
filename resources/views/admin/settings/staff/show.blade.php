@@ -63,170 +63,259 @@
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ $activeTab === 'staff-detail' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#staff-detail" type="button" role="tab">
+            <button class="nav-link {{ ($activeTab ?? 'staff-detail') === 'staff-detail' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#staff-detail" type="button" role="tab">
                 <i class="bi bi-person-circle"></i> Staff Detail
             </button>
         </li>
-        @if($staff->staffIt)
-        <li class="nav-item" role="presentation">
-            <a href="{{ route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'tasks-handled']) }}" class="nav-link {{ $activeTab === 'tasks-handled' ? 'active' : '' }}">
-                <i class="bi bi-list-task"></i> Tasks Handled
-            </a>
-        </li>
+        @if($staff->runner)
+            <!-- Runner Task List Tab -->
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {{ ($activeTab ?? '') === 'task-list' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#task-list" type="button" role="tab">
+                    <i class="bi bi-truck"></i> Task List
+                </button>
+            </li>
+        @else
+            <!-- StaffIT Tasks Handled Tab -->
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {{ ($activeTab ?? '') === 'tasks-handled' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#tasks-handled" type="button" role="tab">
+                    <i class="bi bi-list-task"></i> Tasks Handled
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {{ ($activeTab ?? '') === 'commission' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#commission" type="button" role="tab">
+                    <i class="bi bi-cash-coin"></i> Commission
+                </button>
+            </li>
         @endif
-        <li class="nav-item" role="presentation">
-            <a href="{{ route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'login-logs']) }}" class="nav-link {{ $activeTab === 'login-logs' ? 'active' : '' }}">
-                <i class="bi bi-clock-history"></i> Login Logs
-            </a>
-        </li>
     </ul>
 
     <div class="tab-content">
+        <!-- Runner Task List Tab -->
+        @if($staff->runner)
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'task-list' ? 'show active' : '' }}" id="task-list" role="tabpanel">
+            <!-- Header Box -->
+            <x-admin-page-header 
+                title="Runner Task List" 
+                description="Tasks assigned to {{ $staff->user->name ?? 'Runner' }}"
+                :stats="[
+                    ['label' => 'Total Tasks', 'value' => $runnerTaskCount ?? 0, 'icon' => 'bi-list-check'],
+                    ['label' => 'Total Commission', 'value' => 'RM ' . number_format($runnerTotalCommission ?? 0, 2), 'icon' => 'bi-cash-coin']
+                ]"
+            />
+
+            <div class="card mt-3">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-truck"></i> Task List</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <form method="GET" action="{{ route('admin.settings.staff.show', ['staff' => $staff->staffID]) }}" class="row g-3 mb-3">
+                        <input type="hidden" name="tab" value="task-list">
+                        <div class="col-md-3">
+                            <label class="form-label small">Month</label>
+                            <select name="month" class="form-select form-select-sm">
+                                @for($i = 1; $i <= 12; $i++)
+                                    <option value="{{ $i }}" {{ ($filterMonth ?? date('m')) == $i ? 'selected' : '' }}>{{ date('F', mktime(0, 0, 0, $i, 1)) }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Year</label>
+                            <input type="number" name="year" value="{{ $filterYear ?? date('Y') }}" class="form-control form-control-sm" min="2020" max="{{ date('Y') + 1 }}">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-sm btn-danger">Filter</button>
+                        </div>
+                    </form>
+
+                    <!-- Tasks Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Booking ID</th>
+                                    <th>Task Type</th>
+                                    <th>Date & Time</th>
+                                    <th>Location</th>
+                                    <th>Commission</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($runnerTasks ?? [] as $task)
+                                    <tr>
+                                        <td>{{ $task['num'] }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.bookings.reservations.show', ['booking' => $task['booking_id']]) }}" class="text-decoration-none fw-bold text-primary">
+                                                #{{ $task['booking_id'] }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $task['task_type'] === 'Pickup' ? 'bg-success' : 'bg-info' }}">
+                                                {{ $task['task_type'] }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {{ \Carbon\Carbon::parse($task['task_date'])->format('d M Y') }}<br>
+                                            <small class="text-muted">{{ \Carbon\Carbon::parse($task['task_date'])->format('H:i') }}</small>
+                                        </td>
+                                        <td>{{ $task['location'] ?? 'N/A' }}</td>
+                                        <td class="fw-semibold">RM {{ number_format($task['commission_amount'], 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">No tasks found for the selected period.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                            @if(($runnerTasks ?? collect())->count() > 0)
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="5" class="fw-semibold text-end">Total Tasks: {{ $runnerTaskCount ?? 0 }}</td>
+                                        <td class="fw-bold text-danger">RM {{ number_format($runnerTotalCommission ?? 0, 2) }}</td>
+                                    </tr>
+                                </tfoot>
+                            @endif
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Staff Detail Tab -->
-        <div class="tab-pane fade {{ $activeTab === 'staff-detail' ? 'show active' : '' }}" id="staff-detail" role="tabpanel">
+        <div class="tab-pane fade {{ ($activeTab ?? 'staff-detail') === 'staff-detail' ? 'show active' : '' }}" id="staff-detail" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-person-circle"></i> Staff Info</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <dl class="row mb-0">
-                                <dt class="col-auto">Staff ID:</dt>
-                                <dd class="col">{{ $staff->staffID ?? 'N/A' }}</dd>
-
-                                <dt class="col-auto">Username:</dt>
-                                <dd class="col">{{ $staff->user->username ?? 'N/A' }}</dd>
-
-                                <dt class="col-auto">Email:</dt>
-                                <dd class="col">{{ $staff->user->email ?? 'N/A' }}</dd>
-
-                                <dt class="col-auto">Phone:</dt>
-                                <dd class="col">{{ $staff->user->phone ?? 'N/A' }}</dd>
-
-                                <dt class="col-auto">Name:</dt>
-                                <dd class="col">{{ $staff->user->name ?? 'N/A' }}</dd>
-                            </dl>
+                    <dl class="mb-0">
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Staff ID:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->staffID ?? 'N/A' }}</dd>
                         </div>
-                        <div class="col-md-6">
-                            <dl class="row mb-0">
-                                <dt class="col-auto">Last Login:</dt>
-                                <dd class="col">{{ $staff->user->lastLogin ? \Carbon\Carbon::parse($staff->user->lastLogin)->format('d M Y H:i') : 'N/A' }}</dd>
 
-                                <dt class="col-auto">Date Registered:</dt>
-                                <dd class="col">{{ $staff->user->dateRegistered ? \Carbon\Carbon::parse($staff->user->dateRegistered)->format('d M Y') : 'N/A' }}</dd>
-
-                                <dt class="col-auto">Date of Birth:</dt>
-                                <dd class="col">{{ $staff->user->DOB ? \Carbon\Carbon::parse($staff->user->DOB)->format('d M Y') : 'N/A' }}</dd>
-
-                                <dt class="col-auto">Age:</dt>
-                                <dd class="col">
-                                    @if($staff->user->DOB)
-                                        {{ \Carbon\Carbon::parse($staff->user->DOB)->age }} years
-                                    @else
-                                        N/A
-                                    @endif
-                                </dd>
-
-                                <dt class="col-auto">Status:</dt>
-                                <dd class="col">
-                                    <span class="badge {{ ($staff->user->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                        {{ ($staff->user->isActive ?? false) ? 'Active' : 'Inactive' }}
-                                    </span>
-                                </dd>
-
-                                <dt class="col-auto">IC No:</dt>
-                                <dd class="col">{{ $staff->ic_no ?? 'N/A' }}</dd>
-
-                                <dt class="col-auto">Staff Type:</dt>
-                                <dd class="col">
-                                    <span class="badge bg-info">
-                                        {{ $staff->staffIt ? 'Staff IT' : ($staff->runner ? 'Runner' : 'N/A') }}
-                                    </span>
-                                </dd>
-                            </dl>
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Username:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->user->username ?? 'N/A' }}</dd>
                         </div>
-                    </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Email:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->user->email ?? 'N/A' }}</dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Phone:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->user->phone ?? 'N/A' }}</dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Name:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->user->name ?? 'N/A' }}</dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Last Login:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->user->lastLogin ? \Carbon\Carbon::parse($staff->user->lastLogin)->format('d M Y H:i') : 'N/A' }}</dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Date Registered:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->user->dateRegistered ? \Carbon\Carbon::parse($staff->user->dateRegistered)->format('d M Y') : 'N/A' }}</dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Date of Birth:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->user->DOB ? \Carbon\Carbon::parse($staff->user->DOB)->format('d M Y') : 'N/A' }}</dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Age:</dt>
+                            <dd class="d-inline ms-2">
+                                @if($staff->user->DOB)
+                                    {{ \Carbon\Carbon::parse($staff->user->DOB)->age }} years
+                                @else
+                                    N/A
+                                @endif
+                            </dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Status:</dt>
+                            <dd class="d-inline ms-2">
+                                <span class="badge {{ ($staff->user->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ ($staff->user->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                </span>
+                            </dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">IC No:</dt>
+                            <dd class="d-inline ms-2">{{ $staff->ic_no ?? 'N/A' }}</dd>
+                        </div>
+
+                        <div class="mb-2">
+                            <dt class="d-inline fw-semibold">Staff Type:</dt>
+                            <dd class="d-inline ms-2">
+                                <span class="badge bg-info">
+                                    {{ $staff->staffIt ? 'Staff IT' : ($staff->runner ? 'Runner' : 'N/A') }}
+                                </span>
+                            </dd>
+                        </div>
+                    </dl>
                 </div>
             </div>
         </div>
 
-        <!-- Tasks Handled Tab (Only for Staff IT) -->
+        <!-- Tasks Handled Tab (StaffIT Only) -->
         @if($staff->staffIt)
-        <div class="tab-pane fade {{ $activeTab === 'tasks-handled' ? 'show active' : '' }}" id="tasks-handled" role="tabpanel">
-            <x-admin-page-header 
-                title="{{ $staff->user->name ?? 'Staff' }}" 
-                description="Tasks handled by {{ $staff->user->username ?? 'N/A' }}"
-                :stats="[
-                    ['label' => 'No of Tasks', 'value' => $taskCount, 'icon' => 'bi-list-task'],
-                    ['label' => 'Total Commission', 'value' => 'RM ' . number_format($totalCommission, 2), 'icon' => 'bi-currency-dollar']
-                ]"
-            >
-                <x-slot name="actions">
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-light text-danger dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="bi bi-download me-1"></i> Export
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ route('admin.settings.staff.export-excel', ['staff' => $staff->staffID, 'month' => $filterMonth, 'year' => $filterYear, 'type' => $filterTaskType]) }}"><i class="bi bi-file-earmark-excel me-2"></i> Excel</a></li>
-                            <li><a class="dropdown-item" href="{{ route('admin.settings.staff.export-pdf', ['staff' => $staff->staffID, 'month' => $filterMonth, 'year' => $filterYear, 'type' => $filterTaskType]) }}"><i class="bi bi-file-earmark-pdf me-2"></i> PDF</a></li>
-                        </ul>
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'tasks-handled' ? 'show active' : '' }}" id="tasks-handled" role="tabpanel">
+            <div class="card">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-task"></i> Tasks Handled</h5>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('admin.settings.staff.export-excel', $staff->staffID) }}?month={{ $filterMonth ?? date('m') }}&year={{ $filterYear ?? date('Y') }}&type={{ $filterTaskType ?? '' }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-file-earmark-excel"></i> Export Excel
+                        </a>
+                        <a href="{{ route('admin.settings.staff.export-pdf', $staff->staffID) }}?month={{ $filterMonth ?? date('m') }}&year={{ $filterYear ?? date('Y') }}&type={{ $filterTaskType ?? '' }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                        </a>
                     </div>
-                    <button type="button" class="btn btn-light text-danger" data-bs-toggle="modal" data-bs-target="#addTaskModal">
-                        <i class="bi bi-plus-circle me-1"></i> Add Task
-                    </button>
-                </x-slot>
-            </x-admin-page-header>
-
-            <!-- Filters -->
-            <div class="card mb-3">
+                </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'tasks-handled']) }}" class="row g-3">
+                    <!-- Filters -->
+                    <form method="GET" action="{{ route('admin.settings.staff.show', ['staff' => $staff->staffID]) }}" class="row g-3 mb-3">
+                        <input type="hidden" name="tab" value="tasks-handled">
                         <div class="col-md-3">
-                            <label class="form-label small fw-semibold">Month</label>
-                            <select name="filter_month" class="form-select form-select-sm">
+                            <label class="form-label small">Month</label>
+                            <select name="month" class="form-select form-select-sm">
                                 @for($i = 1; $i <= 12; $i++)
-                                    <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}" {{ $filterMonth == str_pad($i, 2, '0', STR_PAD_LEFT) ? 'selected' : '' }}>
-                                        {{ date('F', mktime(0, 0, 0, $i, 1)) }}
-                                    </option>
+                                    <option value="{{ $i }}" {{ ($filterMonth ?? date('m')) == $i ? 'selected' : '' }}>{{ date('F', mktime(0, 0, 0, $i, 1)) }}</option>
                                 @endfor
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small fw-semibold">Year</label>
-                            <select name="filter_year" class="form-select form-select-sm">
-                                @for($i = date('Y'); $i >= date('Y') - 5; $i--)
-                                    <option value="{{ $i }}" {{ $filterYear == $i ? 'selected' : '' }}>{{ $i }}</option>
-                                @endfor
-                            </select>
+                            <label class="form-label small">Year</label>
+                            <input type="number" name="year" value="{{ $filterYear ?? date('Y') }}" class="form-control form-control-sm" min="2020" max="{{ date('Y') + 1 }}">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small fw-semibold">Task Type</label>
-                            <select name="filter_task_type" class="form-select form-select-sm">
+                            <label class="form-label small">Task Type</label>
+                            <select name="type" class="form-select form-select-sm">
                                 <option value="">All</option>
-                                <option value="maintenance" {{ $filterTaskType === 'maintenance' ? 'selected' : '' }}>Maintenance</option>
-                                <option value="fuel" {{ $filterTaskType === 'fuel' ? 'selected' : '' }}>Fuel</option>
-                                <option value="reception" {{ $filterTaskType === 'reception' ? 'selected' : '' }}>Reception</option>
-                                <option value="other" {{ $filterTaskType === 'other' ? 'selected' : '' }}>Other</option>
+                                <option value="maintenance" {{ ($filterTaskType ?? '') === 'maintenance' ? 'selected' : '' }}>Maintenance</option>
+                                <option value="fuel" {{ ($filterTaskType ?? '') === 'fuel' ? 'selected' : '' }}>Fuel</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-danger btn-sm">
-                                <i class="bi bi-funnel"></i> Apply Filters
-                            </button>
+                            <button type="submit" class="btn btn-sm btn-danger">Filter</button>
                         </div>
                     </form>
-                </div>
-            </div>
 
-            <!-- Tasks Table -->
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-list-task"></i> Tasks</h5>
-                </div>
-                <div class="card-body p-0">
+                    <!-- Tasks Table -->
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
                                     <th>Task Date</th>
@@ -236,29 +325,26 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($tasks as $task)
+                                @forelse($tasks ?? [] as $task)
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($task['task_date'])->format('d M Y') }}</td>
                                         <td><span class="badge bg-info">{{ $task['task_type'] }}</span></td>
                                         <td>{{ $task['description'] }}</td>
-                                        <td><strong>RM {{ number_format($task['commission_amount'], 2) }}</strong></td>
+                                        <td class="fw-semibold">RM {{ number_format($task['commission_amount'], 2) }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center py-4 text-muted">
-                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                            No tasks found for the selected period.
-                                        </td>
+                                        <td colspan="4" class="text-center text-muted py-4">No tasks found for the selected period.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
-                            @if($tasks->count() > 0)
-                            <tfoot class="table-light">
-                                <tr>
-                                    <td colspan="3" class="text-end fw-bold">Total Commission:</td>
-                                    <td class="fw-bold">RM {{ number_format($totalCommission, 2) }}</td>
-                                </tr>
-                            </tfoot>
+                            @if(($tasks ?? collect())->count() > 0)
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="3" class="fw-semibold text-end">Total Commission:</td>
+                                        <td class="fw-bold text-danger">RM {{ number_format($totalCommission ?? 0, 2) }}</td>
+                                    </tr>
+                                </tfoot>
                             @endif
                         </table>
                     </div>
@@ -267,106 +353,77 @@
         </div>
         @endif
 
-        <!-- Login Logs Tab -->
-        <div class="tab-pane fade {{ $activeTab === 'login-logs' ? 'show active' : '' }}" id="login-logs" role="tabpanel">
-            <x-admin-page-header 
-                title="{{ $staff->user->name ?? 'Staff' }}" 
-                description="Login activity logs"
-                :stats="[
-                    ['label' => 'Total Online Time', 'value' => gmdate('H:i:s', $totalOnlineTime), 'icon' => 'bi-clock']
-                ]"
-            />
-
+        <!-- Commission Tab (StaffIT Only) -->
+        @if($staff->staffIt)
+        <div class="tab-pane fade {{ ($activeTab ?? '') === 'commission' ? 'show active' : '' }}" id="commission" role="tabpanel">
             <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Login Logs</h5>
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Commission Summary</h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted mb-2">Total Tasks</h6>
+                                    <h3 class="fw-bold mb-0">{{ $taskCount ?? 0 }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted mb-2">Total Commission</h6>
+                                    <h3 class="fw-bold text-danger mb-0">RM {{ number_format($totalCommission ?? 0, 2) }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Login Time</th>
-                                    <th>Logout Time</th>
-                                    <th>Duration</th>
+                                    <th>Month</th>
+                                    <th>Year</th>
+                                    <th>Task Count</th>
+                                    <th>Total Commission</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($loginLogs as $log)
+                                @php
+                                    $monthlyStats = ($tasks ?? collect())->groupBy(function($task) {
+                                        return \Carbon\Carbon::parse($task['task_date'])->format('Y-m');
+                                    })->map(function($monthTasks, $yearMonth) {
+                                        return [
+                                            'month' => \Carbon\Carbon::parse($yearMonth . '-01')->format('F'),
+                                            'year' => \Carbon\Carbon::parse($yearMonth . '-01')->format('Y'),
+                                            'count' => $monthTasks->count(),
+                                            'total' => $monthTasks->sum('commission_amount'),
+                                        ];
+                                    });
+                                @endphp
+                                @forelse($monthlyStats as $stat)
                                     <tr>
-                                        <td>{{ $log['login_time'] ?? 'N/A' }}</td>
-                                        <td>{{ $log['logout_time'] ?? 'N/A' }}</td>
-                                        <td>{{ $log['duration'] ?? 'N/A' }}</td>
+                                        <td>{{ $stat['month'] }}</td>
+                                        <td>{{ $stat['year'] }}</td>
+                                        <td>{{ $stat['count'] }}</td>
+                                        <td class="fw-semibold">RM {{ number_format($stat['total'], 2) }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center py-4 text-muted">
-                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                            No login logs found.
-                                        </td>
+                                        <td colspan="4" class="text-center text-muted py-4">No commission data available.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
-                            @if($loginLogs->count() > 0)
-                            <tfoot class="table-light">
-                                <tr>
-                                    <td colspan="2" class="text-end fw-bold">Total Online Time:</td>
-                                    <td class="fw-bold">{{ gmdate('H:i:s', $totalOnlineTime) }}</td>
-                                </tr>
-                            </tfoot>
-                            @endif
                         </table>
                     </div>
                 </div>
             </div>
         </div>
+        @endif
     </div>
 </div>
-
-<!-- Add Task Modal (for Staff IT) -->
-@if($staff->staffIt)
-<div class="modal fade" id="addTaskModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Task</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="{{ route('admin.settings.staff.task.store', $staff->staffID) }}">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Task Date <span class="text-danger">*</span></label>
-                        <input type="date" name="task_date" class="form-control" value="{{ date('Y-m-d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Task Type <span class="text-danger">*</span></label>
-                        <select name="task_type" class="form-select" required>
-                            <option value="">Select Type</option>
-                            <option value="maintenance">Maintenance</option>
-                            <option value="fuel">Fuel</option>
-                            <option value="reception">Reception</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Commission Amount (RM) <span class="text-danger">*</span></label>
-                        <input type="number" name="commission_amount" step="0.01" class="form-control" min="0" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Add Task</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
 @endsection
 
 

@@ -71,4 +71,39 @@ class AdminReviewController extends Controller
             'today' => $today,
         ]);
     }
+
+    /**
+     * Get review by booking ID (API endpoint)
+     */
+    public function getByBookingId(Request $request)
+    {
+        $bookingId = $request->get('booking_id');
+        
+        if (!$bookingId) {
+            return response()->json(['error' => 'Booking ID is required'], 400);
+        }
+
+        try {
+            $review = Review::where('bookingID', $bookingId)
+                ->with(['booking.customer.user', 'booking.vehicle'])
+                ->first();
+
+            if ($review) {
+                return response()->json([
+                    'review' => [
+                        'reviewID' => $review->reviewID,
+                        'bookingID' => $review->bookingID,
+                        'rating' => $review->rating,
+                        'comment' => $review->comment,
+                        'review_date' => $review->review_date ? $review->review_date->format('Y-m-d') : null,
+                    ]
+                ]);
+            } else {
+                return response()->json(['review' => null]);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to fetch review: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch review'], 500);
+        }
+    }
 }

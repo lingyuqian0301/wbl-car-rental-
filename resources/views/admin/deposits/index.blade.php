@@ -36,15 +36,11 @@
 <div class="container-fluid py-2">
     <x-admin-page-header 
         title="Deposit Management" 
-        description="Manage deposit payments and refunds"
+        description="Manage deposit return requests"
         :stats="[
-            ['label' => 'Total Deposits', 'value' => $totalDeposits, 'icon' => 'bi-wallet'],
-            ['label' => 'Total Amount', 'value' => 'RM ' . number_format($totalDepositAmount, 2), 'icon' => 'bi-currency-dollar'],
-            ['label' => 'Refunded', 'value' => $refundedCount, 'icon' => 'bi-check-circle'],
-            ['label' => 'No Action', 'value' => $noActionCount, 'icon' => 'bi-clock'],
-            ['label' => 'Today', 'value' => $today->format('d M Y'), 'icon' => 'bi-calendar-day']
+            ['label' => 'Deposit Hold', 'value' => 'RM ' . number_format($depositHold ?? 0, 2), 'icon' => 'bi-wallet'],
+            ['label' => 'Deposit Not Yet Process', 'value' => $depositNotYetProcess ?? 0, 'icon' => 'bi-clock-history']
         ]"
-        :date="$today"
     />
 
     @if(session('success'))
@@ -87,8 +83,8 @@
                     <label class="form-label small fw-semibold">Refund Status</label>
                     <select name="filter_refund_status" class="form-select form-select-sm">
                         <option value="">All</option>
+                        <option value="pending" {{ ($filterRefundStatus ?? '') === 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="refunded" {{ ($filterRefundStatus ?? '') === 'refunded' ? 'selected' : '' }}>Refunded</option>
-                        <option value="no_action" {{ ($filterRefundStatus ?? '') === 'no_action' ? 'selected' : '' }}>No Action</option>
                     </select>
                 </div>
                 
@@ -204,8 +200,19 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="badge {{ $refundStatus === 'refunded' ? 'bg-success' : 'bg-secondary' }}">
-                                    {{ $refundStatus === 'refunded' ? 'Refunded' : 'No Action' }}
+                                @php
+                                    $statusText = 'Pending';
+                                    $statusClass = 'bg-warning text-dark';
+                                    if ($booking->deposit_refund_status === 'refunded') {
+                                        $statusText = 'Refunded';
+                                        $statusClass = 'bg-success';
+                                    } elseif ($booking->deposit_refund_status === 'pending' || ($booking->deposit_customer_choice === 'refund' && !$booking->deposit_refund_status)) {
+                                        $statusText = 'Pending';
+                                        $statusClass = 'bg-warning text-dark';
+                                    }
+                                @endphp
+                                <span class="badge {{ $statusClass }}">
+                                    {{ $statusText }}
                                 </span>
                             </td>
                             <td>

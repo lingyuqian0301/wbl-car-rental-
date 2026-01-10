@@ -216,11 +216,7 @@
                                 </td>
                                 <td>{{ $user->name ?? 'Unknown' }}</td>
                                 <td>
-                                    <strong>{{ $vehicle->plate_number ?? 'N/A' }}</strong>
-                                    <div class="reservation-info-text">
-                                        <div><strong>Model:</strong> {{ $vehicle->vehicle_model ?? 'N/A' }}</div>
-                                        <div><strong>Brand:</strong> {{ $vehicle->vehicle_brand ?? 'N/A' }}</div>
-                                    </div>
+                                    <strong>{{ $vehicle->plate_number ?? ($vehicle->plate_no ?? 'N/A') }}</strong>
                                 </td>
                                 <td>
                                     <strong>RM {{ number_format($totalAmount, 2) }}</strong>
@@ -233,7 +229,11 @@
                                         <strong>{{ $invoice->invoice_number ?? 'N/A' }}</strong>
                                         <div class="reservation-info-text">
                                             <div>
-                                                <a href="{{ route('invoices.generate', $booking->bookingID) }}" 
+                                                @php
+                                                    $firstPayment = $booking->payments->first();
+                                                    $invoiceRoute = $firstPayment ? route('admin.payments.invoice', $firstPayment->paymentID) : route('invoices.generate', $booking->bookingID);
+                                                @endphp
+                                                <a href="{{ $invoiceRoute }}" 
                                                    target="_blank" class="text-primary">
                                                     <i class="bi bi-file-pdf"></i> View Invoice
                                                 </a>
@@ -245,7 +245,11 @@
                                 </td>
                                 <td>
                                     @if($latestPayment)
-                                        <strong>{{ $latestPayment->paymentID ?? 'N/A' }}</strong>
+                                        <a href="{{ route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'transaction-detail']) }}" 
+                                           class="text-decoration-none fw-bold text-primary"
+                                           target="_blank">
+                                            <strong>#{{ $latestPayment->paymentID ?? 'N/A' }}</strong>
+                                        </a>
                                         <div class="reservation-info-text">
                                             <div>
                                                 @if($latestPayment->transaction_reference)
@@ -311,15 +315,21 @@
                                 </td>
                                 <td>
                                     <div class="reservation-info-text">
-                                        <div><strong>Date:</strong> {{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</div>
-                                        <div><strong>Time:</strong> {{ $booking->pickup_time ?? 'N/A' }}</div>
+                                        @php
+                                            $pickupDateTime = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date) : null;
+                                        @endphp
+                                        <div><strong>Date:</strong> {{ $pickupDateTime ? $pickupDateTime->format('d M Y') : 'N/A' }}</div>
+                                        <div><strong>Time:</strong> {{ $pickupDateTime ? $pickupDateTime->format('H:i') : ($booking->pickup_time ?? 'N/A') }}</div>
                                         <div><strong>Location:</strong> {{ $booking->pickup_point ?? $booking->pickup_location ?? 'N/A' }}</div>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="reservation-info-text">
-                                        <div><strong>Date:</strong> {{ $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A' }}</div>
-                                        <div><strong>Time:</strong> {{ $booking->return_time ?? 'N/A' }}</div>
+                                        @php
+                                            $returnDateTime = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date) : null;
+                                        @endphp
+                                        <div><strong>Date:</strong> {{ $returnDateTime ? $returnDateTime->format('d M Y') : 'N/A' }}</div>
+                                        <div><strong>Time:</strong> {{ $returnDateTime ? $returnDateTime->format('H:i') : ($booking->return_time ?? 'N/A') }}</div>
                                         <div><strong>Location:</strong> {{ $booking->return_point ?? $booking->return_location ?? 'N/A' }}</div>
                                     </div>
                                 </td>
@@ -348,16 +358,12 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-1 flex-column">
-                                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                                onclick="viewReview({{ $booking->bookingID }})" 
-                                                title="View Review">
-                                            <i class="bi bi-star"></i> Review
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                onclick="viewVehicleCondition({{ $booking->bookingID }})" 
-                                                title="View Vehicle Condition">
+                                        <a href="{{ route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'pickup-condition']) }}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           target="_blank"
+                                           title="View Vehicle Condition">
                                             <i class="bi bi-clipboard-check"></i> Condition
-                                        </button>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -528,6 +534,26 @@
 
 @push('scripts')
 <script>
+    // Notification function
+    function showNotification(message, type = 'success') {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const notification = document.createElement('div');
+        notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+
     // Handle tab switching from URL parameter
     document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -575,9 +601,11 @@
             .then(data => {
                 if (data.success) {
                     this.dataset.currentStatus = newStatus;
-                    location.reload();
+                    // Show success message
+                    showNotification('Booking status updated successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
                 } else {
-                    alert('Failed to update booking status.');
+                    showNotification('Failed to update booking status.', 'error');
                     this.value = oldStatus;
                 }
             })
@@ -614,9 +642,11 @@
             .then(data => {
                 if (data.success) {
                     this.dataset.currentServed = newServedBy;
-                    location.reload();
+                    // Show success message
+                    showNotification('Served by updated successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
                 } else {
-                    alert('Failed to update served by.');
+                    showNotification('Failed to update served by.', 'error');
                     this.value = oldServedBy;
                 }
             })
@@ -630,9 +660,53 @@
 
     // View Review
     function viewReview(bookingId) {
-        // TODO: Implement review form view
-        document.getElementById('reviewContent').innerHTML = '<p>Review form for booking #' + bookingId + ' will be displayed here.</p>';
-        new bootstrap.Modal(document.getElementById('reviewModal')).show();
+        // Fetch review data for the booking via API endpoint
+        fetch(`{{ route('admin.bookings.reviews.get-by-booking') }}?booking_id=${bookingId}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.review) {
+                    const review = data.review;
+                    const reviewDate = review.review_date ? new Date(review.review_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                    let html = `
+                        <div class="review-details">
+                            <div class="mb-3">
+                                <strong>Booking ID:</strong> #${bookingId}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Rating:</strong> 
+                                <div class="d-flex align-items-center gap-1">
+                                    ${Array.from({length: 5}, (_, i) => 
+                                        `<i class="bi bi-star${i < (review.rating || 0) ? '-fill text-warning' : ''}"></i>`
+                                    ).join('')}
+                                    <span class="ms-2">${review.rating || 'N/A'}/5</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Review Date:</strong> ${reviewDate}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Comment:</strong>
+                                <p class="mt-2 p-3 bg-light rounded">${review.comment || 'No comment provided.'}</p>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('reviewContent').innerHTML = html;
+                } else {
+                    document.getElementById('reviewContent').innerHTML = '<p class="text-muted">No review found for booking #' + bookingId + '.</p>';
+                }
+                new bootstrap.Modal(document.getElementById('reviewModal')).show();
+            })
+            .catch(error => {
+                console.error('Error fetching review:', error);
+                document.getElementById('reviewContent').innerHTML = '<p class="text-danger">Error loading review. Please try again.</p>';
+                new bootstrap.Modal(document.getElementById('reviewModal')).show();
+            });
     }
 
     // View Vehicle Condition

@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Notification; // Ensure this is imported
 use App\Services\PaymentService;
+use App\Traits\HandlesGoogleDriveUploads;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
+    use HandlesGoogleDriveUploads;
     protected PaymentService $paymentService;
 
     public function __construct(PaymentService $paymentService)
@@ -77,11 +79,13 @@ class PaymentController extends Controller
             abort(403, 'Unauthorized access to this booking.');
         }
 
-        // 3. File Upload
+        // 3. File Upload to Google Drive
+        $receiptImagePath = null;
         if ($request->hasFile('receipt_image')) {
             $file = $request->file('receipt_image');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('receipts', $fileName, 'public');
+            // Upload to Google Drive
+            $receiptImagePath = $this->uploadToGoogleDrive($file, 'payment_receipts', $fileName);
         }
 
         // 4. Create Payment Record

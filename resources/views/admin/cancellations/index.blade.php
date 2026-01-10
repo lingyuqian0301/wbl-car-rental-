@@ -126,9 +126,15 @@
                     <option value="">All</option>
                     <option value="unassigned" {{ $handledBy === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
                     @foreach($staffUsers as $staffUser)
-                        <option value="{{ $staffUser->userID }}" {{ $handledBy == $staffUser->userID ? 'selected' : '' }}>
-                            {{ $staffUser->name }}
-                        </option>
+                        @php
+                            // Only show staffit and admin, exclude runner (already filtered in controller)
+                            $isRunner = $staffUser->staff && $staffUser->staff->runner;
+                        @endphp
+                        @if(!$isRunner)
+                            <option value="{{ $staffUser->userID }}" {{ $handledBy == $staffUser->userID ? 'selected' : '' }}>
+                                {{ $staffUser->name }}
+                            </option>
+                        @endif
                     @endforeach
                 </select>
             </div>
@@ -215,19 +221,25 @@
                                 <div class="small text-muted">Total: RM {{ number_format($booking->total_price, 2) }}</div>
                             </td>
                             <td>
-                                {{ $booking->customer->user->phone ?? 'N/A' }}
+                                @php
+                                    $firstPayment = $payments->first();
+                                @endphp
+                                {{ $firstPayment->payment_bank_account_no ?? 'N/A' }}
                             </td>
                             <td>
-                                N/A
+                                @php
+                                    $firstPayment = $payments->first();
+                                @endphp
+                                {{ $firstPayment->payment_bank_name ?? 'N/A' }}
                             </td>
                             <td>
                                 @if($payments->count() > 0)
                                     <div class="d-flex flex-column gap-1">
                                         @foreach($payments as $payment)
-                                            @if($payment->transaction_reference)
+                                            @if($payment->proof_of_payment || $payment->transaction_reference)
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success btn-update-cancellation" 
-                                                        onclick="showReceipt('{{ $payment->transaction_reference }}')">
+                                                        onclick="showReceipt('{{ $payment->proof_of_payment ?? $payment->transaction_reference }}', '{{ $payment->paymentID }}')">
                                                     <i class="bi bi-receipt"></i> Receipt {{ $loop->iteration }}
                                                 </button>
                                             @endif
@@ -253,9 +265,15 @@
                                         onchange="updateHandledBy({{ $booking->bookingID }}, this.value)">
                                     <option value="">Unassigned</option>
                                     @foreach($staffUsers as $staffUser)
-                                        <option value="{{ $staffUser->userID }}" {{ $booking->staff_served == $staffUser->userID ? 'selected' : '' }}>
-                                            {{ $staffUser->name }}
-                                        </option>
+                                        @php
+                                            // Only show staffit and admin, exclude runner (already filtered in controller)
+                                            $isRunner = $staffUser->staff && $staffUser->staff->runner;
+                                        @endphp
+                                        @if(!$isRunner)
+                                            <option value="{{ $staffUser->userID }}" {{ $booking->staff_served == $staffUser->userID ? 'selected' : '' }}>
+                                                {{ $staffUser->name }}
+                                            </option>
+                                        @endif
                                     @endforeach
                                 </select>
                             </td>
@@ -394,8 +412,21 @@
         });
     }
 
-    function showReceipt(reference) {
-        document.getElementById('receiptText').textContent = 'Receipt Reference: ' + reference;
+    function showReceipt(proofOfPayment, paymentId) {
+        const modalBody = document.getElementById('receiptText');
+        if (proofOfPayment && (proofOfPayment.startsWith('http://') || proofOfPayment.startsWith('https://') || proofOfPayment.startsWith('/'))) {
+            // If it's a URL or path, show as image
+            modalBody.innerHTML = `
+                <img src="${proofOfPayment}" alt="Proof of Payment" class="img-fluid" style="max-width: 100%; height: auto;" onerror="this.outerHTML='<p class=\'text-muted\'>Proof of Payment: ${proofOfPayment}</p>'">
+                <p class="mt-2 text-muted small">Payment ID: ${paymentId}</p>
+            `;
+        } else {
+            // Otherwise show as text
+            modalBody.innerHTML = `
+                <p>Proof of Payment: ${proofOfPayment || 'N/A'}</p>
+                <p class="text-muted small">Payment ID: ${paymentId}</p>
+            `;
+        }
         const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
         modal.show();
     }

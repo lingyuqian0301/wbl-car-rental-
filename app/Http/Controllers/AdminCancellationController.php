@@ -91,8 +91,12 @@ class AdminCancellationController extends Controller
             ->whereDate('lastUpdateDate', $today)
             ->count();
 
-        // Get all staff for handled by dropdown
-        $staffUsers = \App\Models\User::whereHas('staff')->with('staff')->get();
+        // Get all staffit and admins for handled by dropdown (exclude runner)
+        $staffUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff', function($q) {
+                $q->whereDoesntHave('runner'); // Exclude runners
+            })->orWhereHas('admin');
+        })->with(['staff.runner', 'staff.staffIt', 'admin'])->orderBy('name')->get();
 
         $viewName = str_starts_with(Route::currentRouteName(), 'staff.') ? 'staff.cancellations.index' : 'admin.cancellations.index';
         return view($viewName, [
@@ -157,6 +161,32 @@ class AdminCancellationController extends Controller
         }
 
         $booking->update($updateData);
+
+        // Create notification for cancellation update
+        try {
+            $vehicle = $booking->vehicle;
+            $vehicleInfo = $vehicle ? ($vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model . ' (' . $vehicle->plate_number . ')') : 'N/A';
+            $customer = $booking->customer;
+            
+            \App\Models\AdminNotification::create([
+                'type' => 'booking_cancelled',
+                'notifiable_type' => 'admin',
+                'notifiable_id' => null,
+                'user_id' => $customer->userID ?? null,
+                'booking_id' => $booking->bookingID,
+                'payment_id' => null,
+                'message' => "Booking cancellation updated: Booking #{$booking->bookingID} - {$vehicleInfo}",
+                'data' => [
+                    'booking_id' => $booking->bookingID,
+                    'vehicle_info' => $vehicleInfo,
+                    'customer_name' => $customer->user->name ?? 'Customer',
+                    'status' => $updateData['booking_status'] ?? $booking->booking_status,
+                ],
+                'is_read' => false,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to create cancellation notification: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,

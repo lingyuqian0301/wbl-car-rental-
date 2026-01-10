@@ -146,6 +146,41 @@
             </div>
         @endif
 
+        <!-- Filters for Staff -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="GET" action="{{ route('admin.settings.index', ['tab' => 'staff']) }}" class="row g-3">
+                    <input type="hidden" name="tab" value="staff">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Staff Type</label>
+                        <select name="filter_type" class="form-select form-select-sm">
+                            <option value="all" {{ ($filterType ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
+                            <option value="staffit" {{ ($filterType ?? '') === 'staffit' ? 'selected' : '' }}>Staff IT</option>
+                            <option value="runner" {{ ($filterType ?? '') === 'runner' ? 'selected' : '' }}>Runner</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Status</label>
+                        <select name="filter_active" class="form-select form-select-sm">
+                            <option value="all" {{ ($filterActive ?? 'all') === 'all' ? 'selected' : '' }}>All</option>
+                            <option value="active" {{ ($filterActive ?? '') === 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ ($filterActive ?? '') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        @if(($filterType ?? 'all') !== 'all' || ($filterActive ?? 'all') !== 'all')
+                            <a href="{{ route('admin.settings.index', ['tab' => 'staff']) }}" class="btn btn-sm btn-outline-secondary ms-2">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        @endif
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">

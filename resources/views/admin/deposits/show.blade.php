@@ -129,7 +129,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Refund Status</label>
                                 <select name="refund_status" class="form-select" required>
-                                    <option value="no_action" {{ ($booking->deposit_refund_status ?? 'no_action') === 'no_action' ? 'selected' : '' }}>No Action</option>
+                                    <option value="pending" {{ ($booking->deposit_refund_status ?? 'pending') === 'pending' ? 'selected' : '' }}>Pending</option>
                                     <option value="refunded" {{ ($booking->deposit_refund_status ?? '') === 'refunded' ? 'selected' : '' }}>Refunded</option>
                                 </select>
                             </div>

@@ -60,6 +60,14 @@ return [
             'report' => false,
         ],
 
+        'gdrive' => [
+            'driver' => 'gdrive',
+            'credentials_path' => config_path('google-credentials.json'),
+            'token_path' => storage_path('app/google-drive-token.json'),
+            'folder_id' => env('GOOGLE_DRIVE_FOLDER_ID', 'root'),
+            'enable_caching' => env('GOOGLE_DRIVE_ENABLE_CACHE', true),
+        ],
+
     ],
 
     /*
