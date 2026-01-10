@@ -122,7 +122,7 @@ class VehicleController extends Controller
                     ->first();
             }
         }
-
+            // dd($activeVoucher);
         // Pass everything to the view
         return view('vehicles.show', compact('vehicle', 'blockedDates', 'start_date', 'end_date', 'activeVoucher'));
     }
