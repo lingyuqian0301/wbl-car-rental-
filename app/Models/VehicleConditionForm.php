@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class VehicleConditionForm extends Model
+{
+    use HasFactory;
+
+    // Based on usage in PickupController: $form->formID
+    protected $primaryKey = 'formID';
+    
+    // Assuming table name follows convention, or you can specify protected $table = 'vehicle_condition_forms';
+    
+    protected $fillable = [
+        'form_type',
+        'odometer_reading',
+        'fuel_level',
+        'scratches_notes',
+        'reported_dated_time',
+        'bookingID',
+    ];
+
+    // Relationship to Booking
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class, 'bookingID', 'bookingID');
+    }
+
+    // Relationship to Images
+    public function images()
+    {
+        return $this->hasMany(VehicleConditionImage::class, 'formID', 'formID');
+    }
+}
