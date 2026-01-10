@@ -167,12 +167,17 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('booking.confirm')->with('error', 'Form submitted as GET instead of POST. Please try again.');
     });
 
-    Route::prefix('bookings')->name('bookings.')->group(function () {
-        Route::get('/', [BookingController::class, 'index'])->name('index');
-        Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
-        Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
-        Route::get('/{booking}/extend', [BookingController::class, 'showExtendForm'])->name('extend.form');
-    });
+Route::prefix('bookings')->name('bookings.')->group(function () {
+    Route::get('/', [BookingController::class, 'index'])->name('index');
+    Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
+    Route::post('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
+
+    // 1. UPDATE NAME: Change 'extend.form' to 'extend' so it matches route('bookings.extend') in your View
+    Route::get('/{booking}/extend', [BookingController::class, 'showExtendForm'])->name('extend');
+
+    // 2. ADD THIS: The missing route to actually process and save the extension
+    Route::post('/{booking}/extend', [BookingController::class, 'processExtend'])->name('process_extend');
+});
 
     // Customer Invoice Download Route
     Route::get('/booking/{id}/invoice', [BookingController::class, 'downloadInvoice'])->name('booking.invoice');

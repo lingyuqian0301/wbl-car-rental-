@@ -168,7 +168,7 @@
     <div class="card">
         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Rental Report</h5>
-            <span class="badge bg-light text-dark">{{ $bookings->total() }} total</span>
+            <span class="badge bg-light text-dark">{{ $bookings->count() }} total</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -245,7 +245,7 @@
                 </table>
             </div>
         </div>
-        @if($bookings->hasPages())
+        @if(method_exists($bookings, 'hasPages') && $bookings->hasPages())
             <div class="card-footer">
                 {{ $bookings->withQueryString()->links() }}
             </div>

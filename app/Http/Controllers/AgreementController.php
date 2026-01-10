@@ -8,85 +8,99 @@ use Mpdf\Mpdf;
 
 class AgreementController extends Controller
 {
-    /**
-     * Show the rental agreement page with preview iframe
-     */
     public function show(Booking $booking)
     {
-        // Ensure the booking belongs to the authenticated user
         if ($booking->customer->userID !== auth()->id()) {
-            abort(403, 'Unauthorized access to this booking');
+            abort(403);
         }
-
         return view('bookings.agreement', compact('booking'));
     }
 
     /**
-     * Preview the agreement as HTML (for iframe display)
+     * Preview the agreement (Logic to fetch Identity & Phone)
      */
     public function preview(Booking $booking)
     {
-        // Ensure the booking belongs to the authenticated user
+        // 1. Security Check
         if ($booking->customer->userID !== auth()->id()) {
-            abort(403, 'Unauthorized access to this booking');
+            abort(403);
         }
 
-        $customer = $booking->customer;
-        $vehicle = $booking->vehicle;
+        // 2. Load ALL Relationships (Local, International, User, Vehicle)
+        $booking->load(['customer.user', 'customer.local', 'customer.international', 'vehicle']);
 
-        return view('bookings.agreement_pdf', compact('booking', 'customer', 'vehicle'));
+        // 3. Determine Identity Number (IC or Passport)
+        $identityNo = 'N/A';
+        if ($booking->customer->local) {
+            $identityNo = $booking->customer->local->ic_no; // Get IC
+        } elseif ($booking->customer->international) {
+            $identityNo = $booking->customer->international->passport_no; // Get Passport
+        }
+
+        // 4. Determine Phone Number (Check Customer Profile first, then User Account)
+        $phone = $booking->customer->phone_number;
+        if (empty($phone) || $phone == 'N/A') {
+            $phone = $booking->customer->user->phone ?? 'N/A';
+        }
+
+        // 5. Pass these specific variables to the PDF view
+        return view('bookings.agreement_pdf', [
+            'booking' => $booking,
+            'customer' => $booking->customer,
+            'vehicle' => $booking->vehicle,
+            'identityNo' => $identityNo, // <--- Passed to view
+            'phone' => $phone            // <--- Passed to view
+        ]);
     }
 
     /**
-     * Download the agreement as PDF using mPDF
+     * Download the agreement (Same logic as preview)
      */
     public function download(Request $request, Booking $booking)
     {
-        // Ensure the booking belongs to the authenticated user
         if ($booking->customer->userID !== auth()->id()) {
-            abort(403, 'Unauthorized access to this booking');
+            abort(403);
         }
 
-        // Validate that the user has agreed to the terms
-        $validated = $request->validate([
-            'agree' => 'required|accepted',
-        ], [
-            'agree.required' => 'You must accept the rental agreement to proceed.',
-            'agree.accepted' => 'You must accept the rental agreement to proceed.',
-        ]);
+        $request->validate(['agree' => 'required|accepted']);
 
-        // Get booking relationships
-        $customer = $booking->customer;
-        $vehicle = $booking->vehicle;
+        // Load Relationships
+        $booking->load(['customer.user', 'customer.local', 'customer.international', 'vehicle']);
 
-        // Render the agreement HTML from Blade view
-        $html = view('bookings.agreement_pdf', compact('booking', 'customer', 'vehicle'))->render();
+        // Get ID
+        $identityNo = 'N/A';
+        if ($booking->customer->local) {
+            $identityNo = $booking->customer->local->ic_no;
+        } elseif ($booking->customer->international) {
+            $identityNo = $booking->customer->international->passport_no;
+        }
 
-        // Initialize mPDF with proper configuration for legal documents
+        // Get Phone
+        $phone = $booking->customer->phone_number;
+        if (empty($phone) || $phone == 'N/A') {
+            $phone = $booking->customer->user->phone ?? 'N/A';
+        }
+
+        // Generate PDF
+        $html = view('bookings.agreement_pdf', [
+            'booking' => $booking,
+            'customer' => $booking->customer,
+            'vehicle' => $booking->vehicle,
+            'identityNo' => $identityNo,
+            'phone' => $phone
+        ])->render();
+
         $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'orientation' => 'P',
-            'margin_left' => 15,
-            'margin_right' => 15,
-            'margin_top' => 15,
-            'margin_bottom' => 15,
+            'mode' => 'utf-8', 'format' => 'A4', 'orientation' => 'P',
+            'margin_left' => 15, 'margin_right' => 15, 'margin_top' => 15, 'margin_bottom' => 15,
         ]);
 
-        // Write the HTML to the PDF
         $mpdf->WriteHTML($html);
 
-        // Return the PDF as a download response
         return response()->streamDownload(
-            function () use ($mpdf) {
-                echo $mpdf->Output('', 'S');
-            },
-            'agreement.pdf',
-            [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="agreement.pdf"',
-            ]
+            function () use ($mpdf) { echo $mpdf->Output('', 'S'); },
+            'Agreement.pdf',
+            ['Content-Type' => 'application/pdf']
         );
     }
 }
-

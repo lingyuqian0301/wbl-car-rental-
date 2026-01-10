@@ -239,16 +239,57 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
 .header-metric:hover .metric-value {
     color: var(--primary-orange);
 }
+.header-left {
+    margin-right: auto;
+}
+
+/* NEW: force logo + Home to be side-by-side */
+.logo-group {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem; /* space between logo and Home */
+}
+
+/* ensure logo itself stays horizontal */
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.home-link {
+    font-weight: 500;
+    color: #374151;
+}
+
+.home-link:hover {
+    color: var(--primary-orange);
+}
+/* Remove underline from HASTA logo in all states */
+.logo,
+.logo:visited,
+.logo:hover,
+.logo:active {
+    text-decoration: none;
+}
+
 
 
     </style>
     <div class="header-container">
     <div class="header-left">
-        <a href="{{ route('home') }}" class="logo" style="text-decoration: none;">
+    <div class="logo-group">
+        <a href="{{ route('home') }}" class="logo">
             <h1>HASTA</h1>
             <span>Travel</span>
         </a>
+
+        <a href="{{ route('home') }}" class="nav-link home-link">
+            Home
+        </a>
     </div>
+</div>
+
+
 
     <div class="header-right">
         @auth
