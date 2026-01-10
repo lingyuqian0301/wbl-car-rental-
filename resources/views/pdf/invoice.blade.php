@@ -363,7 +363,7 @@
                     <span class="info-label">Address:</span>
                     <span class="info-value">{{ $customer->address ?? 'N/A' }}</span>
                 </div>
-                @if($localCustomer)
+                @if($localstudent)
                     <div class="info-row">
                         <span class="info-label">IC Number:</span>
                         <span class="info-value">{{ $localCustomer->ic_no ?? 'N/A' }}</span>
