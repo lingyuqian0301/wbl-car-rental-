@@ -208,8 +208,8 @@
                                                                     @endif
                                                                 @endif
 
-                                                                {{-- Show continue booking and invoice if fully paid and not cancelled and not ongoing --}}
-                                                                @if($verifiedPaid >= ($totalPrice - 1) && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
+                                                                <!-- {{-- Show continue booking and invoice if fully paid and not cancelled and not ongoing and not completed--}} -->
+                                                                  @if($verifiedPaid >= ($totalPrice - 1) && !in_array($dbStatus, ['Cancelled', 'Ongoing', 'Completed']))
                                                                     <a href="{{ route('agreement.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                                                         {{ __('Continue Booking') }}
                                                                     </a>
