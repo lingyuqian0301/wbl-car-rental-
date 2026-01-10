@@ -15,25 +15,41 @@
 
         <!-- GLOBAL LAYOUT STYLES -->
         <style>
+            :root {
+                --primary-orange: #dc2626;
+                --primary-dark-orange: #991b1b;
+                --success-green: #059669;
+                --text-primary: #1e293b;
+                --text-secondary: #64748b;
+                --border-color: #e2e8f0;
+                --bg-light: #f8fafc;
+                --error-red: #dc2626;
+            }
+
             * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
             }
 
-            html, body {
+            html {
+                font-size: 12px;
+                height: 100%;
+                width: 100%;
+            }
+
+            body {
                 height: 100%;
                 width: 100%;
                 margin: 0;
                 padding: 0;
-            }
-
-            body {
-                font-family: 'Figtree', sans-serif;
+                font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                line-height: 1.6;
                 background-color: #f8fafc;
-                color: #1e293b;
+                color: #333;
                 display: flex;
                 flex-direction: column;
+                min-height: 100vh;
             }
 
             /* Flexbox container for sticky footer */
@@ -64,6 +80,14 @@
                 margin: 0 auto;
             }
 
+            /* Main content container - standard padding */
+            .container {
+                max-width: 1280px;
+                margin: 0 auto;
+                padding: 2rem;
+                width: 100%;
+            }
+
             /* Main content grows to fill available space */
             main {
                 flex: 1;
@@ -80,14 +104,32 @@
                 padding: 0;
             }
 
+            /* Section Styles - Standard spacing */
+            section {
+                padding: 2rem 2rem 0.5rem 2rem;
+                flex-shrink: 0;
+            }
+
             /* Responsive adjustments */
             @media (max-width: 768px) {
+                html {
+                    font-size: 12px;
+                }
+
                 main {
                     padding: 0;
                 }
 
                 .page-header {
                     padding: 1rem;
+                }
+
+                section {
+                    padding: 1.5rem 1rem 0.5rem 1rem;
+                }
+
+                .container {
+                    padding: 1.5rem;
                 }
             }
         </style>

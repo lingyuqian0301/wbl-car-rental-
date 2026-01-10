@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory; // Good practice to include
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
+    use HasFactory;
+
     protected $table = 'payment';
     protected $primaryKey = 'paymentID';
     public $incrementing = true;
@@ -23,8 +26,9 @@ class Payment extends Model
         'isPayment_complete',
         'payment_isVerify',
         'latest_Update_Date_Time',
-        'verify_by',
+        // 'verify_by', // Keep only if you added this column to your DB
         'bookingID',
+        'proof_of_payment', // <--- ✅ ADDED THIS (Crucial for uploads)
     ];
 
     protected function casts(): array
