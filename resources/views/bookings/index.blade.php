@@ -62,6 +62,7 @@
 
                                             // 3. BOOKING STATUS LABELS
                                             $displayStatus = $booking->booking_status;
+                                            
                                             $statusBadge = 'bg-gray-100 text-gray-800';
 
                                             if ($booking->booking_status == 'Cancelled') {
@@ -103,7 +104,14 @@
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusBadge }}">
                                                     {{ $displayStatus }}
+                                                    
                                                 </span>
+                                                <br>
+    <div style="font-size: 10px; margin-top: 5px; border: 1px solid red; padding: 2px;">
+        <strong>DEBUG INFO:</strong><br>
+        Booking Status: <span class="text-red-600">{{ $booking->booking_status }}</span> <br>
+        Has Pending Payment?: <span class="text-red-600">{{ $hasPending ? 'YES' : 'NO' }}</span>
+    </div>
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-nowrap align-middle">
@@ -212,20 +220,5 @@
         </div>
     </div>
 
-    <style>
-        /* Force static positioning on table cells to allow dropdown to overflow */
-        table tbody tr td {
-            position: static !important;
-        }
-        
-        /* Ensure dropdown menu has high z-index and proper positioning */
-        [x-show] {
-            z-index: 9999 !important;
-        }
-        
-        /* Make sure the dropdown parent div doesn't clip content */
-        .relative > div[x-show] {
-            position: fixed !important;
-        }
-    </style>
+
 </x-app-layout>
