@@ -68,6 +68,7 @@
         .invoice-number {
             font-weight: bold;
             font-size: 12px;
+            text-align: right; /* Ensure alignment in PDF */
         }
 
         /* Usage Details Table */
@@ -187,12 +188,18 @@
         }
 
         .signature-boxes {
-            display: flex;
-            justify-content: space-between;
+            width: 100%;
             margin-top: 40px;
         }
 
-        .signature-box {
+        /* Using table for layout consistency in PDF */
+        .signature-table {
+            width: 100%;
+            margin-top: 40px;
+        }
+        
+        .signature-table td {
+            vertical-align: top;
             width: 45%;
             text-align: center;
             font-size: 10px;
@@ -202,6 +209,9 @@
             border-bottom: 1px solid #000;
             margin-bottom: 5px;
             height: 40px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .signature-name {
@@ -226,38 +236,35 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header-section">
             <div class="company-name">HASTA TRAVEL & TOURS SDN. BHD.</div>
             <div class="company-details">
-                <div>Registration No: 123456-X</div>
-                <div>Address: 123 Jalan Merdeka, Kuala Lumpur, 50050 Malaysia</div>
-                <div>Phone: +603-XXXX-XXXX | Email: info@hasta.com</div>
+                <div>Registration No: 1359376-T</div>
+                <div>Address: HASTA HQ Office, Johor Bahru, Malaysia</div>
+                <div>Phone: +60 12-345 6789 | Email: support@hastatravel.com</div>
             </div>
             <div class="agreement-title">RENTAL AGREEMENT FORM</div>
         </div>
 
-        <!-- Invoice Number -->
         <div class="invoice-section">
-            <div class="invoice-label">Invoice Number:</div>
-            <div class="invoice-number">{{ $booking->invoice_number ?? 'BK-' . str_pad($booking->bookingID, 4, '0', STR_PAD_LEFT) }}</div>
+            <div class="invoice-label">Booking Reference:</div>
+            <div class="invoice-number">#{{ str_pad($booking->bookingID, 6, '0', STR_PAD_LEFT) }}</div>
         </div>
 
-        <!-- Usage Details -->
         <div style="margin-bottom: 15px;">
             <div class="section-title">USAGE DETAILS</div>
             <table class="usage-table">
                 <tr>
                     <td style="font-weight: bold;">Pick-up Date & Time:</td>
-                    <td>{{ \Carbon\Carbon::parse($booking->start_date)->format('d M Y H:i') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y, h:i A') }}</td>
                     <td style="font-weight: bold;">Pick-up Location:</td>
-                    <td>{{ $booking->pickup_point ?? 'Office' }}</td>
+                    <td>{{ $booking->pickup_point ?? 'HASTA HQ Office' }}</td>
                 </tr>
                 <tr>
                     <td style="font-weight: bold;">Return Date & Time:</td>
-                    <td>{{ \Carbon\Carbon::parse($booking->end_date)->format('d M Y H:i') }}</td>
+                    <td>{{ \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y, h:i A') }}</td>
                     <td style="font-weight: bold;">Return Location:</td>
-                    <td>{{ $booking->return_point ?? 'Office' }}</td>
+                    <td>{{ $booking->return_point ?? 'HASTA HQ Office' }}</td>
                 </tr>
                 <tr>
                     <td style="font-weight: bold;">Duration:</td>
@@ -268,7 +275,6 @@
             </table>
         </div>
 
-        <!-- Customer Details -->
         <div class="section-title">CUSTOMER DETAILS</div>
         <table class="details-table">
             <tr>
@@ -276,12 +282,12 @@
                 <td>{{ $customer->user->name ?? 'N/A' }}</td>
             </tr>
             <tr>
-                <td>Identity Card No.:</td>
-                <td>{{ $customer->id_number ?? 'N/A' }}</td>
+                <td>Identity Card / Passport No.:</td>
+                <td>{{ $identityNo ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td>Phone Number:</td>
-                <td>{{ $customer->phone ?? 'N/A' }}</td>
+                <td>{{ $phone ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td>Email Address:</td>
@@ -289,12 +295,11 @@
             </tr>
         </table>
 
-        <!-- Car Information -->
         <div class="section-title">CAR INFORMATION</div>
         <table class="details-table">
             <tr>
                 <td>Vehicle:</td>
-                <td>{{ $vehicle->vehicle_brand ?? 'N/A' }} {{ $vehicle->vehicle_model ?? 'N/A' }}</td>
+                <td>{{ $vehicle->vehicle_brand ?? '' }} {{ $vehicle->vehicle_model ?? '' }}</td>
             </tr>
             <tr>
                 <td>Vehicle Type:</td>
@@ -310,15 +315,30 @@
             </tr>
             <tr>
                 <td>Seating Capacity:</td>
-                <td>{{ $vehicle->car->seating_capacity ?? 'N/A' }} person(s)</td>
+                <td>
+                    @if($vehicle->car)
+                        {{ $vehicle->car->seating_capacity }} person(s)
+                    @elseif($vehicle->motorcycle)
+                        2 person(s)
+                    @else
+                        N/A
+                    @endif
+                </td>
             </tr>
             <tr>
                 <td>Transmission:</td>
-                <td>{{ $vehicle->car->transmission ?? 'N/A' }}</td>
+                <td>
+                    @if($vehicle->car)
+                        {{ ucfirst($vehicle->car->transmission) }}
+                    @elseif($vehicle->motorcycle)
+                        {{ ucfirst($vehicle->motorcycle->motor_type) }}
+                    @else
+                        N/A
+                    @endif
+                </td>
             </tr>
         </table>
 
-        <!-- Vehicle Price & Payment Summary -->
         <div class="section-title">VEHICLE PRICE & PAYMENT SUMMARY</div>
         <table class="pricing-table">
             <tr>
@@ -335,19 +355,18 @@
             </tr>
             <tr>
                 <td>Total Rental Amount</td>
-                <td>{{ number_format($booking->rental_amount ?? $booking->total_price ?? 0, 2) }}</td>
+                <td>{{ number_format($booking->rental_amount ?? 0, 2) }}</td>
             </tr>
             <tr>
                 <td>Security Deposit (Refundable)</td>
-                <td>50.00</td>
+                <td>{{ number_format($booking->deposit_amount ?? 50, 2) }}</td>
             </tr>
             <tr style="font-weight: bold; background: #e5e5e5;">
-                <td>Total Payment Required</td>
-                <td>{{ number_format(($booking->rental_amount ?? $booking->total_price ?? 0) + 50, 2) }}</td>
+                <td>Total Payable</td>
+                <td>{{ number_format(($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 50), 2) }}</td>
             </tr>
         </table>
 
-        <!-- Rental Agreement Terms -->
         <div class="terms-section">
             <div class="section-title">RENTAL AGREEMENT - TERMS & CONDITIONS</div>
             
@@ -360,7 +379,7 @@
 
             <div style="margin: 10px 0; font-weight: bold; font-size: 10px;">2. SECURITY DEPOSIT</div>
             <ol class="terms-list">
-                <li>A refundable security deposit of RM 50.00 is required at the time of pick-up.</li>
+                <li>A refundable security deposit of RM {{ number_format($booking->deposit_amount ?? 50, 2) }} is required at the time of pick-up.</li>
                 <li>The deposit will be refunded upon safe return of the vehicle in original condition.</li>
                 <li>Any damage or violations will be deducted from the deposit.</li>
             </ol>
@@ -393,6 +412,8 @@
                 <li>Any cleaning required will be charged at RM 50.00 per hour.</li>
                 <li>The renter is responsible for all regular maintenance such as refueling.</li>
             </ol>
+
+            <div class="page-break"></div>
 
             <div style="margin: 10px 0; font-weight: bold; font-size: 10px;">7. DRIVER REQUIREMENTS</div>
             <ol class="terms-list">
@@ -435,7 +456,6 @@
             </ol>
         </div>
 
-        <!-- Excess Fee Schedule -->
         <div style="margin-top: 15px;">
             <div class="section-title">EXCESS FEE SCHEDULE</div>
             <table class="excess-table">
@@ -470,32 +490,31 @@
             </table>
         </div>
 
-        <!-- Signature Section -->
         <div class="signature-section">
             <div style="font-weight: bold; margin-bottom: 10px;">AGREEMENT ACCEPTANCE</div>
             <p style="font-size: 10px; line-height: 1.4; margin-bottom: 20px;">
                 By signing below, the renter confirms that they have read, understood, and agree to all the terms and conditions outlined in this rental agreement. The renter acknowledges receipt of the vehicle in good condition and agrees to be fully responsible for the vehicle during the rental period.
             </p>
 
-            <div class="signature-boxes">
-                <div class="signature-box">
-                    <div class="signature-line"></div>
-                    <div class="signature-name">{{ $customer->user->name ?? 'Renter Name' }}</div>
-                    <div class="signature-date">Renter Signature & Date</div>
-                </div>
-
-                <div class="signature-box">
-                    <div class="signature-line"></div>
-                    <div class="signature-name">Authorized Representative</div>
-                    <div class="signature-date">HASTA Travel Authority & Date</div>
-                </div>
-            </div>
+            <table class="signature-table">
+                <tr>
+                    <td>
+                        <div class="signature-line"></div>
+                        <div class="signature-name">{{ strtoupper($customer->user->name ?? 'RENTER NAME') }}</div>
+                        <div class="signature-date">Renter Signature & Date: {{ now()->format('d M Y') }}</div>
+                    </td>
+                    <td></td> <td>
+                        <div class="signature-line"></div>
+                        <div class="signature-name">AUTHORIZED REPRESENTATIVE</div>
+                        <div class="signature-date">HASTA Travel Authority & Date: {{ now()->format('d M Y') }}</div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
-        <!-- Footer -->
         <div style="margin-top: 40px; padding-top: 15px; border-top: 1px solid #ccc; text-align: center; font-size: 9px;">
-            <p>This is an electronically generated document. Booking Reference: {{ $booking->bookingID }}</p>
-            <p>For inquiries, please contact HASTA Travel at info@hasta.com or call +603-XXXX-XXXX</p>
+            <p>This is an electronically generated document. Booking Reference: #{{ str_pad($booking->bookingID, 6, '0', STR_PAD_LEFT) }}</p>
+            <p>For inquiries, please contact HASTA Travel at support@hastatravel.com or call +60 12-345 6789</p>
         </div>
     </div>
 </body>
