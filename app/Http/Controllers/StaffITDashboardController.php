@@ -130,6 +130,29 @@ class StaffITDashboardController extends Controller
             'total' => $weeklyBookings->count(),
         ];
 
+        // Booking need runner: future bookings where pickup_point or return_point is not 'HASTA HQ Office'
+        $bookingsNeedRunner = Booking::with(['vehicle', 'customer.user'])
+            ->where('rental_start_date', '>', $today)
+            ->whereIn('booking_status', ['Pending', 'Confirmed'])
+            ->where(function($query) {
+                $query->where(function($q) {
+                    $q->whereNotNull('pickup_point')
+                      ->where('pickup_point', '!=', '')
+                      ->where('pickup_point', '!=', 'HASTA HQ Office');
+                })->orWhere(function($q) {
+                    $q->whereNotNull('return_point')
+                      ->where('return_point', '!=', '')
+                      ->where('return_point', '!=', 'HASTA HQ Office');
+                });
+            })
+            ->orderBy('rental_start_date', 'asc')
+            ->take(10)
+            ->get()
+            ->map(function($booking) {
+                $booking->assigned_status = $booking->staff_served ? 'assigned' : 'unassigned';
+                return $booking;
+            });
+
         return view('staffit.dashboard', [
             'metrics' => $metrics,
             'recentBookings' => $recentBookings,
@@ -137,6 +160,7 @@ class StaffITDashboardController extends Controller
             'pendingPayments' => $pendingPayments,
             'upcomingBookingsToServe' => $upcomingBookingsToServe,
             'cancellationRequests' => $cancellationRequests,
+            'bookingsNeedRunner' => $bookingsNeedRunner,
             'today' => $today,
             'weeklyBookingStats' => $weeklyBookingStats,
             'startOfMonth' => $startOfMonth,
