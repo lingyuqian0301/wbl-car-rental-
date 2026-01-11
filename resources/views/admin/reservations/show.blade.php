@@ -993,32 +993,25 @@
                 <!-- Pickup Condition Form Details Section -->
                 <div class="pickup-condition-wrapper">
                     
-                    <!-- GROUPING BOX 1: Form Details Table -->
-                    <div class="payment-table mb-4">
-                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
-                            <i class="bi bi-clipboard-data"></i> Pickup Form Details (RECEIVE)
+                    <!-- GROUPING BOX 1: Form Details (Card Style like Owner Page) -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Pickup Form Details (RECEIVE)</h5>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead style="background: var(--admin-red-light);">
-                                    <tr>
-                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Form Type</th>
-                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Odometer Reading</th>
-                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Fuel Level</th>
-                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Scratches / Notes</th>
-                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Reported Date/Time</th>
-                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Created At</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td style="padding: 12px; vertical-align: middle;">
-                                            <span class="badge bg-success fs-6">{{ $pickupForm->form_type }}</span>
-                                        </td>
-                                        <td style="padding: 12px; vertical-align: middle;">
-                                            <strong>{{ number_format($pickupForm->odometer_reading ?? 0) }} km</strong>
-                                        </td>
-                                        <td style="padding: 12px; vertical-align: middle;">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-5">Form Type:</dt>
+                                        <dd class="col-7">
+                                            <span class="badge bg-success">{{ $pickupForm->form_type }}</span>
+                                        </dd>
+                                        
+                                        <dt class="col-5">Odometer Reading:</dt>
+                                        <dd class="col-7"><strong>{{ number_format($pickupForm->odometer_reading ?? 0) }} km</strong></dd>
+                                        
+                                        <dt class="col-5">Fuel Level:</dt>
+                                        <dd class="col-7">
                                             @php
                                                 $fuelLevel = $pickupForm->fuel_level ?? 'N/A';
                                                 $fuelBadgeClass = match($fuelLevel) {
@@ -1031,10 +1024,15 @@
                                                 };
                                             @endphp
                                             <span class="badge {{ $fuelBadgeClass }}">{{ $fuelLevel }}</span>
-                                        </td>
-                                        <td style="padding: 12px; vertical-align: middle;">
+                                        </dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row mb-0">
+                                        <dt class="col-5">Scratches/Notes:</dt>
+                                        <dd class="col-7">
                                             @if($pickupForm->scratches_notes)
-                                                <span class="text-dark">{{ Str::limit($pickupForm->scratches_notes, 50) }}</span>
+                                                {{ Str::limit($pickupForm->scratches_notes, 50) }}
                                                 @if(strlen($pickupForm->scratches_notes) > 50)
                                                     <button type="button" class="btn btn-link btn-sm p-0 ms-1" data-bs-toggle="modal" data-bs-target="#scratchesNotesModal">
                                                         <i class="bi bi-eye"></i>
@@ -1043,26 +1041,28 @@
                                             @else
                                                 <span class="text-muted fst-italic">No notes</span>
                                             @endif
-                                        </td>
-                                        <td style="padding: 12px; vertical-align: middle;">
+                                        </dd>
+                                        
+                                        <dt class="col-5">Reported Date/Time:</dt>
+                                        <dd class="col-7">
                                             @if($pickupForm->reported_dated_time)
-                                                <div>{{ \Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('d M Y') }}</div>
-                                                <small class="text-muted">{{ \Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('H:i') }}</small>
+                                                {{ \Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('d M Y, H:i') }}
                                             @else
                                                 <span class="text-muted">N/A</span>
                                             @endif
-                                        </td>
-                                        <td style="padding: 12px; vertical-align: middle;">
+                                        </dd>
+                                        
+                                        <dt class="col-5">Created At:</dt>
+                                        <dd class="col-7">
                                             @if($pickupForm->created_at)
-                                                <div>{{ \Carbon\Carbon::parse($pickupForm->created_at)->format('d M Y') }}</div>
-                                                <small class="text-muted">{{ \Carbon\Carbon::parse($pickupForm->created_at)->format('H:i') }}</small>
+                                                {{ \Carbon\Carbon::parse($pickupForm->created_at)->format('d M Y, H:i') }}
                                             @else
                                                 <span class="text-muted">N/A</span>
                                             @endif
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -1089,11 +1089,11 @@
                     <div class="row g-4">
                         <!-- GROUPING BOX 2: Rental Agreement PDF -->
                         <div class="col-lg-6">
-                            <div class="payment-table h-100">
-                                <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
-                                    <i class="bi bi-file-earmark-pdf"></i> Rental Agreement (PDF)
+                            <div class="card h-100">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Rental Agreement (PDF)</h5>
                                 </div>
-                                <div class="card-body d-flex flex-column align-items-center justify-content-center p-4" style="min-height: 280px; background: white; border-radius: 0 0 12px 12px;">
+                                <div class="card-body d-flex flex-column align-items-center justify-content-center" style="min-height: 280px;">
                                     @if($pickupForm->rental_agreement)
                                         <div class="text-center">
                                             <div class="mb-3" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
@@ -1156,11 +1156,11 @@
 
                         <!-- GROUPING BOX 3: Fuel Image -->
                         <div class="col-lg-6">
-                            <div class="payment-table h-100">
-                                <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
-                                    <i class="bi bi-fuel-pump"></i> Fuel Level Image
+                            <div class="card h-100">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0"><i class="bi bi-fuel-pump"></i> Fuel Level Image</h5>
                                 </div>
-                                <div class="card-body d-flex flex-column align-items-center justify-content-center p-4" style="min-height: 280px; background: white; border-radius: 0 0 12px 12px;">
+                                <div class="card-body d-flex flex-column align-items-center justify-content-center" style="min-height: 280px;">
                                     @if($pickupForm->fuel_img)
                                         <div class="text-center w-100">
                                             <div class="fuel-image-container mb-3" style="max-width: 300px; margin: 0 auto;">
@@ -1210,11 +1210,11 @@
 
                     <!-- Vehicle Condition Images -->
                     @if($pickupForm->images && $pickupForm->images->count() > 0)
-                    <div class="payment-table mt-4">
-                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
-                            <i class="bi bi-images"></i> Vehicle Condition Images ({{ $pickupForm->images->count() }})
+                    <div class="card mt-4">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="bi bi-images"></i> Vehicle Condition Images ({{ $pickupForm->images->count() }})</h5>
                         </div>
-                        <div class="card-body p-4" style="background: white; border-radius: 0 0 12px 12px;">
+                        <div class="card-body">
                             <div class="row g-3">
                                 @foreach($pickupForm->images as $index => $image)
                                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
@@ -1254,11 +1254,11 @@
                 </div>
                 @else
                 <!-- No Pickup Form State -->
-                <div class="payment-table">
-                    <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
-                        <i class="bi bi-clipboard-check"></i> Pickup Condition Form (RECEIVE)
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Pickup Condition Form (RECEIVE)</h5>
                     </div>
-                    <div class="card-body text-center py-5" style="background: white; border-radius: 0 0 12px 12px;">
+                    <div class="card-body text-center py-5">
                         <div class="mb-4" style="background: #f3f4f6; border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
                             <i class="bi bi-clipboard-x" style="font-size: 3.5rem; color: #9ca3af;"></i>
                         </div>
@@ -1516,26 +1516,23 @@
                 
                 <div class="transaction-detail-wrapper">
                     
-                    <!-- GROUPING BOX 1: Payment List Table -->
-                    <div class="payment-table mb-4" style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600;">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-credit-card me-2"></i>Payment List ({{ $transactions ? $transactions->count() : 0 }})</span>
-                                @if($transactions && $transactions->count() > 0)
-                                    @php
-                                        $totalPaidAmount = $transactions->sum('total_amount');
-                                        $totalVerified = $transactions->where('payment_status', 'Verified')->count();
-                                    @endphp
-                                    <span class="badge bg-light text-danger">Total: RM {{ number_format($totalPaidAmount, 2) }} | Verified: {{ $totalVerified }}</span>
-                                @endif
-                            </div>
+                    <!-- GROUPING BOX 1: Payment List Table (Same UI as Payment Page) -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Payment List ({{ $transactions ? $transactions->count() : 0 }})</h5>
+                            @if($transactions && $transactions->count() > 0)
+                                @php
+                                    $totalPaidAmount = $transactions->sum('total_amount');
+                                    $totalVerified = $transactions->where('payment_status', 'Verified')->count();
+                                @endphp
+                                <span class="badge bg-light text-danger">Total: RM {{ number_format($totalPaidAmount, 2) }} | Verified: {{ $totalVerified }}</span>
+                            @endif
                         </div>
                         <div class="table-responsive">
                             @if($transactions && $transactions->count() > 0)
                                 <table class="table table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Booking ID</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment ID</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Bank Name</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Bank Account No</th>
@@ -1575,12 +1572,6 @@
                                                 $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
                                             @endphp
                                             <tr>
-                                                <!-- Booking ID -->
-                                                <td style="padding: 12px; vertical-align: middle;">
-                                                    <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" class="text-decoration-none fw-bold text-primary">
-                                                        #{{ $booking->bookingID }}
-                                                    </a>
-                                                </td>
                                                 <!-- Payment ID -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <a href="{{ route('admin.payments.index', ['search' => $payment->paymentID]) }}" class="text-decoration-none fw-bold text-danger" target="_blank">
@@ -1710,7 +1701,7 @@
                                     </tbody>
                                 </table>
                             @else
-                                <div class="text-center py-5" style="background: white;">
+                                <div class="card-body text-center py-5">
                                     <div class="mb-3" style="background: #f3f4f6; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
                                         <i class="bi bi-credit-card-2-front" style="font-size: 3rem; color: #9ca3af;"></i>
                                     </div>
@@ -1721,20 +1712,16 @@
                         </div>
                     </div>
 
-                    <!-- GROUPING BOX 2: Deposit Details Table -->
-                    <div class="payment-table" style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600;">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-wallet me-2"></i>Deposit Details</span>
-                                <span class="badge bg-light text-danger">Original Deposit: RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</span>
-                            </div>
+                    <!-- GROUPING BOX 2: Deposit Details Table (Same UI as Deposit Page) -->
+                    <div class="card">
+                        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-wallet me-2"></i>Deposit Details</h5>
+                            <span class="badge bg-light text-danger">Original Deposit: RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</span>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Booking ID</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Customer Name</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Deposit Payment</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Vehicle Condition Form</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Customer Choice</th>
@@ -1750,16 +1737,6 @@
                                         $hasReturnForm = $booking->vehicleConditionForms && $booking->vehicleConditionForms->where('form_type', 'RETURN')->first();
                                     @endphp
                                     <tr>
-                                        <!-- Booking ID -->
-                                        <td style="padding: 12px; vertical-align: middle;">
-                                            <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" class="text-decoration-none fw-bold text-primary">
-                                                #{{ $booking->bookingID }}
-                                            </a>
-                                        </td>
-                                        <!-- Customer Name -->
-                                        <td style="padding: 12px; vertical-align: middle;">
-                                            <span class="fw-medium">{{ $booking->customer->user->name ?? 'N/A' }}</span>
-                                        </td>
                                         <!-- Deposit Payment -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             <strong class="text-dark fs-6">RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</strong>
@@ -1767,7 +1744,9 @@
                                         <!-- Vehicle Condition Form -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             @if($hasReturnForm)
-                                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Submitted</span>
+                                                <a href="{{ route('admin.deposits.show', $booking->bookingID) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-file-earmark-text"></i> View Form
+                                                </a>
                                             @else
                                                 <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
                                             @endif
@@ -1778,13 +1757,18 @@
                                                 @php
                                                     $choiceClass = match($booking->deposit_customer_choice) {
                                                         'hold', 'wallet' => 'bg-info',
-                                                        'refund', 'bank_transfer' => 'bg-primary',
+                                                        'refund', 'bank_transfer' => 'bg-warning text-dark',
                                                         default => 'bg-secondary'
                                                     };
                                                 @endphp
                                                 <span class="badge {{ $choiceClass }}">
                                                     {{ ucfirst(str_replace('_', ' ', $booking->deposit_customer_choice)) }}
                                                 </span>
+                                                @if($booking->lastUpdateDate)
+                                                    <div class="small text-muted mt-1">
+                                                        {{ \Carbon\Carbon::parse($booking->lastUpdateDate)->format('d M Y H:i') }}
+                                                    </div>
+                                                @endif
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif
@@ -1794,7 +1778,7 @@
                                             @if($booking->deposit_fine_amount && $booking->deposit_fine_amount > 0)
                                                 <strong class="text-danger">RM {{ number_format($booking->deposit_fine_amount, 2) }}</strong>
                                             @else
-                                                <span class="text-muted">RM 0.00</span>
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                         <!-- Originally (Original Deposit) -->
@@ -1806,31 +1790,30 @@
                                             @if($booking->deposit_refund_amount && $booking->deposit_refund_amount > 0)
                                                 <strong class="text-success">RM {{ number_format($booking->deposit_refund_amount, 2) }}</strong>
                                             @else
-                                                <span class="text-muted">RM 0.00</span>
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                         <!-- Refund Status (Dropdown) -->
                                         <td style="padding: 12px; vertical-align: middle;">
-                                            <select class="form-select form-select-sm" style="min-width: 110px;"
-                                                    data-booking-id="{{ $booking->bookingID }}"
-                                                    onchange="updateDepositRefundStatus(this, {{ $booking->bookingID }})">
-                                                <option value="pending" {{ ($booking->deposit_refund_status ?? 'pending') === 'pending' ? 'selected' : '' }}>Pending</option>
-                                                <option value="refunded" {{ ($booking->deposit_refund_status ?? '') === 'refunded' ? 'selected' : '' }}>Refunded</option>
-                                                <option value="rejected" {{ ($booking->deposit_refund_status ?? '') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-                                            </select>
+                                            @php
+                                                $statusText = 'Pending';
+                                                $statusClass = 'bg-warning text-dark';
+                                                if ($booking->deposit_refund_status === 'refunded') {
+                                                    $statusText = 'Refunded';
+                                                    $statusClass = 'bg-success';
+                                                } elseif ($booking->deposit_refund_status === 'pending' || ($booking->deposit_customer_choice === 'refund' && !$booking->deposit_refund_status)) {
+                                                    $statusText = 'Pending';
+                                                    $statusClass = 'bg-warning text-dark';
+                                                }
+                                            @endphp
+                                            <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
                                         </td>
-                                        <!-- Handled By (Dropdown) -->
+                                        <!-- Handled By -->
                                         <td style="padding: 12px; vertical-align: middle;">
-                                            <select class="form-select form-select-sm" style="min-width: 130px;"
-                                                    data-booking-id="{{ $booking->bookingID }}"
-                                                    onchange="updateDepositHandledBy(this, {{ $booking->bookingID }})">
-                                                <option value="">Not Assigned</option>
-                                                @foreach($verifyByUsers ?? [] as $staff)
-                                                    <option value="{{ $staff->userID }}" {{ ($booking->deposit_handled_by ?? null) == $staff->userID ? 'selected' : '' }}>
-                                                        {{ $staff->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                            @php
+                                                $handledBy = $booking->deposit_handled_by ? \App\Models\User::find($booking->deposit_handled_by) : null;
+                                            @endphp
+                                            {{ $handledBy->name ?? 'N/A' }}
                                         </td>
                                     </tr>
                                 </tbody>

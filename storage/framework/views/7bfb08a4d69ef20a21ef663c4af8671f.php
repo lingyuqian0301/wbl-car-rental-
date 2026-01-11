@@ -1,0 +1,528 @@
+<?php $__env->startSection('title', 'Payment Verification'); ?>
+
+<?php $__env->startPush('styles'); ?>
+<style>
+    .payment-table {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .table-header {
+        background: var(--admin-red);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+    }
+    .table thead th {
+        background: var(--admin-red-light);
+        color: var(--admin-red-dark);
+        font-weight: 600;
+        border-bottom: 2px solid var(--admin-red);
+        padding: 12px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+    .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+    .receipt-image {
+        max-width: 80px;
+        max-height: 80px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .receipt-image:hover {
+        opacity: 0.8;
+    }
+    .verify-dropdown {
+        min-width: 120px;
+    }
+</style>
+<?php $__env->stopPush(); ?>
+
+<?php $__env->startSection('content'); ?>
+<div class="container-fluid py-2">
+    <?php if (isset($component)) { $__componentOriginal8e6ccc94deb46dfd1314097afabe5570 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal8e6ccc94deb46dfd1314097afabe5570 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.admin-page-header','data' => ['title' => 'Payment Verification','description' => 'Verify and manage all payment transactions','stats' => [
+            ['label' => 'Total Payments', 'value' => $totalPayments, 'icon' => 'bi-credit-card'],
+            ['label' => 'Pending', 'value' => $totalPending, 'icon' => 'bi-clock'],
+            ['label' => 'Verified', 'value' => $totalVerified, 'icon' => 'bi-check-circle'],
+            ['label' => 'Full Payment', 'value' => $totalFullPayment, 'icon' => 'bi-currency-dollar'],
+            ['label' => 'Payments Today', 'value' => $totalToday, 'icon' => 'bi-calendar-day']
+        ],'date' => $today]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('admin-page-header'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'Payment Verification','description' => 'Verify and manage all payment transactions','stats' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute([
+            ['label' => 'Total Payments', 'value' => $totalPayments, 'icon' => 'bi-credit-card'],
+            ['label' => 'Pending', 'value' => $totalPending, 'icon' => 'bi-clock'],
+            ['label' => 'Verified', 'value' => $totalVerified, 'icon' => 'bi-check-circle'],
+            ['label' => 'Full Payment', 'value' => $totalFullPayment, 'icon' => 'bi-currency-dollar'],
+            ['label' => 'Payments Today', 'value' => $totalToday, 'icon' => 'bi-calendar-day']
+        ]),'date' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($today)]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal8e6ccc94deb46dfd1314097afabe5570)): ?>
+<?php $attributes = $__attributesOriginal8e6ccc94deb46dfd1314097afabe5570; ?>
+<?php unset($__attributesOriginal8e6ccc94deb46dfd1314097afabe5570); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal8e6ccc94deb46dfd1314097afabe5570)): ?>
+<?php $component = $__componentOriginal8e6ccc94deb46dfd1314097afabe5570; ?>
+<?php unset($__componentOriginal8e6ccc94deb46dfd1314097afabe5570); ?>
+<?php endif; ?>
+
+    <!-- Success/Error Messages -->
+    <?php if(session('success')): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?php echo e(session('success')); ?>
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if($errors->any()): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <li><?php echo e($error); ?></li>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Action Buttons - Right Top Corner -->
+    <div class="d-flex justify-content-end mb-3">
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-light text-danger" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="GET" action="<?php echo e(route('admin.payments.index')); ?>" class="row g-3">
+                <!-- Search -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Search</label>
+                    <input type="text" name="search" value="<?php echo e($search ?? ''); ?>" 
+                           class="form-control form-control-sm" 
+                           placeholder="Plate No">
+                </div>
+                
+                <!-- Payment Date Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment Date</label>
+                    <input type="date" name="filter_payment_date" value="<?php echo e($filterPaymentDate ?? ''); ?>" 
+                           class="form-control form-control-sm">
+                </div>
+                
+                <!-- Payment Status Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment Status</label>
+                    <select name="filter_payment_status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="Full" <?php echo e(($filterPaymentStatus ?? '') === 'Full' ? 'selected' : ''); ?>>Full</option>
+                        <option value="Deposit" <?php echo e(($filterPaymentStatus ?? '') === 'Deposit' ? 'selected' : ''); ?>>Deposit</option>
+                        <option value="Balance" <?php echo e(($filterPaymentStatus ?? '') === 'Balance' ? 'selected' : ''); ?>>Balance</option>
+                        <option value="Verified" <?php echo e(($filterPaymentStatus ?? '') === 'Verified' ? 'selected' : ''); ?>>Verified</option>
+                        <option value="Pending" <?php echo e(($filterPaymentStatus ?? '') === 'Pending' ? 'selected' : ''); ?>>Pending</option>
+                    </select>
+                </div>
+                
+                <!-- Payment IsComplete Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment IsComplete</label>
+                    <select name="filter_payment_iscomplete" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="1" <?php echo e(($filterPaymentIsComplete ?? '') == '1' ? 'selected' : ''); ?>>Complete</option>
+                        <option value="0" <?php echo e(($filterPaymentIsComplete ?? '') == '0' ? 'selected' : ''); ?>>Incomplete</option>
+                    </select>
+                </div>
+                
+                <!-- Payment IsVerify Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Payment IsVerify</label>
+                    <select name="filter_payment_isverify" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="1" <?php echo e(($filterPaymentIsVerify ?? '') == '1' ? 'selected' : ''); ?>>Verified</option>
+                        <option value="0" <?php echo e(($filterPaymentIsVerify ?? '') == '0' ? 'selected' : ''); ?>>Not Verified</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-12 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-funnel"></i> Apply Filters
+                    </button>
+                    <?php if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify): ?>
+                        <a href="<?php echo e(route('admin.payments.index')); ?>" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="payment-table">
+        <div class="table-header">
+            <i class="bi bi-credit-card"></i> All Payments (<?php echo e($payments->total()); ?>)
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Payment ID</th>
+                        <th>Payment Bank Name</th>
+                        <th>Payment Bank Account No</th>
+                        <th>Payment Date</th>
+                        <th>Payment Type</th>
+                        <th>Payment Amount</th>
+                        <th>Transaction Reference</th>
+                        <th>Payment Receipt</th>
+                        <th>Is Payment Complete</th>
+                        <th>Payment Status</th>
+                        <th>Payment is Verify</th>
+                        <th>Verified By</th>
+                        <th>Generate Invoice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $__empty_1 = true; $__currentLoopData = $payments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $payment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <?php
+                            $booking = $payment->booking;
+                            $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                            $paidAmount = $payment->total_amount ?? 0;
+                            $isFullPayment = $paidAmount >= $totalRequired;
+                            
+                            // Determine payment type
+                            $depositAmount = $booking->deposit_amount ?? 0;
+                            $paymentType = 'Balance';
+                            if ($paidAmount <= $depositAmount && $depositAmount > 0) {
+                                $paymentType = 'Deposit';
+                            } elseif ($paidAmount >= $totalRequired) {
+                                $paymentType = 'Full Payment';
+                            }
+                            
+                            // Calculate total paid so far for this booking
+                            $totalPaidSoFar = $booking->payments()
+                                ->where('paymentID', '<=', $payment->paymentID)
+                                ->where('payment_status', 'Verified')
+                                ->sum('total_amount');
+                            
+                            // If this is the first payment and it's less than or equal to deposit, it's deposit
+                            if ($totalPaidSoFar <= $depositAmount && $depositAmount > 0) {
+                                $paymentType = 'Deposit';
+                            } elseif ($totalPaidSoFar > $depositAmount && $totalPaidSoFar < $totalRequired) {
+                                $paymentType = 'Balance';
+                            }
+                        ?>
+                        <tr>
+                            <td>
+                                <a href="<?php echo e(route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'booking-detail'])); ?>" 
+                                   class="text-decoration-none fw-bold text-primary"
+                                   target="_blank">
+                                    #<?php echo e($booking->bookingID ?? 'N/A'); ?>
+
+                                </a>
+                            </td>
+                            <td>
+                                <a href="<?php echo e(route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'transaction-detail'])); ?>" 
+                                   class="text-decoration-none fw-bold text-primary"
+                                   target="_blank">
+                                    <strong>#<?php echo e($payment->paymentID); ?></strong>
+                                </a>
+                            </td>
+                            <td>
+                                <?php echo e($payment->payment_bank_name ?? 'N/A'); ?>
+
+                            </td>
+                            <td>
+                                <?php echo e($payment->payment_bank_account_no ?? 'N/A'); ?>
+
+                            </td>
+                            <td>
+                                <?php if($payment->payment_date): ?>
+                                    <?php echo e(\Carbon\Carbon::parse($payment->payment_date)->format('d M Y')); ?>
+
+                                <?php else: ?>
+                                    <span class="text-muted">N/A</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="badge <?php echo e($paymentType === 'Deposit' ? 'bg-info' : ($paymentType === 'Balance' ? 'bg-warning text-dark' : 'bg-success')); ?>">
+                                    <?php echo e($paymentType); ?>
+
+                                </span>
+                            </td>
+                            <td>
+                                <strong>RM <?php echo e(number_format($payment->total_amount ?? 0, 2)); ?></strong>
+                            </td>
+                            <td>
+                                <?php if($payment->transaction_reference): ?>
+                                    <span class="text-muted small" title="Transaction Reference"><?php echo e(strlen($payment->transaction_reference) > 30 ? substr($payment->transaction_reference, 0, 30) . '...' : $payment->transaction_reference); ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">N/A</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php
+                                    // Get receipt from proof_of_payment, fallback to transaction_reference
+                                    $receiptPath = $payment->proof_of_payment ?? $payment->transaction_reference ?? null;
+                                    if ($receiptPath) {
+                                        // Check if it's a file path (image or PDF)
+                                        $isImagePath = str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/') || str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf');
+                                        
+                                        if ($isImagePath) {
+                                            $imageUrl = getFileUrl($receiptPath);
+                                        } else {
+                                            $imageUrl = null;
+                                        }
+                                    } else {
+                                        $imageUrl = null;
+                                    }
+                                ?>
+                                <?php if($imageUrl): ?>
+                                    <a href="<?php echo e($imageUrl); ?>" target="_blank" data-bs-toggle="modal" data-bs-target="#receiptModal<?php echo e($payment->paymentID); ?>">
+                                        <img src="<?php echo e($imageUrl); ?>" alt="Receipt" class="receipt-image" title="Click to view full size" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                        <span class="text-muted small" style="display:none;"><?php echo e($receiptPath); ?></span>
+                                    </a>
+                                    <!-- Receipt Modal -->
+                                    <div class="modal fade" id="receiptModal<?php echo e($payment->paymentID); ?>" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Receipt - Payment #<?php echo e($payment->paymentID); ?></h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body text-center">
+                                                    <?php if(str_contains(strtolower($receiptPath ?? ''), '.pdf')): ?>
+                                                        <iframe src="<?php echo e($imageUrl); ?>" style="width: 100%; height: 600px; border: none;"></iframe>
+                                                    <?php else: ?>
+                                                        <img src="<?php echo e($imageUrl); ?>" alt="Receipt" class="img-fluid" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <a href="<?php echo e($imageUrl); ?>" target="_blank" class="btn btn-primary">
+                                                        <i class="bi bi-download"></i> Open in New Tab
+                                                    </a>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="text-muted small">No receipt</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php
+                                    $isComplete = $payment->isPayment_complete ?? false;
+                                    // Auto-determine if full payment based on amount
+                                    if (!$isComplete && $isFullPayment) {
+                                        $isComplete = true;
+                                    }
+                                ?>
+                                <span class="badge <?php echo e($isComplete ? 'bg-success' : 'bg-warning text-dark'); ?>">
+                                    <?php echo e($isComplete ? 'Yes' : 'No'); ?>
+
+                                </span>
+                            </td>
+                            <td>
+                                <?php
+                                    $status = $payment->payment_status ?? 'Pending';
+                                    $statusClass = match($status) {
+                                        'Verified', 'Full' => 'bg-success',
+                                        'Pending' => 'bg-warning text-dark',
+                                        'Rejected' => 'bg-danger',
+                                        default => 'bg-secondary'
+                                    };
+                                ?>
+                                <span class="badge <?php echo e($statusClass); ?>">
+                                    <?php echo e($status); ?>
+
+                                </span>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm verify-dropdown" 
+                                        data-payment-id="<?php echo e($payment->paymentID); ?>"
+                                        data-field="payment_isVerify"
+                                        onchange="updatePaymentVerify(this)">
+                                    <option value="0" <?php echo e(($payment->payment_isVerify ?? false) ? '' : 'selected'); ?>>False</option>
+                                    <option value="1" <?php echo e(($payment->payment_isVerify ?? false) ? 'selected' : ''); ?>>True</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm verified-by-dropdown" 
+                                        data-payment-id="<?php echo e($payment->paymentID); ?>"
+                                        data-field="verified_by"
+                                        onchange="updateVerifiedBy(this)">
+                                    <option value="">Not Set</option>
+                                    <?php $__currentLoopData = $staffUsers ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $staff): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($staff->userID); ?>" <?php echo e(($payment->verified_by ?? null) == $staff->userID ? 'selected' : ''); ?>>
+                                            <?php echo e($staff->name); ?>
+
+                                        </option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </td>
+                            <td>
+                                <?php
+                                    $booking = $payment->booking;
+                                    $invoice = $booking->invoice ?? null;
+                                ?>
+                                <?php if($payment->payment_isVerify || $payment->payment_status === 'Verified' || $payment->payment_status === 'Full'): ?>
+                                    <a href="<?php echo e(route('admin.payments.invoice', $payment->paymentID)); ?>" class="btn btn-sm btn-primary" target="_blank">
+                                        <i class="bi bi-file-pdf"></i> Generate Invoice
+                                    </a>
+                                <?php else: ?>
+                                    <span class="text-muted small">Verify first</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <tr>
+                            <td colspan="14" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                <p class="mt-3 mb-0">No payments available.</p>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <?php if($payments->hasPages()): ?>
+            <div class="p-3 border-top">
+                <?php echo e($payments->links()); ?>
+
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- Success/Error Notification Toast (same style as booking detail page) -->
+<div id="notificationToast" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; display: none;">
+    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="toastHeader">
+            <i class="bi bi-check-circle me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <button type="button" class="btn-close" onclick="hideNotification()"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Message here
+        </div>
+    </div>
+</div>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+    // Update Payment isVerify via AJAX
+    function updatePaymentVerify(selectElement) {
+        const paymentId = selectElement.dataset.paymentId;
+        const newValue = selectElement.value;
+        const oldValue = selectElement.dataset.currentValue || (newValue === '1' ? '0' : '1');
+        
+        fetch(`<?php echo e(url('admin/payments')); ?>/${paymentId}/update-verify`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                payment_isVerify: newValue
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                selectElement.dataset.currentValue = newValue;
+                showNotification(data.message || 'Payment verification updated successfully.', true);
+                // Optionally refresh the page to update other fields
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification(data.message || 'Failed to update payment verification.', false);
+                selectElement.value = oldValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while updating.', false);
+            selectElement.value = oldValue;
+        });
+    }
+
+    // Update Verified By via AJAX
+    function updateVerifiedBy(selectElement) {
+        const paymentId = selectElement.dataset.paymentId;
+        const newValue = selectElement.value;
+        const oldValue = selectElement.dataset.currentValue || '';
+        
+        fetch(`<?php echo e(url('admin/payments')); ?>/${paymentId}/update-verified-by`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                verified_by: newValue || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                selectElement.dataset.currentValue = newValue;
+                showNotification(data.message || 'Verified by updated successfully.', true);
+            } else {
+                showNotification(data.message || 'Failed to update verified by.', false);
+                selectElement.value = oldValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while updating.', false);
+            selectElement.value = oldValue;
+        });
+    }
+
+    // Show notification (same style as booking detail page)
+    function showNotification(message, isSuccess = true) {
+        const toast = document.getElementById('notificationToast');
+        const header = document.getElementById('toastHeader');
+        const icon = document.getElementById('toastIcon');
+        const title = document.getElementById('toastTitle');
+        const body = document.getElementById('toastMessage');
+
+        header.className = 'toast-header ' + (isSuccess ? 'bg-success text-white' : 'bg-danger text-white');
+        icon.className = 'bi me-2 ' + (isSuccess ? 'bi-check-circle' : 'bi-x-circle');
+        title.textContent = isSuccess ? 'Success' : 'Error';
+        body.textContent = message;
+        toast.style.display = 'block';
+
+        setTimeout(() => {
+            hideNotification();
+        }, 4000);
+    }
+
+    function hideNotification() {
+        document.getElementById('notificationToast').style.display = 'none';
+    }
+</script>
+<?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/admin/payments/index.blade.php ENDPATH**/ ?>
