@@ -321,7 +321,7 @@ class AdminPaymentController extends Controller
     /**
      * Update Verify Toggle (Updated: 5 Bookings = 1 Voucher)
      */
-    public function updateVerify(Request $request, $id): \Illuminate\Http\RedirectResponse
+    public function updateVerify(Request $request, $id)
     {
         $payment = \App\Models\Payment::with(['booking.customer.user'])->findOrFail($id);
         $booking = $payment->booking;
@@ -544,6 +544,14 @@ class AdminPaymentController extends Controller
             }
         }
 
+        // Return JSON if requested, otherwise redirect
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment verification updated. Booking status synchronized.'
+            ]);
+        }
+
         return redirect()->route('admin.payments.index')->with('success', 'Payment verification updated. Booking status synchronized.');
     }
 
@@ -688,7 +696,7 @@ class AdminPaymentController extends Controller
     /**
      * Update verified by field for a payment
      */
-    public function updateVerifiedBy(Request $request, $id): RedirectResponse
+    public function updateVerifiedBy(Request $request, $id)
     {
         $payment = Payment::where('paymentID', $id)->firstOrFail();
         
@@ -701,6 +709,14 @@ class AdminPaymentController extends Controller
             'latest_Update_Date_Time' => now(),
         ]);
         
+        // Return JSON if requested, otherwise redirect
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Verified by updated successfully.'
+            ]);
+        }
+
         return redirect()->route('admin.payments.index')->with('success', 'Verified by updated successfully.');
     }
 }

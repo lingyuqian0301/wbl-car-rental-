@@ -335,6 +335,7 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
             Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations');
             Route::get('/reservations/{booking}', [AdminReservationController::class, 'show'])->name('reservations.show');
             Route::post('/reservations/{booking}/update-status', [AdminReservationController::class, 'updateBookingStatus'])->name('reservations.update-status');
+            Route::post('/reservations/{booking}/update-runner', [AdminReservationController::class, 'updateRunner'])->name('reservations.update-runner');
             Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
             Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
             Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews');
@@ -401,7 +402,9 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
             Route::put('/admin/{id}', [AdminSettingsController::class, 'updateAdmin'])->name('admin.update');
             Route::post('/staff', [AdminSettingsController::class, 'storeStaff'])->name('staff.store');
             Route::get('/staff/{staff}', [AdminSettingsController::class, 'showStaff'])->name('staff.show');
+            Route::get('/staff/{staff}/edit', [AdminSettingsController::class, 'editStaff'])->name('staff.edit');
             Route::put('/staff/{id}', [AdminSettingsController::class, 'updateStaff'])->name('staff.update');
+            Route::post('/staff/{staff}/upload-ic', [AdminSettingsController::class, 'uploadStaffIc'])->name('staff.upload-ic');
             Route::post('/staff/{staff}/task', [AdminSettingsController::class, 'storeTask'])->name('staff.task.store');
             Route::get('/staff/{staff}/export-excel', [AdminSettingsController::class, 'exportExcel'])->name('staff.export-excel');
             Route::get('/staff/{staff}/export-pdf', [AdminSettingsController::class, 'exportPdf'])->name('staff.export-pdf');

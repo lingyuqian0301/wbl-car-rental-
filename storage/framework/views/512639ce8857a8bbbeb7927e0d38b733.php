@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Dashboard') - Hasta Travel</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('image/favicon.jpg') }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title', 'Admin Dashboard'); ?> - Hasta Travel</title>
+    <link rel="icon" type="image/jpeg" href="<?php echo e(asset('image/favicon.jpg')); ?>">
 
     <!-- Bootstrap 5 + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -390,113 +390,111 @@
     <aside class="admin-sidebar">
         <nav class="sidebar-menu">
             <!-- Dashboard -->
-            <div class="menu-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                <a href="{{ route('admin.dashboard') }}">
+            <div class="menu-item <?php echo e(request()->routeIs('admin.dashboard') ? 'active' : ''); ?>">
+                <a href="<?php echo e(route('admin.dashboard')); ?>">
                     <i class="bi bi-speedometer2"></i>
                     <span>Dashboard</span>
                 </a>
             </div>
 
             <!-- Bookings -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.bookings.*') ? 'active open' : '' }}" data-menu="bookings">
+            <div class="menu-item has-submenu <?php echo e(request()->routeIs('admin.bookings.*') ? 'active open' : ''); ?>" data-menu="bookings">
                 <a onclick="toggleMenu('bookings')">
                     <i class="bi bi-calendar-check"></i>
                     <span>Bookings</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item {{ request()->routeIs('admin.bookings.reservations') ? 'active' : '' }}">
-                        <a href="{{ route('admin.bookings.reservations') }}"><i class="bi bi-list-ul"></i> Reservation</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.bookings.reservations') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.bookings.reservations')); ?>"><i class="bi bi-list-ul"></i> Reservation</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.bookings.calendar') ? 'active' : '' }}">
-                        <a href="{{ route('admin.bookings.calendar') }}"><i class="bi bi-calendar3"></i> Calendar</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.bookings.calendar') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.bookings.calendar')); ?>"><i class="bi bi-calendar3"></i> Calendar</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.bookings.cancellation') ? 'active' : '' }}">
-                        <a href="{{ route('admin.bookings.cancellation') }}"><i class="bi bi-x-circle"></i> Cancellation</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.bookings.cancellation') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.bookings.cancellation')); ?>"><i class="bi bi-x-circle"></i> Cancellation</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.runner.tasks') ? 'active' : '' }}">
-                        <a href="{{ route('admin.runner.tasks') }}"><i class="bi bi-truck"></i> Runner task</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.runner.tasks') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.runner.tasks')); ?>"><i class="bi bi-truck"></i> Runner task</a>
                     </div>
-                    {{-- Review menu item hidden as per user request --}}
-                    {{-- <div class="submenu-item {{ request()->routeIs('admin.bookings.reviews') ? 'active' : '' }}">
-                        <a href="{{ route('admin.bookings.reviews') }}"><i class="bi bi-star"></i> Review</a>
-                    </div> --}}
+                    
+                    
                 </div>
             </div>
 
             <!-- Manage -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.manage.*') ? 'active open' : '' }}" data-menu="manage">
+            <div class="menu-item has-submenu <?php echo e(request()->routeIs('admin.manage.*') ? 'active open' : ''); ?>" data-menu="manage">
                 <a onclick="toggleMenu('manage')">
                     <i class="bi bi-people"></i>
                     <span>Manage</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item {{ request()->routeIs('admin.manage.client') ? 'active' : '' }}">
-                        <a href="{{ route('admin.manage.client') }}"><i class="bi bi-person"></i> Client</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.manage.client') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.manage.client')); ?>"><i class="bi bi-person"></i> Client</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.leasing.owner') ? 'active' : '' }}">
-                        <a href="{{ route('admin.leasing.owner') }}"><i class="bi bi-building"></i> Owner</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.leasing.owner') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.leasing.owner')); ?>"><i class="bi bi-building"></i> Owner</a>
                     </div>
                 </div>
             </div>
 
             <!-- Fleet -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.vehicles.*') ? 'active open' : '' }}" data-menu="fleet">
+            <div class="menu-item has-submenu <?php echo e(request()->routeIs('admin.vehicles.*') ? 'active open' : ''); ?>" data-menu="fleet">
                 <a onclick="toggleMenu('fleet')">
                     <i class="bi bi-truck"></i>
                     <span>Fleet</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item {{ request()->routeIs('admin.vehicles.cars') ? 'active' : '' }}">
-                        <a href="{{ route('admin.vehicles.cars') }}"><i class="bi bi-car-front"></i> Car</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.vehicles.cars') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.vehicles.cars')); ?>"><i class="bi bi-car-front"></i> Car</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.vehicles.motorcycles') ? 'active' : '' }}">
-                        <a href="{{ route('admin.vehicles.motorcycles') }}"><i class="bi bi-bicycle"></i> Motorcycle</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.vehicles.motorcycles') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.vehicles.motorcycles')); ?>"><i class="bi bi-bicycle"></i> Motorcycle</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.vehicles.others') ? 'active' : '' }}">
-                        <a href="{{ route('admin.vehicles.others') }}"><i class="bi bi-box"></i> Others</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.vehicles.others') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.vehicles.others')); ?>"><i class="bi bi-box"></i> Others</a>
                     </div>
                 </div>
             </div>
 
             <!-- Billing and Account -->
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.payments.*') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.deposits.*') ? 'active open' : '' }}" data-menu="billing">
+            <div class="menu-item has-submenu <?php echo e(request()->routeIs('admin.payments.*') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.deposits.*') ? 'active open' : ''); ?>" data-menu="billing">
                 <a onclick="toggleMenu('billing')">
                     <i class="bi bi-receipt-cutoff"></i>
                     <span>Billing and Account</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.invoices.index') }}"><i class="bi bi-file-earmark-text"></i> Invoices</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.invoices.*') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.invoices.index')); ?>"><i class="bi bi-file-earmark-text"></i> Invoices</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.payments.index') }}"><i class="bi bi-credit-card"></i> Payment</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.payments.*') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.payments.index')); ?>"><i class="bi bi-credit-card"></i> Payment</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.deposits.*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.deposits.index') }}"><i class="bi bi-wallet"></i> Deposit</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.deposits.*') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.deposits.index')); ?>"><i class="bi bi-wallet"></i> Deposit</a>
                     </div>
                 </div>
             </div>
 
             <!-- Reports (Admin Only - Exclude StaffIT) -->
-            @if(auth()->check() && auth()->user()->isAdmin() && !auth()->user()->isStaffIT())
-            <div class="menu-item has-submenu {{ request()->routeIs('admin.reports.*') ? 'active open' : '' }}" data-menu="reports">
+            <?php if(auth()->check() && auth()->user()->isAdmin() && !auth()->user()->isStaffIT()): ?>
+            <div class="menu-item has-submenu <?php echo e(request()->routeIs('admin.reports.*') ? 'active open' : ''); ?>" data-menu="reports">
                 <a onclick="toggleMenu('reports')">
                     <i class="bi bi-graph-up"></i>
                     <span>Reports</span>
                 </a>
                 <div class="submenu">
-                    <div class="submenu-item {{ request()->routeIs('admin.reports.rentals') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.rentals') }}"><i class="bi bi-calendar-range"></i> Rentals</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.reports.rentals') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.reports.rentals')); ?>"><i class="bi bi-calendar-range"></i> Rentals</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.reports.charts') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.charts') }}"><i class="bi bi-bar-chart"></i> Charts</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.reports.charts') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.reports.charts')); ?>"><i class="bi bi-bar-chart"></i> Charts</a>
                     </div>
-                    <div class="submenu-item {{ request()->routeIs('admin.reports.finance') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.finance') }}"><i class="bi bi-cash-stack"></i> Finance</a>
+                    <div class="submenu-item <?php echo e(request()->routeIs('admin.reports.finance') ? 'active' : ''); ?>">
+                        <a href="<?php echo e(route('admin.reports.finance')); ?>"><i class="bi bi-cash-stack"></i> Finance</a>
                     </div>
                 </div>
             </div>
-            @endif
+            <?php endif; ?>
         </nav>
     </aside>
 
@@ -507,13 +505,13 @@
                 <h1>HASTA</h1>
                 <span>Travel</span>
             </div>
-            <a href="{{ route('admin.dashboard') }}" class="topbar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+            <a href="<?php echo e(route('admin.dashboard')); ?>" class="topbar-link <?php echo e(request()->routeIs('admin.dashboard') ? 'active' : ''); ?>">
                 <i class="bi bi-graph-up-arrow"></i> Latest
             </a>
             <a href="http://127.0.0.1:8000/" class="topbar-link">
                 <i class="bi bi-person-circle"></i> Customer
             </a>
-            <a href="{{ route('admin.topbar-calendar.index') }}" class="topbar-link {{ request()->routeIs('admin.topbar-calendar.*') ? 'active' : '' }}">
+            <a href="<?php echo e(route('admin.topbar-calendar.index')); ?>" class="topbar-link <?php echo e(request()->routeIs('admin.topbar-calendar.*') ? 'active' : ''); ?>">
                 <i class="bi bi-calendar-event"></i> Calendar
             </a>
         </div>
@@ -536,7 +534,7 @@
                     </li>
                     <li><hr class="dropdown-divider m-0"></li>
                     <li>
-                        <a class="dropdown-item text-center py-2" href="{{ route('admin.notifications.index') }}">
+                        <a class="dropdown-item text-center py-2" href="<?php echo e(route('admin.notifications.index')); ?>">
                             <i class="bi bi-list-ul"></i> View All Notifications
                         </a>
                     </li>
@@ -544,19 +542,19 @@
             </div>
             <div class="profile-dropdown">
                 <button class="profile-btn" type="button" id="profileDropdown" data-bs-toggle="dropdown">
-                    <div class="profile-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
-                    <span class="profile-name">{{ Auth::user()->name }}</span>
+                    <div class="profile-avatar"><?php echo e(strtoupper(substr(Auth::user()->name, 0, 1))); ?></div>
+                    <span class="profile-name"><?php echo e(Auth::user()->name); ?></span>
                     <i class="bi bi-chevron-down"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="bi bi-person"></i> Profile</a></li>
-                    @if(auth()->check() && auth()->user()->isAdmin())
-                    <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}"><i class="bi bi-gear"></i> Settings</a></li>
-                    @endif
+                    <li><a class="dropdown-item" href="<?php echo e(route('profile.edit')); ?>"><i class="bi bi-person"></i> Profile</a></li>
+                    <?php if(auth()->check() && auth()->user()->isAdmin()): ?>
+                    <li><a class="dropdown-item" href="<?php echo e(route('admin.settings.index')); ?>"><i class="bi bi-gear"></i> Settings</a></li>
+                    <?php endif; ?>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
+                        <form method="POST" action="<?php echo e(route('logout')); ?>">
+                            <?php echo csrf_field(); ?>
                             <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right"></i> Logout</button>
                         </form>
                     </li>
@@ -567,7 +565,7 @@
 
     <!-- Main Content -->
     <main class="admin-content">
-        @yield('content')
+        <?php echo $__env->yieldContent('content'); ?>
     </main>
 
     <!-- Bootstrap JS -->
@@ -641,7 +639,7 @@
 
         // Load notification count and list
         function loadNotifications() {
-            fetch('{{ route("admin.notifications.unread-count") }}')
+            fetch('<?php echo e(route("admin.notifications.unread-count")); ?>')
                 .then(response => response.json())
                 .then(data => {
                     const badge = document.getElementById('notificationBadge');
@@ -670,7 +668,7 @@
                     }
                 });
 
-            fetch('{{ route("admin.notifications.dropdown-list") }}')
+            fetch('<?php echo e(route("admin.notifications.dropdown-list")); ?>')
                 .then(response => response.json())
                 .then(data => {
                     const list = document.getElementById('notificationList');
@@ -678,7 +676,7 @@
                     if (list) {
                         if (data.notifications && data.notifications.length > 0) {
                             list.innerHTML = data.notifications.map(notif => `
-                                <a class="dropdown-item notification-item ${!notif.is_read ? 'unread' : ''}" href="{{ route('admin.notifications.index') }}" style="white-space: normal; padding: 10px 15px;">
+                                <a class="dropdown-item notification-item ${!notif.is_read ? 'unread' : ''}" href="<?php echo e(route('admin.notifications.index')); ?>" style="white-space: normal; padding: 10px 15px;">
                                     <div class="d-flex align-items-start gap-2">
                                         <div class="notification-icon" style="font-size: 1.2rem; margin-top: 2px;">
                                             ${getNotificationIcon(notif.type)}
@@ -711,7 +709,8 @@
         setInterval(loadNotifications, 30000);
     </script>
 
-    @yield('scripts')
-    @stack('scripts')
+    <?php echo $__env->yieldContent('scripts'); ?>
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
+<?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/layouts/admin.blade.php ENDPATH**/ ?>

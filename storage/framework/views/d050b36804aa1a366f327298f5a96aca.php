@@ -1,8 +1,6 @@
-@extends('layouts.admin')
+<?php $__env->startSection('title', 'Booking Details #' . $booking->bookingID); ?>
 
-@section('title', 'Booking Details #' . $booking->bookingID)
-
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
     .booking-detail-header {
         background: linear-gradient(135deg, var(--admin-red) 0%, var(--admin-red-dark) 100%);
@@ -118,132 +116,135 @@
         font-weight: 600;
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid py-2">
     <!-- Header -->
     <div class="booking-detail-header">
         <div class="d-flex justify-content-between align-items-start">
             <div>
-                <h1>Booking Details #{{ $booking->bookingID }}</h1>
+                <h1>Booking Details #<?php echo e($booking->bookingID); ?></h1>
                 <div class="booking-meta">
                     <div class="meta-item">
                         <i class="bi bi-person"></i>
-                        <span>{{ $booking->customer->user->name ?? 'Unknown Customer' }}</span>
+                        <span><?php echo e($booking->customer->user->name ?? 'Unknown Customer'); ?></span>
                     </div>
                     <div class="meta-item">
                         <i class="bi bi-car-front"></i>
-                        <span>{{ $booking->vehicle->vehicle_brand ?? '' }} {{ $booking->vehicle->vehicle_model ?? '' }}</span>
+                        <span><?php echo e($booking->vehicle->vehicle_brand ?? ''); ?> <?php echo e($booking->vehicle->vehicle_model ?? ''); ?></span>
                     </div>
                     <div class="meta-item">
                         <i class="bi bi-calendar-check"></i>
-                        <span>{{ \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') }}</span>
+                        <span><?php echo e(\Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y')); ?></span>
                     </div>
                     <div class="meta-item">
-                        <span class="badge-status {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : 'bg-secondary') }}">
-                            {{ $booking->booking_status }}
+                        <span class="badge-status <?php echo e($booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : 'bg-secondary')); ?>">
+                            <?php echo e($booking->booking_status); ?>
+
                         </span>
                     </div>
                 </div>
             </div>
-            <a href="{{ route('admin.bookings.reservations') }}" class="btn btn-light">
+            <a href="<?php echo e(route('admin.bookings.reservations')); ?>" class="btn btn-light">
                 <i class="bi bi-arrow-left"></i> Back to Reservations
             </a>
         </div>
     </div>
 
-    @if(session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+            <?php echo e(session('success')); ?>
 
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    @endif
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo e(session('error')); ?>
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
     <!-- Dynamic Tabs -->
     <div class="dynamic-tabs">
         <ul class="nav nav-tabs" id="bookingDetailTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'booking-detail' ? 'active' : '' }}" 
+                <button class="nav-link <?php echo e($activeTab === 'booking-detail' ? 'active' : ''); ?>" 
                         id="booking-detail-tab" 
                         data-bs-toggle="tab" 
                         data-bs-target="#booking-detail" 
                         type="button" 
                         role="tab"
                         aria-controls="booking-detail"
-                        aria-selected="{{ $activeTab === 'booking-detail' ? 'true' : 'false' }}"
+                        aria-selected="<?php echo e($activeTab === 'booking-detail' ? 'true' : 'false'); ?>"
                         onclick="updateUrl('booking-detail')">
                     <i class="bi bi-info-circle"></i> Booking Detail
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'vehicle-detail' ? 'active' : '' }}" 
+                <button class="nav-link <?php echo e($activeTab === 'vehicle-detail' ? 'active' : ''); ?>" 
                         id="vehicle-detail-tab" 
                         data-bs-toggle="tab" 
                         data-bs-target="#vehicle-detail" 
                         type="button" 
                         role="tab"
                         aria-controls="vehicle-detail"
-                        aria-selected="{{ $activeTab === 'vehicle-detail' ? 'true' : 'false' }}"
+                        aria-selected="<?php echo e($activeTab === 'vehicle-detail' ? 'true' : 'false'); ?>"
                         onclick="updateUrl('vehicle-detail')">
                     <i class="bi bi-car-front"></i> Vehicle Detail
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'customer-detail' ? 'active' : '' }}" 
+                <button class="nav-link <?php echo e($activeTab === 'customer-detail' ? 'active' : ''); ?>" 
                         id="customer-detail-tab" 
                         data-bs-toggle="tab" 
                         data-bs-target="#customer-detail" 
                         type="button" 
                         role="tab"
                         aria-controls="customer-detail"
-                        aria-selected="{{ $activeTab === 'customer-detail' ? 'true' : 'false' }}"
+                        aria-selected="<?php echo e($activeTab === 'customer-detail' ? 'true' : 'false'); ?>"
                         onclick="updateUrl('customer-detail')">
                     <i class="bi bi-person"></i> Customer Detail
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'pickup-condition' ? 'active' : '' }}" 
+                <button class="nav-link <?php echo e($activeTab === 'pickup-condition' ? 'active' : ''); ?>" 
                         id="pickup-condition-tab" 
                         data-bs-toggle="tab" 
                         data-bs-target="#pickup-condition" 
                         type="button" 
                         role="tab"
                         aria-controls="pickup-condition"
-                        aria-selected="{{ $activeTab === 'pickup-condition' ? 'true' : 'false' }}"
+                        aria-selected="<?php echo e($activeTab === 'pickup-condition' ? 'true' : 'false'); ?>"
                         onclick="updateUrl('pickup-condition')">
                     <i class="bi bi-calendar-check"></i> Pickup Condition Form
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'return-condition' ? 'active' : '' }}" 
+                <button class="nav-link <?php echo e($activeTab === 'return-condition' ? 'active' : ''); ?>" 
                         id="return-condition-tab" 
                         data-bs-toggle="tab" 
                         data-bs-target="#return-condition" 
                         type="button" 
                         role="tab"
                         aria-controls="return-condition"
-                        aria-selected="{{ $activeTab === 'return-condition' ? 'true' : 'false' }}"
+                        aria-selected="<?php echo e($activeTab === 'return-condition' ? 'true' : 'false'); ?>"
                         onclick="updateUrl('return-condition')">
                     <i class="bi bi-calendar-x"></i> Return Condition Form
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'transaction-detail' ? 'active' : '' }}" 
+                <button class="nav-link <?php echo e($activeTab === 'transaction-detail' ? 'active' : ''); ?>" 
                         id="transaction-detail-tab" 
                         data-bs-toggle="tab" 
                         data-bs-target="#transaction-detail" 
                         type="button" 
                         role="tab"
                         aria-controls="transaction-detail"
-                        aria-selected="{{ $activeTab === 'transaction-detail' ? 'true' : 'false' }}"
+                        aria-selected="<?php echo e($activeTab === 'transaction-detail' ? 'true' : 'false'); ?>"
                         onclick="updateUrl('transaction-detail')">
                     <i class="bi bi-receipt"></i> Transaction Detail
                 </button>
@@ -252,7 +253,7 @@
 
         <div class="tab-content" id="bookingDetailTabContent">
             <!-- Booking Detail Tab -->
-            <div class="tab-pane fade {{ $activeTab === 'booking-detail' ? 'show active' : '' }}" 
+            <div class="tab-pane fade <?php echo e($activeTab === 'booking-detail' ? 'show active' : ''); ?>" 
                  id="booking-detail" 
                  role="tabpanel" 
                  aria-labelledby="booking-detail-tab">
@@ -269,24 +270,26 @@
                             <dl class="mb-0">
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Booking ID:</dt>
-                                    <dd class="d-inline ms-2"><strong>#{{ $booking->bookingID }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong>#<?php echo e($booking->bookingID); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Booking Status:</dt>
                                     <dd class="d-inline ms-2">
-                                <span class="badge-status {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-secondary')) }}">
-                                    {{ $booking->booking_status }}
+                                <span class="badge-status <?php echo e($booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-secondary'))); ?>">
+                                    <?php echo e($booking->booking_status); ?>
+
                                 </span>
                                     </dd>
                             </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Served By:</dt>
-                                    <dd class="d-inline ms-2" id="servedByDisplay">{{ $staffServed->name ?? 'Not Assigned' }}</dd>
+                                    <dd class="d-inline ms-2" id="servedByDisplay"><?php echo e($staffServed->name ?? 'Not Assigned'); ?></dd>
                         </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Last Updated:</dt>
                                     <dd class="d-inline ms-2">
-                                {{ $booking->lastUpdateDate ? \Carbon\Carbon::parse($booking->lastUpdateDate)->format('d M Y, H:i') : 'N/A' }}
+                                <?php echo e($booking->lastUpdateDate ? \Carbon\Carbon::parse($booking->lastUpdateDate)->format('d M Y, H:i') : 'N/A'); ?>
+
                                     </dd>
                             </div>
                             </dl>
@@ -308,7 +311,7 @@
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Runner:</dt>
                                     <dd class="d-inline ms-2" id="runnerAssignedDisplay">
-                                        @php
+                                        <?php
                                             $runnerUser = null;
                                             if ($booking->staff_served) {
                                                 $user = \App\Models\User::find($booking->staff_served);
@@ -316,27 +319,29 @@
                                                     $runnerUser = $user;
                                                 }
                                             }
-                                        @endphp
-                                        {{ $runnerUser->name ?? 'Not Assigned' }}
+                                        ?>
+                                        <?php echo e($runnerUser->name ?? 'Not Assigned'); ?>
+
                                     </dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Pickup Point:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->pickup_point ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->pickup_point ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Return Point:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->return_point ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->return_point ?? 'N/A'); ?></dd>
                                 </div>
-                                @php
+                                <?php
                                     $needsRunner = (!empty($booking->pickup_point) && $booking->pickup_point !== 'HASTA HQ Office') ||
                                                    (!empty($booking->return_point) && $booking->return_point !== 'HASTA HQ Office');
-                                @endphp
+                                ?>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Runner Required:</dt>
                                     <dd class="d-inline ms-2">
-                                        <span class="badge {{ $needsRunner ? 'bg-warning text-dark' : 'bg-secondary' }}">
-                                            {{ $needsRunner ? 'Yes' : 'No' }}
+                                        <span class="badge <?php echo e($needsRunner ? 'bg-warning text-dark' : 'bg-secondary'); ?>">
+                                            <?php echo e($needsRunner ? 'Yes' : 'No'); ?>
+
                                         </span>
                                     </dd>
                                 </div>
@@ -354,23 +359,23 @@
                             <dl class="mb-0">
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Rental Start Date:</dt>
-                                    <dd class="d-inline ms-2"><strong>{{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong><?php echo e($booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A'); ?></strong></dd>
                         </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Rental End Date:</dt>
-                                    <dd class="d-inline ms-2"><strong>{{ $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A' }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong><?php echo e($booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A'); ?></strong></dd>
                         </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Duration:</dt>
-                                    <dd class="d-inline ms-2"><strong>{{ $booking->duration ?? 0 }} days</strong></dd>
+                                    <dd class="d-inline ms-2"><strong><?php echo e($booking->duration ?? 0); ?> days</strong></dd>
                         </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Pickup Location:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->pickup_point ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->pickup_point ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Return Location:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->return_point ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->return_point ?? 'N/A'); ?></dd>
                                 </div>
                             </dl>
                         </div>
@@ -386,22 +391,22 @@
                             <dl class="mb-0">
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Rental Amount:</dt>
-                                    <dd class="d-inline ms-2"><strong>RM {{ number_format($booking->rental_amount ?? 0, 2) }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong>RM <?php echo e(number_format($booking->rental_amount ?? 0, 2)); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Deposit Amount:</dt>
-                                    <dd class="d-inline ms-2"><strong>RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong>RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Total Amount:</dt>
-                                    <dd class="d-inline ms-2"><strong>RM {{ number_format($totalRequired, 2) }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong>RM <?php echo e(number_format($totalRequired, 2)); ?></strong></dd>
                                 </div>
-                                @if($booking->additionalCharges)
+                                <?php if($booking->additionalCharges): ?>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Additional Charges:</dt>
-                                    <dd class="d-inline ms-2"><strong>RM {{ number_format($booking->additionalCharges->total_extra_charge ?? 0, 2) }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong>RM <?php echo e(number_format($booking->additionalCharges->total_extra_charge ?? 0, 2)); ?></strong></dd>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                             </dl>
                         </div>
                     </div>
@@ -410,7 +415,7 @@
                 </div>
 
             <!-- Vehicle Detail Tab -->
-            <div class="tab-pane fade {{ $activeTab === 'vehicle-detail' ? 'show active' : '' }}" 
+            <div class="tab-pane fade <?php echo e($activeTab === 'vehicle-detail' ? 'show active' : ''); ?>" 
                  id="vehicle-detail" 
                  role="tabpanel" 
                  aria-labelledby="vehicle-detail-tab">
@@ -419,7 +424,7 @@
                     <div class="card">
                         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-car-front"></i> Vehicle Information</h5>
-                            <a href="{{ route('admin.vehicles.show', $booking->vehicle->vehicleID) }}" class="btn btn-sm btn-light" target="_blank">
+                            <a href="<?php echo e(route('admin.vehicles.show', $booking->vehicle->vehicleID)); ?>" class="btn btn-sm btn-light" target="_blank">
                                 <i class="bi bi-box-arrow-up-right"></i> View Full Vehicle Details
                             </a>
                         </div>
@@ -427,180 +432,189 @@
                             <dl class="mb-0">
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle ID:</dt>
-                                    <dd class="d-inline ms-2"><strong>#{{ $booking->vehicle->vehicleID ?? 'N/A' }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong>#<?php echo e($booking->vehicle->vehicleID ?? 'N/A'); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle Brand:</dt>
-                                    <dd class="d-inline ms-2"><strong>{{ $booking->vehicle->vehicle_brand ?? 'N/A' }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong><?php echo e($booking->vehicle->vehicle_brand ?? 'N/A'); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle Model:</dt>
-                                    <dd class="d-inline ms-2"><strong>{{ $booking->vehicle->vehicle_model ?? 'N/A' }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong><?php echo e($booking->vehicle->vehicle_model ?? 'N/A'); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Plate Number:</dt>
-                                    <dd class="d-inline ms-2"><strong>{{ $booking->vehicle->plate_number ?? 'N/A' }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong><?php echo e($booking->vehicle->plate_number ?? 'N/A'); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle Type:</dt>
-                                    <dd class="d-inline ms-2">{{ ucfirst($booking->vehicle->vehicleType ?? 'N/A') }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e(ucfirst($booking->vehicle->vehicleType ?? 'N/A')); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Rental Price (per day):</dt>
-                                    <dd class="d-inline ms-2"><strong>RM {{ number_format($booking->vehicle->rental_price ?? 0, 2) }}</strong></dd>
+                                    <dd class="d-inline ms-2"><strong>RM <?php echo e(number_format($booking->vehicle->rental_price ?? 0, 2)); ?></strong></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Manufacturing Year:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->vehicle->manufacturing_year ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->vehicle->manufacturing_year ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Color:</dt>
-                                    <dd class="d-inline ms-2">{{ ucfirst($booking->vehicle->color ?? 'N/A') }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e(ucfirst($booking->vehicle->color ?? 'N/A')); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Engine Capacity:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->vehicle->engineCapacity ?? 'N/A' }} L</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->vehicle->engineCapacity ?? 'N/A'); ?> L</dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle Status:</dt>
                                     <dd class="d-inline ms-2">
-                                        <span class="badge-status {{ $booking->vehicle->availability_status === 'available' ? 'bg-success' : ($booking->vehicle->availability_status === 'rented' ? 'bg-info' : ($booking->vehicle->availability_status === 'maintenance' ? 'bg-warning text-dark' : 'bg-secondary')) }}">
-                                            {{ ucfirst($booking->vehicle->availability_status ?? 'N/A') }}
+                                        <span class="badge-status <?php echo e($booking->vehicle->availability_status === 'available' ? 'bg-success' : ($booking->vehicle->availability_status === 'rented' ? 'bg-info' : ($booking->vehicle->availability_status === 'maintenance' ? 'bg-warning text-dark' : 'bg-secondary'))); ?>">
+                                            <?php echo e(ucfirst($booking->vehicle->availability_status ?? 'N/A')); ?>
+
                                         </span>
                                     </dd>
                                 </div>
-                                @if($booking->vehicle->car)
+                                <?php if($booking->vehicle->car): ?>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Car Type:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->vehicle->car->car_type ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->vehicle->car->car_type ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Seating Capacity:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->vehicle->car->seating_capacity ?? 'N/A' }} seats</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->vehicle->car->seating_capacity ?? 'N/A'); ?> seats</dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Transmission:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->vehicle->car->transmission ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->vehicle->car->transmission ?? 'N/A'); ?></dd>
                                 </div>
-                                @endif
-                                @if($booking->vehicle->motorcycle)
+                                <?php endif; ?>
+                                <?php if($booking->vehicle->motorcycle): ?>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Motor Type:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->vehicle->motorcycle->motor_type ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->vehicle->motorcycle->motor_type ?? 'N/A'); ?></dd>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                             </dl>
                         </div>
                     </div>
                 </div>
-                @if($booking->vehicle->owner)
+                <?php if($booking->vehicle->owner): ?>
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-person-circle"></i> Owner Information</h5>
                     </div>
                         <div class="card-body">
-                            @if($booking->vehicle->owner)
+                            <?php if($booking->vehicle->owner): ?>
                             <div class="row">
                                 <div class="col-md-6">
                                         <dl class="row mb-0">
                                             <dt class="col-5">Owner ID:</dt>
-                                            <dd class="col-7">{{ $booking->vehicle->owner->ownerID ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($booking->vehicle->owner->ownerID ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Owner Name:</dt>
                                             <dd class="col-7">
-                                                @php
+                                                <?php
                                                     $ownerName = 'N/A';
                                                     if ($booking->vehicle->owner && $booking->vehicle->owner->personDetails) {
                                                         $ownerName = $booking->vehicle->owner->personDetails->fullname ?? 'N/A';
                                                     }
-                                                @endphp
-                                                {{ $ownerName }}
+                                                ?>
+                                                <?php echo e($ownerName); ?>
+
                                             </dd>
                                             
                                             <dt class="col-5">IC No:</dt>
-                                            <dd class="col-7">{{ $booking->vehicle->owner->ic_no ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($booking->vehicle->owner->ic_no ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Contact:</dt>
-                                            <dd class="col-7">{{ $booking->vehicle->owner->contact_number ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($booking->vehicle->owner->contact_number ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Email:</dt>
-                                            <dd class="col-7">{{ $booking->vehicle->owner->email ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($booking->vehicle->owner->email ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Bank Name:</dt>
-                                            <dd class="col-7">{{ $booking->vehicle->owner->bankname ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($booking->vehicle->owner->bankname ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Bank Account No:</dt>
-                                            <dd class="col-7">{{ $booking->vehicle->owner->bank_acc_number ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($booking->vehicle->owner->bank_acc_number ?? 'N/A'); ?></dd>
                                         </dl>
                 </div>
                                     <div class="col-md-6">
                                         <dl class="row mb-0">
                                             <dt class="col-5">Registration Date:</dt>
                                             <dd class="col-7">
-                                                @if($booking->vehicle->owner->registration_date)
+                                                <?php if($booking->vehicle->owner->registration_date): ?>
                                                     @try
-                                                        {{ \Carbon\Carbon::parse($booking->vehicle->owner->registration_date)->format('d M Y') }}
+                                                        <?php echo e(\Carbon\Carbon::parse($booking->vehicle->owner->registration_date)->format('d M Y')); ?>
+
                                                     @catch(\Exception $e)
-                                                        {{ $booking->vehicle->owner->registration_date }}
+                                                        <?php echo e($booking->vehicle->owner->registration_date); ?>
+
                                                     @endtry
-                                                @else
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Leasing Price:</dt>
-                                            <dd class="col-7">RM {{ number_format($booking->vehicle->owner->leasing_price ?? 0, 2) }}</dd>
+                                            <dd class="col-7">RM <?php echo e(number_format($booking->vehicle->owner->leasing_price ?? 0, 2)); ?></dd>
                                             
                                             <dt class="col-5">Leasing Due Date:</dt>
                                             <dd class="col-7">
-                                                @if($booking->vehicle->owner->leasing_due_date)
+                                                <?php if($booking->vehicle->owner->leasing_due_date): ?>
                                                     @try
-                                                        {{ \Carbon\Carbon::parse($booking->vehicle->owner->leasing_due_date)->format('d M Y') }}
+                                                        <?php echo e(\Carbon\Carbon::parse($booking->vehicle->owner->leasing_due_date)->format('d M Y')); ?>
+
                                                     @catch(\Exception $e)
-                                                        {{ $booking->vehicle->owner->leasing_due_date }}
+                                                        <?php echo e($booking->vehicle->owner->leasing_due_date); ?>
+
                                                     @endtry
-                                                @else
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">License Expiry Date:</dt>
                                             <dd class="col-7">
-                                                @if($booking->vehicle->owner->license_expirydate)
+                                                <?php if($booking->vehicle->owner->license_expirydate): ?>
                                                     @try
-                                                        {{ \Carbon\Carbon::parse($booking->vehicle->owner->license_expirydate)->format('d M Y') }}
+                                                        <?php echo e(\Carbon\Carbon::parse($booking->vehicle->owner->license_expirydate)->format('d M Y')); ?>
+
                                                     @catch(\Exception $e)
-                                                        {{ $booking->vehicle->owner->license_expirydate }}
+                                                        <?php echo e($booking->vehicle->owner->license_expirydate); ?>
+
                                                     @endtry
-                                                @else
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Status:</dt>
                                             <dd class="col-7">
-                                                <span class="badge {{ ($booking->vehicle->owner->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                                    {{ ($booking->vehicle->owner->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                                <span class="badge <?php echo e(($booking->vehicle->owner->isActive ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
+                                                    <?php echo e(($booking->vehicle->owner->isActive ?? false) ? 'Active' : 'Inactive'); ?>
+
                                                 </span>
                                             </dd>
                                         </dl>
                         </div>
                         </div>
-                            @else
+                            <?php else: ?>
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i> No owner information available for this vehicle.
                         </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                         </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
 
             <!-- Customer Detail Tab -->
-            <div class="tab-pane fade {{ $activeTab === 'customer-detail' ? 'show active' : '' }}" 
+            <div class="tab-pane fade <?php echo e($activeTab === 'customer-detail' ? 'show active' : ''); ?>" 
                  id="customer-detail" 
                  role="tabpanel" 
                  aria-labelledby="customer-detail-tab">
@@ -609,7 +623,7 @@
                     <div class="card">
                         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-person-circle"></i> User Info</h5>
-                            <a href="{{ route('admin.customers.show', ['customer' => $booking->customer->customerID]) }}" class="btn btn-sm btn-light" target="_blank">
+                            <a href="<?php echo e(route('admin.customers.show', ['customer' => $booking->customer->customerID])); ?>" class="btn btn-sm btn-light" target="_blank">
                                 <i class="bi bi-box-arrow-up-right"></i> View Full Customer Details
                             </a>
             </div>
@@ -617,51 +631,52 @@
                             <dl class="mb-0">
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">User ID:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->userID ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->userID ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Username:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->username ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->username ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Email:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->email ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->email ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Phone:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->phone ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->phone ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Name:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->name ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->name ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Last Login:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->lastLogin ? \Carbon\Carbon::parse($booking->customer->user->lastLogin)->format('d M Y H:i') : 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->lastLogin ? \Carbon\Carbon::parse($booking->customer->user->lastLogin)->format('d M Y H:i') : 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Date Registered:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->dateRegistered ? \Carbon\Carbon::parse($booking->customer->user->dateRegistered)->format('d M Y') : 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->dateRegistered ? \Carbon\Carbon::parse($booking->customer->user->dateRegistered)->format('d M Y') : 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Date of Birth:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->DOB ? \Carbon\Carbon::parse($booking->customer->user->DOB)->format('d M Y') : 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->user->DOB ? \Carbon\Carbon::parse($booking->customer->user->DOB)->format('d M Y') : 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Age:</dt>
                                     <dd class="d-inline ms-2">
-                                        @if($booking->customer->user->DOB)
-                                            {{ \Carbon\Carbon::parse($booking->customer->user->DOB)->age }} years
-                                        @else
+                                        <?php if($booking->customer->user->DOB): ?>
+                                            <?php echo e(\Carbon\Carbon::parse($booking->customer->user->DOB)->age); ?> years
+                                        <?php else: ?>
                                             N/A
-                                        @endif
+                                        <?php endif; ?>
                                     </dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Status:</dt>
                                     <dd class="d-inline ms-2">
-                                        <span class="badge {{ ($booking->customer->user->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                            {{ ($booking->customer->user->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                        <span class="badge <?php echo e(($booking->customer->user->isActive ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
+                                            <?php echo e(($booking->customer->user->isActive ?? false) ? 'Active' : 'Inactive'); ?>
+
                                         </span>
                                     </dd>
                                 </div>
@@ -681,119 +696,130 @@
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Type:</dt>
                                     <dd class="d-inline ms-2">
-                                        @if($booking->customer->local)
+                                        <?php if($booking->customer->local): ?>
                                             Local
-                                        @elseif($booking->customer->international)
+                                        <?php elseif($booking->customer->international): ?>
                                             International
-                                        @else
+                                        <?php else: ?>
                                             N/A
-                                        @endif
-                                        @if($booking->customer->localStudent || $booking->customer->internationalStudent)
+                                        <?php endif; ?>
+                                        <?php if($booking->customer->localStudent || $booking->customer->internationalStudent): ?>
                                             / Student
-                                        @elseif($booking->customer->localUtmStaff || $booking->customer->internationalUtmStaff)
+                                        <?php elseif($booking->customer->localUtmStaff || $booking->customer->internationalUtmStaff): ?>
                                             / Staff
-                                        @endif
+                                        <?php endif; ?>
                                     </dd>
                                 </div>
                                 <div class="mb-2">
-                                    <dt class="d-inline fw-semibold">{{ $booking->customer->local ? 'IC No' : 'Passport No' }}:</dt>
+                                    <dt class="d-inline fw-semibold"><?php echo e($booking->customer->local ? 'IC No' : 'Passport No'); ?>:</dt>
                                     <dd class="d-inline ms-2">
-                                        {{ $booking->customer->local->ic_no ?? ($booking->customer->international->passport_no ?? 'N/A') }}
+                                        <?php echo e($booking->customer->local->ic_no ?? ($booking->customer->international->passport_no ?? 'N/A')); ?>
+
                                     </dd>
                                 </div>
                                 <div class="mb-2">
-                                    <dt class="d-inline fw-semibold">{{ $booking->customer->local ? 'State of Origin' : 'Country of Origin' }}:</dt>
+                                    <dt class="d-inline fw-semibold"><?php echo e($booking->customer->local ? 'State of Origin' : 'Country of Origin'); ?>:</dt>
                                     <dd class="d-inline ms-2">
-                                        {{ $booking->customer->local->stateOfOrigin ?? ($booking->customer->international->countryOfOrigin ?? 'N/A') }}
+                                        <?php echo e($booking->customer->local->stateOfOrigin ?? ($booking->customer->international->countryOfOrigin ?? 'N/A')); ?>
+
                                     </dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Address:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->address ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->address ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">License Expiry Date:</dt>
                                     <dd class="d-inline ms-2">
-                                        @if($booking->customer->customer_license)
-                                            {{ \Carbon\Carbon::parse($booking->customer->customer_license)->format('d M Y') }}
-                                        @else
+                                        <?php if($booking->customer->customer_license): ?>
+                                            <?php echo e(\Carbon\Carbon::parse($booking->customer->customer_license)->format('d M Y')); ?>
+
+                                        <?php else: ?>
                                             N/A
-                                        @endif
+                                        <?php endif; ?>
                                     </dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Emergency Contact:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->emergency_contact ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->emergency_contact ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Default Bank Name:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->default_bank_name ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->default_bank_name ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Default Account No:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->default_account_no ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->default_account_no ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Booking Times:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->bookings->count() ?? 0 }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($booking->customer->bookings->count() ?? 0); ?></dd>
                                 </div>
-                                @if($booking->customer->localStudent || $booking->customer->internationalStudent)
+                                <?php if($booking->customer->localStudent || $booking->customer->internationalStudent): ?>
                                 <div class="mt-3 pt-3 border-top">
                                     <h6 class="fw-semibold mb-3">Student Details</h6>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">Matric Number:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localStudent->matric_number ?? ($booking->customer->internationalStudent->matric_number ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localStudent->matric_number ?? ($booking->customer->internationalStudent->matric_number ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">College:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localStudent->studentDetails->college ?? ($booking->customer->internationalStudent->studentDetails->college ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localStudent->studentDetails->college ?? ($booking->customer->internationalStudent->studentDetails->college ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">Faculty:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localStudent->studentDetails->faculty ?? ($booking->customer->internationalStudent->studentDetails->faculty ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localStudent->studentDetails->faculty ?? ($booking->customer->internationalStudent->studentDetails->faculty ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">Programme:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localStudent->studentDetails->programme ?? ($booking->customer->internationalStudent->studentDetails->programme ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localStudent->studentDetails->programme ?? ($booking->customer->internationalStudent->studentDetails->programme ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">Year of Study:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localStudent->studentDetails->yearOfStudy ?? ($booking->customer->internationalStudent->studentDetails->yearOfStudy ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localStudent->studentDetails->yearOfStudy ?? ($booking->customer->internationalStudent->studentDetails->yearOfStudy ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                 </div>
-                                @elseif($booking->customer->localUtmStaff || $booking->customer->internationalUtmStaff)
+                                <?php elseif($booking->customer->localUtmStaff || $booking->customer->internationalUtmStaff): ?>
                                 <div class="mt-3 pt-3 border-top">
                                     <h6 class="fw-semibold mb-3">Staff Details</h6>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">Staff No:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localUtmStaff->staffID ?? ($booking->customer->internationalUtmStaff->staffID ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localUtmStaff->staffID ?? ($booking->customer->internationalUtmStaff->staffID ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">Position:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localUtmStaff->staffDetails->position ?? ($booking->customer->internationalUtmStaff->staffDetails->position ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localUtmStaff->staffDetails->position ?? ($booking->customer->internationalUtmStaff->staffDetails->position ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                     <div class="mb-2">
                                         <dt class="d-inline fw-semibold">College:</dt>
                                         <dd class="d-inline ms-2">
-                                            {{ $booking->customer->localUtmStaff->staffDetails->college ?? ($booking->customer->internationalUtmStaff->staffDetails->college ?? 'N/A') }}
+                                            <?php echo e($booking->customer->localUtmStaff->staffDetails->college ?? ($booking->customer->internationalUtmStaff->staffDetails->college ?? 'N/A')); ?>
+
                                         </dd>
                                     </div>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                             </dl>
                         </div>
                     </div>
@@ -816,12 +842,12 @@
                                     <div class="card-body text-center">
                                         <i class="bi bi-card-text fs-1 d-block mb-2" style="color: var(--admin-red);"></i>
                                         <h6 class="fw-semibold">License</h6>
-                                        @php
+                                        <?php
                                             $licenseImg = $booking->customer->customer_license_img ?? null;
-                                        @endphp
-                                        @if($licenseImg)
+                                        ?>
+                                        <?php if($licenseImg): ?>
                                             <div class="mb-2">
-                                                <img src="{{ getFileUrl($licenseImg) }}" 
+                                                <img src="<?php echo e(getFileUrl($licenseImg)); ?>" 
                                                      alt="License" 
                                                      class="img-fluid mb-2" 
                                                      style="max-height: 150px; border-radius: 6px;">
@@ -845,13 +871,13 @@
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
                                                         <div class="modal-body text-center" style="min-height: 400px;">
-                                                            <img src="{{ getFileUrl($licenseImg) }}" 
+                                                            <img src="<?php echo e(getFileUrl($licenseImg)); ?>" 
                                                                  alt="License Document" 
                                                                  class="img-fluid" 
                                                                  style="max-height: 70vh; width: auto; border-radius: 6px;">
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <a href="{{ getFileUrl($licenseImg) }}" 
+                                                            <a href="<?php echo e(getFileUrl($licenseImg)); ?>" 
                                                                target="_blank" 
                                                                class="btn btn-primary">
                                                                 <i class="bi bi-download"></i> Open in New Tab
@@ -861,9 +887,9 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        @else
+                                        <?php else: ?>
                                             <p class="small text-muted mb-2">No license image uploaded</p>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -873,14 +899,14 @@
                                 <div class="card document-cell h-100" style="border: 1px solid #e5e7eb;">
                                     <div class="card-body text-center">
                                         <i class="bi bi-person-badge fs-1 d-block mb-2" style="color: var(--admin-red);"></i>
-                                        <h6 class="fw-semibold">{{ $booking->customer->local ? 'IC' : 'Passport' }}</h6>
-                                        @php
+                                        <h6 class="fw-semibold"><?php echo e($booking->customer->local ? 'IC' : 'Passport'); ?></h6>
+                                        <?php
                                             $icImg = $booking->customer->customer_ic_img ?? null;
-                                        @endphp
-                                        @if($icImg)
+                                        ?>
+                                        <?php if($icImg): ?>
                                             <div class="mb-2">
-                                                <img src="{{ getFileUrl($icImg) }}" 
-                                                     alt="{{ $booking->customer->local ? 'IC' : 'Passport' }}" 
+                                                <img src="<?php echo e(getFileUrl($icImg)); ?>" 
+                                                     alt="<?php echo e($booking->customer->local ? 'IC' : 'Passport'); ?>" 
                                                      class="img-fluid mb-2" 
                                                      style="max-height: 150px; border-radius: 6px;">
                                             </div>
@@ -899,17 +925,17 @@
                                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Customer {{ $booking->customer->local ? 'IC' : 'Passport' }}</h5>
+                                                            <h5 class="modal-title">Customer <?php echo e($booking->customer->local ? 'IC' : 'Passport'); ?></h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
                                                         <div class="modal-body text-center" style="min-height: 400px;">
-                                                            <img src="{{ getFileUrl($icImg) }}" 
-                                                                 alt="{{ $booking->customer->local ? 'IC' : 'Passport' }} Document" 
+                                                            <img src="<?php echo e(getFileUrl($icImg)); ?>" 
+                                                                 alt="<?php echo e($booking->customer->local ? 'IC' : 'Passport'); ?> Document" 
                                                                  class="img-fluid" 
                                                                  style="max-height: 70vh; width: auto; border-radius: 6px;">
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <a href="{{ getFileUrl($icImg) }}" 
+                                                            <a href="<?php echo e(getFileUrl($icImg)); ?>" 
                                                                target="_blank" 
                                                                class="btn btn-primary">
                                                                 <i class="bi bi-download"></i> Open in New Tab
@@ -919,9 +945,9 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        @else
-                                            <p class="small text-muted mb-2">No {{ $booking->customer->local ? 'IC' : 'Passport' }} image uploaded</p>
-                                        @endif
+                                        <?php else: ?>
+                                            <p class="small text-muted mb-2">No <?php echo e($booking->customer->local ? 'IC' : 'Passport'); ?> image uploaded</p>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -933,23 +959,24 @@
 
 
             <!-- Pickup Condition Form Tab -->
-            <div class="tab-pane fade {{ $activeTab === 'pickup-condition' ? 'show active' : '' }}" 
+            <div class="tab-pane fade <?php echo e($activeTab === 'pickup-condition' ? 'show active' : ''); ?>" 
                  id="pickup-condition" 
                  role="tabpanel" 
                  aria-labelledby="pickup-condition-tab">
                 
-                {{-- DEBUG: This alert should be visible --}}
+                
                 <div class="alert alert-info mb-3">
-                    <strong>DEBUG:</strong> Pickup Condition Tab is rendering for Booking #{{ $booking->bookingID }}. 
-                    @php $pickupFormCheck = $booking->vehicleConditionForms()->where('form_type', 'RECEIVE')->first(); @endphp
-                    Form exists: {{ $pickupFormCheck ? 'Yes - Form ID #' . $pickupFormCheck->formID : 'No - No form found' }}
+                    <strong>DEBUG:</strong> Pickup Condition Tab is rendering for Booking #<?php echo e($booking->bookingID); ?>. 
+                    <?php $pickupFormCheck = $booking->vehicleConditionForms()->where('form_type', 'RECEIVE')->first(); ?>
+                    Form exists: <?php echo e($pickupFormCheck ? 'Yes - Form ID #' . $pickupFormCheck->formID : 'No - No form found'); ?>
+
                 </div>
                 
-                @php
+                <?php
                     $pickupForm = $booking->vehicleConditionForms()->where('form_type', 'RECEIVE')->first();
-                @endphp
+                ?>
                 
-                @if($pickupForm)
+                <?php if($pickupForm): ?>
                 <div class="row g-3">
                     <!-- Form Details Card -->
                     <div class="col-12">
@@ -962,19 +989,19 @@
                                     <div class="col-md-6">
                                         <dl class="row mb-0">
                                             <dt class="col-5">Form ID:</dt>
-                                            <dd class="col-7">#{{ $pickupForm->formID }}</dd>
+                                            <dd class="col-7">#<?php echo e($pickupForm->formID); ?></dd>
                                             
                                             <dt class="col-5">Form Type:</dt>
                                             <dd class="col-7">
-                                                <span class="badge bg-success">{{ $pickupForm->form_type }}</span>
+                                                <span class="badge bg-success"><?php echo e($pickupForm->form_type); ?></span>
                                             </dd>
                                             
                                             <dt class="col-5">Odometer Reading:</dt>
-                                            <dd class="col-7"><strong>{{ number_format($pickupForm->odometer_reading ?? 0) }} km</strong></dd>
+                                            <dd class="col-7"><strong><?php echo e(number_format($pickupForm->odometer_reading ?? 0)); ?> km</strong></dd>
                                             
                                             <dt class="col-5">Fuel Level:</dt>
                                             <dd class="col-7">
-                                                <span class="badge bg-info">{{ $pickupForm->fuel_level ?? 'N/A' }}</span>
+                                                <span class="badge bg-info"><?php echo e($pickupForm->fuel_level ?? 'N/A'); ?></span>
                                             </dd>
                                         </dl>
                                     </div>
@@ -982,24 +1009,26 @@
                                         <dl class="row mb-0">
                                             <dt class="col-5">Reported Date/Time:</dt>
                                             <dd class="col-7">
-                                                @if($pickupForm->reported_dated_time)
-                                                    {{ \Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('d M Y, H:i') }}
-                                                @else
+                                                <?php if($pickupForm->reported_dated_time): ?>
+                                                    <?php echo e(\Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('d M Y, H:i')); ?>
+
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Created At:</dt>
                                             <dd class="col-7">
-                                                @if($pickupForm->created_at)
-                                                    {{ \Carbon\Carbon::parse($pickupForm->created_at)->format('d M Y, H:i') }}
-                                                @else
+                                                <?php if($pickupForm->created_at): ?>
+                                                    <?php echo e(\Carbon\Carbon::parse($pickupForm->created_at)->format('d M Y, H:i')); ?>
+
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Scratches/Notes:</dt>
-                                            <dd class="col-7">{{ $pickupForm->scratches_notes ?? 'No notes' }}</dd>
+                                            <dd class="col-7"><?php echo e($pickupForm->scratches_notes ?? 'No notes'); ?></dd>
                                         </dl>
                                     </div>
                                 </div>
@@ -1014,14 +1043,14 @@
                                 <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Rental Agreement</h5>
                             </div>
                             <div class="card-body text-center d-flex flex-column justify-content-center align-items-center">
-                                @if($pickupForm->rental_agreement)
+                                <?php if($pickupForm->rental_agreement): ?>
                                     <i class="bi bi-file-earmark-pdf-fill" style="font-size: 4rem; color: var(--admin-red);"></i>
                                     <p class="mt-3 mb-3">Rental Agreement Document</p>
                                     <div class="d-flex gap-2">
                                         <button type="button" class="btn btn-sm" style="background: white; color: var(--admin-red); border: 1px solid var(--admin-red);" data-bs-toggle="modal" data-bs-target="#viewRentalAgreementModal">
                                             <i class="bi bi-eye"></i> View
                                         </button>
-                                        <a href="{{ getFileUrl($pickupForm->rental_agreement) }}" target="_blank" class="btn btn-sm btn-primary">
+                                        <a href="<?php echo e(getFileUrl($pickupForm->rental_agreement)); ?>" target="_blank" class="btn btn-sm btn-primary">
                                             <i class="bi bi-download"></i> Download
                                         </a>
                                     </div>
@@ -1031,24 +1060,24 @@
                                         <div class="modal-dialog modal-xl modal-dialog-centered">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title">Rental Agreement - Booking #{{ $booking->bookingID }}</h5>
+                                                    <h5 class="modal-title">Rental Agreement - Booking #<?php echo e($booking->bookingID); ?></h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body" style="height: 80vh;">
-                                                    @php
+                                                    <?php
                                                         $agreementUrl = getFileUrl($pickupForm->rental_agreement);
                                                         $isPdf = str_contains(strtolower($pickupForm->rental_agreement), '.pdf');
-                                                    @endphp
-                                                    @if($isPdf)
-                                                        <iframe src="{{ $agreementUrl }}" width="100%" height="100%" style="border: none;"></iframe>
-                                                    @else
+                                                    ?>
+                                                    <?php if($isPdf): ?>
+                                                        <iframe src="<?php echo e($agreementUrl); ?>" width="100%" height="100%" style="border: none;"></iframe>
+                                                    <?php else: ?>
                                                         <div class="text-center">
-                                                            <img src="{{ $agreementUrl }}" alt="Rental Agreement" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Document not found</p>';">
+                                                            <img src="<?php echo e($agreementUrl); ?>" alt="Rental Agreement" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Document not found</p>';">
                                                         </div>
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <a href="{{ $agreementUrl }}" target="_blank" class="btn btn-primary">
+                                                    <a href="<?php echo e($agreementUrl); ?>" target="_blank" class="btn btn-primary">
                                                         <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
                                                     </a>
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1056,10 +1085,10 @@
                                             </div>
                                         </div>
                                     </div>
-                                @else
+                                <?php else: ?>
                                     <i class="bi bi-file-earmark-x" style="font-size: 4rem; color: #6c757d;"></i>
                                     <p class="text-muted mt-3 mb-0">No rental agreement uploaded</p>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -1071,8 +1100,8 @@
                                 <h5 class="mb-0"><i class="bi bi-fuel-pump"></i> Fuel Level Image</h5>
                             </div>
                             <div class="card-body text-center d-flex flex-column justify-content-center align-items-center">
-                                @if($pickupForm->fuel_img)
-                                    <img src="{{ getFileUrl($pickupForm->fuel_img) }}" alt="Fuel Level" class="img-fluid mb-3" style="max-height: 150px; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <?php if($pickupForm->fuel_img): ?>
+                                    <img src="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid mb-3" style="max-height: 150px; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                     <p class="text-muted" style="display: none;">Image not found</p>
                                     <div class="d-flex gap-2 mt-2">
                                         <button type="button" class="btn btn-sm" style="background: white; color: var(--admin-red); border: 1px solid var(--admin-red);" data-bs-toggle="modal" data-bs-target="#viewFuelImgModal">
@@ -1089,10 +1118,10 @@
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body text-center" style="min-height: 400px;">
-                                                    <img src="{{ getFileUrl($pickupForm->fuel_img) }}" alt="Fuel Level" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                    <img src="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <a href="{{ getFileUrl($pickupForm->fuel_img) }}" target="_blank" class="btn btn-primary">
+                                                    <a href="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" target="_blank" class="btn btn-primary">
                                                         <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
                                                     </a>
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1100,55 +1129,55 @@
                                             </div>
                                         </div>
                                     </div>
-                                @else
+                                <?php else: ?>
                                     <i class="bi bi-image" style="font-size: 4rem; color: #6c757d;"></i>
                                     <p class="text-muted mt-3 mb-0">No fuel image uploaded</p>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
                     <!-- Vehicle Condition Images -->
-                    @if($pickupForm->images && $pickupForm->images->count() > 0)
+                    <?php if($pickupForm->images && $pickupForm->images->count() > 0): ?>
                     <div class="col-12">
                         <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
                             <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-images"></i> Vehicle Condition Images ({{ $pickupForm->images->count() }})</h5>
+                                <h5 class="mb-0"><i class="bi bi-images"></i> Vehicle Condition Images (<?php echo e($pickupForm->images->count()); ?>)</h5>
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
-                                    @foreach($pickupForm->images as $index => $image)
+                                    <?php $__currentLoopData = $pickupForm->images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <div class="col-md-3 col-sm-4 col-6">
                                             <div class="card h-100" style="border: 1px solid #e5e7eb;">
-                                                <img src="{{ getFileUrl($image->image_path ?? $image->imagePath) }}" alt="Condition Image {{ $index + 1 }}" class="card-img-top" style="height: 150px; object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#conditionImageModal{{ $index }}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
+                                                <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image <?php echo e($index + 1); ?>" class="card-img-top" style="height: 150px; object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#conditionImageModal<?php echo e($index); ?>" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
                                                 <div class="card-body p-2 text-center">
-                                                    <small class="text-muted">Image {{ $index + 1 }}</small>
+                                                    <small class="text-muted">Image <?php echo e($index + 1); ?></small>
                                                 </div>
                                             </div>
                                             
                                             <!-- Image Modal -->
-                                            <div class="modal fade" id="conditionImageModal{{ $index }}" tabindex="-1">
+                                            <div class="modal fade" id="conditionImageModal<?php echo e($index); ?>" tabindex="-1">
                                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Condition Image {{ $index + 1 }}</h5>
+                                                            <h5 class="modal-title">Condition Image <?php echo e($index + 1); ?></h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
                                                         <div class="modal-body text-center">
-                                                            <img src="{{ getFileUrl($image->image_path ?? $image->imagePath) }}" alt="Condition Image" class="img-fluid" style="max-height: 70vh;">
+                                                            <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image" class="img-fluid" style="max-height: 70vh;">
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
-                @else
+                <?php else: ?>
                 <div class="row g-3">
                     <div class="col-12">
                         <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
@@ -1160,27 +1189,27 @@
                                 <h5 class="mt-3 text-muted">No Pickup Condition Form Submitted</h5>
                                 <p class="text-muted mb-0">
                                     The pickup condition form has not been submitted yet.
-                                    @if($booking->rental_start_date)
-                                        <br>Pickup Date: <strong>{{ \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y, H:i') }}</strong>
-                                    @endif
+                                    <?php if($booking->rental_start_date): ?>
+                                        <br>Pickup Date: <strong><?php echo e(\Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y, H:i')); ?></strong>
+                                    <?php endif; ?>
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
             </div>
 
             <!-- Return Condition Form Tab -->
-            <div class="tab-pane fade {{ $activeTab === 'return-condition' ? 'show active' : '' }}" 
+            <div class="tab-pane fade <?php echo e($activeTab === 'return-condition' ? 'show active' : ''); ?>" 
                  id="return-condition" 
                  role="tabpanel" 
                  aria-labelledby="return-condition-tab">
-                @php
+                <?php
                     $returnForm = $booking->vehicleConditionForms()->where('form_type', 'RETURN')->first();
-                @endphp
+                ?>
                 
-                @if($returnForm)
+                <?php if($returnForm): ?>
                 <div class="row g-3">
                     <!-- Form Details Card -->
                     <div class="col-12">
@@ -1193,19 +1222,19 @@
                                     <div class="col-md-6">
                                         <dl class="row mb-0">
                                             <dt class="col-5">Form ID:</dt>
-                                            <dd class="col-7">#{{ $returnForm->formID }}</dd>
+                                            <dd class="col-7">#<?php echo e($returnForm->formID); ?></dd>
                                             
                                             <dt class="col-5">Form Type:</dt>
                                             <dd class="col-7">
-                                                <span class="badge bg-warning text-dark">{{ $returnForm->form_type }}</span>
+                                                <span class="badge bg-warning text-dark"><?php echo e($returnForm->form_type); ?></span>
                                             </dd>
                                             
                                             <dt class="col-5">Odometer Reading:</dt>
-                                            <dd class="col-7"><strong>{{ number_format($returnForm->odometer_reading ?? 0) }} km</strong></dd>
+                                            <dd class="col-7"><strong><?php echo e(number_format($returnForm->odometer_reading ?? 0)); ?> km</strong></dd>
                                             
                                             <dt class="col-5">Fuel Level:</dt>
                                             <dd class="col-7">
-                                                <span class="badge bg-info">{{ $returnForm->fuel_level ?? 'N/A' }}</span>
+                                                <span class="badge bg-info"><?php echo e($returnForm->fuel_level ?? 'N/A'); ?></span>
                                             </dd>
                                         </dl>
                                     </div>
@@ -1213,24 +1242,26 @@
                                         <dl class="row mb-0">
                                             <dt class="col-5">Reported Date/Time:</dt>
                                             <dd class="col-7">
-                                                @if($returnForm->reported_dated_time)
-                                                    {{ \Carbon\Carbon::parse($returnForm->reported_dated_time)->format('d M Y, H:i') }}
-                                                @else
+                                                <?php if($returnForm->reported_dated_time): ?>
+                                                    <?php echo e(\Carbon\Carbon::parse($returnForm->reported_dated_time)->format('d M Y, H:i')); ?>
+
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Created At:</dt>
                                             <dd class="col-7">
-                                                @if($returnForm->created_at)
-                                                    {{ \Carbon\Carbon::parse($returnForm->created_at)->format('d M Y, H:i') }}
-                                                @else
+                                                <?php if($returnForm->created_at): ?>
+                                                    <?php echo e(\Carbon\Carbon::parse($returnForm->created_at)->format('d M Y, H:i')); ?>
+
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Scratches/Notes:</dt>
-                                            <dd class="col-7">{{ $returnForm->scratches_notes ?? 'No notes' }}</dd>
+                                            <dd class="col-7"><?php echo e($returnForm->scratches_notes ?? 'No notes'); ?></dd>
                                         </dl>
                                     </div>
                                 </div>
@@ -1245,14 +1276,14 @@
                                 <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Rental Agreement</h5>
                             </div>
                             <div class="card-body text-center d-flex flex-column justify-content-center align-items-center">
-                                @if($returnForm->rental_agreement)
+                                <?php if($returnForm->rental_agreement): ?>
                                     <i class="bi bi-file-earmark-pdf-fill" style="font-size: 4rem; color: var(--admin-red);"></i>
                                     <p class="mt-3 mb-3">Rental Agreement Document</p>
                                     <div class="d-flex gap-2">
                                         <button type="button" class="btn btn-sm" style="background: white; color: var(--admin-red); border: 1px solid var(--admin-red);" data-bs-toggle="modal" data-bs-target="#viewReturnRentalAgreementModal">
                                             <i class="bi bi-eye"></i> View
                                         </button>
-                                        <a href="{{ getFileUrl($returnForm->rental_agreement) }}" target="_blank" class="btn btn-sm btn-primary">
+                                        <a href="<?php echo e(getFileUrl($returnForm->rental_agreement)); ?>" target="_blank" class="btn btn-sm btn-primary">
                                             <i class="bi bi-download"></i> Download
                                         </a>
                                     </div>
@@ -1262,24 +1293,24 @@
                                         <div class="modal-dialog modal-xl modal-dialog-centered">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title">Rental Agreement (Return) - Booking #{{ $booking->bookingID }}</h5>
+                                                    <h5 class="modal-title">Rental Agreement (Return) - Booking #<?php echo e($booking->bookingID); ?></h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body" style="height: 80vh;">
-                                                    @php
+                                                    <?php
                                                         $returnAgreementUrl = getFileUrl($returnForm->rental_agreement);
                                                         $returnIsPdf = str_contains(strtolower($returnForm->rental_agreement), '.pdf');
-                                                    @endphp
-                                                    @if($returnIsPdf)
-                                                        <iframe src="{{ $returnAgreementUrl }}" width="100%" height="100%" style="border: none;"></iframe>
-                                                    @else
+                                                    ?>
+                                                    <?php if($returnIsPdf): ?>
+                                                        <iframe src="<?php echo e($returnAgreementUrl); ?>" width="100%" height="100%" style="border: none;"></iframe>
+                                                    <?php else: ?>
                                                         <div class="text-center">
-                                                            <img src="{{ $returnAgreementUrl }}" alt="Rental Agreement" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Document not found</p>';">
+                                                            <img src="<?php echo e($returnAgreementUrl); ?>" alt="Rental Agreement" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Document not found</p>';">
                                                         </div>
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <a href="{{ $returnAgreementUrl }}" target="_blank" class="btn btn-primary">
+                                                    <a href="<?php echo e($returnAgreementUrl); ?>" target="_blank" class="btn btn-primary">
                                                         <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
                                                     </a>
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1287,10 +1318,10 @@
                                             </div>
                                         </div>
                                     </div>
-                                @else
+                                <?php else: ?>
                                     <i class="bi bi-file-earmark-x" style="font-size: 4rem; color: #6c757d;"></i>
                                     <p class="text-muted mt-3 mb-0">No rental agreement uploaded</p>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -1302,8 +1333,8 @@
                                 <h5 class="mb-0"><i class="bi bi-fuel-pump"></i> Fuel Level Image</h5>
                             </div>
                             <div class="card-body text-center d-flex flex-column justify-content-center align-items-center">
-                                @if($returnForm->fuel_img)
-                                    <img src="{{ getFileUrl($returnForm->fuel_img) }}" alt="Fuel Level" class="img-fluid mb-3" style="max-height: 150px; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <?php if($returnForm->fuel_img): ?>
+                                    <img src="<?php echo e(getFileUrl($returnForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid mb-3" style="max-height: 150px; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                     <p class="text-muted" style="display: none;">Image not found</p>
                                     <div class="d-flex gap-2 mt-2">
                                         <button type="button" class="btn btn-sm" style="background: white; color: var(--admin-red); border: 1px solid var(--admin-red);" data-bs-toggle="modal" data-bs-target="#viewReturnFuelImgModal">
@@ -1320,10 +1351,10 @@
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body text-center" style="min-height: 400px;">
-                                                    <img src="{{ getFileUrl($returnForm->fuel_img) }}" alt="Fuel Level" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                    <img src="<?php echo e(getFileUrl($returnForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <a href="{{ getFileUrl($returnForm->fuel_img) }}" target="_blank" class="btn btn-primary">
+                                                    <a href="<?php echo e(getFileUrl($returnForm->fuel_img)); ?>" target="_blank" class="btn btn-primary">
                                                         <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
                                                     </a>
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1331,55 +1362,55 @@
                                             </div>
                                         </div>
                                     </div>
-                                @else
+                                <?php else: ?>
                                     <i class="bi bi-image" style="font-size: 4rem; color: #6c757d;"></i>
                                     <p class="text-muted mt-3 mb-0">No fuel image uploaded</p>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
                     <!-- Vehicle Condition Images (Return) -->
-                    @if($returnForm->images && $returnForm->images->count() > 0)
+                    <?php if($returnForm->images && $returnForm->images->count() > 0): ?>
                     <div class="col-12">
                         <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
                             <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-images"></i> Vehicle Condition Images ({{ $returnForm->images->count() }})</h5>
+                                <h5 class="mb-0"><i class="bi bi-images"></i> Vehicle Condition Images (<?php echo e($returnForm->images->count()); ?>)</h5>
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
-                                    @foreach($returnForm->images as $index => $image)
+                                    <?php $__currentLoopData = $returnForm->images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <div class="col-md-3 col-sm-4 col-6">
                                             <div class="card h-100" style="border: 1px solid #e5e7eb;">
-                                                <img src="{{ getFileUrl($image->image_path ?? $image->imagePath) }}" alt="Condition Image {{ $index + 1 }}" class="card-img-top" style="height: 150px; object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#returnConditionImageModal{{ $index }}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
+                                                <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image <?php echo e($index + 1); ?>" class="card-img-top" style="height: 150px; object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#returnConditionImageModal<?php echo e($index); ?>" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
                                                 <div class="card-body p-2 text-center">
-                                                    <small class="text-muted">Image {{ $index + 1 }}</small>
+                                                    <small class="text-muted">Image <?php echo e($index + 1); ?></small>
                                                 </div>
                                             </div>
                                             
                                             <!-- Image Modal -->
-                                            <div class="modal fade" id="returnConditionImageModal{{ $index }}" tabindex="-1">
+                                            <div class="modal fade" id="returnConditionImageModal<?php echo e($index); ?>" tabindex="-1">
                                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Condition Image {{ $index + 1 }}</h5>
+                                                            <h5 class="modal-title">Condition Image <?php echo e($index + 1); ?></h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
                                                         <div class="modal-body text-center">
-                                                            <img src="{{ getFileUrl($image->image_path ?? $image->imagePath) }}" alt="Condition Image" class="img-fluid" style="max-height: 70vh;">
+                                                            <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image" class="img-fluid" style="max-height: 70vh;">
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
-                @else
+                <?php else: ?>
                 <div class="row g-3">
                     <div class="col-12">
                         <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
@@ -1391,27 +1422,28 @@
                                 <h5 class="mt-3 text-muted">No Return Condition Form Submitted</h5>
                                 <p class="text-muted mb-0">
                                     The return condition form has not been submitted yet.
-                                    @if($booking->rental_end_date)
-                                        <br>Return Date: <strong>{{ \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y, H:i') }}</strong>
-                                    @endif
+                                    <?php if($booking->rental_end_date): ?>
+                                        <br>Return Date: <strong><?php echo e(\Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y, H:i')); ?></strong>
+                                    <?php endif; ?>
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
             </div>
 
             <!-- Transaction Detail Tab -->
-            <div class="tab-pane fade {{ $activeTab === 'transaction-detail' ? 'show active' : '' }}" 
+            <div class="tab-pane fade <?php echo e($activeTab === 'transaction-detail' ? 'show active' : ''); ?>" 
                  id="transaction-detail" 
                  role="tabpanel" 
                  aria-labelledby="transaction-detail-tab">
                 
-                {{-- DEBUG: This alert should be visible --}}
+                
                 <div class="alert alert-info mb-3">
-                    <strong>DEBUG:</strong> Transaction Detail Tab is rendering for Booking #{{ $booking->bookingID }}. 
-                    Transactions count: {{ $transactions ? $transactions->count() : 0 }}
+                    <strong>DEBUG:</strong> Transaction Detail Tab is rendering for Booking #<?php echo e($booking->bookingID); ?>. 
+                    Transactions count: <?php echo e($transactions ? $transactions->count() : 0); ?>
+
                 </div>
                 
                 <div class="row g-3">
@@ -1422,7 +1454,7 @@
                                 <h5 class="mb-0"><i class="bi bi-credit-card"></i> Payment List</h5>
                             </div>
                             <div class="card-body p-0">
-                                @if($transactions && $transactions->count() > 0)
+                                <?php if($transactions && $transactions->count() > 0): ?>
                                     <div class="table-responsive">
                                         <table class="table table-hover mb-0">
                                             <thead style="background: #fee2e2;">
@@ -1442,65 +1474,66 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach($transactions as $transaction)
-                                                    @php
+                                                <?php $__currentLoopData = $transactions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $transaction): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <?php
                                                         $totalRequiredForPayment = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
                                                         $paidAmountForPayment = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
                                                         $isFullPaymentForPayment = $paidAmountForPayment >= $totalRequiredForPayment;
                                                         $verifiedByUser = $transaction->verified_by ? \App\Models\User::find($transaction->verified_by) : null;
-                                                    @endphp
+                                                    ?>
                                                     <tr>
-                                                        <td><strong>#{{ $transaction->paymentID }}</strong></td>
-                                                        <td>{{ $transaction->payment_bank_name ?? 'N/A' }}</td>
-                                                        <td>{{ $transaction->payment_bank_account_no ?? 'N/A' }}</td>
-                                                        <td>{{ $transaction->payment_date ? \Carbon\Carbon::parse($transaction->payment_date)->format('d M Y') : 'N/A' }}</td>
-                                                        <td>{{ $transaction->payment_type ?? 'N/A' }}</td>
-                                                        <td><strong>RM {{ number_format($transaction->total_amount ?? 0, 2) }}</strong></td>
+                                                        <td><strong>#<?php echo e($transaction->paymentID); ?></strong></td>
+                                                        <td><?php echo e($transaction->payment_bank_name ?? 'N/A'); ?></td>
+                                                        <td><?php echo e($transaction->payment_bank_account_no ?? 'N/A'); ?></td>
+                                                        <td><?php echo e($transaction->payment_date ? \Carbon\Carbon::parse($transaction->payment_date)->format('d M Y') : 'N/A'); ?></td>
+                                                        <td><?php echo e($transaction->payment_type ?? 'N/A'); ?></td>
+                                                        <td><strong>RM <?php echo e(number_format($transaction->total_amount ?? 0, 2)); ?></strong></td>
                                                         <td>
-                                                            @if($transaction->transaction_reference && !str_contains($transaction->transaction_reference ?? '', '.'))
-                                                                <span class="text-muted small">{{ strlen($transaction->transaction_reference) > 15 ? substr($transaction->transaction_reference, 0, 15) . '...' : $transaction->transaction_reference }}</span>
-                                                            @else
+                                                            <?php if($transaction->transaction_reference && !str_contains($transaction->transaction_reference ?? '', '.')): ?>
+                                                                <span class="text-muted small"><?php echo e(strlen($transaction->transaction_reference) > 15 ? substr($transaction->transaction_reference, 0, 15) . '...' : $transaction->transaction_reference); ?></span>
+                                                            <?php else: ?>
                                                                 <span class="text-muted">-</span>
-                                                            @endif
+                                                            <?php endif; ?>
                                                         </td>
                                                         <td>
-                                                            @php
+                                                            <?php
                                                                 $receiptPath = $transaction->proof_of_payment ?? $transaction->transaction_reference ?? null;
                                                                 $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
-                                                            @endphp
-                                                            @if($hasReceipt)
-                                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#receiptModal{{ $transaction->paymentID }}">
+                                                            ?>
+                                                            <?php if($hasReceipt): ?>
+                                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#receiptModal<?php echo e($transaction->paymentID); ?>">
                                                                     <i class="bi bi-receipt"></i> View
                                                                 </button>
                                                                 <!-- Receipt Modal -->
-                                                                <div class="modal fade" id="receiptModal{{ $transaction->paymentID }}" tabindex="-1">
+                                                                <div class="modal fade" id="receiptModal<?php echo e($transaction->paymentID); ?>" tabindex="-1">
                                                                     <div class="modal-dialog modal-lg">
                                                                         <div class="modal-content">
                                                                             <div class="modal-header">
-                                                                                <h5 class="modal-title">Receipt - Payment #{{ $transaction->paymentID }}</h5>
+                                                                                <h5 class="modal-title">Receipt - Payment #<?php echo e($transaction->paymentID); ?></h5>
                                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                                             </div>
                                                                             <div class="modal-body text-center">
-                                                                                <img src="{{ getFileUrl($receiptPath) }}" alt="Receipt" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                                                                                <img src="<?php echo e(getFileUrl($receiptPath)); ?>" alt="Receipt" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                                             </div>
                                                                             <div class="modal-footer">
-                                                                                <a href="{{ getFileUrl($receiptPath) }}" target="_blank" class="btn btn-primary">Open in New Tab</a>
+                                                                                <a href="<?php echo e(getFileUrl($receiptPath)); ?>" target="_blank" class="btn btn-primary">Open in New Tab</a>
                                                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                            @else
+                                                            <?php else: ?>
                                                                 <span class="text-muted">-</span>
-                                                            @endif
+                                                            <?php endif; ?>
                                                         </td>
                                                         <td>
-                                                            <span class="badge {{ $isFullPaymentForPayment ? 'bg-success' : 'bg-warning text-dark' }}">
-                                                                {{ $isFullPaymentForPayment ? 'Yes' : 'No' }}
+                                                            <span class="badge <?php echo e($isFullPaymentForPayment ? 'bg-success' : 'bg-warning text-dark'); ?>">
+                                                                <?php echo e($isFullPaymentForPayment ? 'Yes' : 'No'); ?>
+
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            @php
+                                                            <?php
                                                                 $status = $transaction->payment_status ?? 'Pending';
                                                                 $statusClass = match($status) {
                                                                     'Verified', 'Full' => 'bg-success',
@@ -1508,26 +1541,27 @@
                                                                     'Rejected' => 'bg-danger',
                                                                     default => 'bg-secondary'
                                                                 };
-                                                            @endphp
-                                                            <span class="badge {{ $statusClass }}">{{ $status }}</span>
+                                                            ?>
+                                                            <span class="badge <?php echo e($statusClass); ?>"><?php echo e($status); ?></span>
                                                         </td>
                                                         <td>
-                                                            <span class="badge {{ ($transaction->payment_isVerify ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                                                {{ ($transaction->payment_isVerify ?? false) ? 'Yes' : 'No' }}
+                                                            <span class="badge <?php echo e(($transaction->payment_isVerify ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
+                                                                <?php echo e(($transaction->payment_isVerify ?? false) ? 'Yes' : 'No'); ?>
+
                                                             </span>
                                                         </td>
-                                                        <td>{{ $verifiedByUser->name ?? 'N/A' }}</td>
+                                                        <td><?php echo e($verifiedByUser->name ?? 'N/A'); ?></td>
                                                     </tr>
-                                                @endforeach
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                             </tbody>
                                         </table>
                                     </div>
-                                @else
+                                <?php else: ?>
                                     <div class="text-center py-5">
                                         <i class="bi bi-receipt-cutoff fs-1 text-muted d-block mb-3"></i>
                                         <p class="text-muted">No payment records found for this booking.</p>
                                     </div>
-                                @endif
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -1555,31 +1589,32 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td><strong>RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</strong></td>
+                                                <td><strong>RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong></td>
                                                 <td>
-                                                    @php
+                                                    <?php
                                                         $hasReturnForm = $booking->vehicleConditionForms && $booking->vehicleConditionForms->where('form_type', 'RETURN')->first();
-                                                    @endphp
-                                                    @if($hasReturnForm)
+                                                    ?>
+                                                    <?php if($hasReturnForm): ?>
                                                         <span class="badge bg-success">Submitted</span>
-                                                    @else
+                                                    <?php else: ?>
                                                         <span class="badge bg-warning text-dark">Pending</span>
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    @if($booking->deposit_customer_choice)
-                                                        <span class="badge {{ $booking->deposit_customer_choice === 'refund' ? 'bg-info' : 'bg-secondary' }}">
-                                                            {{ ucfirst($booking->deposit_customer_choice) }}
+                                                    <?php if($booking->deposit_customer_choice): ?>
+                                                        <span class="badge <?php echo e($booking->deposit_customer_choice === 'refund' ? 'bg-info' : 'bg-secondary'); ?>">
+                                                            <?php echo e(ucfirst($booking->deposit_customer_choice)); ?>
+
                                                         </span>
-                                                    @else
+                                                    <?php else: ?>
                                                         <span class="text-muted">N/A</span>
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </td>
-                                                <td><strong style="color: red;">RM {{ number_format($booking->deposit_fine_amount ?? 0, 2) }}</strong></td>
-                                                <td><strong>RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</strong></td>
-                                                <td><strong style="color: green;">RM {{ number_format($booking->deposit_refund_amount ?? 0, 2) }}</strong></td>
+                                                <td><strong style="color: red;">RM <?php echo e(number_format($booking->deposit_fine_amount ?? 0, 2)); ?></strong></td>
+                                                <td><strong>RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong></td>
+                                                <td><strong style="color: green;">RM <?php echo e(number_format($booking->deposit_refund_amount ?? 0, 2)); ?></strong></td>
                                                 <td>
-                                                    @php
+                                                    <?php
                                                         $refundStatus = $booking->deposit_refund_status ?? 'pending';
                                                         $refundStatusClass = match($refundStatus) {
                                                             'refunded' => 'bg-success',
@@ -1587,18 +1622,19 @@
                                                             'rejected' => 'bg-danger',
                                                             default => 'bg-secondary'
                                                         };
-                                                    @endphp
-                                                    <span class="badge {{ $refundStatusClass }}">{{ ucfirst($refundStatus) }}</span>
+                                                    ?>
+                                                    <span class="badge <?php echo e($refundStatusClass); ?>"><?php echo e(ucfirst($refundStatus)); ?></span>
                                                 </td>
                                                 <td>
-                                                    @if($booking->deposit_handled_by)
-                                                        @php
+                                                    <?php if($booking->deposit_handled_by): ?>
+                                                        <?php
                                                             $handler = \App\Models\User::find($booking->deposit_handled_by);
-                                                        @endphp
-                                                        {{ $handler->name ?? 'N/A' }}
-                                                    @else
+                                                        ?>
+                                                        <?php echo e($handler->name ?? 'N/A'); ?>
+
+                                                    <?php else: ?>
                                                         <span class="text-muted">Not Assigned</span>
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -1626,11 +1662,11 @@
                     <label class="form-label fw-semibold">Served By</label>
                     <select id="editServedBy" class="form-select">
                         <option value="">Not Assigned</option>
-                        @foreach($staffUsers ?? [] as $staff)
-                            <option value="{{ $staff->userID }}" {{ $booking->staff_served == $staff->userID ? 'selected' : '' }}>
-                                {{ $staff->name }} ({{ $staff->isAdmin() ? 'Admin' : 'Staff IT' }})
+                        <?php $__currentLoopData = $staffUsers ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $staff): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($staff->userID); ?>" <?php echo e($booking->staff_served == $staff->userID ? 'selected' : ''); ?>>
+                                <?php echo e($staff->name); ?> (<?php echo e($staff->isAdmin() ? 'Admin' : 'Staff IT'); ?>)
                             </option>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
             </div>
@@ -1655,8 +1691,8 @@
                     <label class="form-label fw-semibold">Runner</label>
                     <select id="editRunnerAssigned" class="form-select">
                         <option value="">Not Assigned</option>
-                        @foreach($runners ?? [] as $runner)
-                            @php
+                        <?php $__currentLoopData = $runners ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $runner): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php
                                 $isCurrentRunner = false;
                                 if ($booking->staff_served) {
                                     $currentUser = \App\Models\User::find($booking->staff_served);
@@ -1664,11 +1700,12 @@
                                         $isCurrentRunner = true;
                                     }
                                 }
-                            @endphp
-                            <option value="{{ $runner->userID }}" {{ $isCurrentRunner ? 'selected' : '' }}>
-                                {{ $runner->name }}
+                            ?>
+                            <option value="<?php echo e($runner->userID); ?>" <?php echo e($isCurrentRunner ? 'selected' : ''); ?>>
+                                <?php echo e($runner->name); ?>
+
                             </option>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
             </div>
@@ -1718,7 +1755,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab') || 'booking-detail';
         const tabButton = document.querySelector(`#${tab}-tab`);
-        if (tabButton && '{{ $activeTab }}' !== tab) {
+        if (tabButton && '<?php echo e($activeTab); ?>' !== tab) {
             const tabInstance = new bootstrap.Tab(tabButton);
             tabInstance.show();
         }
@@ -1751,11 +1788,11 @@
     function updateServedBy() {
         const staffServed = document.getElementById('editServedBy').value;
         
-        fetch('{{ route('admin.bookings.reservations.update-status', $booking->bookingID) }}', {
+        fetch('<?php echo e(route('admin.bookings.reservations.update-status', $booking->bookingID)); ?>', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
             },
             body: JSON.stringify({ staff_served: staffServed || null })
         })
@@ -1783,11 +1820,11 @@
     function updateRunnerAssigned() {
         const runnerId = document.getElementById('editRunnerAssigned').value;
         
-        fetch('{{ route('admin.bookings.reservations.update-runner', $booking->bookingID) }}', {
+        fetch('<?php echo e(route('admin.bookings.reservations.update-runner', $booking->bookingID)); ?>', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
             },
             body: JSON.stringify({ runner_id: runnerId || null })
         })
@@ -1811,5 +1848,7 @@
         });
     }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
 
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/admin/reservations/show.blade.php ENDPATH**/ ?>

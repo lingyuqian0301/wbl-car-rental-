@@ -16,6 +16,7 @@ class Staff extends Model
 
     protected $fillable = [
         'ic_no',
+        'ic_img',
         'userID',
     ];
 

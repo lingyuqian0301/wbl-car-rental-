@@ -24,6 +24,15 @@
         padding-bottom: 10px;
         border-bottom: 2px solid var(--hasta-rose);
     }
+    .document-cell {
+        min-height: 250px;
+        transition: transform 0.2s;
+        border: 1px solid #e5e7eb;
+    }
+    .document-cell:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
 </style>
 @endpush
 
@@ -185,9 +194,13 @@
 
         <!-- Staff Detail Tab -->
         <div class="tab-pane fade {{ ($activeTab ?? 'staff-detail') === 'staff-detail' ? 'show active' : '' }}" id="staff-detail" role="tabpanel">
-            <div class="card">
+            <!-- Staff Info Card -->
+            <div class="card mb-3">
                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-person-circle"></i> Staff Info</h5>
+                    <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#editStaffModal">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
                 </div>
                 <div class="card-body">
                     <dl class="mb-0">
@@ -265,6 +278,181 @@
                             </dd>
                         </div>
                     </dl>
+                </div>
+            </div>
+
+            <!-- Documentation Card -->
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- IC Image -->
+                        <div class="col-md-6">
+                            <div class="card document-cell h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-person-badge fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
+                                    <h6 class="fw-semibold">IC Document</h6>
+                                    @php
+                                        $icImg = $staff->ic_img ?? null;
+                                    @endphp
+                                    @if($icImg)
+                                        <div class="mb-2">
+                                            <img src="{{ getFileUrl($icImg) }}" 
+                                                 alt="IC" 
+                                                 class="img-fluid mb-2" 
+                                                 style="max-height: 150px; border-radius: 6px;"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                            <p class="text-muted small" style="display:none;">Image not found</p>
+                                        </div>
+                                        <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
+                                            <button type="button" 
+                                                    class="btn btn-sm" 
+                                                    style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#viewIcModal">
+                                                <i class="bi bi-eye"></i> View
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-sm" 
+                                                    style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#uploadIcModal">
+                                                <i class="bi bi-upload"></i> Upload
+                                            </button>
+                                        </div>
+                                    @else
+                                        <p class="small text-muted mb-2">No IC image uploaded</p>
+                                        <button type="button" 
+                                                class="btn btn-sm" 
+                                                style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#uploadIcModal">
+                                            <i class="bi bi-upload"></i> Upload
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View IC Modal -->
+        @if($staff->ic_img ?? false)
+        <div class="modal fade" id="viewIcModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">IC Document</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center" style="min-height: 400px;">
+                        <img src="{{ getFileUrl($staff->ic_img) }}" 
+                             alt="IC Document" 
+                             class="img-fluid" 
+                             style="max-height: 70vh; width: auto; border-radius: 6px;"
+                             onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ getFileUrl($staff->ic_img) }}" 
+                           target="_blank" 
+                           class="btn btn-primary">
+                            <i class="bi bi-download"></i> Open in New Tab
+                        </a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Upload IC Modal -->
+        <div class="modal fade" id="uploadIcModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Upload IC</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ route('admin.settings.staff.upload-ic', $staff->staffID) }}" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">IC Image <span class="text-danger">*</span></label>
+                                <input type="file" name="ic_img" class="form-control" accept="image/*,.pdf" required>
+                                <small class="text-muted">Supported formats: JPG, PNG, GIF, PDF. Max size: 5MB</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Upload IC</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Staff Modal -->
+        <div class="modal fade" id="editStaffModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Staff</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ route('admin.settings.staff.update', $staff->staffID) }}">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Username <span class="text-danger">*</span></label>
+                                    <input type="text" name="username" class="form-control" value="{{ $staff->user->username ?? '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Name <span class="text-danger">*</span></label>
+                                    <input type="text" name="name" class="form-control" value="{{ $staff->user->name ?? '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input type="email" name="email" class="form-control" value="{{ $staff->user->email ?? '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone <span class="text-danger">*</span></label>
+                                    <input type="text" name="phone" class="form-control" value="{{ $staff->user->phone ?? '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                    <input type="date" name="DOB" class="form-control" value="{{ $staff->user->DOB ? \Carbon\Carbon::parse($staff->user->DOB)->format('Y-m-d') : '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">IC No <span class="text-danger">*</span></label>
+                                    <input type="text" name="ic_no" class="form-control" value="{{ $staff->ic_no ?? '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Staff Type <span class="text-danger">*</span></label>
+                                    <select name="staff_type" class="form-select" required>
+                                        <option value="staffit" {{ $staff->staffIt ? 'selected' : '' }}>Staff IT</option>
+                                        <option value="runner" {{ $staff->runner ? 'selected' : '' }}>Runner</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input type="checkbox" name="isActive" class="form-check-input" id="editIsActive" {{ ($staff->user->isActive ?? false) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="editIsActive">Active</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Update Staff</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

@@ -17,8 +17,10 @@ class VehicleConditionForm extends Model
     
     protected $fillable = [
         'form_type',
+        'rental_agreement',
         'odometer_reading',
         'fuel_level',
+        'fuel_img',
         'scratches_notes',
         'reported_dated_time',
         'bookingID',

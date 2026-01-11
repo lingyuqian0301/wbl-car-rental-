@@ -6,6 +6,8 @@ use App\Models\Admin;
 use App\Models\Staff;
 use App\Models\User;
 use App\Models\PersonDetails;
+use App\Traits\HandlesGoogleDriveUploads;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,7 @@ use Carbon\Carbon;
 
 class AdminSettingsController extends Controller
 {
+    use HandlesGoogleDriveUploads;
     public function index(Request $request): View
     {
         $activeTab = $request->get('tab', 'admin');
@@ -516,6 +519,42 @@ class AdminSettingsController extends Controller
             return redirect()->back()->with('success', 'Task added successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to add task: ' . $e->getMessage());
+        }
+    }
+
+    public function editStaff(Staff $staff): View
+    {
+        $staff->load(['user', 'personDetails', 'staffIt', 'runner']);
+        
+        return view('admin.settings.staff.edit', [
+            'staff' => $staff,
+        ]);
+    }
+
+    public function uploadStaffIc(Request $request, Staff $staff): RedirectResponse
+    {
+        $request->validate([
+            'ic_img' => 'required|file|mimes:jpeg,jpg,png,gif,pdf|max:5120', // 5MB max
+        ]);
+
+        try {
+            if ($request->hasFile('ic_img')) {
+                $file = $request->file('ic_img');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                // Upload to Google Drive
+                $fileId = $this->uploadToGoogleDrive($file, 'staff_documents/ic', $fileName);
+
+                // Update IC image in staff table
+                $staff->update([
+                    'ic_img' => $fileId, // Store Google Drive file ID
+                ]);
+
+                return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])->with('success', 'IC uploaded successfully.');
+            }
+
+            return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])->with('error', 'No file uploaded.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])->with('error', 'Failed to upload IC: ' . $e->getMessage());
         }
     }
 
