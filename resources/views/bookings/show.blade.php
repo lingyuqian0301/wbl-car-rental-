@@ -74,9 +74,7 @@
                             </div>
                         </dl>
 
-        <!-- {{-- ================================================= --}} -->
-                        <!-- {{-- ACTION BUTTONS (EXTEND / CANCEL) --}} -->
-                        <!-- {{-- ================================================= --}} -->
+                        {{-- ACTION BUTTONS (EXTEND / CANCEL) --}}
                         <div class="mt-8 pt-6 border-t border-gray-200">
                             @php
                                 $pickup = \Carbon\Carbon::parse($booking->rental_start_date);
@@ -135,6 +133,7 @@
                             @endif
                         </div>
                 </div>
+            </div>
 
                 {{-- RIGHT COLUMN: PAYMENT INFO --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg h-fit">
@@ -148,19 +147,20 @@
                             $hasVerifiedPayment = $verifiedPayment ? true : false;
                         @endphp
 
+                        {{-- Current Status Block --}}
                         @if($verifiedPayment)
                             <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                                 <div class="flex items-center mb-2">
                                     <span class="text-sm font-semibold text-green-800">Payment Verified</span>
                                 </div>
-                                <dl class="text-sm">
+                                <!-- <dl class="text-sm">
                                     <div class="grid grid-cols-2 gap-2 mt-2">
                                         <dt class="text-gray-600">Amount:</dt>
                                         <dd class="font-medium">RM {{ number_format($verifiedPayment->total_amount, 2) }}</dd>
                                         <dt class="text-gray-600">Date:</dt>
                                         <dd class="font-medium">{{ \Carbon\Carbon::parse($verifiedPayment->payment_date)->format('M d, Y') }}</dd>
                                     </div>
-                                </dl>
+                                </dl> -->
                             </div>
                         @elseif($pendingPayment)
                             <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -192,6 +192,67 @@
                                 </a>
                             @endif
                         </div>
+
+                        {{-- ========================================== --}}
+                        {{-- NEW SECTION: TRANSACTION HISTORY TIMELINE --}}
+                        {{-- ========================================== --}}
+                        <div class="mt-8 pt-6 border-t border-gray-200">
+                            <h4 class="text-sm font-medium text-gray-900 mb-4">Transaction History</h4>
+                            
+                            @if($booking->payments->count() > 0)
+                                <div class="flow-root">
+                                    <ul role="list" class="-mb-8">
+                                        @foreach($booking->payments->sortByDesc('created_at') as $payment)
+                                            <li>
+                                                <div class="relative pb-8">
+                                                    @if(!$loop->last)
+                                                        <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                                    @endif
+                                                    <div class="relative flex space-x-3">
+                                                        <div>
+                                                            <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white 
+                                                                {{ $payment->payment_status == 'Verified' ? 'bg-green-500' : 
+                                                                   ($payment->payment_status == 'Rejected' ? 'bg-red-500' : 'bg-yellow-500') }}">
+                                                                
+                                                                {{-- Icons based on status --}}
+                                                                <svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                                    @if($payment->payment_status == 'Verified')
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                    @elseif($payment->payment_status == 'Rejected')
+                                                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                                    @else
+                                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                                                    @endif
+                                                                </svg>
+                                                            </span>
+                                                        </div>
+                                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                                            <div>
+                                                                <p class="text-sm text-gray-500">
+                                                                    RM <span class="font-medium text-gray-900">{{ number_format($payment->total_amount, 2) }}</span>
+                                                                </p>
+                                                            </div>
+                                                            <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                                                                <time datetime="{{ $payment->created_at }}">{{ \Carbon\Carbon::parse($payment->	latest_Update_Date_Time)->format('d M, H:i') }}</time>
+                                                                <p class="mt-1 text-xs font-semibold
+                                                                    {{ $payment->payment_status == 'Verified' ? 'text-green-600' : 
+                                                                       ($payment->payment_status == 'Rejected' ? 'text-red-600' : 'text-yellow-600') }}">
+                                                                    {{ $payment->payment_status }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @else
+                                <p class="text-sm text-gray-500 italic">No transaction history found.</p>
+                            @endif
+                        </div>
+                        {{-- END HISTORY --}}
+
                     </div>
                 </div>
 

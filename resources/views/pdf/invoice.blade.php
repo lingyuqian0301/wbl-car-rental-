@@ -476,9 +476,14 @@
                                     <div class="item-description">{{ $addon['name'] }}</div>
                                     <div class="item-details">Additional Equipment</div>
                                 </td>
-                                <td class="text-center">{{ $addon['duration'] }} day(s)</td>
-                                <td class="text-right">RM {{ number_format($addon['daily_price'], 2) }}/day</td>
-                                <td class="text-right">RM {{ number_format($addon['total'], 2) }}</td>
+<!-- {{-- Fix: Use Null Coalescing Operator (??) to prevent crash --}} -->
+<td class="text-center">{{ $addon['duration'] ?? $booking->duration }} day(s)</td>
+<td class="text-right">
+    RM {{ number_format($addon['daily_price'] ?? 0, 2) }}/day
+</td>
+<td class="text-right">
+    RM {{ number_format($addon['total'] ?? (($addon['daily_price'] ?? 0) * ($addon['duration'] ?? $booking->duration)), 2) }}
+</td>
                             </tr>
                         @endforeach
                     @endif
