@@ -14,7 +14,7 @@ body {
     background: var(--bg);
 }
 
-/* ===== STEPPER (already working) ===== */
+/* ===== STEPPER ===== */
 .booking-stepper {
     display: flex;
     align-items: center;
@@ -65,13 +65,10 @@ body {
 }
 
 /* ===== TEXT ===== */
-.text-maroon {
-    color: var(--hasta-maroon);
-}
+.text-maroon { color: var(--hasta-maroon); }
 
 /* ===== INPUTS ===== */
-input,
-select {
+input, select {
     width: 100%;
     padding: .5rem .65rem;
     border-radius: 6px;
@@ -91,6 +88,14 @@ input[readonly] {
     font-weight: 600;
 }
 
+#amountInput {
+    background: #ecfdf5;
+    border-color: #22c55e;
+    color: #065f46;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
 /* ===== QR ===== */
 .qr-container {
     border: 2px solid var(--hasta-yellow);
@@ -101,15 +106,6 @@ input[readonly] {
 }
 
 /* ===== BUTTONS ===== */
-.btn-maroon {
-    background: var(--hasta-maroon);
-    color: #fff;
-    border: none;
-    padding: .45rem 1.3rem;
-    border-radius: 5px;
-}
-
-/* New Green Button Style */
 .btn-green {
     background: #198754;
     color: #fff;
@@ -124,9 +120,7 @@ input[readonly] {
     transition: background 0.2s;
 }
 
-.btn-green:hover {
-    background: #157347;
-}
+.btn-green:hover { background: #157347; }
 
 .payment-option {
     background: #f9fafb;
@@ -136,8 +130,22 @@ input[readonly] {
     margin-bottom: 1rem;
 }
 
-.btn-maroon:hover {
-    background: #5e0014;
+/* ===== STATIC INFO ROW STYLE ===== */
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+}
+
+.remaining-text {
+    font-size: 0.85rem;
+    color: #dc2626;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    background: #fee2e2;
+    padding: 2px 8px;
+    border-radius: 12px;
 }
 
 .form-row {
@@ -147,113 +155,11 @@ input[readonly] {
 }
 
 @media (max-width: 600px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
+    .form-row { grid-template-columns: 1fr; }
 }
-
-/* ===== STEPPER STYLES ===== */
-.booking-stepper .step {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    white-space: nowrap;
-}
-
-.booking-stepper .circle {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #e5e7eb;
-    color: #6b7280;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-}
-
-.booking-stepper .step.active .circle {
-    background: #800020;
-    color: #fff;
-}
-
-.booking-stepper .label {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #6b7280;
-}
-
-.booking-stepper .step.active .label {
-    color: #800020;
-}
-
-.booking-stepper .line {
-    flex: 1;
-    height: 4px;
-    background: #e5e7eb;
-    margin: 0 1rem;
-    border-radius: 10px;
-}
-
-.booking-stepper .line.active {
-    background: #800020;
-}
-
-/* ===== RADIO BUTTON & AMOUNT STYLES ===== */
-.radio-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem; /* More space between radio and text */
-    margin-bottom: 0.8rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 6px;
-    transition: background 0.2s;
-}
-
-.radio-row:hover {
-    background: #f3f4f6;
-}
-
-/* MAKE RADIO BUTTON BIGGER */
-.radio-row input[type="radio"] {
-    width: 24px;   /* Specific width */
-    height: 24px;  /* Specific height */
-    accent-color: #800020;
-    transform: scale(1.2); /* Scale up slightly more */
-    cursor: pointer;
-    margin-right: 0.5rem;
-}
-
-.amount-input {
-    background: #f0fdf4 !important;
-    border-color: #22c55e !important;
-    color: #166534;
-    font-weight: 600;
-}
-
-#amountInput {
-    background: #ecfdf5;
-    border-color: #22c55e;
-    color: #065f46;
-    font-weight: 700;
-    font-size: 1.1rem; /* Make amount text slightly larger */
-}
-
-/* Style for the "Remaining" text */
-.remaining-text {
-    font-size: 0.85rem;
-    color: #dc2626; /* Red color to indicate debt */
-    font-weight: 600;
-    margin-left: 0.5rem;
-    background: #fee2e2;
-    padding: 2px 8px;
-    border-radius: 12px;
-}
-
 </style>
 
-<x-booking-stepper /> {{-- Auto-detects Payment step --}}
+<x-booking-stepper /> 
 
 <div class="payment-wrapper">
     <div class="payment-card">
@@ -266,18 +172,47 @@ input[readonly] {
         <div class="section-header-maroon">
             Booking Summary (ID: #{{ $booking->bookingID }})
         </div>
+
+        @php
+            // 1. Calculate Totals
+            $total = $booking->total_amount ?? $booking->rental_amount;
+            
+            // 2. Calculate Paid Amount (Verified Only)
+            $paidAmount = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+            
+            // 3. Determine Mode
+            $isReserved = $booking->booking_status === 'Reserved';
+            
+            // 4. Determine Amount to Pay NOW
+            if ($isReserved) {
+                // Paying remaining balance
+                $amountToPay = $total - $paidAmount;
+                $paymentType = 'Balance Payment';
+                $remainingAfterPayment = 0;
+            } else {
+                // Paying deposit (Initial)
+                $amountToPay = $depositAmount;
+                $paymentType = 'Deposit';
+                $remainingAfterPayment = $total - $depositAmount;
+            }
+        @endphp
+
         <div class="section-body">
             <p><strong>Car:</strong> {{ $booking->vehicle->vehicle_model }}</p>
-            <p><strong>Dates:</strong>
-                {{ $booking->start_date->format('d M Y') }} –
-                {{ $booking->end_date->format('d M Y') }}
-            </p>
-            <p><strong>Total Price:</strong>
-                RM {{ number_format($booking->total_amount ?? $booking->rental_amount, 2) }}
-            </p>
-            <p class="text-maroon fw-bold">
-                Required Deposit: RM {{ number_format($depositAmount, 2) }}
-            </p>
+            <p><strong>Total Price:</strong> RM {{ number_format($total, 2) }}</p>
+            
+            @if($isReserved)
+                <p class="text-success fw-bold">
+                    Already Paid: RM {{ number_format($paidAmount, 2) }}
+                </p>
+                <p class="text-maroon fw-bold">
+                    Balance Due: RM {{ number_format($amountToPay, 2) }}
+                </p>
+            @else
+                <p class="text-maroon fw-bold">
+                    Required Deposit: RM {{ number_format($depositAmount, 2) }}
+                </p>
+            @endif
         </div>
 
         <div class="section-header-yellow">
@@ -299,47 +234,41 @@ input[readonly] {
             <form action="{{ route('payments.submit') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="bookingID" value="{{ $booking->bookingID }}">
+                <input type="hidden" name="payment_type" value="{{ $paymentType }}">
 
                 <div class="payment-option">
-                    <label class="radio-row">
-                        <input type="radio"
-                               name="payment_type"
-                               value="Deposit"
-                               checked
-                               onchange="updateAmount(this.value)">
+                    <div class="info-row">
+                        <i class="bi bi-wallet2 text-maroon" style="font-size: 1.5rem;"></i>
                         <div>
-                            <span style="font-size: 1.05rem; font-weight: 600;">Pay Deposit Only (RM {{ number_format($depositAmount, 2) }})</span>
-                            {{-- Remaining Amount Badge (Calculated: Total - Deposit) --}}
-                            @php
-                                $total = $booking->total_amount ?? $booking->rental_amount;
-                                $remaining = $total - $depositAmount;
-                            @endphp
-                            <span id="remainingBadge" class="remaining-text">
-                                (Remaining: RM {{ number_format($remaining, 2) }})
-                            </span>
+                            @if($isReserved)
+                                <span style="font-size: 1.05rem; font-weight: 600; display:block;">
+                                    Payment Type: Remaining Balance
+                                </span>
+                                <small class="text-muted">Finalizing your payment.</small>
+                            @else
+                                <span style="font-size: 1.05rem; font-weight: 600; display:block;">
+                                    Payment Type: Booking Deposit
+                                </span>
+                                <span class="remaining-text">
+                                    (Balance of RM {{ number_format($remainingAfterPayment, 2) }} to be paid later)
+                                </span>
+                            @endif
                         </div>
-                    </label>
-
-                    <label class="radio-row">
-                        <input type="radio"
-                               name="payment_type"
-                               value="Full Payment"
-                               onchange="updateAmount(this.value)">
-                        <div>
-                            <span style="font-size: 1.05rem; font-weight: 600;">Pay Full Amount (RM {{ number_format($total, 2) }})</span>
-                        </div>
-                    </label>
+                    </div>
                 </div>
 
                 <div class="mt-3">
                     <label class="fw-bold">Amount to Pay (RM)</label>
-                    <input type="number" id="amountInput" name="amount" value="{{ $depositAmount }}" readonly>
+                    <input type="number" 
+                           id="amountInput" 
+                           name="amount" 
+                           value="{{ number_format($amountToPay, 2, '.', '') }}" 
+                           readonly>
                 </div>
 
                 <div class="mt-3">
                     <label class="fw-bold">Payment Date</label>
                     <input type="date" name="payment_date" value="{{ date('Y-m-d') }}" required>
-                    
                     <input type="hidden" name="transaction_reference" value="12345678">
                 </div>
 
@@ -357,19 +286,16 @@ input[readonly] {
                         <label>Bank Name</label>
                         <select name="bank_name" required>
                             @php
-                                // Get logged-in customer's default bank
                                 $defaultBank = Auth::user()->customer->default_bank_name ?? '';
                                 $banks = ['Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank', 'Hong Leong Bank', 'AmBank', 'UOB Bank', 'Bank Rakyat', 'OCBC Bank', 'HSBC Bank', 'Bank Islam'];
                             @endphp
 
                             <option value="" disabled {{ empty($defaultBank) ? 'selected' : '' }}>Select Bank</option>
                             
-                            {{-- If default bank exists but isn't in our list, show it first --}}
                             @if($defaultBank && !in_array($defaultBank, $banks))
                                 <option value="{{ $defaultBank }}" selected>{{ $defaultBank }} (Default)</option>
                             @endif
 
-                            {{-- Loop through standard banks --}}
                             @foreach($banks as $bank)
                                 <option value="{{ $bank }}" {{ $defaultBank == $bank ? 'selected' : '' }}>
                                     {{ $bank }}
@@ -398,25 +324,5 @@ input[readonly] {
         </div>
     </div>
 </div>
-
-<script>
-function updateAmount(type) {
-    let deposit = {{ $depositAmount }};
-    let full = {{ $booking->total_amount ?? $booking->rental_amount }};
-
-    // Get the remaining badge element
-    let badge = document.getElementById('remainingBadge');
-
-    if (type === 'Full Payment') {
-        document.getElementById('amountInput').value = Number(full).toFixed(2);
-        // Hide remaining balance if paying full
-        if(badge) badge.style.display = 'none';
-    } else {
-        document.getElementById('amountInput').value = Number(deposit).toFixed(2);
-        // Show remaining balance if paying deposit
-        if(badge) badge.style.display = 'inline-block';
-    }
-}
-</script>
 
 @endsection
