@@ -99,11 +99,10 @@ class ReturnController extends Controller
             'scratches_notes' => $request->remarks,
             'reported_dated_time' => $request->date_check,
             'bookingID' => $booking->bookingID,
-            'rental_agreement' => true,    // Added missing default value
-            'fuel_img' => $fuelImgPath,    // Added missing fuel_img path
+            'rental_agreement' => true,
+            'fuel_img' => $fuelImgPath,
         ]);
 
-<<<<<<< HEAD
         // Create the VehicleConditionImage entry for fuel explicitly
         if ($fuelImgPath) {
             VehicleConditionImage::create([
@@ -111,20 +110,6 @@ class ReturnController extends Controller
                 'image_taken_time' => now(),
                 'formID' => $form->formID,
             ]);
-=======
-<<<<<<< HEAD
-        // E. Save Images to myportfolio public folder
-        // Uploads are stored in: C:\xampp\htdocs\myportfolio\public\uploads\vehicle_conditions
-=======
-        // E. Save Images to Public Folder
->>>>>>> 7c0119294019adcd51b69651d17ff0c35c4d3c99
-        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
-        $destinationPath = public_path('images/vehicle_conditions');
-
-        // Ensure directory exists
-        if (!file_exists($destinationPath)) {
-            mkdir($destinationPath, 0755, true);
->>>>>>> 972d6288031014049ea3be0d2fd612ccee0d9d48
         }
 
         // E. Save Remaining Images (Excluded fuel_image)
@@ -133,12 +118,6 @@ class ReturnController extends Controller
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
-<<<<<<< HEAD
-                $fileName = time() . '_return_' . $field . '_' . $file->getClientOriginalName();
-                
-                // Upload to myportfolio public folder
-                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public'); 
-=======
                 
                 // Generate a unique filename
                 $filename = uniqid() . '_' . time() . '_' . $field . '_return.' . $file->getClientOriginalExtension();
@@ -148,7 +127,6 @@ class ReturnController extends Controller
                 
                 // Store the relative URL path in database
                 $relativePath = 'images/vehicle_conditions/' . $filename;
->>>>>>> 7c0119294019adcd51b69651d17ff0c35c4d3c99
 
                 VehicleConditionImage::create([
                     'image_path' => $relativePath, 
@@ -161,15 +139,10 @@ class ReturnController extends Controller
         // Handle additional images
         if ($request->hasFile('additional_images')) {
             foreach ($request->file('additional_images') as $index => $file) {
-<<<<<<< HEAD
-                $fileName = time() . '_return_additional_' . $index . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public');
-=======
                 $filename = uniqid() . '_' . time() . '_additional_return_' . $index . '.' . $file->getClientOriginalExtension();
                 $file->move($destinationPath, $filename);
                 $relativePath = 'images/vehicle_conditions/' . $filename;
 
->>>>>>> 7c0119294019adcd51b69651d17ff0c35c4d3c99
                 VehicleConditionImage::create([
                     'image_path' => $relativePath,
                     'image_taken_time' => now(),
