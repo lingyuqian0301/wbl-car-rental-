@@ -20,7 +20,6 @@ class ReturnController extends Controller
         }
 
         // Check if booking is ONGOING or can be returned
-        // Allow ONGOING and Confirmed (in case pickup wasn't done through system)
         $allowedStatuses = ['Ongoing', 'Confirmed'];
         if (!in_array($booking->booking_status, $allowedStatuses)) {
             return redirect()->route('bookings.index')
@@ -63,6 +62,7 @@ class ReturnController extends Controller
             'left_image' => 'nullable|image|max:5120',
             'right_image' => 'nullable|image|max:5120',
             'fuel_image' => 'nullable|image|max:5120',
+            'additional_images.*' => 'nullable|image|max:5120',
         ], [
             'confirm_return.required' => 'You must confirm the vehicle return',
             'confirm_return.accepted' => 'You must accept the confirmation',
@@ -86,16 +86,30 @@ class ReturnController extends Controller
             'bookingID' => $booking->bookingID,
         ]);
 
-        // E. Save Images
+        // E. Save Images to Public Folder
         $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
+        $destinationPath = public_path('images/vehicle_conditions');
+
+        // Ensure directory exists
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
-                $path = $file->store('vehicle_conditions', 'public'); 
+                
+                // Generate a unique filename
+                $filename = uniqid() . '_' . time() . '_' . $field . '_return.' . $file->getClientOriginalExtension();
+                
+                // Move file to public/images/vehicle_conditions
+                $file->move($destinationPath, $filename);
+                
+                // Store the relative URL path in database
+                $relativePath = 'images/vehicle_conditions/' . $filename;
 
                 VehicleConditionImage::create([
-                    'image_path' => $path, 
+                    'image_path' => $relativePath, 
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);
@@ -104,10 +118,13 @@ class ReturnController extends Controller
 
         // Handle additional images
         if ($request->hasFile('additional_images')) {
-            foreach ($request->file('additional_images') as $file) {
-                $path = $file->store('vehicle_conditions', 'public');
+            foreach ($request->file('additional_images') as $index => $file) {
+                $filename = uniqid() . '_' . time() . '_additional_return_' . $index . '.' . $file->getClientOriginalExtension();
+                $file->move($destinationPath, $filename);
+                $relativePath = 'images/vehicle_conditions/' . $filename;
+
                 VehicleConditionImage::create([
-                    'image_path' => $path,
+                    'image_path' => $relativePath,
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);
@@ -158,8 +175,6 @@ class ReturnController extends Controller
 
     /**
      * Handle deposit decision (add to wallet or request refund)
-/**
-     * Handle deposit decision (add to wallet or request refund)
      */
     public function handleDeposit(Request $request, Booking $booking)
     {
@@ -169,8 +184,6 @@ class ReturnController extends Controller
         }
 
         // 2. SECURITY: Prevent Double Refund
-        // If status is not 'pending' (meaning it's 'refunded' or something else), stop.
-        // Note: Check your specific ENUM values. Usually distinct from booking_status.
         if ($booking->deposit_refund_status === 'refunded' || $booking->deposit_refund_status === 'pending') {
              return redirect()->route('bookings.index')
                  ->with('error', 'Action denied. This deposit has already been processed.');
@@ -180,7 +193,7 @@ class ReturnController extends Controller
             'deposit_action' => 'required|in:wallet,refund',
         ]);
 
-        // 3. Get Real Amount (Fixing the hardcoded 50)
+        // 3. Get Real Amount
         $depositAmount = $booking->deposit_amount ?? 0;
 
         if ($request->deposit_action === 'wallet') {
