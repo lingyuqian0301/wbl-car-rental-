@@ -19,10 +19,18 @@ class ReturnController extends Controller
             abort(403, 'Unauthorized access');
         }
 
-        // Check if booking is ONGOING
-        if ($booking->booking_status !== 'Ongoing') {
+        // Check if booking is ONGOING or can be returned
+        // Allow ONGOING and Confirmed (in case pickup wasn't done through system)
+        $allowedStatuses = ['Ongoing', 'Confirmed'];
+        if (!in_array($booking->booking_status, $allowedStatuses)) {
             return redirect()->route('bookings.index')
-                ->with('error', 'This booking is not currently active.');
+                ->with('error', 'This booking cannot be returned. Current status: ' . $booking->booking_status);
+        }
+
+        // Check if already completed
+        if ($booking->booking_status === 'Completed') {
+            return redirect()->route('bookings.index')
+                ->with('error', 'This booking has already been completed.');
         }
 
         // Get related data
@@ -110,7 +118,15 @@ class ReturnController extends Controller
         $booking->booking_status = 'Completed';
         $booking->save();
 
-        // G. Calculate Deposit Amount
+        // G. ADD STAMP TO LOYALTY CARD
+        $loyaltyCard = $booking->customer->loyaltyCard;
+        if ($loyaltyCard) {
+            $loyaltyCard->total_stamps += 1;
+            $loyaltyCard->loyalty_last_updated = now();
+            $loyaltyCard->save();
+        }
+
+        // H. Calculate Deposit Amount
         $depositAmount = $booking->deposit_amount ?? 0;
 
         // Redirect to deposit handling page with deposit info
@@ -166,7 +182,7 @@ class ReturnController extends Controller
                 $wallet->save();
 
                 return redirect()->route('bookings.index')
-                    ->with('success', "RM 50 has been added to your wallet balance!");
+                    ->with('success', "RM " . number_format(50, 2) . " has been added to your wallet balance!");
             } else {
                 return redirect()->route('bookings.index')
                     ->with('error', 'Wallet account not found. Please contact support.');
@@ -175,7 +191,7 @@ class ReturnController extends Controller
             // Redirect to refund page (when available)
             // For now, show a message
             return redirect()->route('bookings.index')
-                ->with('info', 'Refund request received. Our team will process your refund within 3-5 business days.');
+                ->with('info', 'Refund request received. Our team will process your refund within 3-5 business days. Thank you for your patience.');
             
             // TODO: When refund functionality is ready, uncomment this:
             // return redirect()->route('refunds.create', ['booking' => $booking->bookingID]);
