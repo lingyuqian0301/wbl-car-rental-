@@ -588,17 +588,36 @@
                 </div>
             @endif
 
-            @if(!empty($bookingData['pickup_surcharge']) && $bookingData['pickup_surcharge'] > 0)
+            @if(!empty($pickupSurcharge) && $pickupSurcharge > 0)
                 <div class="breakdown-item">
-                    <span class="breakdown-label">Pick-up Surcharge:</span>
-                    <span class="breakdown-value">RM {{ number_format((float)$bookingData['pickup_surcharge'], 2) }}</span>
+                    <span class="breakdown-label">Pick-up Surcharge{{ !empty($pickupCustomLocation) ? ' (Others)' : '' }}:</span>
+                    <span class="breakdown-value">RM {{ number_format((float)$pickupSurcharge, 2) }}</span>
                 </div>
+                @if(!empty($pickupCustomLocation))
+                    <div class="breakdown-item" style="padding: 0.3rem 0; font-size: 0.85rem;">
+                        <span class="breakdown-label" style="color: var(--text-secondary);">↳ Location:</span>
+                        <span class="breakdown-value" style="font-weight: 500;">{{ $pickupCustomLocation }}</span>
+                    </div>
+                @endif
+            @endif
+
+            @if(!empty($returnSurcharge) && $returnSurcharge > 0)
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Return Surcharge{{ !empty($returnCustomLocation) ? ' (Others)' : '' }}:</span>
+                    <span class="breakdown-value">RM {{ number_format((float)$returnSurcharge, 2) }}</span>
+                </div>
+                @if(!empty($returnCustomLocation))
+                    <div class="breakdown-item" style="padding: 0.3rem 0; font-size: 0.85rem;">
+                        <span class="breakdown-label" style="color: var(--text-secondary);">↳ Location:</span>
+                        <span class="breakdown-value" style="font-weight: 500;">{{ $returnCustomLocation }}</span>
+                    </div>
+                @endif
             @endif
 
             @php
                 $subtotalBeforeDiscount = ($vehicle->rental_price * $bookingData['duration']) +
                     (isset($addons) ? array_sum(array_column($addons, 'total')) : 0) +
-                    ($bookingData['pickup_surcharge'] ?? 0);
+                    ($pickupSurcharge ?? 0) + ($returnSurcharge ?? 0);
             @endphp
 
             <div class="breakdown-item" style="border-top: 2px solid var(--border-color); margin-top: 0.8rem; padding-top: 0.8rem;">
@@ -642,8 +661,13 @@
                 <input type="hidden" name="pickup_point" value="{{ $bookingData['pickup_point'] }}">
                 <input type="hidden" name="return_point" value="{{ $bookingData['return_point'] }}">
                 <input type="hidden" name="total_amount" value="{{ $bookingData['total_amount'] }}">
-                @if(!empty($bookingData['pickup_surcharge']))
-                <input type="hidden" name="pickup_surcharge" value="{{ $bookingData['pickup_surcharge'] }}">
+                <input type="hidden" name="pickup_surcharge" value="{{ $pickupSurcharge ?? 0 }}">
+                <input type="hidden" name="return_surcharge" value="{{ $returnSurcharge ?? 0 }}">
+                @if(!empty($pickupCustomLocation))
+                <input type="hidden" name="pickup_custom_location" value="{{ $pickupCustomLocation }}">
+                @endif
+                @if(!empty($returnCustomLocation))
+                <input type="hidden" name="return_custom_location" value="{{ $returnCustomLocation }}">
                 @endif
 
                 @if(!empty($addons) && count($addons) > 0)

@@ -182,8 +182,11 @@ class BookingController extends Controller
             'end_date'      => 'required|date|after:start_date',
             'end_time'      => 'required|date_format:H:i',
             'pickup_point'  => 'required|string|max:255',
-            'return_point'  => 'required|string|max:100',
+            'return_point'  => 'required|string|max:255',
             'pickup_surcharge' => 'nullable|numeric',
+            'return_surcharge' => 'nullable|numeric',
+            'pickup_custom_location' => 'nullable|string|max:255',
+            'return_custom_location' => 'nullable|string|max:255',
         ]);
 
         // Check for date overlap with existing bookings
@@ -223,10 +226,12 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             $addonsPerDay += $addonPrices[$addon] ?? 0;
         }
 
-        // Calculate total (matching booking page: base + addons × duration + surcharge + deposit)
+        // Calculate total (matching booking page: base + addons × duration + surcharges + deposit)
         $pickupSurcharge = (float) ($request->pickup_surcharge ?? 0);
+        $returnSurcharge = (float) ($request->return_surcharge ?? 0);
+        $totalSurcharge = $pickupSurcharge + $returnSurcharge;
         $depositAmount = 50; // Fixed deposit amount
-        $totalAmount = ($vehiclePrice + $addonsPerDay) * $duration + $pickupSurcharge + $depositAmount;
+        $totalAmount = ($vehiclePrice + $addonsPerDay) * $duration + $totalSurcharge + $depositAmount;
 
         // Store booking data in session
         $bookingData = [
@@ -239,6 +244,9 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             'addOns_item' => implode(',', $addons),
             'rental_amount' => $totalAmount,
             'pickup_surcharge' => $pickupSurcharge,
+            'return_surcharge' => $returnSurcharge,
+            'pickup_custom_location' => $request->pickup_custom_location ?? null,
+            'return_custom_location' => $request->return_custom_location ?? null,
             'booking_status' => 'Pending',
         ];
 
@@ -342,8 +350,11 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
                 }
             }
 
-            // Calculate base amount (rental + addons + surcharge) - deposit is not included in discount calculation
-            $baseAmount = $rentalPrice + $addonsTotal + ($bookingData['pickup_surcharge'] ?? 0);
+            // Calculate base amount (rental + addons + surcharges) - deposit is not included in discount calculation
+            $pickupSurcharge = $bookingData['pickup_surcharge'] ?? 0;
+            $returnSurcharge = $bookingData['return_surcharge'] ?? 0;
+            $totalSurcharge = $pickupSurcharge + $returnSurcharge;
+            $baseAmount = $rentalPrice + $addonsTotal + $totalSurcharge;
 
             // Apply 10% Discount if voucher exists
             if ($activeVoucher && $activeVoucher->discount_type === 'PERCENT' && $activeVoucher->discount_amount == 10) {
@@ -409,7 +420,11 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
                 'activeVoucher' => $activeVoucher,
                 'discountAmount' => $discountAmount,
                 'baseAmount' => $baseAmount,
-                'pickupSurcharge' => $bookingData['pickup_surcharge'] ?? 0
+                'pickupSurcharge' => $pickupSurcharge,
+                'returnSurcharge' => $returnSurcharge,
+                'totalSurcharge' => $totalSurcharge,
+                'pickupCustomLocation' => $bookingData['pickup_custom_location'] ?? null,
+                'returnCustomLocation' => $bookingData['return_custom_location'] ?? null,
             ]);
 
         } catch (\Exception $e) {
@@ -491,6 +506,12 @@ public function finalize(Request $request)
             $booking->rental_amount = $finalRentalAmount;
             $booking->addOns_item = $bookingData['addOns_item'] ?? null;
             $booking->deposit_amount = $requiredDeposit;
+            
+            // Save surcharge data
+            $booking->pickup_surcharge = $bookingData['pickup_surcharge'] ?? 0;
+            $booking->return_surcharge = $bookingData['return_surcharge'] ?? 0;
+            $booking->pickup_custom_location = $bookingData['pickup_custom_location'] ?? null;
+            $booking->return_custom_location = $bookingData['return_custom_location'] ?? null;
             
             // USE THE STATUS DETERMINED ABOVE
             $booking->booking_status = $bookingStatus; 
@@ -585,6 +606,10 @@ public function finalize(Request $request)
         $duration = $booking->duration ?? 1;
         $rentalBase = $dailyRate * $duration;
         $pickupSurcharge = $booking->pickup_surcharge ?? 0;
+        $returnSurcharge = $booking->return_surcharge ?? 0;
+        $totalSurcharge = $pickupSurcharge + $returnSurcharge;
+        $pickupCustomLocation = $booking->pickup_custom_location ?? null;
+        $returnCustomLocation = $booking->return_custom_location ?? null;
         $depositAmount = 50; 
 
         // C. Add-ons Breakdown
@@ -610,7 +635,7 @@ public function finalize(Request $request)
         }
 
         // D. Base Amount (Before Discount & Deposit)
-        $baseAmount = $rentalBase + $addonsTotal + $pickupSurcharge;
+        $baseAmount = $rentalBase + $addonsTotal + $totalSurcharge;
 
         // E. Discount Logic
         $actualFinalTotal = $booking->rental_amount; 
@@ -639,6 +664,7 @@ public function finalize(Request $request)
         $rentalAmount = $booking->rental_amount; // Legacy support
 
         // 5. Generate PDF
+        $subtotalAfterDiscount = $baseAmount - $discountAmount;
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact(
             'booking', 
             'invoiceData', 
@@ -651,15 +677,20 @@ public function finalize(Request $request)
             'dailyRate',
             'rentalBase',
             'pickupSurcharge',
+            'returnSurcharge',
+            'totalSurcharge',
+            'pickupCustomLocation',
+            'returnCustomLocation',
             'addonsBreakdown',
             'baseAmount',
+            'subtotalAfterDiscount',
             'voucher',
             'discountAmount',
             'depositAmount', 
             'finalTotal',
             'allPayments',
             'totalPaid',
-            'outstandingBalance', // <--- FIX: Defined here
+            'outstandingBalance',
             'rentalAmount'
         ));
 

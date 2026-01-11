@@ -493,11 +493,36 @@
                         <tr>
                             <td>
                                 <div class="item-description">Pickup Location Surcharge</div>
-                                <div class="item-details">{{ $booking->pickup_point ?? 'N/A' }}</div>
+                                <div class="item-details">
+                                    @if(!empty($pickupCustomLocation))
+                                        Others: {{ $pickupCustomLocation }}
+                                    @else
+                                        {{ $booking->pickup_point ?? 'N/A' }}
+                                    @endif
+                                </div>
                             </td>
                             <td class="text-center">-</td>
                             <td class="text-right">-</td>
                             <td class="text-right">RM {{ number_format($pickupSurcharge, 2) }}</td>
+                        </tr>
+                    @endif
+
+                    {{-- Return Surcharge --}}
+                    @if($returnSurcharge > 0)
+                        <tr>
+                            <td>
+                                <div class="item-description">Return Location Surcharge</div>
+                                <div class="item-details">
+                                    @if(!empty($returnCustomLocation))
+                                        Others: {{ $returnCustomLocation }}
+                                    @else
+                                        {{ $booking->return_point ?? 'N/A' }}
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="text-center">-</td>
+                            <td class="text-right">-</td>
+                            <td class="text-right">RM {{ number_format($returnSurcharge, 2) }}</td>
                         </tr>
                     @endif
 

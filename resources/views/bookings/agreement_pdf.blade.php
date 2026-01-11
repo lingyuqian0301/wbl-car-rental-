@@ -353,6 +353,18 @@
                 <td>Number of Days</td>
                 <td>{{ $booking->duration ?? 1 }}</td>
             </tr>
+            @if(($booking->pickup_surcharge ?? 0) > 0)
+            <tr>
+                <td>Pickup Location Surcharge @if($booking->pickup_custom_location)(Others: {{ $booking->pickup_custom_location }})@endif</td>
+                <td>{{ number_format($booking->pickup_surcharge, 2) }}</td>
+            </tr>
+            @endif
+            @if(($booking->return_surcharge ?? 0) > 0)
+            <tr>
+                <td>Return Location Surcharge @if($booking->return_custom_location)(Others: {{ $booking->return_custom_location }})@endif</td>
+                <td>{{ number_format($booking->return_surcharge, 2) }}</td>
+            </tr>
+            @endif
             <tr>
                 <td>Total Rental Amount</td>
                 <td>{{ number_format($booking->rental_amount ?? 0, 2) }}</td>

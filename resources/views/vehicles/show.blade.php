@@ -730,15 +730,19 @@
                     <div style="display: flex; flex-direction: column; gap: 0.6rem;">
                         <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
                             <input type="radio" id="officeRadio" name="pickup_type_radio" value="office" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
-                            <span>Office</span>
+                            <span>Office <span style="color: var(--success-green); font-size: 0.8rem;">(No surcharge)</span></span>
                         </label>
                         <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
                             <input type="radio" id="facultyRadio" name="pickup_type_radio" value="faculty" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
-                            <span>Faculty</span>
+                            <span>Faculty <span style="color: var(--primary-orange); font-size: 0.8rem;">(+RM10 surcharge)</span></span>
                         </label>
                         <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
                             <input type="radio" id="collegeRadio" name="pickup_type_radio" value="college" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
-                            <span>College</span>
+                            <span>College <span style="color: var(--primary-orange); font-size: 0.8rem;">(+RM10 surcharge)</span></span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="othersPickupRadio" name="pickup_type_radio" value="others" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Others <span style="color: var(--primary-orange); font-size: 0.8rem;">(+RM10 surcharge)</span></span>
                         </label>
                     </div>
                 </div>
@@ -778,10 +782,15 @@
                             <option value="Kolej Sri Jelai">Kolej Sri Jelai</option>
                         </select>
                     </div>
+                    <div id="othersPickupLocation" style="display: none;">
+                        <input type="text" id="othersPickupInput" placeholder="Enter custom pickup location (required)" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.3rem; display: block;">Please enter the full address or location name</small>
+                    </div>
                 </div>
 
                 <input type="hidden" id="pickup_point" name="pickup_point" value="">
                 <input type="hidden" id="pickup_surcharge" name="pickup_surcharge" value="0">
+                <input type="hidden" id="pickup_custom_location" name="pickup_custom_location" value="">
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                     <div class="form-group">
@@ -815,15 +824,19 @@
                     <div style="display: flex; flex-direction: column; gap: 0.6rem;">
                         <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
                             <input type="radio" id="returnOfficeRadio" name="return_type_radio" value="office" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
-                            <span>Office</span>
+                            <span>Office <span style="color: var(--success-green); font-size: 0.8rem;">(No surcharge)</span></span>
                         </label>
                         <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
                             <input type="radio" id="returnFacultyRadio" name="return_type_radio" value="faculty" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
-                            <span>Faculty</span>
+                            <span>Faculty <span style="color: var(--primary-orange); font-size: 0.8rem;">(+RM10 surcharge)</span></span>
                         </label>
                         <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
                             <input type="radio" id="returnCollegeRadio" name="return_type_radio" value="college" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
-                            <span>College</span>
+                            <span>College <span style="color: var(--primary-orange); font-size: 0.8rem;">(+RM10 surcharge)</span></span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 0.6rem; border: 2px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
+                            <input type="radio" id="othersReturnRadio" name="return_type_radio" value="others" style="width: 18px; height: 18px; margin-right: 0.8rem; cursor: pointer; accent-color: var(--primary-orange);">
+                            <span>Others <span style="color: var(--primary-orange); font-size: 0.8rem;">(+RM10 surcharge)</span></span>
                         </label>
                     </div>
                 </div>
@@ -863,9 +876,15 @@
                             <option value="Kolej Sri Jelai">Kolej Sri Jelai</option>
                         </select>
                     </div>
+                    <div id="othersReturnLocation" style="display: none;">
+                        <input type="text" id="othersReturnInput" placeholder="Enter custom return location (required)" style="width: 100%; padding: 0.8rem; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem;">
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.3rem; display: block;">Please enter the full address or location name</small>
+                    </div>
                 </div>
 
                 <input type="hidden" id="return_point" name="return_point" value="">
+                <input type="hidden" id="return_surcharge" name="return_surcharge" value="0">
+                <input type="hidden" id="return_custom_location" name="return_custom_location" value="">
                 <div class="addons-section">
                     <h3>Add-on Options</h3>
                     <label class="addon-option">
@@ -900,9 +919,14 @@
 
                     <div id="addonsBreakdown"></div>
 
-                    <div id="surchargeBreakdown" class="breakdown-item" style="display: none;">
+                    <div id="pickupSurchargeBreakdown" class="breakdown-item" style="display: none;">
                         <span class="breakdown-label">Pick-up Surcharge:</span>
-                        <span class="breakdown-value">RM <span id="surchargeAmount">10.00</span></span>
+                        <span class="breakdown-value">RM <span id="pickupSurchargeAmount">10.00</span></span>
+                    </div>
+
+                    <div id="returnSurchargeBreakdown" class="breakdown-item" style="display: none;">
+                        <span class="breakdown-label">Return Surcharge:</span>
+                        <span class="breakdown-value">RM <span id="returnSurchargeAmount">10.00</span></span>
                     </div>
 
                     <div class="breakdown-item deposit-item">
@@ -951,50 +975,88 @@
     const officeRadio = document.getElementById('officeRadio');
     const facultyRadio = document.getElementById('facultyRadio');
     const collegeRadio = document.getElementById('collegeRadio');
+    const othersPickupRadio = document.getElementById('othersPickupRadio');
     
     const officeLocation = document.getElementById('officeLocation');
     const facultyLocation = document.getElementById('facultyLocation');
     const collegeLocation = document.getElementById('collegeLocation');
+    const othersPickupLocation = document.getElementById('othersPickupLocation');
     const facultySelect = document.getElementById('facultySelect');
     const collegeSelect = document.getElementById('collegeSelect');
+    const othersPickupInput = document.getElementById('othersPickupInput');
     const pickupPointInput = document.getElementById('pickup_point');
     const pickupSurcharge = document.getElementById('pickup_surcharge');
+    const pickupCustomLocation = document.getElementById('pickup_custom_location');
 
     let currentPickupSurcharge = 0;
+    let currentReturnSurcharge = 0;
 
-    // Radio button change handlers
-    officeRadio.addEventListener('change', function() {
-        officeLocation.style.display = 'block';
+    // Helper to hide all pickup locations
+    function hideAllPickupLocations() {
+        officeLocation.style.display = 'none';
         facultyLocation.style.display = 'none';
         collegeLocation.style.display = 'none';
+        othersPickupLocation.style.display = 'none';
+    }
+
+    // Radio button change handlers for PICKUP
+    officeRadio.addEventListener('change', function() {
+        hideAllPickupLocations();
+        officeLocation.style.display = 'block';
         pickupPointInput.value = 'HASTA HQ Office';
         pickupSurcharge.value = '0';
+        pickupCustomLocation.value = '';
         currentPickupSurcharge = 0;
         facultySelect.value = '';
         collegeSelect.value = '';
+        othersPickupInput.value = '';
         displayPriceBreakdown();
     });
 
     facultyRadio.addEventListener('change', function() {
-        officeLocation.style.display = 'none';
+        hideAllPickupLocations();
         facultyLocation.style.display = 'block';
-        collegeLocation.style.display = 'none';
         pickupPointInput.value = '';
         pickupSurcharge.value = '10';
+        pickupCustomLocation.value = '';
         currentPickupSurcharge = 10;
         collegeSelect.value = '';
+        othersPickupInput.value = '';
         displayPriceBreakdown();
     });
 
     collegeRadio.addEventListener('change', function() {
-        officeLocation.style.display = 'none';
-        facultyLocation.style.display = 'none';
+        hideAllPickupLocations();
         collegeLocation.style.display = 'block';
+        pickupPointInput.value = '';
+        pickupSurcharge.value = '10';
+        pickupCustomLocation.value = '';
+        currentPickupSurcharge = 10;
+        facultySelect.value = '';
+        othersPickupInput.value = '';
+        displayPriceBreakdown();
+    });
+
+    othersPickupRadio.addEventListener('change', function() {
+        hideAllPickupLocations();
+        othersPickupLocation.style.display = 'block';
         pickupPointInput.value = '';
         pickupSurcharge.value = '10';
         currentPickupSurcharge = 10;
         facultySelect.value = '';
+        collegeSelect.value = '';
         displayPriceBreakdown();
+    });
+
+    // Others pickup input updates hidden fields
+    othersPickupInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            pickupPointInput.value = 'Others: ' + this.value.trim();
+            pickupCustomLocation.value = this.value.trim();
+        } else {
+            pickupPointInput.value = '';
+            pickupCustomLocation.value = '';
+        }
     });
 
     // Faculty dropdown updates hidden pickup_point
@@ -1019,40 +1081,88 @@
     const returnOfficeRadio = document.getElementById('returnOfficeRadio');
     const returnFacultyRadio = document.getElementById('returnFacultyRadio');
     const returnCollegeRadio = document.getElementById('returnCollegeRadio');
+    const othersReturnRadio = document.getElementById('othersReturnRadio');
     
     const returnOfficeLocation = document.getElementById('returnOfficeLocation');
     const returnFacultyLocation = document.getElementById('returnFacultyLocation');
     const returnCollegeLocation = document.getElementById('returnCollegeLocation');
+    const othersReturnLocation = document.getElementById('othersReturnLocation');
     const returnFacultySelect = document.getElementById('returnFacultySelect');
     const returnCollegeSelect = document.getElementById('returnCollegeSelect');
+    const othersReturnInput = document.getElementById('othersReturnInput');
     const returnPointInput = document.getElementById('return_point');
+    const returnSurcharge = document.getElementById('return_surcharge');
+    const returnCustomLocation = document.getElementById('return_custom_location');
 
-    // Return office radio - show office location, hide others
-    returnOfficeRadio.addEventListener('change', function() {
-        returnOfficeLocation.style.display = 'block';
+    // Helper to hide all return locations
+    function hideAllReturnLocations() {
+        returnOfficeLocation.style.display = 'none';
         returnFacultyLocation.style.display = 'none';
         returnCollegeLocation.style.display = 'none';
+        othersReturnLocation.style.display = 'none';
+    }
+
+    // Return office radio - no surcharge
+    returnOfficeRadio.addEventListener('change', function() {
+        hideAllReturnLocations();
+        returnOfficeLocation.style.display = 'block';
         returnPointInput.value = 'HASTA HQ Office';
+        returnSurcharge.value = '0';
+        returnCustomLocation.value = '';
+        currentReturnSurcharge = 0;
         returnFacultySelect.value = '';
         returnCollegeSelect.value = '';
+        othersReturnInput.value = '';
+        displayPriceBreakdown();
     });
 
-    // Return faculty radio - show faculty dropdown, hide others
+    // Return faculty radio - with surcharge
     returnFacultyRadio.addEventListener('change', function() {
-        returnOfficeLocation.style.display = 'none';
+        hideAllReturnLocations();
         returnFacultyLocation.style.display = 'block';
-        returnCollegeLocation.style.display = 'none';
         returnPointInput.value = '';
+        returnSurcharge.value = '10';
+        returnCustomLocation.value = '';
+        currentReturnSurcharge = 10;
         returnCollegeSelect.value = '';
+        othersReturnInput.value = '';
+        displayPriceBreakdown();
     });
 
-    // Return college radio - show college dropdown, hide others
+    // Return college radio - with surcharge
     returnCollegeRadio.addEventListener('change', function() {
-        returnOfficeLocation.style.display = 'none';
-        returnFacultyLocation.style.display = 'none';
+        hideAllReturnLocations();
         returnCollegeLocation.style.display = 'block';
         returnPointInput.value = '';
+        returnSurcharge.value = '10';
+        returnCustomLocation.value = '';
+        currentReturnSurcharge = 10;
         returnFacultySelect.value = '';
+        othersReturnInput.value = '';
+        displayPriceBreakdown();
+    });
+
+    // Return others radio - with surcharge
+    othersReturnRadio.addEventListener('change', function() {
+        hideAllReturnLocations();
+        othersReturnLocation.style.display = 'block';
+        returnPointInput.value = '';
+        returnSurcharge.value = '10';
+        currentReturnSurcharge = 10;
+        returnFacultySelect.value = '';
+        returnCollegeSelect.value = '';
+        displayPriceBreakdown();
+    });
+
+    // Others return input updates hidden fields
+    othersReturnInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            returnPointInput.value = 'Others: ' + this.value.trim();
+            returnCustomLocation.value = this.value.trim();
+        } else {
+            returnPointInput.value = '';
+            returnCustomLocation.value = '';
+        }
     });
 
     // Return faculty dropdown updates hidden return_point
@@ -1258,20 +1368,30 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        const totalPrice = basePrice + addonsTotal + depositAmount + currentPickupSurcharge;
+        const totalSurcharge = currentPickupSurcharge + currentReturnSurcharge;
+        const totalPrice = basePrice + addonsTotal + depositAmount + totalSurcharge;
 
         // Update UI display
         document.getElementById('durationDays').textContent = durationDays > 0 ? durationDays : '-';
         document.getElementById('depositAmount').textContent = depositAmount.toFixed(2);
         document.getElementById('basePriceBreakdown').textContent = basePrice.toFixed(2);
 
-        // Show/hide surcharge
-        const surchargeBreakdown = document.getElementById('surchargeBreakdown');
+        // Show/hide pickup surcharge
+        const pickupSurchargeBreakdown = document.getElementById('pickupSurchargeBreakdown');
         if (currentPickupSurcharge > 0) {
-            surchargeBreakdown.style.display = 'flex';
-            document.getElementById('surchargeAmount').textContent = currentPickupSurcharge.toFixed(2);
+            pickupSurchargeBreakdown.style.display = 'flex';
+            document.getElementById('pickupSurchargeAmount').textContent = currentPickupSurcharge.toFixed(2);
         } else {
-            surchargeBreakdown.style.display = 'none';
+            pickupSurchargeBreakdown.style.display = 'none';
+        }
+
+        // Show/hide return surcharge
+        const returnSurchargeBreakdown = document.getElementById('returnSurchargeBreakdown');
+        if (currentReturnSurcharge > 0) {
+            returnSurchargeBreakdown.style.display = 'flex';
+            document.getElementById('returnSurchargeAmount').textContent = currentReturnSurcharge.toFixed(2);
+        } else {
+            returnSurchargeBreakdown.style.display = 'none';
         }
 
         document.getElementById('totalPriceBreakdown').textContent = totalPrice.toFixed(2);
@@ -1305,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Form submission - prepare addon data and validate pickup selection
     bookingForm.addEventListener('submit', function(e) {
         // Validate pickup type is selected
-        if (!officeRadio.checked && !facultyRadio.checked && !collegeRadio.checked) {
+        if (!officeRadio.checked && !facultyRadio.checked && !collegeRadio.checked && !othersPickupRadio.checked) {
             e.preventDefault();
             alert('Please select a pick-up point type');
             return;
@@ -1325,6 +1445,14 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Validate others pickup input if others selected
+        if (othersPickupRadio.checked && !othersPickupInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter a custom pickup location');
+            othersPickupInput.focus();
+            return;
+        }
+
         // Validate pickup location is filled
         if (!pickupPointInput.value) {
             e.preventDefault();
@@ -1333,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Validate return type is selected
-        if (!returnOfficeRadio.checked && !returnFacultyRadio.checked && !returnCollegeRadio.checked) {
+        if (!returnOfficeRadio.checked && !returnFacultyRadio.checked && !returnCollegeRadio.checked && !othersReturnRadio.checked) {
             e.preventDefault();
             alert('Please select a return point type');
             return;
@@ -1350,6 +1478,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (returnCollegeRadio.checked && !returnCollegeSelect.value) {
             e.preventDefault();
             alert('Please select a return college');
+            return;
+        }
+
+        // Validate others return input if others selected
+        if (othersReturnRadio.checked && !othersReturnInput.value.trim()) {
+            e.preventDefault();
+            alert('Please enter a custom return location');
+            othersReturnInput.focus();
             return;
         }
 
