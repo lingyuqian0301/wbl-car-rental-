@@ -1,8 +1,6 @@
-@extends('layouts.admin')
+<?php $__env->startSection('title', 'Vehicle Details'); ?>
 
-@section('title', 'Vehicle Details')
-
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
     :root {
         --hasta-red: #b91c1c;
@@ -156,79 +154,81 @@
         margin-top: 8px;
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h4 mb-1">{{ $vehicle->vehicle_brand }} {{ $vehicle->vehicle_model }}</h1>
+            <h1 class="h4 mb-1"><?php echo e($vehicle->vehicle_brand); ?> <?php echo e($vehicle->vehicle_model); ?></h1>
             <div class="text-muted small">
-                Plate: {{ $vehicle->plate_number ?? 'N/A' }} · Status: <span class="badge bg-secondary">{{ ucfirst($vehicle->availability_status ?? 'Unknown') }}</span>
+                Plate: <?php echo e($vehicle->plate_number ?? 'N/A'); ?> · Status: <span class="badge bg-secondary"><?php echo e(ucfirst($vehicle->availability_status ?? 'Unknown')); ?></span>
             </div>
         </div>
         <div class="d-flex gap-2">
-            @if($vehicle->car)
-                <a href="{{ route('admin.vehicles.cars.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-danger">
+            <?php if($vehicle->car): ?>
+                <a href="<?php echo e(route('admin.vehicles.cars.edit', $vehicle->vehicleID)); ?>" class="btn btn-sm btn-danger">
                     <i class="bi bi-pencil"></i> Edit Car
                 </a>
-            @elseif($vehicle->motorcycle)
-                <a href="{{ route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-danger">
+            <?php elseif($vehicle->motorcycle): ?>
+                <a href="<?php echo e(route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID)); ?>" class="btn btn-sm btn-danger">
                     <i class="bi bi-pencil"></i> Edit Motorcycle
                 </a>
-            @else
-                <a href="{{ route('admin.vehicles.others.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-danger">
+            <?php else: ?>
+                <a href="<?php echo e(route('admin.vehicles.others.edit', $vehicle->vehicleID)); ?>" class="btn btn-sm btn-danger">
                     <i class="bi bi-pencil"></i> Edit Vehicle
                 </a>
-            @endif
-            <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">
+            <?php endif; ?>
+            <a href="<?php echo e(url()->previous()); ?>" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
         </div>
     </div>
 
-    @if(session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+            <?php echo e(session('success')); ?>
 
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    @endif
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo e(session('error')); ?>
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ ($activeTab ?? 'car-info') === 'car-info' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#car-info" type="button" role="tab">
+            <button class="nav-link <?php echo e(($activeTab ?? 'car-info') === 'car-info' ? 'active' : ''); ?>" data-bs-toggle="tab" data-bs-target="#car-info" type="button" role="tab">
                 <i class="bi bi-info-circle"></i> Car Info
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ ($activeTab ?? '') === 'owner-info' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#owner-info" type="button" role="tab">
+            <button class="nav-link <?php echo e(($activeTab ?? '') === 'owner-info' ? 'active' : ''); ?>" data-bs-toggle="tab" data-bs-target="#owner-info" type="button" role="tab">
                 <i class="bi bi-person"></i> Owner Info
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <a href="{{ route('admin.vehicles.maintenance', $vehicle->vehicleID) }}" class="nav-link {{ ($activeTab ?? '') === 'maintenance' ? 'active' : '' }}">
+            <a href="<?php echo e(route('admin.vehicles.maintenance', $vehicle->vehicleID)); ?>" class="nav-link <?php echo e(($activeTab ?? '') === 'maintenance' ? 'active' : ''); ?>">
                 <i class="bi bi-tools"></i> Maintenance
             </a>
         </li>
         <li class="nav-item" role="presentation">
-            <a href="{{ route('admin.vehicles.fuel', $vehicle->vehicleID) }}" class="nav-link {{ ($activeTab ?? '') === 'fuel' ? 'active' : '' }}">
+            <a href="<?php echo e(route('admin.vehicles.fuel', $vehicle->vehicleID)); ?>" class="nav-link <?php echo e(($activeTab ?? '') === 'fuel' ? 'active' : ''); ?>">
                 <i class="bi bi-fuel-pump"></i> Fuel
             </a>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ ($activeTab ?? '') === 'booking-history' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#booking-history" type="button" role="tab">
+            <button class="nav-link <?php echo e(($activeTab ?? '') === 'booking-history' ? 'active' : ''); ?>" data-bs-toggle="tab" data-bs-target="#booking-history" type="button" role="tab">
                 <i class="bi bi-clock-history"></i> Booking History
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ ($activeTab ?? '') === 'photos' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#photos" type="button" role="tab">
+            <button class="nav-link <?php echo e(($activeTab ?? '') === 'photos' ? 'active' : ''); ?>" data-bs-toggle="tab" data-bs-target="#photos" type="button" role="tab">
                 <i class="bi bi-images"></i> Car Photos
             </button>
         </li>
@@ -236,104 +236,106 @@
 
     <div class="tab-content">
         <!-- Car Info Tab - Contains Vehicle Info, Maintenance, and Documentation -->
-        <div class="tab-pane fade {{ ($activeTab ?? 'car-info') === 'car-info' ? 'show active' : '' }}" id="car-info" role="tabpanel">
+        <div class="tab-pane fade <?php echo e(($activeTab ?? 'car-info') === 'car-info' ? 'show active' : ''); ?>" id="car-info" role="tabpanel">
             <div class="row g-3">
                 <!-- Vehicle Basic Info -->
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-car-front"></i> Vehicle Information</h5>
-                            @if($vehicle->car)
-                                <a href="{{ route('admin.vehicles.cars.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-light">
+                            <?php if($vehicle->car): ?>
+                                <a href="<?php echo e(route('admin.vehicles.cars.edit', $vehicle->vehicleID)); ?>" class="btn btn-sm btn-light">
                                     <i class="bi bi-pencil"></i> Edit Car
                                 </a>
-                            @elseif($vehicle->motorcycle)
-                                <a href="{{ route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-light">
+                            <?php elseif($vehicle->motorcycle): ?>
+                                <a href="<?php echo e(route('admin.vehicles.motorcycles.edit', $vehicle->vehicleID)); ?>" class="btn btn-sm btn-light">
                                     <i class="bi bi-pencil"></i> Edit Motorcycle
                                 </a>
-                            @else
-                                <a href="{{ route('admin.vehicles.others.edit', $vehicle->vehicleID) }}" class="btn btn-sm btn-light">
+                            <?php else: ?>
+                                <a href="<?php echo e(route('admin.vehicles.others.edit', $vehicle->vehicleID)); ?>" class="btn btn-sm btn-light">
                                     <i class="bi bi-pencil"></i> Edit Vehicle
                                 </a>
-                            @endif
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <dl class="mb-0">
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle Brand:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->vehicle_brand ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->vehicle_brand ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle Model:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->vehicle_model ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->vehicle_model ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Plate Number:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->plate_number ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->plate_number ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Registration Date:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Available Status:</dt>
                                     <dd class="d-inline ms-2">
-                                        <span class="badge {{ $vehicle->availability_status === 'available' ? 'bg-success' : ($vehicle->availability_status === 'rented' ? 'bg-warning text-dark' : ($vehicle->availability_status === 'maintenance' ? 'bg-info' : 'bg-secondary')) }}">
-                                            {{ ucfirst($vehicle->availability_status ?? 'Unknown') }}
+                                        <span class="badge <?php echo e($vehicle->availability_status === 'available' ? 'bg-success' : ($vehicle->availability_status === 'rented' ? 'bg-warning text-dark' : ($vehicle->availability_status === 'maintenance' ? 'bg-info' : 'bg-secondary'))); ?>">
+                                            <?php echo e(ucfirst($vehicle->availability_status ?? 'Unknown')); ?>
+
                                         </span>
                                     </dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Created Date:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->created_date ? \Carbon\Carbon::parse($vehicle->created_date)->format('d M Y') : 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Manufacturing Year:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->manufacturing_year ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->manufacturing_year ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Color:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->color ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->color ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Engine Capacity:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->engineCapacity ? number_format($vehicle->engineCapacity, 2) . 'L' : 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->engineCapacity ? number_format($vehicle->engineCapacity, 2) . 'L' : 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Vehicle Type:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->vehicleType ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->vehicleType ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Rental Price:</dt>
-                                    <dd class="d-inline ms-2">RM {{ number_format($vehicle->rental_price ?? 0, 2) }}</dd>
+                                    <dd class="d-inline ms-2">RM <?php echo e(number_format($vehicle->rental_price ?? 0, 2)); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Is Active:</dt>
                                     <dd class="d-inline ms-2">
-                                        <span class="badge {{ ($vehicle->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                            {{ ($vehicle->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                        <span class="badge <?php echo e(($vehicle->isActive ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
+                                            <?php echo e(($vehicle->isActive ?? false) ? 'Active' : 'Inactive'); ?>
+
                                         </span>
                                     </dd>
                                 </div>
-                                @if($vehicle->car)
+                                <?php if($vehicle->car): ?>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Seating Capacity:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->car->seating_capacity ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->car->seating_capacity ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Transmission:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->car->transmission ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->car->transmission ?? 'N/A'); ?></dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Car Type:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->car->car_type ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->car->car_type ?? 'N/A'); ?></dd>
                                 </div>
-                                @elseif($vehicle->motorcycle)
+                                <?php elseif($vehicle->motorcycle): ?>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Motor Type:</dt>
-                                    <dd class="d-inline ms-2">{{ $vehicle->motorcycle->motor_type ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2"><?php echo e($vehicle->motorcycle->motor_type ?? 'N/A'); ?></dd>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                             </dl>
                         </div>
                     </div>
@@ -353,34 +355,35 @@
                                         <div class="card-body text-center">
                                             <i class="bi bi-shield-check fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                             <h6 class="fw-semibold">Insurance</h6>
-                                            @php
+                                            <?php
                                                 $insuranceDoc = $vehicle->documents->where('document_type', 'insurance')->first();
-                                            @endphp
-                                            @if($insuranceDoc && $insuranceDoc->fileURL)
-                                                @php
+                                            ?>
+                                            <?php if($insuranceDoc && $insuranceDoc->fileURL): ?>
+                                                <?php
                                                     $isPdf = strtolower(pathinfo($insuranceDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
-                                                @endphp
+                                                ?>
                                                 <div class="mb-2">
-                                                    @if($isPdf)
+                                                    <?php if($isPdf): ?>
                                                         <div class="d-flex align-items-center justify-content-center" style="min-height: 150px; background: #f5f5f5; border-radius: 6px;">
                                                             <i class="bi bi-file-earmark-pdf" style="font-size: 4rem; color: var(--hasta-red);"></i>
                                                         </div>
-                                                    @else
-                                                        <img src="{{ getFileUrl($insuranceDoc->fileURL, true) }}" 
+                                                    <?php else: ?>
+                                                        <img src="<?php echo e(getFileUrl($insuranceDoc->fileURL, true)); ?>" 
                                                              alt="Insurance" 
                                                              class="img-fluid mb-2" 
                                                              style="max-height: 150px; border-radius: 6px;">
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="upload-date">
-                                                    <i class="bi bi-calendar3"></i> Uploaded: {{ $insuranceDoc->upload_date ? \Carbon\Carbon::parse($insuranceDoc->upload_date)->format('d M Y') : 'N/A' }}
+                                                    <i class="bi bi-calendar3"></i> Uploaded: <?php echo e($insuranceDoc->upload_date ? \Carbon\Carbon::parse($insuranceDoc->upload_date)->format('d M Y') : 'N/A'); ?>
+
                                                 </div>
                                                 <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
                                                     <button type="button" 
                                                             class="btn btn-sm" 
                                                             style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                             data-bs-toggle="modal" 
-                                                            data-bs-target="#viewDocumentModal{{ $insuranceDoc->documentID }}">
+                                                            data-bs-target="#viewDocumentModal<?php echo e($insuranceDoc->documentID); ?>">
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -389,10 +392,10 @@
                                                             onclick="setDocumentType('insurance')">
                                                         <i class="bi bi-upload"></i> Upload
                                                     </button>
-                                                    <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $insuranceDoc->documentID) }}" 
+                                                    <form method="POST" action="<?php echo e(route('admin.vehicles.documents.destroy', $insuranceDoc->documentID)); ?>" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                                             <i class="bi bi-trash"></i> Delete
                                                         </button>
@@ -400,7 +403,7 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Insurance -->
-                                                <div class="modal fade" id="viewDocumentModal{{ $insuranceDoc->documentID }}" tabindex="-1">
+                                                <div class="modal fade" id="viewDocumentModal<?php echo e($insuranceDoc->documentID); ?>" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
@@ -408,21 +411,21 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
-                                                                @if($isPdf)
-                                                                    <iframe src="{{ getFileUrl($insuranceDoc->fileURL) }}" 
+                                                                <?php if($isPdf): ?>
+                                                                    <iframe src="<?php echo e(getFileUrl($insuranceDoc->fileURL)); ?>" 
                                                                             style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
                                                                             onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
                                                                     </iframe>
-                                                                @else
-                                                                    <img src="{{ getFileUrl($insuranceDoc->fileURL, true) }}" 
+                                                                <?php else: ?>
+                                                                    <img src="<?php echo e(getFileUrl($insuranceDoc->fileURL, true)); ?>" 
                                                                          alt="Insurance Document" 
                                                                          class="img-fluid" 
                                                                          style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                          onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                                                @endif
+                                                                <?php endif; ?>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ getFileUrl($insuranceDoc->fileURL) }}" 
+                                                                <a href="<?php echo e(getFileUrl($insuranceDoc->fileURL)); ?>" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab
@@ -432,7 +435,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                         data-bs-toggle="modal" 
@@ -440,7 +443,7 @@
                                                         onclick="setDocumentType('insurance')">
                                                     <i class="bi bi-upload"></i> Upload
                                                 </button>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -451,34 +454,35 @@
                                         <div class="card-body text-center">
                                             <i class="bi bi-file-earmark-text fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                             <h6 class="fw-semibold">Grant</h6>
-                                            @php
+                                            <?php
                                                 $grantDoc = $vehicle->documents->where('document_type', 'grant')->first();
-                                            @endphp
-                                            @if($grantDoc && $grantDoc->fileURL)
-                                                @php
+                                            ?>
+                                            <?php if($grantDoc && $grantDoc->fileURL): ?>
+                                                <?php
                                                     $isPdf = strtolower(pathinfo($grantDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
-                                                @endphp
+                                                ?>
                                                 <div class="mb-2">
-                                                    @if($isPdf)
+                                                    <?php if($isPdf): ?>
                                                         <div class="d-flex align-items-center justify-content-center" style="min-height: 150px; background: #f5f5f5; border-radius: 6px;">
                                                             <i class="bi bi-file-earmark-pdf" style="font-size: 4rem; color: var(--hasta-red);"></i>
                                                         </div>
-                                                    @else
-                                                        <img src="{{ getFileUrl($grantDoc->fileURL, true) }}" 
+                                                    <?php else: ?>
+                                                        <img src="<?php echo e(getFileUrl($grantDoc->fileURL, true)); ?>" 
                                                              alt="Grant" 
                                                              class="img-fluid mb-2" 
                                                              style="max-height: 150px; border-radius: 6px;">
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="upload-date">
-                                                    <i class="bi bi-calendar3"></i> Uploaded: {{ $grantDoc->upload_date ? \Carbon\Carbon::parse($grantDoc->upload_date)->format('d M Y') : 'N/A' }}
+                                                    <i class="bi bi-calendar3"></i> Uploaded: <?php echo e($grantDoc->upload_date ? \Carbon\Carbon::parse($grantDoc->upload_date)->format('d M Y') : 'N/A'); ?>
+
                                                 </div>
                                                 <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
                                                     <button type="button" 
                                                             class="btn btn-sm" 
                                                             style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                             data-bs-toggle="modal" 
-                                                            data-bs-target="#viewDocumentModal{{ $grantDoc->documentID }}">
+                                                            data-bs-target="#viewDocumentModal<?php echo e($grantDoc->documentID); ?>">
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -487,10 +491,10 @@
                                                             onclick="setDocumentType('grant')">
                                                         <i class="bi bi-upload"></i> Upload
                                                     </button>
-                                                    <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $grantDoc->documentID) }}" 
+                                                    <form method="POST" action="<?php echo e(route('admin.vehicles.documents.destroy', $grantDoc->documentID)); ?>" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                                             <i class="bi bi-trash"></i> Delete
                                                         </button>
@@ -498,7 +502,7 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Grant -->
-                                                <div class="modal fade" id="viewDocumentModal{{ $grantDoc->documentID }}" tabindex="-1">
+                                                <div class="modal fade" id="viewDocumentModal<?php echo e($grantDoc->documentID); ?>" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
@@ -506,21 +510,21 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
-                                                                @if($isPdf)
-                                                                    <iframe src="{{ getFileUrl($grantDoc->fileURL) }}" 
+                                                                <?php if($isPdf): ?>
+                                                                    <iframe src="<?php echo e(getFileUrl($grantDoc->fileURL)); ?>" 
                                                                             style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
                                                                             onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
                                                                     </iframe>
-                                                                @else
-                                                                    <img src="{{ getFileUrl($grantDoc->fileURL, true) }}" 
+                                                                <?php else: ?>
+                                                                    <img src="<?php echo e(getFileUrl($grantDoc->fileURL, true)); ?>" 
                                                                          alt="Grant Document" 
                                                                          class="img-fluid" 
                                                                          style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                          onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                                                @endif
+                                                                <?php endif; ?>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ asset('storage/' . $grantDoc->fileURL) }}" 
+                                                                <a href="<?php echo e(asset('storage/' . $grantDoc->fileURL)); ?>" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab
@@ -530,7 +534,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                         data-bs-toggle="modal" 
@@ -538,7 +542,7 @@
                                                         onclick="setDocumentType('grant')">
                                                     <i class="bi bi-upload"></i> Upload
                                                 </button>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -549,37 +553,38 @@
                                         <div class="card-body text-center">
                                             <i class="bi bi-receipt fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                             <h6 class="fw-semibold">Road Tax</h6>
-                                            @php
+                                            <?php
                                                 $roadtaxDoc = $vehicle->documents->where('document_type', 'roadtax')->first();
-                                            @endphp
-                                            @if($roadtaxDoc && $roadtaxDoc->fileURL)
-                                                @php
+                                            ?>
+                                            <?php if($roadtaxDoc && $roadtaxDoc->fileURL): ?>
+                                                <?php
                                                     $isPdf = strtolower(pathinfo($roadtaxDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
-                                                @endphp
+                                                ?>
                                                 <div class="mb-2">
-                                                    @if($isPdf)
+                                                    <?php if($isPdf): ?>
                                                         <div class="d-flex align-items-center justify-content-center" style="min-height: 150px; background: #f5f5f5; border-radius: 6px;">
                                                             <i class="bi bi-file-earmark-pdf" style="font-size: 4rem; color: var(--hasta-red);"></i>
                                                         </div>
-                                                    @else
-                                                        <img src="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
+                                                    <?php else: ?>
+                                                        <img src="<?php echo e(asset('storage/' . $roadtaxDoc->fileURL)); ?>" 
                                                              alt="Road Tax" 
                                                              class="img-fluid mb-2" 
                                                              style="max-height: 150px; border-radius: 6px;">
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="upload-date">
-                                                    <i class="bi bi-calendar3"></i> Uploaded: {{ $roadtaxDoc->upload_date ? \Carbon\Carbon::parse($roadtaxDoc->upload_date)->format('d M Y') : 'N/A' }}
+                                                    <i class="bi bi-calendar3"></i> Uploaded: <?php echo e($roadtaxDoc->upload_date ? \Carbon\Carbon::parse($roadtaxDoc->upload_date)->format('d M Y') : 'N/A'); ?>
+
                                                 </div>
                                                 <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
-                                                    @php
+                                                    <?php
                                                         $isPdf = strtolower(pathinfo($roadtaxDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
-                                                    @endphp
+                                                    ?>
                                                     <button type="button" 
                                                             class="btn btn-sm" 
                                                             style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                             data-bs-toggle="modal" 
-                                                            data-bs-target="#viewDocumentModal{{ $roadtaxDoc->documentID }}">
+                                                            data-bs-target="#viewDocumentModal<?php echo e($roadtaxDoc->documentID); ?>">
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -588,10 +593,10 @@
                                                             onclick="setDocumentType('roadtax')">
                                                         <i class="bi bi-upload"></i> Upload
                                                     </button>
-                                                    <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $roadtaxDoc->documentID) }}" 
+                                                    <form method="POST" action="<?php echo e(route('admin.vehicles.documents.destroy', $roadtaxDoc->documentID)); ?>" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                                             <i class="bi bi-trash"></i> Delete
                                                         </button>
@@ -599,7 +604,7 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Road Tax -->
-                                                <div class="modal fade" id="viewDocumentModal{{ $roadtaxDoc->documentID }}" tabindex="-1">
+                                                <div class="modal fade" id="viewDocumentModal<?php echo e($roadtaxDoc->documentID); ?>" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
@@ -607,21 +612,21 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
-                                                                @if($isPdf)
-                                                                    <iframe src="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
+                                                                <?php if($isPdf): ?>
+                                                                    <iframe src="<?php echo e(asset('storage/' . $roadtaxDoc->fileURL)); ?>" 
                                                                             style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
                                                                             onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
                                                                     </iframe>
-                                                                @else
-                                                                    <img src="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
+                                                                <?php else: ?>
+                                                                    <img src="<?php echo e(asset('storage/' . $roadtaxDoc->fileURL)); ?>" 
                                                                          alt="Road Tax Document" 
                                                                          class="img-fluid" 
                                                                          style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                          onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                                                @endif
+                                                                <?php endif; ?>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ asset('storage/' . $roadtaxDoc->fileURL) }}" 
+                                                                <a href="<?php echo e(asset('storage/' . $roadtaxDoc->fileURL)); ?>" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab
@@ -631,7 +636,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                         data-bs-toggle="modal" 
@@ -639,7 +644,7 @@
                                                         onclick="setDocumentType('roadtax')">
                                                     <i class="bi bi-upload"></i> Upload
                                                 </button>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -650,37 +655,38 @@
                                         <div class="card-body text-center">
                                             <i class="bi bi-file-earmark-contract fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                             <h6 class="fw-semibold">Contract</h6>
-                                            @php
+                                            <?php
                                                 $contractDoc = $vehicle->documents->where('document_type', 'contract')->first();
-                                            @endphp
-                                            @if($contractDoc && $contractDoc->fileURL)
-                                                @php
+                                            ?>
+                                            <?php if($contractDoc && $contractDoc->fileURL): ?>
+                                                <?php
                                                     $isPdf = strtolower(pathinfo($contractDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
-                                                @endphp
+                                                ?>
                                                 <div class="mb-2">
-                                                    @if($isPdf)
+                                                    <?php if($isPdf): ?>
                                                         <div class="d-flex align-items-center justify-content-center" style="min-height: 150px; background: #f5f5f5; border-radius: 6px;">
                                                             <i class="bi bi-file-earmark-pdf" style="font-size: 4rem; color: var(--hasta-red);"></i>
                                                         </div>
-                                                    @else
-                                                        <img src="{{ asset('storage/' . $contractDoc->fileURL) }}" 
+                                                    <?php else: ?>
+                                                        <img src="<?php echo e(asset('storage/' . $contractDoc->fileURL)); ?>" 
                                                              alt="Contract" 
                                                              class="img-fluid mb-2" 
                                                              style="max-height: 150px; border-radius: 6px;">
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="upload-date">
-                                                    <i class="bi bi-calendar3"></i> Uploaded: {{ $contractDoc->upload_date ? \Carbon\Carbon::parse($contractDoc->upload_date)->format('d M Y') : 'N/A' }}
+                                                    <i class="bi bi-calendar3"></i> Uploaded: <?php echo e($contractDoc->upload_date ? \Carbon\Carbon::parse($contractDoc->upload_date)->format('d M Y') : 'N/A'); ?>
+
                                                 </div>
                                                 <div class="d-flex gap-2 justify-content-center mt-2 flex-wrap">
-                                                    @php
+                                                    <?php
                                                         $isPdf = strtolower(pathinfo($contractDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
-                                                    @endphp
+                                                    ?>
                                                     <button type="button" 
                                                             class="btn btn-sm" 
                                                             style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                             data-bs-toggle="modal" 
-                                                            data-bs-target="#viewDocumentModal{{ $contractDoc->documentID }}">
+                                                            data-bs-target="#viewDocumentModal<?php echo e($contractDoc->documentID); ?>">
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                     <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
@@ -689,10 +695,10 @@
                                                             onclick="setDocumentType('contract')">
                                                         <i class="bi bi-upload"></i> Upload
                                                     </button>
-                                                    <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $contractDoc->documentID) }}" 
+                                                    <form method="POST" action="<?php echo e(route('admin.vehicles.documents.destroy', $contractDoc->documentID)); ?>" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                                             <i class="bi bi-trash"></i> Delete
                                                         </button>
@@ -700,7 +706,7 @@
                                                 </div>
                                                 
                                                 <!-- View Document Modal for Contract -->
-                                                <div class="modal fade" id="viewDocumentModal{{ $contractDoc->documentID }}" tabindex="-1">
+                                                <div class="modal fade" id="viewDocumentModal<?php echo e($contractDoc->documentID); ?>" tabindex="-1">
                                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                                         <div class="modal-content">
                                                             <div class="modal-header">
@@ -708,24 +714,24 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
-                                                                @php
+                                                                <?php
                                                                     $isPdfContract = strtolower(pathinfo($contractDoc->fileURL, PATHINFO_EXTENSION)) === 'pdf';
-                                                                @endphp
-                                                                @if($isPdfContract)
-                                                                    <iframe src="{{ asset('storage/' . $contractDoc->fileURL) }}" 
+                                                                ?>
+                                                                <?php if($isPdfContract): ?>
+                                                                    <iframe src="<?php echo e(asset('storage/' . $contractDoc->fileURL)); ?>" 
                                                                             style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
                                                                             onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
                                                                     </iframe>
-                                                                @else
-                                                                    <img src="{{ asset('storage/' . $contractDoc->fileURL) }}" 
+                                                                <?php else: ?>
+                                                                    <img src="<?php echo e(asset('storage/' . $contractDoc->fileURL)); ?>" 
                                                                          alt="Contract Document" 
                                                                          class="img-fluid" 
                                                                          style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                          onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                                                @endif
+                                                                <?php endif; ?>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ asset('storage/' . $contractDoc->fileURL) }}" 
+                                                                <a href="<?php echo e(asset('storage/' . $contractDoc->fileURL)); ?>" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab
@@ -735,7 +741,7 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <p class="small text-muted mb-2">No document uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                         data-bs-toggle="modal" 
@@ -743,7 +749,7 @@
                                                         onclick="setDocumentType('contract')">
                                                     <i class="bi bi-upload"></i> Upload
                                                 </button>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -755,7 +761,7 @@
         </div>
 
         <!-- Owner Info Tab -->
-        <div class="tab-pane fade {{ ($activeTab ?? '') === 'owner-info' ? 'show active' : '' }}" id="owner-info" role="tabpanel">
+        <div class="tab-pane fade <?php echo e(($activeTab ?? '') === 'owner-info' ? 'show active' : ''); ?>" id="owner-info" role="tabpanel">
             <div class="row g-3">
                 <!-- Owner Information Card -->
                 <div class="col-12">
@@ -767,107 +773,115 @@
                             </button>
                         </div>
                         <div class="card-body">
-                            @if($vehicle->owner)
+                            <?php if($vehicle->owner): ?>
                             <div class="row">
                                 <div class="col-md-6">
                                         <dl class="row mb-0">
                                             <dt class="col-5">Owner ID:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->ownerID ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($vehicle->owner->ownerID ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Owner Name:</dt>
                                             <dd class="col-7">
-                                                @php
+                                                <?php
                                                     $ownerName = 'N/A';
                                                     if ($vehicle->owner && $vehicle->owner->personDetails) {
                                                         $ownerName = $vehicle->owner->personDetails->fullname ?? 'N/A';
                                                     }
-                                                @endphp
-                                                {{ $ownerName }}
+                                                ?>
+                                                <?php echo e($ownerName); ?>
+
                                             </dd>
                                             
                                             <dt class="col-5">IC No:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->ic_no ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($vehicle->owner->ic_no ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Contact:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->contact_number ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($vehicle->owner->contact_number ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Email:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->email ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($vehicle->owner->email ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Bank Name:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->bankname ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($vehicle->owner->bankname ?? 'N/A'); ?></dd>
                                             
                                             <dt class="col-5">Bank Account No:</dt>
-                                            <dd class="col-7">{{ $vehicle->owner->bank_acc_number ?? 'N/A' }}</dd>
+                                            <dd class="col-7"><?php echo e($vehicle->owner->bank_acc_number ?? 'N/A'); ?></dd>
                                         </dl>
                                     </div>
                                     <div class="col-md-6">
                                         <dl class="row mb-0">
                                             <dt class="col-5">Registration Date:</dt>
                                             <dd class="col-7">
-                                                @if($vehicle->owner->registration_date)
+                                                <?php if($vehicle->owner->registration_date): ?>
                                                     @try
-                                                        {{ \Carbon\Carbon::parse($vehicle->owner->registration_date)->format('d M Y') }}
+                                                        <?php echo e(\Carbon\Carbon::parse($vehicle->owner->registration_date)->format('d M Y')); ?>
+
                                                     @catch(\Exception $e)
-                                                        {{ $vehicle->owner->registration_date }}
+                                                        <?php echo e($vehicle->owner->registration_date); ?>
+
                                                     @endtry
-                                                @else
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Leasing Price:</dt>
-                                            <dd class="col-7">RM {{ number_format($vehicle->owner->leasing_price ?? 0, 2) }}</dd>
+                                            <dd class="col-7">RM <?php echo e(number_format($vehicle->owner->leasing_price ?? 0, 2)); ?></dd>
                                             
                                             <dt class="col-5">Leasing Due Date:</dt>
                                             <dd class="col-7">
-                                                @if($vehicle->owner->leasing_due_date)
+                                                <?php if($vehicle->owner->leasing_due_date): ?>
                                                     @try
-                                                        {{ \Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('d M Y') }}
+                                                        <?php echo e(\Carbon\Carbon::parse($vehicle->owner->leasing_due_date)->format('d M Y')); ?>
+
                                                     @catch(\Exception $e)
-                                                        {{ $vehicle->owner->leasing_due_date }}
+                                                        <?php echo e($vehicle->owner->leasing_due_date); ?>
+
                                                     @endtry
-                                                @else
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">License Expiry Date:</dt>
                                             <dd class="col-7">
-                                                @if($vehicle->owner->license_expirydate)
+                                                <?php if($vehicle->owner->license_expirydate): ?>
                                                     @try
-                                                        {{ \Carbon\Carbon::parse($vehicle->owner->license_expirydate)->format('d M Y') }}
+                                                        <?php echo e(\Carbon\Carbon::parse($vehicle->owner->license_expirydate)->format('d M Y')); ?>
+
                                                     @catch(\Exception $e)
-                                                        {{ $vehicle->owner->license_expirydate }}
+                                                        <?php echo e($vehicle->owner->license_expirydate); ?>
+
                                                     @endtry
-                                                @else
+                                                <?php else: ?>
                                                     N/A
-                                                @endif
+                                                <?php endif; ?>
                                             </dd>
                                             
                                             <dt class="col-5">Status:</dt>
                                             <dd class="col-7">
-                                                <span class="badge {{ ($vehicle->owner->isActive ?? false) ? 'bg-success' : 'bg-secondary' }}">
-                                                    {{ ($vehicle->owner->isActive ?? false) ? 'Active' : 'Inactive' }}
+                                                <span class="badge <?php echo e(($vehicle->owner->isActive ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
+                                                    <?php echo e(($vehicle->owner->isActive ?? false) ? 'Active' : 'Inactive'); ?>
+
                                                 </span>
                                             </dd>
                                         </dl>
                                     </div>
                                 </div>
-                            @else
+                            <?php else: ?>
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle"></i> No owner information available for this vehicle.
                                     <button type="button" class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#editOwnerModal">
                                         <i class="bi bi-plus-circle"></i> Add Owner Information
                                     </button>
                             </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
 
                 <!-- Documentation Section -->
-                @if($vehicle->owner)
+                <?php if($vehicle->owner): ?>
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-danger text-white">
@@ -881,12 +895,12 @@
                                         <div class="card-body text-center">
                                             <i class="bi bi-card-text fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                             <h6 class="fw-semibold">License</h6>
-                                            @php
+                                            <?php
                                                 $licenseImg = $vehicle->owner->license_img ?? null;
-                                            @endphp
-                                            @if($licenseImg)
+                                            ?>
+                                            <?php if($licenseImg): ?>
                                                 <div class="mb-2">
-                                                    <img src="{{ asset('storage/' . $licenseImg) }}" 
+                                                    <img src="<?php echo e(asset('storage/' . $licenseImg)); ?>" 
                                                          alt="License" 
                                                          class="img-fluid mb-2" 
                                                          style="max-height: 150px; border-radius: 6px;"
@@ -917,14 +931,14 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
-                                                                <img src="{{ asset('storage/' . $licenseImg) }}" 
+                                                                <img src="<?php echo e(asset('storage/' . $licenseImg)); ?>" 
                                                                      alt="Owner License" 
                                                                      class="img-fluid" 
                                                                      style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                      onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ asset('storage/' . $licenseImg) }}" 
+                                                                <a href="<?php echo e(asset('storage/' . $licenseImg)); ?>" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab
@@ -934,14 +948,14 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <p class="small text-muted mb-2">No license image uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#uploadOwnerLicenseModal">
                                                     <i class="bi bi-upload"></i> Upload
                                                 </button>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -952,15 +966,15 @@
                                         <div class="card-body text-center">
                                             <i class="bi bi-person-badge fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                             <h6 class="fw-semibold">IC</h6>
-                                            @php
+                                            <?php
                                                 $icImg = null;
                                                 if ($vehicle->owner) {
                                                     $icImg = $vehicle->owner->ic_img ?? null;
                                                 }
-                                            @endphp
-                                            @if($icImg)
+                                            ?>
+                                            <?php if($icImg): ?>
                                                 <div class="mb-2">
-                                                    <img src="{{ asset('storage/' . $icImg) }}" 
+                                                    <img src="<?php echo e(asset('storage/' . $icImg)); ?>" 
                                                          alt="IC" 
                                                          class="img-fluid mb-2" 
                                                          style="max-height: 150px; border-radius: 6px;"
@@ -991,14 +1005,14 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
-                                                                <img src="{{ asset('storage/' . $icImg) }}" 
+                                                                <img src="<?php echo e(asset('storage/' . $icImg)); ?>" 
                                                                      alt="Owner IC" 
                                                                      class="img-fluid" 
                                                                      style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                      onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ asset('storage/' . $icImg) }}" 
+                                                                <a href="<?php echo e(asset('storage/' . $icImg)); ?>" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab
@@ -1008,14 +1022,14 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <p class="small text-muted mb-2">No IC image uploaded</p>
                                                 <button type="button" class="btn btn-sm" style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);" 
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#uploadOwnerIcModal">
                                                     <i class="bi bi-upload"></i> Upload
                                                 </button>
-                                            @endif
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -1023,12 +1037,12 @@
                         </div>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
 
         <!-- Booking History Tab -->
-        <div class="tab-pane fade {{ ($activeTab ?? '') === 'booking-history' ? 'show active' : '' }}" id="booking-history" role="tabpanel">
+        <div class="tab-pane fade <?php echo e(($activeTab ?? '') === 'booking-history' ? 'show active' : ''); ?>" id="booking-history" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-danger text-white">
                     <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Booking History</h5>
@@ -1050,52 +1064,54 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($vehicle->bookings as $booking)
-                                    @php
+                                <?php $__empty_1 = true; $__currentLoopData = $vehicle->bookings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $booking): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <?php
                                         $customer = $booking->customer;
                                         $user = $customer->user ?? null;
                                         $review = $booking->review;
                                         // Assuming there's a vehicle condition form - using bookingID for now
-                                    @endphp
+                                    ?>
                                     <tr>
                                         <td>
-                                            <a href="{{ route('admin.bookings.reservations', ['search' => $booking->bookingID]) }}" class="text-decoration-none fw-bold text-primary">
-                                                #{{ $booking->bookingID }}
+                                            <a href="<?php echo e(route('admin.bookings.reservations', ['search' => $booking->bookingID])); ?>" class="text-decoration-none fw-bold text-primary">
+                                                #<?php echo e($booking->bookingID); ?>
+
                                             </a>
                                         </td>
-                                        <td>{{ $user->name ?? 'N/A' }}</td>
-                                        <td>{{ $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A' }}</td>
-                                        <td>{{ $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A' }}</td>
-                                        <td>{{ $booking->duration ?? 0 }} days</td>
+                                        <td><?php echo e($user->name ?? 'N/A'); ?></td>
+                                        <td><?php echo e($booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y') : 'N/A'); ?></td>
+                                        <td><?php echo e($booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y') : 'N/A'); ?></td>
+                                        <td><?php echo e($booking->duration ?? 0); ?> days</td>
                                         <td>
-                                            <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
-                                                {{ $booking->booking_status ?? 'N/A' }}
+                                            <span class="badge <?php echo e($booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info'))); ?>">
+                                                <?php echo e($booking->booking_status ?? 'N/A'); ?>
+
                                             </span>
                                         </td>
                                         <td>
-                                            @if($review)
-                                                <a href="{{ route('bookings.show', $booking->bookingID) }}#review" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <?php if($review): ?>
+                                                <a href="<?php echo e(route('bookings.show', $booking->bookingID)); ?>#review" target="_blank" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-star"></i> View Review
                                                 </a>
-                                            @else
+                                            <?php else: ?>
                                                 <span class="text-muted small">Not submitted</span>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
                                         <td>
-                                            <a href="{{ route('bookings.show', $booking->bookingID) }}#vehicle-condition" target="_blank" class="btn btn-sm btn-outline-info">
+                                            <a href="<?php echo e(route('bookings.show', $booking->bookingID)); ?>#vehicle-condition" target="_blank" class="btn btn-sm btn-outline-info">
                                                 <i class="bi bi-clipboard-check"></i> View Form
                                             </a>
                                         </td>
-                                        <td>RM {{ number_format(($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0), 2) }}</td>
+                                        <td>RM <?php echo e(number_format(($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0), 2)); ?></td>
                                     </tr>
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
                                         <td colspan="9" class="text-center text-muted py-4">
                                             <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
                                             No bookings recorded yet.
                                         </td>
                                     </tr>
-                                @endforelse
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -1104,7 +1120,7 @@
         </div>
 
         <!-- Car Photos Tab -->
-        <div class="tab-pane fade {{ ($activeTab ?? '') === 'photos' ? 'show active' : '' }}" id="photos" role="tabpanel">
+        <div class="tab-pane fade <?php echo e(($activeTab ?? '') === 'photos' ? 'show active' : ''); ?>" id="photos" role="tabpanel">
             <div class="card">
                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-images"></i> Car Photos</h5>
@@ -1114,89 +1130,90 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3" id="photoGallery">
-                        @php
+                        <?php
                             // Use carImages from car_img table if available, otherwise fallback to VehicleDocument
                             $photos = isset($carImages) && $carImages->count() > 0 ? $carImages : (isset($vehiclePhotos) ? $vehiclePhotos : $vehicle->documents->where('document_type', 'photo'));
                             $isCarImg = isset($carImages) && $carImages->count() > 0;
-                        @endphp
-                        @forelse($photos as $photo)
+                        ?>
+                        <?php $__empty_1 = true; $__currentLoopData = $photos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $photo): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <div class="col-md-4">
                             <div class="card">
                                     <div class="card-body text-center">
-                                        @php
+                                        <?php
                                             // Get image URL: if car_img table, use documentID (Google Drive URL), otherwise use fileURL
                                             $imageUrl = $isCarImg ? ($photo->documentID ?? '') : ($photo->fileURL ?? '');
                                             $photoId = $isCarImg ? ($photo->imgID ?? $photo->documentID ?? '') : ($photo->documentID ?? '');
-                                        @endphp
-                                        @if($imageUrl)
-                                            <img src="{{ getFileUrl($imageUrl, true) }}" 
+                                        ?>
+                                        <?php if($imageUrl): ?>
+                                            <img src="<?php echo e(getFileUrl($imageUrl, true)); ?>" 
                                                  alt="Vehicle Photo" 
                                                  class="img-fluid mb-2" 
                                                  style="max-height: 250px; width: 100%; object-fit: cover; border-radius: 6px;">
-                                            @if($isCarImg)
+                                            <?php if($isCarImg): ?>
                                                 <div class="mb-2">
-                                                    <span class="badge bg-primary">{{ ucfirst($photo->imageType ?? 'other') }}</span>
-                                                    @if($photo->img_description)
-                                                        <p class="small text-muted mt-1 mb-0">{{ $photo->img_description }}</p>
-                                                    @endif
+                                                    <span class="badge bg-primary"><?php echo e(ucfirst($photo->imageType ?? 'other')); ?></span>
+                                                    <?php if($photo->img_description): ?>
+                                                        <p class="small text-muted mt-1 mb-0"><?php echo e($photo->img_description); ?></p>
+                                                    <?php endif; ?>
                                                 </div>
-                                            @else
+                                            <?php else: ?>
                                                 <div class="upload-date">
-                                                    <i class="bi bi-calendar3"></i> Uploaded: {{ $photo->upload_date ? \Carbon\Carbon::parse($photo->upload_date)->format('d M Y') : 'N/A' }}
+                                                    <i class="bi bi-calendar3"></i> Uploaded: <?php echo e($photo->upload_date ? \Carbon\Carbon::parse($photo->upload_date)->format('d M Y') : 'N/A'); ?>
+
                                                 </div>
-                                            @endif
+                                            <?php endif; ?>
                                             <div class="d-flex gap-2 justify-content-center mt-2">
                                                 <button type="button" 
                                                         class="btn btn-sm" 
                                                         style="background: white; color: var(--hasta-red); border: 1px solid var(--hasta-red);"
                                                         data-bs-toggle="modal" 
-                                                        data-bs-target="#viewImageModal{{ $photoId }}">
+                                                        data-bs-target="#viewImageModal<?php echo e($photoId); ?>">
                                                     <i class="bi bi-eye"></i> View
                                                 </button>
-                                                @if($isCarImg)
-                                                    @php
+                                                <?php if($isCarImg): ?>
+                                                    <?php
                                                         $photoImgId = is_object($photo) ? $photo->imgID : ($photo['imgID'] ?? $photoId);
-                                                    @endphp
-                                                    <form method="POST" action="{{ route('admin.vehicles.photos.destroy', $photoImgId) }}" 
+                                                    ?>
+                                                    <form method="POST" action="<?php echo e(route('admin.vehicles.photos.destroy', $photoImgId)); ?>" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                                             <i class="bi bi-trash"></i> Delete
                                                         </button>
                                                     </form>
-                                                @else
-                                                    <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $photo->documentID) }}" 
+                                                <?php else: ?>
+                                                    <form method="POST" action="<?php echo e(route('admin.vehicles.documents.destroy', $photo->documentID)); ?>" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
                                                             <i class="bi bi-trash"></i> Delete
                                                         </button>
                                                     </form>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                             
                                             <!-- View Image Modal -->
-                            <div class="modal fade" id="viewImageModal{{ $photoId }}" tabindex="-1">
+                            <div class="modal fade" id="viewImageModal<?php echo e($photoId); ?>" tabindex="-1">
                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Vehicle Photo{{ $isCarImg && $photo->imageType ? ' - ' . ucfirst($photo->imageType) : '' }}</h5>
+                                            <h5 class="modal-title">Vehicle Photo<?php echo e($isCarImg && $photo->imageType ? ' - ' . ucfirst($photo->imageType) : ''); ?></h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body text-center">
-                                            <img src="{{ getFileUrl($imageUrl, true) }}" 
+                                            <img src="<?php echo e(getFileUrl($imageUrl, true)); ?>" 
                                                  alt="Vehicle Photo" 
                                                  class="img-fluid" 
                                                  style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                  onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                            @if($isCarImg && $photo->img_description)
-                                                <p class="text-muted mt-3">{{ $photo->img_description }}</p>
-                                            @endif
+                                            <?php if($isCarImg && $photo->img_description): ?>
+                                                <p class="text-muted mt-3"><?php echo e($photo->img_description); ?></p>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="modal-footer">
-                                            <a href="{{ getFileUrl($imageUrl) }}" 
+                                            <a href="<?php echo e(getFileUrl($imageUrl)); ?>" 
                                                target="_blank" 
                                                class="btn btn-primary">
                                                 <i class="bi bi-download"></i> Open in New Tab
@@ -1206,17 +1223,17 @@
                                     </div>
                                 </div>
                             </div>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
-                        @empty
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <div class="col-12 text-center text-muted py-5">
                                 <i class="bi bi-image fs-1 d-block mb-2"></i>
                                 <p class="small mb-0">No photos uploaded yet.</p>
                                 <p class="small">Click "Upload Photo" to add images.</p>
                         </div>
-                        @endforelse
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -1233,8 +1250,8 @@
                     <h5 class="modal-title">Upload Document</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('admin.vehicles.documents.store', $vehicle->vehicleID) }}" enctype="multipart/form-data">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.vehicles.documents.store', $vehicle->vehicleID)); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Document Type <span class="text-danger">*</span></label>
@@ -1269,8 +1286,8 @@
                     <h5 class="modal-title">Upload Vehicle Photo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('admin.vehicles.photos.store', $vehicle->vehicleID) }}" enctype="multipart/form-data">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.vehicles.photos.store', $vehicle->vehicleID)); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Select Photo</label>
@@ -1309,8 +1326,8 @@
                     <h5 class="modal-title">Upload Owner License</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('admin.vehicles.owner.upload-license', $vehicle->vehicleID) }}" enctype="multipart/form-data">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.vehicles.owner.upload-license', $vehicle->vehicleID)); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">License Image <span class="text-danger">*</span></label>
@@ -1335,8 +1352,8 @@
                     <h5 class="modal-title">Upload Owner IC</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('admin.vehicles.owner.upload-ic', $vehicle->vehicleID) }}" enctype="multipart/form-data">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.vehicles.owner.upload-ic', $vehicle->vehicleID)); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">IC Image <span class="text-danger">*</span></label>
@@ -1358,64 +1375,148 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="bi bi-pencil"></i> {{ $vehicle->owner ? 'Edit' : 'Add' }} Owner Information</h5>
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i> <?php echo e($vehicle->owner ? 'Edit' : 'Add'); ?> Owner Information</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('admin.vehicles.owner.update', $vehicle->vehicleID) }}">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.vehicles.owner.update', $vehicle->vehicleID)); ?>">
+                    <?php echo csrf_field(); ?>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">IC Number <span class="text-danger">*</span></label>
-                                <input type="text" name="ic_no" class="form-control @error('ic_no') is-invalid @enderror" 
-                                       value="{{ old('ic_no', $vehicle->owner->ic_no ?? '') }}" required>
-                                @error('ic_no')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="text" name="ic_no" class="form-control <?php $__errorArgs = ['ic_no'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('ic_no', $vehicle->owner->ic_no ?? '')); ?>" required>
+                                <?php $__errorArgs = ['ic_no'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Owner Name</label>
-                                <input type="text" name="owner_name" class="form-control @error('owner_name') is-invalid @enderror" 
-                                       value="{{ old('owner_name', ($vehicle->owner && $vehicle->owner->personDetails) ? $vehicle->owner->personDetails->fullname : '') }}">
-                                @error('owner_name')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="text" name="owner_name" class="form-control <?php $__errorArgs = ['owner_name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('owner_name', ($vehicle->owner && $vehicle->owner->personDetails) ? $vehicle->owner->personDetails->fullname : '')); ?>">
+                                <?php $__errorArgs = ['owner_name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Contact Number</label>
-                                <input type="text" name="contact_number" class="form-control @error('contact_number') is-invalid @enderror" 
-                                       value="{{ old('contact_number', $vehicle->owner->contact_number ?? '') }}">
-                                @error('contact_number')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="text" name="contact_number" class="form-control <?php $__errorArgs = ['contact_number'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('contact_number', $vehicle->owner->contact_number ?? '')); ?>">
+                                <?php $__errorArgs = ['contact_number'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Email</label>
-                                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" 
-                                       value="{{ old('email', $vehicle->owner->email ?? '') }}">
-                                @error('email')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="email" name="email" class="form-control <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('email', $vehicle->owner->email ?? '')); ?>">
+                                <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Bank Name</label>
-                                <input type="text" name="bankname" class="form-control @error('bankname') is-invalid @enderror" 
-                                       value="{{ old('bankname', $vehicle->owner->bankname ?? '') }}">
-                                @error('bankname')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="text" name="bankname" class="form-control <?php $__errorArgs = ['bankname'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('bankname', $vehicle->owner->bankname ?? '')); ?>">
+                                <?php $__errorArgs = ['bankname'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Bank Account Number</label>
-                                <input type="text" name="bank_acc_number" class="form-control @error('bank_acc_number') is-invalid @enderror" 
-                                       value="{{ old('bank_acc_number', $vehicle->owner->bank_acc_number ?? '') }}">
-                                @error('bank_acc_number')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="text" name="bank_acc_number" class="form-control <?php $__errorArgs = ['bank_acc_number'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('bank_acc_number', $vehicle->owner->bank_acc_number ?? '')); ?>">
+                                <?php $__errorArgs = ['bank_acc_number'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Registration Date</label>
-                                @php
+                                <?php
                                     $registrationDateValue = '';
                                     if ($vehicle->owner && $vehicle->owner->registration_date) {
                                         try {
@@ -1424,24 +1525,52 @@
                                             $registrationDateValue = '';
                                         }
                                     }
-                                @endphp
-                                <input type="date" name="registration_date" class="form-control @error('registration_date') is-invalid @enderror" 
-                                       value="{{ old('registration_date', $registrationDateValue) }}">
-                                @error('registration_date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                ?>
+                                <input type="date" name="registration_date" class="form-control <?php $__errorArgs = ['registration_date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('registration_date', $registrationDateValue)); ?>">
+                                <?php $__errorArgs = ['registration_date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Leasing Price (RM)</label>
-                                <input type="number" step="0.01" name="leasing_price" class="form-control @error('leasing_price') is-invalid @enderror" 
-                                       value="{{ old('leasing_price', $vehicle->owner->leasing_price ?? '') }}">
-                                @error('leasing_price')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <input type="number" step="0.01" name="leasing_price" class="form-control <?php $__errorArgs = ['leasing_price'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('leasing_price', $vehicle->owner->leasing_price ?? '')); ?>">
+                                <?php $__errorArgs = ['leasing_price'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Leasing Due Date</label>
-                                @php
+                                <?php
                                     $leasingDueDateValue = '';
                                     if ($vehicle->owner && $vehicle->owner->leasing_due_date) {
                                         try {
@@ -1450,17 +1579,31 @@
                                             $leasingDueDateValue = '';
                                         }
                                     }
-                                @endphp
-                                <input type="date" name="leasing_due_date" class="form-control @error('leasing_due_date') is-invalid @enderror" 
-                                       value="{{ old('leasing_due_date', $leasingDueDateValue) }}">
-                                @error('leasing_due_date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                ?>
+                                <input type="date" name="leasing_due_date" class="form-control <?php $__errorArgs = ['leasing_due_date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" 
+                                       value="<?php echo e(old('leasing_due_date', $leasingDueDateValue)); ?>">
+                                <?php $__errorArgs = ['leasing_due_date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-check mt-4">
                                     <input class="form-check-input" type="checkbox" name="isActive" id="isActiveOwner" 
-                                           {{ old('isActive', $vehicle->owner->isActive ?? true) ? 'checked' : '' }}>
+                                           <?php echo e(old('isActive', $vehicle->owner->isActive ?? true) ? 'checked' : ''); ?>>
                                     <label class="form-check-label" for="isActiveOwner">
                                         Is Active
                                     </label>
@@ -1476,16 +1619,16 @@
             </div>
         </div>
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
     function setDocumentType(type) {
         document.getElementById('document_type_select').value = type;
     }
 
     // Calendar View - Initialize on page load and when calendar tab is shown
-    const bookedDates = @json($bookedDates ?? []);
+    const bookedDates = <?php echo json_encode($bookedDates ?? [], 15, 512) ?>;
     let currentDate = new Date();
     let currentMonth = currentDate.getMonth();
     let currentYear = currentDate.getFullYear();
@@ -1577,4 +1720,6 @@
     };
     
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/admin/vehicles/show.blade.php ENDPATH**/ ?>

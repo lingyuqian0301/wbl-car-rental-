@@ -1,8 +1,6 @@
-@extends('layouts.admin')
+<?php $__env->startSection('title', 'Charts & Analytics'); ?>
 
-@section('title', 'Charts & Analytics')
-
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
     .chart-card {
         background: white;
@@ -46,13 +44,13 @@
         }
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 no-print">
@@ -64,7 +62,7 @@
             <button onclick="window.print()" class="btn btn-danger btn-sm">
                 <i class="bi bi-printer"></i> Print
             </button>
-            <a href="{{ route('admin.reports.charts.export-pdf', array_merge(request()->all(), ['tab' => $activeTab])) }}" class="btn btn-danger btn-sm" target="_blank">
+            <a href="<?php echo e(route('admin.reports.charts.export-pdf', array_merge(request()->all(), ['tab' => $activeTab]))); ?>" class="btn btn-danger btn-sm" target="_blank">
                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
             </a>
         </div>
@@ -72,86 +70,86 @@
 
     <div class="print-title" style="display: none;">
         <h2>Charts & Analytics Report</h2>
-        <p>Chart Type: {{ ucfirst($activeTab) }}</p>
+        <p>Chart Type: <?php echo e(ucfirst($activeTab)); ?></p>
     </div>
 
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3 no-print" role="tablist">
         <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'weekly' ? 'active' : '' }}" 
-               href="{{ route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'weekly'])) }}">
+            <a class="nav-link <?php echo e($activeTab === 'weekly' ? 'active' : ''); ?>" 
+               href="<?php echo e(route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'weekly']))); ?>">
                 <i class="bi bi-calendar-week"></i> Weekly Rental
             </a>
         </li>
         <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'monthly' ? 'active' : '' }}" 
-               href="{{ route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'monthly'])) }}">
+            <a class="nav-link <?php echo e($activeTab === 'monthly' ? 'active' : ''); ?>" 
+               href="<?php echo e(route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'monthly']))); ?>">
                 <i class="bi bi-calendar-month"></i> Monthly Rental
             </a>
         </li>
         <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'faculty' ? 'active' : '' }}" 
-               href="{{ route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'faculty'])) }}">
+            <a class="nav-link <?php echo e($activeTab === 'faculty' ? 'active' : ''); ?>" 
+               href="<?php echo e(route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'faculty']))); ?>">
                 <i class="bi bi-pie-chart"></i> Faculty Rental
             </a>
         </li>
         <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'brand' ? 'active' : '' }}" 
-               href="{{ route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'brand'])) }}">
+            <a class="nav-link <?php echo e($activeTab === 'brand' ? 'active' : ''); ?>" 
+               href="<?php echo e(route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'brand']))); ?>">
                 <i class="bi bi-pie-chart-fill"></i> Car Brand Rental
             </a>
         </li>
         <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'comparison' ? 'active' : '' }}" 
-               href="{{ route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'comparison'])) }}">
+            <a class="nav-link <?php echo e($activeTab === 'comparison' ? 'active' : ''); ?>" 
+               href="<?php echo e(route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'comparison']))); ?>">
                 <i class="bi bi-bar-chart-line"></i> Comparison
             </a>
         </li>
     </ul>
 
     <!-- Weekly Rental Chart -->
-    @if($activeTab === 'weekly')
+    <?php if($activeTab === 'weekly'): ?>
     <div class="chart-card">
         <div class="d-flex justify-content-between align-items-center mb-3 no-print">
             <h5><i class="bi bi-bar-chart"></i> Weekly Rental Bar Chart</h5>
             <form method="GET" class="d-flex gap-2">
                 <input type="hidden" name="tab" value="weekly">
-                <input type="week" name="selected_week" class="form-control form-control-sm" value="{{ $selectedWeek }}" onchange="this.form.submit()">
+                <input type="week" name="selected_week" class="form-control form-control-sm" value="<?php echo e($selectedWeek); ?>" onchange="this.form.submit()">
             </form>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 7 days (Mon-Sun), Y = 0-22 bookings (step: 2)</p>
+        <p class="text-muted small mb-2">Fixed axis: X = 7 days (Mon-Sun), Y = 0-20 bookings</p>
         <div class="chart-container">
             <canvas id="weeklyChart"></canvas>
         </div>
     </div>
-    @endif
+    <?php endif; ?>
 
     <!-- Monthly Rental Chart -->
-    @if($activeTab === 'monthly')
+    <?php if($activeTab === 'monthly'): ?>
     <div class="chart-card">
         <div class="d-flex justify-content-between align-items-center mb-3 no-print">
             <h5><i class="bi bi-bar-chart"></i> Monthly Rental Bar Chart</h5>
             <form method="GET" class="d-flex gap-2">
                 <input type="hidden" name="tab" value="monthly">
-                <input type="month" name="selected_month" class="form-control form-control-sm" value="{{ $selectedMonth }}" onchange="this.form.submit()">
+                <input type="month" name="selected_month" class="form-control form-control-sm" value="<?php echo e($selectedMonth); ?>" onchange="this.form.submit()">
             </form>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 31 days (show every 7 days), Y = 0-52 bookings (step: 2)</p>
+        <p class="text-muted small mb-2">Fixed axis: X = 31 days, Y = 0-50 bookings</p>
         <div class="chart-container">
             <canvas id="monthlyChart"></canvas>
         </div>
     </div>
-    @endif
+    <?php endif; ?>
 
     <!-- Faculty Rental Bar Chart -->
-    @if($activeTab === 'faculty')
+    <?php if($activeTab === 'faculty'): ?>
     <div class="chart-card">
         <div class="d-flex justify-content-between align-items-center mb-3 no-print">
             <h5><i class="bi bi-bar-chart-steps"></i> Faculty Rental Bar Chart</h5>
             <form method="GET" class="d-flex gap-2">
                 <input type="hidden" name="tab" value="faculty">
-                <input type="month" name="faculty_month" class="form-control form-control-sm" value="{{ $facultyMonth }}">
-                <input type="number" name="faculty_year" class="form-control form-control-sm" value="{{ $facultyYear }}" min="2020" max="2100">
+                <input type="month" name="faculty_month" class="form-control form-control-sm" value="<?php echo e($facultyMonth); ?>">
+                <input type="number" name="faculty_year" class="form-control form-control-sm" value="<?php echo e($facultyYear); ?>" min="2020" max="2100">
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
         </div>
@@ -160,20 +158,20 @@
             <canvas id="facultyChart"></canvas>
         </div>
     </div>
-    @endif
+    <?php endif; ?>
 
     <!-- Car Brand Rental Bar Chart -->
-    @if($activeTab === 'brand')
+    <?php if($activeTab === 'brand'): ?>
     <div class="chart-card">
         <div class="d-flex justify-content-between align-items-center mb-3 no-print">
             <h5><i class="bi bi-bar-chart-steps"></i> Car Brand Rental Bar Chart</h5>
             <form method="GET" class="d-flex gap-2">
                 <input type="hidden" name="tab" value="brand">
-                <input type="month" name="brand_month" class="form-control form-control-sm" value="{{ $brandMonth }}">
+                <input type="month" name="brand_month" class="form-control form-control-sm" value="<?php echo e($brandMonth); ?>">
                 <select name="brand_vehicle_type" class="form-select form-select-sm">
-                    <option value="all" {{ $brandVehicleType === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="car" {{ $brandVehicleType === 'car' ? 'selected' : '' }}>Car</option>
-                    <option value="motorcycle" {{ $brandVehicleType === 'motorcycle' ? 'selected' : '' }}>Motorcycle</option>
+                    <option value="all" <?php echo e($brandVehicleType === 'all' ? 'selected' : ''); ?>>All</option>
+                    <option value="car" <?php echo e($brandVehicleType === 'car' ? 'selected' : ''); ?>>Car</option>
+                    <option value="motorcycle" <?php echo e($brandVehicleType === 'motorcycle' ? 'selected' : ''); ?>>Motorcycle</option>
                 </select>
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
@@ -183,29 +181,29 @@
             <canvas id="brandChart"></canvas>
         </div>
     </div>
-    @endif
+    <?php endif; ?>
 
     <!-- Comparison Bar Chart -->
-    @if($activeTab === 'comparison')
+    <?php if($activeTab === 'comparison'): ?>
     <div class="chart-card">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5><i class="bi bi-bar-chart-line"></i> Comparison Bar Chart (Latest 4 Months)</h5>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 4 months, Y = 0-102 bookings (step: 2)</p>
+        <p class="text-muted small mb-2">Fixed axis: X = 4 months, Y = 0-100 bookings</p>
         <div class="chart-container">
             <canvas id="comparisonChart"></canvas>
         </div>
     </div>
-    @endif
+    <?php endif; ?>
 </div>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
     // Weekly Chart - Bar Chart with Fixed X (7 days) and Y (20 max)
-    @if($activeTab === 'weekly')
+    <?php if($activeTab === 'weekly'): ?>
     const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
-    const weeklyRawLabels = {!! json_encode(array_column($weeklyData, 'date')) !!};
-    const weeklyRawCounts = {!! json_encode(array_column($weeklyData, 'count')) !!};
+    const weeklyRawLabels = <?php echo json_encode(array_column($weeklyData, 'date')); ?>;
+    const weeklyRawCounts = <?php echo json_encode(array_column($weeklyData, 'count')); ?>;
     
     // Fixed 7 days for the week (Mon-Sun)
     const fixedWeekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -263,7 +261,7 @@
                 y: {
                     beginAtZero: true,
                     min: 0,
-                    max: 22,
+                    max: 20,
                     ticks: {
                         stepSize: 2,
                         precision: 0
@@ -276,13 +274,13 @@
             }
         }
     });
-    @endif
+    <?php endif; ?>
 
-    // Monthly Chart - Bar Chart with Fixed X (31 days, showing every 7 days) and Y (52 max)
-    @if($activeTab === 'monthly')
+    // Monthly Chart - Bar Chart with Fixed X (31 days) and Y (50 max)
+    <?php if($activeTab === 'monthly'): ?>
     const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-    const monthlyRawLabels = {!! json_encode(array_column($monthlyData, 'date')) !!};
-    const monthlyRawCounts = {!! json_encode(array_column($monthlyData, 'count')) !!};
+    const monthlyRawLabels = <?php echo json_encode(array_column($monthlyData, 'date')); ?>;
+    const monthlyRawCounts = <?php echo json_encode(array_column($monthlyData, 'count')); ?>;
     
     // Fixed 31 days for the month
     const fixedMonthDays = Array.from({length: 31}, (_, i) => (i + 1).toString());
@@ -337,23 +335,16 @@
                     },
                     ticks: {
                         maxRotation: 0,
-                        autoSkip: false,
-                        callback: function(value, index) {
-                            // Show labels every 7 days: 1, 7, 14, 21, 28
-                            const day = index + 1;
-                            if (day === 1 || day % 7 === 0) {
-                                return day;
-                            }
-                            return '';
-                        }
+                        autoSkip: true,
+                        maxTicksLimit: 15
                     }
                 },
                 y: {
                     beginAtZero: true,
                     min: 0,
-                    max: 52,
+                    max: 50,
                     ticks: {
-                        stepSize: 2,
+                        stepSize: 5,
                         precision: 0
                     },
                     title: {
@@ -364,13 +355,13 @@
             }
         }
     });
-    @endif
+    <?php endif; ?>
 
     // Faculty Chart - Bar Chart with Fixed Y (30 max)
-    @if($activeTab === 'faculty')
+    <?php if($activeTab === 'faculty'): ?>
     const facultyCtx = document.getElementById('facultyChart').getContext('2d');
-    const facultyRawLabels = {!! json_encode(array_keys($facultyData)) !!};
-    const facultyRawValues = {!! json_encode(array_values($facultyData)) !!};
+    const facultyRawLabels = <?php echo json_encode(array_keys($facultyData)); ?>;
+    const facultyRawValues = <?php echo json_encode(array_values($facultyData)); ?>;
     
     // Default faculties if no data
     const defaultFaculties = ['FKE', 'FKMP', 'FPTT', 'FPTV', 'FTK', 'FSKTM', 'Other'];
@@ -458,13 +449,13 @@
             }
         }
     });
-    @endif
+    <?php endif; ?>
 
     // Brand Chart - Bar Chart with Fixed Y (30 max)
-    @if($activeTab === 'brand')
+    <?php if($activeTab === 'brand'): ?>
     const brandCtx = document.getElementById('brandChart').getContext('2d');
-    const brandRawLabels = {!! json_encode(array_keys($brandData)) !!};
-    const brandRawValues = {!! json_encode(array_values($brandData)) !!};
+    const brandRawLabels = <?php echo json_encode(array_keys($brandData)); ?>;
+    const brandRawValues = <?php echo json_encode(array_values($brandData)); ?>;
     
     // Default brands if no data
     const defaultBrands = ['Perodua', 'Proton', 'Honda', 'Toyota', 'Yamaha', 'Modenas', 'Other'];
@@ -556,15 +547,15 @@
             }
         }
     });
-    @endif
+    <?php endif; ?>
 
-    // Comparison Chart - Bar Chart with Fixed X (4 months) and Y (102 max)
-    @if($activeTab === 'comparison')
+    // Comparison Chart - Bar Chart with Fixed X (4 months) and Y (100 max)
+    <?php if($activeTab === 'comparison'): ?>
     const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
-    const comparisonRawLabels = {!! json_encode(array_column($comparisonData, 'month')) !!};
-    const comparisonRawTotal = {!! json_encode(array_column($comparisonData, 'total')) !!};
-    const comparisonRawCars = {!! json_encode(array_column($comparisonData, 'cars')) !!};
-    const comparisonRawMotorcycles = {!! json_encode(array_column($comparisonData, 'motorcycles')) !!};
+    const comparisonRawLabels = <?php echo json_encode(array_column($comparisonData, 'month')); ?>;
+    const comparisonRawTotal = <?php echo json_encode(array_column($comparisonData, 'total')); ?>;
+    const comparisonRawCars = <?php echo json_encode(array_column($comparisonData, 'cars')); ?>;
+    const comparisonRawMotorcycles = <?php echo json_encode(array_column($comparisonData, 'motorcycles')); ?>;
     
     // Generate default labels for last 4 months if no data
     function getLastFourMonths() {
@@ -638,9 +629,9 @@
                 y: {
                     beginAtZero: true,
                     min: 0,
-                    max: 102,
+                    max: 100,
                     ticks: {
-                        stepSize: 2,
+                        stepSize: 10,
                         precision: 0
                     },
                     title: {
@@ -664,7 +655,7 @@
             }
         }
     });
-    @endif
+    <?php endif; ?>
 
     window.addEventListener('beforeprint', function() {
         document.querySelector('.print-title').style.display = 'block';
@@ -674,11 +665,13 @@
         document.querySelector('.print-title').style.display = 'none';
     });
 </script>
-@endpush
-@endsection
+<?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
 
 
 
 
 
 
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/admin/charts/index.blade.php ENDPATH**/ ?>

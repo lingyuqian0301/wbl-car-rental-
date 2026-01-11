@@ -115,6 +115,55 @@
         margin-bottom: 1rem;
         font-weight: 600;
     }
+    
+    /* Pickup Condition Form Styles */
+    .pickup-condition-wrapper .payment-table,
+    .transaction-detail-wrapper .payment-table {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .condition-image-card {
+        transition: all 0.3s ease;
+    }
+    .condition-image-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+    }
+    .condition-image-card:hover img {
+        opacity: 0.9;
+    }
+    
+    /* Transaction Detail Styles */
+    .transaction-detail-wrapper .table tbody tr:hover {
+        background-color: rgba(185, 28, 28, 0.03);
+    }
+    
+    /* Fuel Image Container */
+    .fuel-image-container img {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    .fuel-image-container img:hover {
+        border-color: var(--admin-red);
+        transform: scale(1.02);
+    }
+    
+    /* Receipt Image in Table */
+    .receipt-image {
+        max-width: 60px;
+        max-height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .receipt-image:hover {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
 </style>
 <?php $__env->stopPush(); ?>
 
@@ -964,237 +1013,293 @@
                  role="tabpanel" 
                  aria-labelledby="pickup-condition-tab">
                 
-                
-                <div class="alert alert-info mb-3">
-                    <strong>DEBUG:</strong> Pickup Condition Tab is rendering for Booking #<?php echo e($booking->bookingID); ?>. 
-                    <?php $pickupFormCheck = $booking->vehicleConditionForms()->where('form_type', 'RECEIVE')->first(); ?>
-                    Form exists: <?php echo e($pickupFormCheck ? 'Yes - Form ID #' . $pickupFormCheck->formID : 'No - No form found'); ?>
-
-                </div>
-                
                 <?php
                     $pickupForm = $booking->vehicleConditionForms()->where('form_type', 'RECEIVE')->first();
                 ?>
                 
                 <?php if($pickupForm): ?>
-                <div class="row g-3">
-                    <!-- Form Details Card -->
-                    <div class="col-12">
-                        <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
-                            <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Pickup Condition Details</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <dl class="row mb-0">
-                                            <dt class="col-5">Form ID:</dt>
-                                            <dd class="col-7">#<?php echo e($pickupForm->formID); ?></dd>
-                                            
-                                            <dt class="col-5">Form Type:</dt>
-                                            <dd class="col-7">
-                                                <span class="badge bg-success"><?php echo e($pickupForm->form_type); ?></span>
-                                            </dd>
-                                            
-                                            <dt class="col-5">Odometer Reading:</dt>
-                                            <dd class="col-7"><strong><?php echo e(number_format($pickupForm->odometer_reading ?? 0)); ?> km</strong></dd>
-                                            
-                                            <dt class="col-5">Fuel Level:</dt>
-                                            <dd class="col-7">
-                                                <span class="badge bg-info"><?php echo e($pickupForm->fuel_level ?? 'N/A'); ?></span>
-                                            </dd>
-                                        </dl>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <dl class="row mb-0">
-                                            <dt class="col-5">Reported Date/Time:</dt>
-                                            <dd class="col-7">
-                                                <?php if($pickupForm->reported_dated_time): ?>
-                                                    <?php echo e(\Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('d M Y, H:i')); ?>
-
-                                                <?php else: ?>
-                                                    N/A
+                <!-- Pickup Condition Form Details Section -->
+                <div class="pickup-condition-wrapper">
+                    
+                    <!-- GROUPING BOX 1: Form Details Table -->
+                    <div class="payment-table mb-4">
+                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
+                            <i class="bi bi-clipboard-data"></i> Pickup Form Details (RECEIVE)
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead style="background: var(--admin-red-light);">
+                                    <tr>
+                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Form Type</th>
+                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Odometer Reading</th>
+                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Fuel Level</th>
+                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Scratches / Notes</th>
+                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Reported Date/Time</th>
+                                        <th style="color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px;">Created At</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <span class="badge bg-success fs-6"><?php echo e($pickupForm->form_type); ?></span>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <strong><?php echo e(number_format($pickupForm->odometer_reading ?? 0)); ?> km</strong>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php
+                                                $fuelLevel = $pickupForm->fuel_level ?? 'N/A';
+                                                $fuelBadgeClass = match($fuelLevel) {
+                                                    'FULL' => 'bg-success',
+                                                    '3/4' => 'bg-primary',
+                                                    '1/2' => 'bg-info',
+                                                    '1/4' => 'bg-warning text-dark',
+                                                    'EMPTY' => 'bg-danger',
+                                                    default => 'bg-secondary'
+                                                };
+                                            ?>
+                                            <span class="badge <?php echo e($fuelBadgeClass); ?>"><?php echo e($fuelLevel); ?></span>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($pickupForm->scratches_notes): ?>
+                                                <span class="text-dark"><?php echo e(Str::limit($pickupForm->scratches_notes, 50)); ?></span>
+                                                <?php if(strlen($pickupForm->scratches_notes) > 50): ?>
+                                                    <button type="button" class="btn btn-link btn-sm p-0 ms-1" data-bs-toggle="modal" data-bs-target="#scratchesNotesModal">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
                                                 <?php endif; ?>
-                                            </dd>
-                                            
-                                            <dt class="col-5">Created At:</dt>
-                                            <dd class="col-7">
-                                                <?php if($pickupForm->created_at): ?>
-                                                    <?php echo e(\Carbon\Carbon::parse($pickupForm->created_at)->format('d M Y, H:i')); ?>
-
-                                                <?php else: ?>
-                                                    N/A
-                                                <?php endif; ?>
-                                            </dd>
-                                            
-                                            <dt class="col-5">Scratches/Notes:</dt>
-                                            <dd class="col-7"><?php echo e($pickupForm->scratches_notes ?? 'No notes'); ?></dd>
-                                        </dl>
-                                    </div>
+                                            <?php else: ?>
+                                                <span class="text-muted fst-italic">No notes</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($pickupForm->reported_dated_time): ?>
+                                                <div><?php echo e(\Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('d M Y')); ?></div>
+                                                <small class="text-muted"><?php echo e(\Carbon\Carbon::parse($pickupForm->reported_dated_time)->format('H:i')); ?></small>
+                                            <?php else: ?>
+                                                <span class="text-muted">N/A</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($pickupForm->created_at): ?>
+                                                <div><?php echo e(\Carbon\Carbon::parse($pickupForm->created_at)->format('d M Y')); ?></div>
+                                                <small class="text-muted"><?php echo e(\Carbon\Carbon::parse($pickupForm->created_at)->format('H:i')); ?></small>
+                                            <?php else: ?>
+                                                <span class="text-muted">N/A</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Scratches Notes Modal -->
+                    <?php if($pickupForm->scratches_notes && strlen($pickupForm->scratches_notes) > 50): ?>
+                    <div class="modal fade" id="scratchesNotesModal" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Scratches / Notes</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="mb-0"><?php echo e($pickupForm->scratches_notes); ?></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
-                    <!-- Rental Agreement Card -->
-                    <div class="col-md-6">
-                        <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none; min-height: 300px;">
-                            <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Rental Agreement</h5>
-                            </div>
-                            <div class="card-body text-center d-flex flex-column justify-content-center align-items-center">
-                                <?php if($pickupForm->rental_agreement): ?>
-                                    <i class="bi bi-file-earmark-pdf-fill" style="font-size: 4rem; color: var(--admin-red);"></i>
-                                    <p class="mt-3 mb-3">Rental Agreement Document</p>
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-sm" style="background: white; color: var(--admin-red); border: 1px solid var(--admin-red);" data-bs-toggle="modal" data-bs-target="#viewRentalAgreementModal">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
-                                        <a href="<?php echo e(getFileUrl($pickupForm->rental_agreement)); ?>" target="_blank" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-download"></i> Download
-                                        </a>
-                                    </div>
-                                    
-                                    <!-- Rental Agreement Modal -->
-                                    <div class="modal fade" id="viewRentalAgreementModal" tabindex="-1">
-                                        <div class="modal-dialog modal-xl modal-dialog-centered">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Rental Agreement - Booking #<?php echo e($booking->bookingID); ?></h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body" style="height: 80vh;">
-                                                    <?php
-                                                        $agreementUrl = getFileUrl($pickupForm->rental_agreement);
-                                                        $isPdf = str_contains(strtolower($pickupForm->rental_agreement), '.pdf');
-                                                    ?>
-                                                    <?php if($isPdf): ?>
-                                                        <iframe src="<?php echo e($agreementUrl); ?>" width="100%" height="100%" style="border: none;"></iframe>
-                                                    <?php else: ?>
-                                                        <div class="text-center">
-                                                            <img src="<?php echo e($agreementUrl); ?>" alt="Rental Agreement" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Document not found</p>';">
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <a href="<?php echo e($agreementUrl); ?>" target="_blank" class="btn btn-primary">
-                                                        <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
-                                                    </a>
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <div class="row g-4">
+                        <!-- GROUPING BOX 2: Rental Agreement PDF -->
+                        <div class="col-lg-6">
+                            <div class="payment-table h-100">
+                                <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
+                                    <i class="bi bi-file-earmark-pdf"></i> Rental Agreement (PDF)
+                                </div>
+                                <div class="card-body d-flex flex-column align-items-center justify-content-center p-4" style="min-height: 280px; background: white; border-radius: 0 0 12px 12px;">
+                                    <?php if($pickupForm->rental_agreement): ?>
+                                        <div class="text-center">
+                                            <div class="mb-3" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                                <i class="bi bi-file-earmark-pdf-fill" style="font-size: 3rem; color: var(--admin-red);"></i>
+                                            </div>
+                                            <h6 class="mb-2">Rental Agreement</h6>
+                                            <p class="text-muted small mb-3">Customer uploaded document</p>
+                                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#viewRentalAgreementModal">
+                                                    <i class="bi bi-eye me-1"></i> Preview
+                                                </button>
+                                                <a href="<?php echo e(getFileUrl($pickupForm->rental_agreement)); ?>" target="_blank" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-download me-1"></i> Download
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Rental Agreement Modal -->
+                                        <div class="modal fade" id="viewRentalAgreementModal" tabindex="-1">
+                                            <div class="modal-dialog modal-xl modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title"><i class="bi bi-file-pdf me-2"></i>Rental Agreement - Booking #<?php echo e($booking->bookingID); ?></h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body p-0" style="height: 80vh;">
+                                                        <?php
+                                                            $agreementUrl = getFileUrl($pickupForm->rental_agreement);
+                                                            $isPdf = str_contains(strtolower($pickupForm->rental_agreement), '.pdf');
+                                                        ?>
+                                                        <?php if($isPdf): ?>
+                                                            <iframe src="<?php echo e($agreementUrl); ?>" width="100%" height="100%" style="border: none;"></iframe>
+                                                        <?php else: ?>
+                                                            <div class="text-center p-4">
+                                                                <img src="<?php echo e($agreementUrl); ?>" alt="Rental Agreement" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<div class=\'py-5\'><i class=\'bi bi-exclamation-triangle fs-1 text-warning\'></i><p class=\'text-muted mt-3\'>Document not found</p></div>';">
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <a href="<?php echo e($agreementUrl); ?>" target="_blank" class="btn btn-primary">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i> Open in New Tab
+                                                        </a>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                <?php else: ?>
-                                    <i class="bi bi-file-earmark-x" style="font-size: 4rem; color: #6c757d;"></i>
-                                    <p class="text-muted mt-3 mb-0">No rental agreement uploaded</p>
-                                <?php endif; ?>
+                                    <?php else: ?>
+                                        <div class="text-center">
+                                            <div class="mb-3" style="background: #f3f4f6; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                                <i class="bi bi-file-earmark-x" style="font-size: 3rem; color: #9ca3af;"></i>
+                                            </div>
+                                            <h6 class="text-muted mb-1">No Rental Agreement</h6>
+                                            <p class="text-muted small mb-0">Customer has not uploaded a rental agreement yet</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Fuel Image Card -->
-                    <div class="col-md-6">
-                        <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none; min-height: 300px;">
-                            <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-fuel-pump"></i> Fuel Level Image</h5>
-                            </div>
-                            <div class="card-body text-center d-flex flex-column justify-content-center align-items-center">
-                                <?php if($pickupForm->fuel_img): ?>
-                                    <img src="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid mb-3" style="max-height: 150px; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <p class="text-muted" style="display: none;">Image not found</p>
-                                    <div class="d-flex gap-2 mt-2">
-                                        <button type="button" class="btn btn-sm" style="background: white; color: var(--admin-red); border: 1px solid var(--admin-red);" data-bs-toggle="modal" data-bs-target="#viewFuelImgModal">
-                                            <i class="bi bi-eye"></i> View Full Size
-                                        </button>
-                                    </div>
-                                    
-                                    <!-- Fuel Image Modal -->
-                                    <div class="modal fade" id="viewFuelImgModal" tabindex="-1">
-                                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Fuel Level Image - Pickup</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <!-- GROUPING BOX 3: Fuel Image -->
+                        <div class="col-lg-6">
+                            <div class="payment-table h-100">
+                                <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
+                                    <i class="bi bi-fuel-pump"></i> Fuel Level Image
+                                </div>
+                                <div class="card-body d-flex flex-column align-items-center justify-content-center p-4" style="min-height: 280px; background: white; border-radius: 0 0 12px 12px;">
+                                    <?php if($pickupForm->fuel_img): ?>
+                                        <div class="text-center w-100">
+                                            <div class="fuel-image-container mb-3" style="max-width: 300px; margin: 0 auto;">
+                                                <img src="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid rounded shadow-sm" style="max-height: 180px; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#viewFuelImgModal" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="placeholder-box" style="display: none; height: 180px; background: #f3f4f6; border-radius: 8px; align-items: center; justify-content: center;">
+                                                    <span class="text-muted">Image not found</span>
                                                 </div>
-                                                <div class="modal-body text-center" style="min-height: 400px;">
-                                                    <img src="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <a href="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" target="_blank" class="btn btn-primary">
-                                                        <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
-                                                    </a>
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#viewFuelImgModal">
+                                                <i class="bi bi-arrows-fullscreen me-1"></i> View Full Size
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Fuel Image Modal -->
+                                        <div class="modal fade" id="viewFuelImgModal" tabindex="-1">
+                                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title"><i class="bi bi-fuel-pump me-2"></i>Fuel Level Image - Pickup</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center p-4" style="min-height: 400px;">
+                                                        <img src="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" alt="Fuel Level" class="img-fluid rounded" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<div class=\'py-5\'><i class=\'bi bi-exclamation-triangle fs-1 text-warning\'></i><p class=\'text-muted mt-3\'>Image not found</p></div>';">
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <a href="<?php echo e(getFileUrl($pickupForm->fuel_img)); ?>" target="_blank" class="btn btn-primary">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i> Open in New Tab
+                                                        </a>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                <?php else: ?>
-                                    <i class="bi bi-image" style="font-size: 4rem; color: #6c757d;"></i>
-                                    <p class="text-muted mt-3 mb-0">No fuel image uploaded</p>
-                                <?php endif; ?>
+                                    <?php else: ?>
+                                        <div class="text-center">
+                                            <div class="mb-3" style="background: #f3f4f6; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                                <i class="bi bi-image" style="font-size: 3rem; color: #9ca3af;"></i>
+                                            </div>
+                                            <h6 class="text-muted mb-1">No Fuel Image</h6>
+                                            <p class="text-muted small mb-0">Customer has not uploaded a fuel image yet</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Vehicle Condition Images -->
                     <?php if($pickupForm->images && $pickupForm->images->count() > 0): ?>
-                    <div class="col-12">
-                        <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
-                            <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-images"></i> Vehicle Condition Images (<?php echo e($pickupForm->images->count()); ?>)</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <?php $__currentLoopData = $pickupForm->images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                        <div class="col-md-3 col-sm-4 col-6">
-                                            <div class="card h-100" style="border: 1px solid #e5e7eb;">
-                                                <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image <?php echo e($index + 1); ?>" class="card-img-top" style="height: 150px; object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#conditionImageModal<?php echo e($index); ?>" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
-                                                <div class="card-body p-2 text-center">
-                                                    <small class="text-muted">Image <?php echo e($index + 1); ?></small>
-                                                </div>
+                    <div class="payment-table mt-4">
+                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
+                            <i class="bi bi-images"></i> Vehicle Condition Images (<?php echo e($pickupForm->images->count()); ?>)
+                        </div>
+                        <div class="card-body p-4" style="background: white; border-radius: 0 0 12px 12px;">
+                            <div class="row g-3">
+                                <?php $__currentLoopData = $pickupForm->images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+                                        <div class="card h-100 border-0 shadow-sm overflow-hidden condition-image-card" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#conditionImageModal<?php echo e($index); ?>">
+                                            <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image <?php echo e($index + 1); ?>" class="card-img-top" style="height: 120px; object-fit: cover;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';">
+                                            <div class="card-footer bg-white border-0 py-2 text-center">
+                                                <small class="text-muted fw-medium">Image <?php echo e($index + 1); ?></small>
                                             </div>
-                                            
-                                            <!-- Image Modal -->
-                                            <div class="modal fade" id="conditionImageModal<?php echo e($index); ?>" tabindex="-1">
-                                                <div class="modal-dialog modal-lg modal-dialog-centered">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Condition Image <?php echo e($index + 1); ?></h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body text-center">
-                                                            <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image" class="img-fluid" style="max-height: 70vh;">
-                                                        </div>
+                                        </div>
+                                        
+                                        <!-- Image Modal -->
+                                        <div class="modal fade" id="conditionImageModal<?php echo e($index); ?>" tabindex="-1">
+                                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title"><i class="bi bi-image me-2"></i>Condition Image <?php echo e($index + 1); ?></h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center p-4">
+                                                        <img src="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" alt="Condition Image" class="img-fluid rounded" style="max-height: 70vh;">
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <a href="<?php echo e(getFileUrl($image->image_path ?? $image->imagePath)); ?>" target="_blank" class="btn btn-primary">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i> Open in New Tab
+                                                        </a>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                </div>
+                                    </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
                         </div>
                     </div>
                     <?php endif; ?>
                 </div>
                 <?php else: ?>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
-                            <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Pickup Vehicle Condition Form</h5>
-                            </div>
-                            <div class="card-body text-center py-5">
-                                <i class="bi bi-clipboard-x" style="font-size: 4rem; color: #6c757d;"></i>
-                                <h5 class="mt-3 text-muted">No Pickup Condition Form Submitted</h5>
-                                <p class="text-muted mb-0">
-                                    The pickup condition form has not been submitted yet.
-                                    <?php if($booking->rental_start_date): ?>
-                                        <br>Pickup Date: <strong><?php echo e(\Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y, H:i')); ?></strong>
-                                    <?php endif; ?>
-                                </p>
-                            </div>
+                <!-- No Pickup Form State -->
+                <div class="payment-table">
+                    <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600; border-radius: 12px 12px 0 0;">
+                        <i class="bi bi-clipboard-check"></i> Pickup Condition Form (RECEIVE)
+                    </div>
+                    <div class="card-body text-center py-5" style="background: white; border-radius: 0 0 12px 12px;">
+                        <div class="mb-4" style="background: #f3f4f6; border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                            <i class="bi bi-clipboard-x" style="font-size: 3.5rem; color: #9ca3af;"></i>
                         </div>
+                        <h5 class="text-muted mb-2">No Pickup Condition Form Submitted</h5>
+                        <p class="text-muted mb-3">
+                            The customer has not yet submitted the pickup condition form.
+                        </p>
+                        <?php if($booking->rental_start_date): ?>
+                            <div class="d-inline-flex align-items-center px-3 py-2 rounded" style="background: #fee2e2;">
+                                <i class="bi bi-calendar-event me-2 text-danger"></i>
+                                <span class="text-danger fw-medium">Pickup Date: <?php echo e(\Carbon\Carbon::parse($booking->rental_start_date)->format('d M Y, H:i A')); ?></span>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -1439,208 +1544,297 @@
                  role="tabpanel" 
                  aria-labelledby="transaction-detail-tab">
                 
-                
-                <div class="alert alert-info mb-3">
-                    <strong>DEBUG:</strong> Transaction Detail Tab is rendering for Booking #<?php echo e($booking->bookingID); ?>. 
-                    Transactions count: <?php echo e($transactions ? $transactions->count() : 0); ?>
-
-                </div>
-                
-                <div class="row g-3">
-                    <!-- Payment History Table -->
-                    <div class="col-12">
-                        <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
-                            <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-credit-card"></i> Payment List</h5>
-                            </div>
-                            <div class="card-body p-0">
+                <div class="transaction-detail-wrapper">
+                    
+                    <!-- GROUPING BOX 1: Payment List Table (Same UI as Admin Payment Page) -->
+                    <div class="payment-table mb-4" style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-credit-card me-2"></i>Payment List (<?php echo e($transactions ? $transactions->count() : 0); ?>)</span>
                                 <?php if($transactions && $transactions->count() > 0): ?>
-                                    <div class="table-responsive">
-                                        <table class="table table-hover mb-0">
-                                            <thead style="background: #fee2e2;">
-                                                <tr>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment ID</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment Bank Name</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment Bank Acc No</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment Date</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment Type</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment Amount</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Transaction Ref</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment Receipt</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Is Complete</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Payment Status</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Is Verify</th>
-                                                    <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Verified By</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php $__currentLoopData = $transactions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $transaction): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                    <?php
-                                                        $totalRequiredForPayment = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
-                                                        $paidAmountForPayment = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
-                                                        $isFullPaymentForPayment = $paidAmountForPayment >= $totalRequiredForPayment;
-                                                        $verifiedByUser = $transaction->verified_by ? \App\Models\User::find($transaction->verified_by) : null;
-                                                    ?>
-                                                    <tr>
-                                                        <td><strong>#<?php echo e($transaction->paymentID); ?></strong></td>
-                                                        <td><?php echo e($transaction->payment_bank_name ?? 'N/A'); ?></td>
-                                                        <td><?php echo e($transaction->payment_bank_account_no ?? 'N/A'); ?></td>
-                                                        <td><?php echo e($transaction->payment_date ? \Carbon\Carbon::parse($transaction->payment_date)->format('d M Y') : 'N/A'); ?></td>
-                                                        <td><?php echo e($transaction->payment_type ?? 'N/A'); ?></td>
-                                                        <td><strong>RM <?php echo e(number_format($transaction->total_amount ?? 0, 2)); ?></strong></td>
-                                                        <td>
-                                                            <?php if($transaction->transaction_reference && !str_contains($transaction->transaction_reference ?? '', '.')): ?>
-                                                                <span class="text-muted small"><?php echo e(strlen($transaction->transaction_reference) > 15 ? substr($transaction->transaction_reference, 0, 15) . '...' : $transaction->transaction_reference); ?></span>
-                                                            <?php else: ?>
-                                                                <span class="text-muted">-</span>
-                                                            <?php endif; ?>
-                                                        </td>
-                                                        <td>
-                                                            <?php
-                                                                $receiptPath = $transaction->proof_of_payment ?? $transaction->transaction_reference ?? null;
-                                                                $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
-                                                            ?>
-                                                            <?php if($hasReceipt): ?>
-                                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#receiptModal<?php echo e($transaction->paymentID); ?>">
-                                                                    <i class="bi bi-receipt"></i> View
-                                                                </button>
-                                                                <!-- Receipt Modal -->
-                                                                <div class="modal fade" id="receiptModal<?php echo e($transaction->paymentID); ?>" tabindex="-1">
-                                                                    <div class="modal-dialog modal-lg">
-                                                                        <div class="modal-content">
-                                                                            <div class="modal-header">
-                                                                                <h5 class="modal-title">Receipt - Payment #<?php echo e($transaction->paymentID); ?></h5>
-                                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                                            </div>
-                                                                            <div class="modal-body text-center">
-                                                                                <img src="<?php echo e(getFileUrl($receiptPath)); ?>" alt="Receipt" class="img-fluid" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
-                                                                            </div>
-                                                                            <div class="modal-footer">
-                                                                                <a href="<?php echo e(getFileUrl($receiptPath)); ?>" target="_blank" class="btn btn-primary">Open in New Tab</a>
-                                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            <?php else: ?>
-                                                                <span class="text-muted">-</span>
-                                                            <?php endif; ?>
-                                                        </td>
-                                                        <td>
-                                                            <span class="badge <?php echo e($isFullPaymentForPayment ? 'bg-success' : 'bg-warning text-dark'); ?>">
-                                                                <?php echo e($isFullPaymentForPayment ? 'Yes' : 'No'); ?>
-
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <?php
-                                                                $status = $transaction->payment_status ?? 'Pending';
-                                                                $statusClass = match($status) {
-                                                                    'Verified', 'Full' => 'bg-success',
-                                                                    'Pending' => 'bg-warning text-dark',
-                                                                    'Rejected' => 'bg-danger',
-                                                                    default => 'bg-secondary'
-                                                                };
-                                                            ?>
-                                                            <span class="badge <?php echo e($statusClass); ?>"><?php echo e($status); ?></span>
-                                                        </td>
-                                                        <td>
-                                                            <span class="badge <?php echo e(($transaction->payment_isVerify ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
-                                                                <?php echo e(($transaction->payment_isVerify ?? false) ? 'Yes' : 'No'); ?>
-
-                                                            </span>
-                                                        </td>
-                                                        <td><?php echo e($verifiedByUser->name ?? 'N/A'); ?></td>
-                                                    </tr>
-                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="text-center py-5">
-                                        <i class="bi bi-receipt-cutoff fs-1 text-muted d-block mb-3"></i>
-                                        <p class="text-muted">No payment records found for this booking.</p>
-                                    </div>
+                                    <?php
+                                        $totalPaidAmount = $transactions->sum('total_amount');
+                                        $totalVerified = $transactions->where('payment_status', 'Verified')->count();
+                                    ?>
+                                    <span class="badge bg-light text-danger">Total: RM <?php echo e(number_format($totalPaidAmount, 2)); ?> | Verified: <?php echo e($totalVerified); ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>
-                    </div>
+                        <div class="table-responsive">
+                            <?php if($transactions && $transactions->count() > 0): ?>
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment ID</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Bank Name</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Bank Account No</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Date</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Type</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Amount</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Transaction Reference</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Receipt</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Is Payment Complete</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Status</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment is Verify</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Verified By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $__currentLoopData = $transactions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $payment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <?php
+                                                // Calculate payment type based on amount
+                                                $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                                                $depositAmount = $booking->deposit_amount ?? 50;
+                                                $paidAmount = $payment->total_amount ?? 0;
+                                                
+                                                // Calculate total paid so far for this booking (cumulative)
+                                                $totalPaidSoFar = $booking->payments()
+                                                    ->where('paymentID', '<=', $payment->paymentID)
+                                                    ->where('payment_status', 'Verified')
+                                                    ->sum('total_amount');
+                                                
+                                                // Determine payment type
+                                                $paymentType = 'Balance';
+                                                if ($paidAmount <= $depositAmount && $depositAmount > 0 && $totalPaidSoFar <= $depositAmount) {
+                                                    $paymentType = 'Deposit';
+                                                } elseif ($paidAmount >= $totalRequired) {
+                                                    $paymentType = 'Full Payment';
+                                                }
+                                                
+                                                // Check if payment is complete
+                                                $allVerifiedPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+                                                $isPaymentComplete = $allVerifiedPaid >= $totalRequired;
+                                                
+                                                // Get verified by user
+                                                $verifiedByUser = $payment->verified_by ? \App\Models\User::find($payment->verified_by) : null;
+                                            ?>
+                                            <tr>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <a href="<?php echo e(route('admin.payments.index', ['search' => $payment->paymentID])); ?>" class="text-decoration-none fw-bold text-primary" target="_blank">
+                                                        #<?php echo e($payment->paymentID); ?>
 
-                    <!-- Deposit Details -->
-                    <div class="col-12">
-                        <div class="card" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 12px; border: none;">
-                            <div class="card-header bg-danger text-white" style="border-radius: 12px 12px 0 0;">
-                                <h5 class="mb-0"><i class="bi bi-shield-check"></i> Deposit Details</h5>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead style="background: #fee2e2;">
-                                            <tr>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Deposit Payment</th>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Vehicle Condition Form</th>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Customer Choice</th>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Fine Amount</th>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Originally</th>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Refund Amount</th>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Refund Status</th>
-                                                <th style="border-bottom: 2px solid #b91c1c; color: #7f1d1d;">Handled By</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td><strong>RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong></td>
-                                                <td>
-                                                    <?php
-                                                        $hasReturnForm = $booking->vehicleConditionForms && $booking->vehicleConditionForms->where('form_type', 'RETURN')->first();
-                                                    ?>
-                                                    <?php if($hasReturnForm): ?>
-                                                        <span class="badge bg-success">Submitted</span>
-                                                    <?php else: ?>
-                                                        <span class="badge bg-warning text-dark">Pending</span>
-                                                    <?php endif; ?>
+                                                    </a>
                                                 </td>
-                                                <td>
-                                                    <?php if($booking->deposit_customer_choice): ?>
-                                                        <span class="badge <?php echo e($booking->deposit_customer_choice === 'refund' ? 'bg-info' : 'bg-secondary'); ?>">
-                                                            <?php echo e(ucfirst($booking->deposit_customer_choice)); ?>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <?php echo e($payment->payment_bank_name ?? 'N/A'); ?>
 
-                                                        </span>
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <?php echo e($payment->payment_bank_account_no ?? 'N/A'); ?>
+
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <?php if($payment->payment_date): ?>
+                                                        <div><?php echo e(\Carbon\Carbon::parse($payment->payment_date)->format('d M Y')); ?></div>
+                                                        <small class="text-muted"><?php echo e(\Carbon\Carbon::parse($payment->payment_date)->format('H:i')); ?></small>
                                                     <?php else: ?>
                                                         <span class="text-muted">N/A</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><strong style="color: red;">RM <?php echo e(number_format($booking->deposit_fine_amount ?? 0, 2)); ?></strong></td>
-                                                <td><strong>RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong></td>
-                                                <td><strong style="color: green;">RM <?php echo e(number_format($booking->deposit_refund_amount ?? 0, 2)); ?></strong></td>
-                                                <td>
+                                                <td style="padding: 12px; vertical-align: middle;">
                                                     <?php
-                                                        $refundStatus = $booking->deposit_refund_status ?? 'pending';
-                                                        $refundStatusClass = match($refundStatus) {
-                                                            'refunded' => 'bg-success',
-                                                            'pending' => 'bg-warning text-dark',
-                                                            'rejected' => 'bg-danger',
+                                                        $typeClass = match($paymentType) {
+                                                            'Deposit' => 'bg-info',
+                                                            'Balance' => 'bg-warning text-dark',
+                                                            'Full Payment' => 'bg-success',
                                                             default => 'bg-secondary'
                                                         };
                                                     ?>
-                                                    <span class="badge <?php echo e($refundStatusClass); ?>"><?php echo e(ucfirst($refundStatus)); ?></span>
+                                                    <span class="badge <?php echo e($typeClass); ?>"><?php echo e($paymentType); ?></span>
                                                 </td>
-                                                <td>
-                                                    <?php if($booking->deposit_handled_by): ?>
-                                                        <?php
-                                                            $handler = \App\Models\User::find($booking->deposit_handled_by);
-                                                        ?>
-                                                        <?php echo e($handler->name ?? 'N/A'); ?>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <strong class="text-dark">RM <?php echo e(number_format($payment->total_amount ?? 0, 2)); ?></strong>
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <?php if($payment->transaction_reference && !str_contains($payment->transaction_reference ?? '', '/') && !str_contains($payment->transaction_reference ?? '', '.')): ?>
+                                                        <span class="text-muted small" title="<?php echo e($payment->transaction_reference); ?>">
+                                                            <?php echo e(strlen($payment->transaction_reference) > 20 ? substr($payment->transaction_reference, 0, 20) . '...' : $payment->transaction_reference); ?>
 
+                                                        </span>
                                                     <?php else: ?>
-                                                        <span class="text-muted">Not Assigned</span>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <?php
+                                                        $receiptPath = $payment->proof_of_payment ?? null;
+                                                        $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
+                                                    ?>
+                                                    <?php if($hasReceipt): ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#paymentReceiptModal<?php echo e($payment->paymentID); ?>">
+                                                            <i class="bi bi-receipt me-1"></i>View
+                                                        </button>
+                                                        <!-- Receipt Modal -->
+                                                        <div class="modal fade" id="paymentReceiptModal<?php echo e($payment->paymentID); ?>" tabindex="-1">
+                                                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header bg-danger text-white">
+                                                                        <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Payment Receipt - #<?php echo e($payment->paymentID); ?></h5>
+                                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                                    </div>
+                                                                    <div class="modal-body text-center p-4">
+                                                                        <?php if(str_contains(strtolower($receiptPath ?? ''), '.pdf')): ?>
+                                                                            <iframe src="<?php echo e(getFileUrl($receiptPath)); ?>" style="width: 100%; height: 500px; border: none;"></iframe>
+                                                                        <?php else: ?>
+                                                                            <img src="<?php echo e(getFileUrl($receiptPath)); ?>" alt="Receipt" class="img-fluid rounded" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<div class=\'py-5\'><i class=\'bi bi-exclamation-triangle fs-1 text-warning\'></i><p class=\'text-muted mt-3\'>Image not found</p></div>';">
+                                                                        <?php endif; ?>
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <a href="<?php echo e(getFileUrl($receiptPath)); ?>" target="_blank" class="btn btn-primary">
+                                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Open in New Tab
+                                                                        </a>
+                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <span class="text-muted small">No receipt</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <span class="badge <?php echo e($isPaymentComplete ? 'bg-success' : 'bg-warning text-dark'); ?>">
+                                                        <?php echo e($isPaymentComplete ? 'Yes' : 'No'); ?>
+
+                                                    </span>
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <?php
+                                                        $status = $payment->payment_status ?? 'Pending';
+                                                        $statusClass = match($status) {
+                                                            'Verified', 'Full' => 'bg-success',
+                                                            'Pending' => 'bg-warning text-dark',
+                                                            'Rejected' => 'bg-danger',
+                                                            default => 'bg-secondary'
+                                                        };
+                                                    ?>
+                                                    <span class="badge <?php echo e($statusClass); ?>"><?php echo e($status); ?></span>
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <span class="badge <?php echo e(($payment->payment_isVerify ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
+                                                        <?php echo e(($payment->payment_isVerify ?? false) ? 'True' : 'False'); ?>
+
+                                                    </span>
+                                                </td>
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <?php if($verifiedByUser): ?>
+                                                        <span class="fw-medium"><?php echo e($verifiedByUser->name); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">Not Set</span>
                                                     <?php endif; ?>
                                                 </td>
                                             </tr>
-                                        </tbody>
-                                    </table>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <div class="text-center py-5" style="background: white;">
+                                    <div class="mb-3" style="background: #f3f4f6; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                        <i class="bi bi-credit-card-2-front" style="font-size: 3rem; color: #9ca3af;"></i>
+                                    </div>
+                                    <h6 class="text-muted mb-1">No Payment Records</h6>
+                                    <p class="text-muted small mb-0">No payment transactions found for this booking.</p>
                                 </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- GROUPING BOX 2: Deposit Details Table (Same UI as Admin Deposit Page) -->
+                    <div class="payment-table" style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                        <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-wallet me-2"></i>Deposit Details</span>
+                                <span class="badge bg-light text-danger">Deposit: RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></span>
                             </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Deposit Payment</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Vehicle Condition Form</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Customer Choice</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Fine Amount</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Originally</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Refund Amount</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Refund Status</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Handled By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                        $hasReturnForm = $booking->vehicleConditionForms && $booking->vehicleConditionForms->where('form_type', 'RETURN')->first();
+                                        $refundStatus = $booking->deposit_refund_status ?? 'pending';
+                                        $refundStatusClass = match($refundStatus) {
+                                            'refunded' => 'bg-success',
+                                            'pending' => 'bg-warning text-dark',
+                                            'rejected' => 'bg-danger',
+                                            default => 'bg-secondary'
+                                        };
+                                        $depositHandler = $booking->deposit_handled_by ? \App\Models\User::find($booking->deposit_handled_by) : null;
+                                    ?>
+                                    <tr>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <strong class="fs-5 text-dark">RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($hasReturnForm): ?>
+                                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Submitted</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($booking->deposit_customer_choice): ?>
+                                                <?php
+                                                    $choiceClass = $booking->deposit_customer_choice === 'hold' ? 'bg-info' : 'bg-primary';
+                                                ?>
+                                                <span class="badge <?php echo e($choiceClass); ?>">
+                                                    <i class="bi bi-<?php echo e($booking->deposit_customer_choice === 'hold' ? 'pause-circle' : 'arrow-repeat'); ?> me-1"></i>
+                                                    <?php echo e(ucfirst($booking->deposit_customer_choice)); ?>
+
+                                                </span>
+                                                <?php if($booking->lastUpdateDate): ?>
+                                                    <div class="small text-muted mt-1"><?php echo e(\Carbon\Carbon::parse($booking->lastUpdateDate)->format('d M Y H:i')); ?></div>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($booking->deposit_fine_amount && $booking->deposit_fine_amount > 0): ?>
+                                                <strong class="text-danger fs-6">RM <?php echo e(number_format($booking->deposit_fine_amount, 2)); ?></strong>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <strong class="text-dark">RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($booking->deposit_refund_amount && $booking->deposit_refund_amount > 0): ?>
+                                                <strong class="text-success fs-6">RM <?php echo e(number_format($booking->deposit_refund_amount, 2)); ?></strong>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <span class="badge <?php echo e($refundStatusClass); ?>">
+                                                <i class="bi bi-<?php echo e($refundStatus === 'refunded' ? 'check-circle' : ($refundStatus === 'pending' ? 'hourglass-split' : 'x-circle')); ?> me-1"></i>
+                                                <?php echo e(ucfirst($refundStatus)); ?>
+
+                                            </span>
+                                        </td>
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <?php if($depositHandler): ?>
+                                                <span class="fw-medium"><?php echo e($depositHandler->name); ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted">Not Assigned</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
