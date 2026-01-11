@@ -14,7 +14,7 @@ $loyalty = $currentCustomer
 ->first()
 : null;
 
-$outstanding = $wallet ? $wallet->outstanding_amount : 0.00;
+$wallet_balance = $wallet ? $wallet->wallet_balance : 0.00;
 $stamps = $loyalty ? $loyalty->total_stamps : 0;
 @endphp
 @endauth
@@ -298,8 +298,8 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
             </a>
 
         <a href="{{ route('wallet.show') }}" class="header-status header-link header-metric">
-    <span class="metric-label">Wallet Outstanding</span>
-    <span class="metric-value">RM {{ number_format($outstanding, 2) }}</span>
+    <span class="metric-label">Deposit Balance</span>
+    <span class="metric-value">RM {{ number_format($wallet_balance, 2) }}</span>
 </a>
 
 <a href="{{ route('loyalty.show') }}" class="header-status header-link header-metric">
