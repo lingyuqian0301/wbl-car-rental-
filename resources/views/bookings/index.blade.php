@@ -126,11 +126,11 @@
                                                     {{ $displayStatus }}
                                                 </span>
                                                 <br>
-    <div style="font-size: 10px; margin-top: 5px; border: 1px solid red; padding: 2px;">
+    <!-- <div style="font-size: 10px; margin-top: 5px; border: 1px solid red; padding: 2px;">
         <strong>DEBUG INFO:</strong><br>
         Booking Status: <span class="text-red-600">{{ $booking->booking_status }}</span> <br>
         Has Pending Payment?: <span class="text-red-600">{{ $hasPending ? 'YES' : 'NO' }}</span>
-    </div>
+    </div> -->
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-nowrap align-middle">
