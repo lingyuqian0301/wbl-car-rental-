@@ -99,8 +99,8 @@ class ReturnController extends Controller
             'scratches_notes' => $request->remarks,
             'reported_dated_time' => $request->date_check,
             'bookingID' => $booking->bookingID,
-            'rental_agreement' => true,
-            'fuel_img' => $fuelImgPath,
+            'rental_agreement' => true,    // Added missing default value
+            'fuel_img' => $fuelImgPath,    // Added missing fuel_img path
         ]);
 
         // Create the VehicleConditionImage entry for fuel explicitly

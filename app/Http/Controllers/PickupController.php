@@ -147,7 +147,7 @@ class PickupController extends Controller
                 // Generate a unique filename
                 $filename = uniqid() . '_' . time() . '_' . $field . '.' . $file->getClientOriginalExtension();
                 
-                // Move file to public/images/vehicle_conditions
+                // Move file
                 $file->move($destinationPath, $filename);
                 
                 // Store relative path
@@ -167,7 +167,7 @@ class PickupController extends Controller
                 $filename = uniqid() . '_' . time() . '_additional_' . $index . '.' . $file->getClientOriginalExtension();
                 $file->move($destinationPath, $filename);
                 $relativePath = 'images/vehicle_conditions/' . $filename;
-
+                
                 VehicleConditionImage::create([
                     'image_path' => $relativePath,
                     'image_taken_time' => now(),
