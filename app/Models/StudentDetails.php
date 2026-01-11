@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StudentDetails extends Model
 {
-    protected $table = 'StudentDetails';
+    protected $table = 'studentdetails';
     protected $primaryKey = 'matric_number';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -20,6 +20,7 @@ class StudentDetails extends Model
         'faculty',
         'programme',
         'yearOfStudy',
+        'matric_card_img', // <--- Updated column name
     ];
 
     protected function casts(): array
@@ -29,20 +30,13 @@ class StudentDetails extends Model
         ];
     }
 
-    /**
-     * Get all local students with this matric number.
-     */
     public function localStudents(): HasMany
     {
         return $this->hasMany(LocalStudent::class, 'matric_number', 'matric_number');
     }
 
-    /**
-     * Get all international students with this matric number.
-     */
     public function internationalStudents(): HasMany
     {
         return $this->hasMany(InternationalStudent::class, 'matric_number', 'matric_number');
     }
 }
-
