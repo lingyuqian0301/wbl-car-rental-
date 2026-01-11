@@ -460,6 +460,7 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             $booking->return_point = $request->return_point;
             $booking->rental_amount = $finalRentalAmount;
             $booking->addOns_item = $bookingData['addOns_item'] ?? null;
+            $booking->deposit_amount = $bookingData['deposit_amount'] ?? 50;
             $booking->booking_status = 'Pending';
             $booking->lastUpdateDate = now();
 
