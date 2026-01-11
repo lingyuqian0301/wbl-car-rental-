@@ -76,6 +76,21 @@ class ReturnController extends Controller
         elseif ($fuelVal >= 38) $fuelEnum = '1/2';
         elseif ($fuelVal >= 13) $fuelEnum = '1/4';
 
+        // --- PRE-PROCESS FUEL IMAGE (Required by database) ---
+        $fuelImgPath = '';
+        $destinationPath = public_path('images/vehicle_conditions');
+
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+
+        if ($request->hasFile('fuel_image')) {
+            $file = $request->file('fuel_image');
+            $filename = uniqid() . '_' . time() . '_fuel_image_return.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $fuelImgPath = 'images/vehicle_conditions/' . $filename;
+        }
+
         // D. Create Vehicle Condition Form (RETURN type)
         $form = VehicleConditionForm::create([
             'form_type' => 'RETURN',
@@ -84,16 +99,21 @@ class ReturnController extends Controller
             'scratches_notes' => $request->remarks,
             'reported_dated_time' => $request->date_check,
             'bookingID' => $booking->bookingID,
+            'rental_agreement' => true,    // Added missing default value
+            'fuel_img' => $fuelImgPath,    // Added missing fuel_img path
         ]);
 
-        // E. Save Images to Public Folder
-        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
-        $destinationPath = public_path('images/vehicle_conditions');
-
-        // Ensure directory exists
-        if (!file_exists($destinationPath)) {
-            mkdir($destinationPath, 0755, true);
+        // Create the VehicleConditionImage entry for fuel explicitly
+        if ($fuelImgPath) {
+            VehicleConditionImage::create([
+                'image_path' => $fuelImgPath,
+                'image_taken_time' => now(),
+                'formID' => $form->formID,
+            ]);
         }
+
+        // E. Save Remaining Images (Excluded fuel_image)
+        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image'];
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {

@@ -21,7 +21,7 @@
                 <div class="p-6 text-gray-900">
                     @if($bookings->count() > 0)
                         
-                        <div class="relative" style="overflow-x: auto; overflow-y: visible; padding-bottom: 15rem; min-height: 500px;">
+                        <div class="relative overflow-x-auto" style="padding-bottom: 15rem; min-height: 500px;">
                             
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
