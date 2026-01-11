@@ -101,6 +101,21 @@ class PickupController extends Controller
         elseif ($fuelVal >= 38) $fuelEnum = '1/2';
         elseif ($fuelVal >= 13) $fuelEnum = '1/4';
 
+        // --- PRE-PROCESS FUEL IMAGE (Required by database) ---
+        $fuelImgPath = ''; // Default empty string to prevent crash if file missing
+        $destinationPath = public_path('images/vehicle_conditions');
+
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+
+        if ($request->hasFile('fuel_image')) {
+            $file = $request->file('fuel_image');
+            $filename = uniqid() . '_' . time() . '_fuel_image.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $fuelImgPath = 'images/vehicle_conditions/' . $filename;
+        }
+
         // D. Create Database Record
         $form = VehicleConditionForm::create([
             'form_type' => 'RECEIVE',
@@ -109,22 +124,37 @@ class PickupController extends Controller
             'scratches_notes' => $request->remarks,
             'reported_dated_time' => $request->date_check,
             'bookingID' => $booking->bookingID,
+            'rental_agreement' => true,    // Fix 1: Added missing default
+            'fuel_img' => $fuelImgPath,    // Fix 2: Added missing fuel_img
         ]);
 
-        // E. Save Images to myportfolio public folder
-        // Uploads are stored in: C:\xampp\htdocs\myportfolio\public\uploads\vehicle_conditions
-        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
+        // Create the VehicleConditionImage entry for fuel explicitly (since file is already moved)
+        if ($fuelImgPath) {
+            VehicleConditionImage::create([
+                'image_path' => $fuelImgPath,
+                'image_taken_time' => now(),
+                'formID' => $form->formID,
+            ]);
+        }
 
+        // E. Save Remaining Images (Excluded fuel_image)
+        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image'];
+        
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
-                $fileName = time() . '_' . $field . '_' . $file->getClientOriginalName();
                 
-                // Upload to myportfolio public folder
-                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public'); 
+                // Generate a unique filename
+                $filename = uniqid() . '_' . time() . '_' . $field . '.' . $file->getClientOriginalExtension();
+                
+                // Move file to public/images/vehicle_conditions
+                $file->move($destinationPath, $filename);
+                
+                // Store relative path
+                $relativePath = 'images/vehicle_conditions/' . $filename;
 
                 VehicleConditionImage::create([
-                    'image_path' => $path, 
+                    'image_path' => $relativePath, 
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);
@@ -134,11 +164,12 @@ class PickupController extends Controller
         // Handle extra images
         if ($request->hasFile('additional_images')) {
             foreach ($request->file('additional_images') as $index => $file) {
-                $fileName = time() . '_additional_' . $index . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public');
+                $filename = uniqid() . '_' . time() . '_additional_' . $index . '.' . $file->getClientOriginalExtension();
+                $file->move($destinationPath, $filename);
+                $relativePath = 'images/vehicle_conditions/' . $filename;
 
                 VehicleConditionImage::create([
-                    'image_path' => $path,
+                    'image_path' => $relativePath,
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);

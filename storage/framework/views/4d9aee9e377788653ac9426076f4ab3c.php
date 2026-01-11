@@ -243,7 +243,7 @@
 
                             </td>
                             <td>
-                                <a href="<?php echo e(route('admin.deposits.show', $booking->bookingID)); ?>" class="btn btn-sm btn-outline-primary">
+                                <a href="<?php echo e(route('admin.bookings.reservations.show', $booking->bookingID)); ?>" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i> View
                                 </a>
                             </td>

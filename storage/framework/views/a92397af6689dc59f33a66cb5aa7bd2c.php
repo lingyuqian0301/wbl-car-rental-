@@ -1,25 +1,35 @@
-<x-app-layout>
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-6">
-                {{ __('My Bookings') }}
+                <?php echo e(__('My Bookings')); ?>
+
             </h2>
 
-            @if(session('success'))
+            <?php if(session('success')): ?>
                 <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">{{ session('success') }}</span>
+                    <span class="block sm:inline"><?php echo e(session('success')); ?></span>
                 </div>
-            @endif
+            <?php endif; ?>
 
-            @if(session('error'))
+            <?php if(session('error')): ?>
                 <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">{{ session('error') }}</span>
+                    <span class="block sm:inline"><?php echo e(session('error')); ?></span>
                 </div>
-            @endif
+            <?php endif; ?>
 
             <div class="bg-white shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    @if($bookings->count() > 0)
+                    <?php if($bookings->count() > 0): ?>
                         
                         <div class="relative overflow-x-auto" style="padding-bottom: 15rem; min-height: 500px;">
                             
@@ -35,8 +45,8 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach($bookings as $booking)
-                                        @php
+                                    <?php $__currentLoopData = $bookings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $booking): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <?php
                                             // 1. CALCULATE TOTALS
                                             $totalPrice = $booking->rental_amount;
                                             $verifiedPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
@@ -98,56 +108,60 @@
                                                     $statusBadge = 'bg-gray-100 text-gray-800';
                                                 }
                                             }
-                                        @endphp
+                                        ?>
 
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {{ $bookings->total() - (($bookings->currentPage() - 1) * $bookings->perPage() + $loop->index) }}
+                                                <?php echo e($bookings->total() - (($bookings->currentPage() - 1) * $bookings->perPage() + $loop->index)); ?>
+
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                @if($booking->vehicle)
+                                                <?php if($booking->vehicle): ?>
                                                     <div class="text-sm font-medium text-gray-900">
-                                                        {{ $booking->vehicle->vehicle_brand }} {{ $booking->vehicle->vehicle_model }}
+                                                        <?php echo e($booking->vehicle->vehicle_brand); ?> <?php echo e($booking->vehicle->vehicle_model); ?>
+
                                                     </div>
-                                                    <div class="text-sm text-gray-500">{{ $booking->vehicle->plate_number }}</div>
-                                                @else
+                                                    <div class="text-sm text-gray-500"><?php echo e($booking->vehicle->plate_number); ?></div>
+                                                <?php else: ?>
                                                     <span class="text-red-500 font-bold text-sm">Vehicle Not Found</span>
-                                                @endif
+                                                <?php endif; ?>
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <div>{{ \Carbon\Carbon::parse($booking->rental_start_date)->format('M d, Y') }}</div>
-                                                <div class="text-xs text-gray-400">to {{ \Carbon\Carbon::parse($booking->rental_end_date)->format('M d, Y') }}</div>
+                                                <div><?php echo e(\Carbon\Carbon::parse($booking->rental_start_date)->format('M d, Y')); ?></div>
+                                                <div class="text-xs text-gray-400">to <?php echo e(\Carbon\Carbon::parse($booking->rental_end_date)->format('M d, Y')); ?></div>
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusBadge }}">
-                                                    {{ $displayStatus }}
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo e($statusBadge); ?>">
+                                                    <?php echo e($displayStatus); ?>
+
                                                 </span>
                                                 <br>
     <div style="font-size: 10px; margin-top: 5px; border: 1px solid red; padding: 2px;">
         <strong>DEBUG INFO:</strong><br>
-        Booking Status: <span class="text-red-600">{{ $booking->booking_status }}</span> <br>
-        Has Pending Payment?: <span class="text-red-600">{{ $hasPending ? 'YES' : 'NO' }}</span>
+        Booking Status: <span class="text-red-600"><?php echo e($booking->booking_status); ?></span> <br>
+        Has Pending Payment?: <span class="text-red-600"><?php echo e($hasPending ? 'YES' : 'NO'); ?></span>
     </div>
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-nowrap align-middle">
                                                 <div class="w-full max-w-xs">
                                                     <div class="flex justify-between mb-1">
-                                                        <span class="text-xs font-bold {{ $textColor }}">{{ $payStatusLabel }}</span>
-                                                        <span class="text-xs font-bold text-gray-600">{{ number_format($percentage, 0) }}%</span>
+                                                        <span class="text-xs font-bold <?php echo e($textColor); ?>"><?php echo e($payStatusLabel); ?></span>
+                                                        <span class="text-xs font-bold text-gray-600"><?php echo e(number_format($percentage, 0)); ?>%</span>
                                                     </div>
                                                     <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                                        <div class="{{ $barColor }} h-2.5 rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
+                                                        <div class="<?php echo e($barColor); ?> h-2.5 rounded-full transition-all duration-500" style="width: <?php echo e($percentage); ?>%"></div>
                                                     </div>
                                                     <div class="text-xs text-gray-500 mt-1 font-medium">
-                                                        RM {{ number_format($verifiedPaid, 2) }} <span class="text-gray-400">/</span> RM {{ number_format($totalPrice, 2) }}
+                                                        RM <?php echo e(number_format($verifiedPaid, 2)); ?> <span class="text-gray-400">/</span> RM <?php echo e(number_format($totalPrice, 2)); ?>
+
                                                     </div>
-                                                    @if($hasPending)
+                                                    <?php if($hasPending): ?>
                                                         <div class="text-[10px] text-blue-500 italic mt-1">* Verification Pending</div>
-                                                    @endif
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
 
@@ -176,91 +190,108 @@
                                                              style="display: none;"
                                                              @click="open = false">
                                                             <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
-                                                                {{-- Always show View Details --}}
-                                                                <a href="{{ route('bookings.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                    {{ __('View Details') }}
+                                                                
+                                                                <a href="<?php echo e(route('bookings.show', $booking->bookingID)); ?>" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                    <?php echo e(__('View Details')); ?>
+
                                                                 </a>
 
-                                                                <!-- {{-- REFUND OPTION: Show if cancelled AND fully paid --}} -->
-                                                                @if($booking->booking_status == 'Cancelled' && $verifiedPaid >= ($totalPrice - 1))
-                                                                    {{-- TODO: Implement refund functionality --}}
-                                                                    {{-- Uncomment when refunds.create route is ready --}}
-                                                                    {{-- <a href="{{ route('refunds.create', ['booking' => $booking->bookingID]) }}" class="block px-4 py-2 text-sm leading-5 text-purple-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                        {{ __('Proceed to Refund') }}
-                                                                    </a> --}}
+                                                                <!--  -->
+                                                                <?php if($booking->booking_status == 'Cancelled' && $verifiedPaid >= ($totalPrice - 1)): ?>
                                                                     
-                                                                    {{-- Temporary placeholder --}}
+                                                                    
+                                                                    
+                                                                    
+                                                                    
                                                                     <div class="block w-full px-4 py-2 text-left text-sm leading-5 text-purple-600 cursor-not-allowed opacity-50">
-                                                                        {{ __('Refund Available (Contact Support)') }}
+                                                                        <?php echo e(__('Refund Available (Contact Support)')); ?>
+
                                                                     </div>
-                                                                @endif
+                                                                <?php endif; ?>
 
-                                                                {{-- Show payment options if not fully paid and not cancelled and not ongoing --}}
-                                                                @if($verifiedPaid < ($totalPrice - 1) && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
-                                                                    @if($hasPending)
+                                                                
+                                                                <?php if($verifiedPaid < ($totalPrice - 1) && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing'): ?>
+                                                                    <?php if($hasPending): ?>
                                                                         <div class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-400 cursor-not-allowed">
-                                                                            {{ __('Verifying Payment...') }}
+                                                                            <?php echo e(__('Verifying Payment...')); ?>
+
                                                                         </div>
-                                                                    @else
-                                                                        <a href="{{ route('payments.create', ['booking' => $booking->bookingID]) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                            {{ $verifiedPaid > 0 ? __('Pay Balance') : __('Pay Deposit') }}
+                                                                    <?php else: ?>
+                                                                        <a href="<?php echo e(route('payments.create', ['booking' => $booking->bookingID])); ?>" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                            <?php echo e($verifiedPaid > 0 ? __('Pay Balance') : __('Pay Deposit')); ?>
+
                                                                         </a>
-                                                                    @endif
-                                                                @endif
+                                                                    <?php endif; ?>
+                                                                <?php endif; ?>
 
-                                                                <!-- {{-- Show continue booking and invoice if fully paid and not cancelled and not ongoing and not completed--}} -->
-                                                                  @if($verifiedPaid >= ($totalPrice - 1) && !in_array($dbStatus, ['Cancelled', 'Ongoing', 'Completed']))
-                                                                    <a href="{{ route('agreement.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                        {{ __('Continue Booking') }}
+                                                                <!--  -->
+                                                                  <?php if($verifiedPaid >= ($totalPrice - 1) && !in_array($dbStatus, ['Cancelled', 'Ongoing', 'Completed'])): ?>
+                                                                    <a href="<?php echo e(route('agreement.show', $booking->bookingID)); ?>" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        <?php echo e(__('Continue Booking')); ?>
+
                                                                     </a>
                                                                     
-                                                                    <a href="{{ route('booking.invoice', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                        {{ __('Download Invoice') }}
-                                                                    </a>
-                                                                @endif
+                                                                    <a href="<?php echo e(route('booking.invoice', $booking->bookingID)); ?>" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        <?php echo e(__('Download Invoice')); ?>
 
-                                                                {{-- Show pickup form for ONGOING bookings --}}
-                                                                @if($booking->booking_status == 'Ongoing')
-                                                                    <a href="{{ route('return.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-blue-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                        {{ __('Return Vehicle') }}
+                                                                    </a>
+                                                                <?php endif; ?>
+
+                                                                
+                                                                <?php if($booking->booking_status == 'Ongoing'): ?>
+                                                                    <a href="<?php echo e(route('return.show', $booking->bookingID)); ?>" class="block px-4 py-2 text-sm leading-5 text-blue-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        <?php echo e(__('Return Vehicle')); ?>
+
                                                                     </a>
                                                                     
-                                                                    <a href="{{ route('booking.invoice', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                        {{ __('Download Invoice') }}
-                                                                    </a>
-                                                                @endif
+                                                                    <a href="<?php echo e(route('booking.invoice', $booking->bookingID)); ?>" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                                        <?php echo e(__('Download Invoice')); ?>
 
-                                                                {{-- Show cancel option if no payment made and not confirmed/cancelled/ongoing --}}
-                                                                @if($verifiedPaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
-                                                                    <form method="POST" action="{{ route('bookings.cancel', $booking->bookingID) }}">
-                                                                        @csrf
+                                                                    </a>
+                                                                <?php endif; ?>
+
+                                                                
+                                                                <?php if($verifiedPaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing'): ?>
+                                                                    <form method="POST" action="<?php echo e(route('bookings.cancel', $booking->bookingID)); ?>">
+                                                                        <?php echo csrf_field(); ?>
                                                                         <button type="submit" onclick="return confirm('Are you sure you want to cancel this booking?')" class="block w-full text-left px-4 py-2 text-sm leading-5 text-red-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                            {{ __('Cancel Booking') }}
+                                                                            <?php echo e(__('Cancel Booking')); ?>
+
                                                                         </button>
                                                                     </form>
-                                                                @endif
+                                                                <?php endif; ?>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
                                         </tr>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </tbody>
                             </table>
                         </div>
 
                         <div class="mt-4">
-                            {{ $bookings->links() }}
+                            <?php echo e($bookings->links()); ?>
+
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="text-center py-12">
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No bookings found</h3>
                             <p class="mt-1 text-sm text-gray-500">Book a car to get started!</p>
                         </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?><?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/bookings/index.blade.php ENDPATH**/ ?>
