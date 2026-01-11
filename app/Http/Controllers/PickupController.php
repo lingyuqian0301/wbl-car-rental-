@@ -128,6 +128,7 @@ class PickupController extends Controller
             'fuel_img' => $fuelImgPath,    // Fix 2: Added missing fuel_img
         ]);
 
+<<<<<<< HEAD
         // Create the VehicleConditionImage entry for fuel explicitly (since file is already moved)
         if ($fuelImgPath) {
             VehicleConditionImage::create([
@@ -135,6 +136,17 @@ class PickupController extends Controller
                 'image_taken_time' => now(),
                 'formID' => $form->formID,
             ]);
+=======
+
+        // E. Save Images to myportfolio public folder
+        // Uploads are stored in: C:\xampp\htdocs\myportfolio\public\uploads\vehicle_conditions
+        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
+        $destinationPath = public_path('images/vehicle_conditions');
+
+        // Ensure directory exists
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+>>>>>>> 972d6288031014049ea3be0d2fd612ccee0d9d48
         }
 
         // E. Save Remaining Images (Excluded fuel_image)
@@ -143,7 +155,12 @@ class PickupController extends Controller
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
+                $fileName = time() . '_' . $field . '_' . $file->getClientOriginalName();
                 
+                // Upload to myportfolio public folder
+                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public'); 
+
+                // Save path to database
                 // Generate a unique filename
                 $filename = uniqid() . '_' . time() . '_' . $field . '.' . $file->getClientOriginalExtension();
                 
@@ -164,10 +181,15 @@ class PickupController extends Controller
         // Handle extra images
         if ($request->hasFile('additional_images')) {
             foreach ($request->file('additional_images') as $index => $file) {
+                $fileName = time() . '_additional_' . $index . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public');
                 $filename = uniqid() . '_' . time() . '_additional_' . $index . '.' . $file->getClientOriginalExtension();
                 $file->move($destinationPath, $filename);
                 $relativePath = 'images/vehicle_conditions/' . $filename;
+<<<<<<< HEAD
                 
+=======
+>>>>>>> 972d6288031014049ea3be0d2fd612ccee0d9d48
                 VehicleConditionImage::create([
                     'image_path' => $relativePath,
                     'image_taken_time' => now(),
