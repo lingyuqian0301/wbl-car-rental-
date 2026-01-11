@@ -463,7 +463,7 @@ public function finalize(Request $request)
             if ($wallet && $wallet->wallet_balance >= $requiredDeposit) {
                 // A. Deduct from Wallet (Holding Logic)
                 DB::table('walletaccount')
-                    ->where('accountID', $wallet->accountID)
+                    ->where('walletAccountID', $wallet->walletAccountID)
                     ->update([
                         'wallet_balance' => $wallet->wallet_balance - $requiredDeposit,
                         'wallet_lastUpdate_Date_Time' => now()
@@ -473,7 +473,7 @@ public function finalize(Request $request)
                 $bookingStatus = 'Reserved';
                 $depositMessage = ' Deposit was auto-deducted from your wallet.';
                 
-                Log::info("Booking Auto-Reserved. RM $requiredDeposit deducted from Wallet ID: $wallet->accountID");
+                Log::info("Booking Auto-Reserved. RM $requiredDeposit deducted from Wallet ID: $wallet->walletAccountID");
             }
             // =========================================================
             // END NEW LOGIC
