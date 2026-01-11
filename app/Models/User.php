@@ -88,4 +88,13 @@ class User extends Authenticatable
         }
         return false;
     }
+
+    public function isRunner(): bool
+    {
+        if ($this->staff()->exists()) {
+            $staff = $this->staff;
+            return $staff && $staff->runner()->exists();
+        }
+        return false;
+    }
 }

@@ -421,4 +421,10 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
     });
 });
 
+// Runner routes
+Route::middleware(['auth', 'runner'])->prefix('runner')->name('runner.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\RunnerDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/tasks', [\App\Http\Controllers\RunnerTaskController::class, 'index'])->name('tasks');
+});
+
 require __DIR__ . '/auth.php';

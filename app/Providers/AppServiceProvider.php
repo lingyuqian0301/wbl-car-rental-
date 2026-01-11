@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Booking;
+use App\Models\Payment;
 use App\Observers\BookingObserver;
+use App\Observers\PaymentObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,8 +23,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Register Booking Observer for Keep Deposit logic
+        // Register Booking Observer for notifications and Keep Deposit logic
         Booking::observe(BookingObserver::class);
+        
+        // Register Payment Observer for notifications
+        Payment::observe(PaymentObserver::class);
 
         // Register Blade directive for file URLs
         \Blade::directive('fileUrl', function ($expression) {
