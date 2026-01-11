@@ -254,14 +254,17 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
             Route::get('/{payment}', [AdminPaymentController::class, 'show'])->name('show');
             Route::post('/{payment}/approve', [AdminPaymentController::class, 'approve'])->name('approve');
             Route::post('/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('reject');
-            Route::put('/{payment}/update-verify', [AdminPaymentController::class, 'updateVerify'])->name('update-verify');
-            Route::put('/{id}/update-verified-by', [AdminPaymentController::class, 'updateVerifiedBy'])->name('update-verified-by');
+            Route::match(['put', 'post'], '/{payment}/update-verify', [AdminPaymentController::class, 'updateVerify'])->name('update-verify');
+            Route::match(['put', 'post'], '/{id}/update-verified-by', [AdminPaymentController::class, 'updateVerifiedBy'])->name('update-verified-by');
         });
 
         Route::prefix('admin/deposits')->name('admin.deposits.')->group(function () {
             Route::get('/', [AdminDepositController::class, 'index'])->name('index');
             Route::get('/{booking}', [AdminDepositController::class, 'show'])->name('show');
             Route::put('/{booking}', [AdminDepositController::class, 'update'])->name('update');
+            // AJAX routes for booking detail transaction tab
+            Route::post('/{booking}/update-status', [AdminDepositController::class, 'updateStatusAjax'])->name('update-status-ajax');
+            Route::post('/{booking}/update-handled-by', [AdminDepositController::class, 'updateHandledByAjax'])->name('update-handled-by-ajax');
         });
 
         Route::prefix('admin/notifications')->name('admin.notifications.')->group(function () {

@@ -1546,7 +1546,7 @@
                 
                 <div class="transaction-detail-wrapper">
                     
-                    <!-- GROUPING BOX 1: Payment List Table (Same UI as Admin Payment Page) -->
+                    <!-- GROUPING BOX 1: Payment List Table -->
                     <div class="payment-table mb-4" style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
                         <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600;">
                             <div class="d-flex justify-content-between align-items-center">
@@ -1565,18 +1565,19 @@
                                 <table class="table table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment ID</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Bank Name</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Bank Account No</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Date</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Type</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Amount</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Transaction Reference</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Receipt</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Is Payment Complete</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment Status</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Payment is Verify</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Verified By</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Booking ID</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment ID</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Bank Name</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Bank Account No</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Date</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Type</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Amount</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Transaction Reference</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Receipt</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Is Payment Complete</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Status</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment is Verify</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Verified By</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1587,15 +1588,9 @@
                                                 $depositAmount = $booking->deposit_amount ?? 50;
                                                 $paidAmount = $payment->total_amount ?? 0;
                                                 
-                                                // Calculate total paid so far for this booking (cumulative)
-                                                $totalPaidSoFar = $booking->payments()
-                                                    ->where('paymentID', '<=', $payment->paymentID)
-                                                    ->where('payment_status', 'Verified')
-                                                    ->sum('total_amount');
-                                                
                                                 // Determine payment type
                                                 $paymentType = 'Balance';
-                                                if ($paidAmount <= $depositAmount && $depositAmount > 0 && $totalPaidSoFar <= $depositAmount) {
+                                                if ($paidAmount <= $depositAmount && $depositAmount > 0) {
                                                     $paymentType = 'Deposit';
                                                 } elseif ($paidAmount >= $totalRequired) {
                                                     $paymentType = 'Full Payment';
@@ -1605,24 +1600,36 @@
                                                 $allVerifiedPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
                                                 $isPaymentComplete = $allVerifiedPaid >= $totalRequired;
                                                 
-                                                // Get verified by user
-                                                $verifiedByUser = $payment->verified_by ? \App\Models\User::find($payment->verified_by) : null;
+                                                // Receipt check
+                                                $receiptPath = $payment->proof_of_payment ?? null;
+                                                $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
                                             ?>
                                             <tr>
+                                                <!-- Booking ID -->
                                                 <td style="padding: 12px; vertical-align: middle;">
-                                                    <a href="<?php echo e(route('admin.payments.index', ['search' => $payment->paymentID])); ?>" class="text-decoration-none fw-bold text-primary" target="_blank">
+                                                    <a href="<?php echo e(route('admin.bookings.reservations.show', $booking->bookingID)); ?>" class="text-decoration-none fw-bold text-primary">
+                                                        #<?php echo e($booking->bookingID); ?>
+
+                                                    </a>
+                                                </td>
+                                                <!-- Payment ID -->
+                                                <td style="padding: 12px; vertical-align: middle;">
+                                                    <a href="<?php echo e(route('admin.payments.index', ['search' => $payment->paymentID])); ?>" class="text-decoration-none fw-bold text-danger" target="_blank">
                                                         #<?php echo e($payment->paymentID); ?>
 
                                                     </a>
                                                 </td>
+                                                <!-- Payment Bank Name -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <?php echo e($payment->payment_bank_name ?? 'N/A'); ?>
 
                                                 </td>
+                                                <!-- Payment Bank Account No -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <?php echo e($payment->payment_bank_account_no ?? 'N/A'); ?>
 
                                                 </td>
+                                                <!-- Payment Date -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <?php if($payment->payment_date): ?>
                                                         <div><?php echo e(\Carbon\Carbon::parse($payment->payment_date)->format('d M Y')); ?></div>
@@ -1631,6 +1638,7 @@
                                                         <span class="text-muted">N/A</span>
                                                     <?php endif; ?>
                                                 </td>
+                                                <!-- Payment Type -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <?php
                                                         $typeClass = match($paymentType) {
@@ -1642,27 +1650,26 @@
                                                     ?>
                                                     <span class="badge <?php echo e($typeClass); ?>"><?php echo e($paymentType); ?></span>
                                                 </td>
+                                                <!-- Payment Amount -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <strong class="text-dark">RM <?php echo e(number_format($payment->total_amount ?? 0, 2)); ?></strong>
                                                 </td>
+                                                <!-- Transaction Reference -->
                                                 <td style="padding: 12px; vertical-align: middle;">
-                                                    <?php if($payment->transaction_reference && !str_contains($payment->transaction_reference ?? '', '/') && !str_contains($payment->transaction_reference ?? '', '.')): ?>
+                                                    <?php if($payment->transaction_reference): ?>
                                                         <span class="text-muted small" title="<?php echo e($payment->transaction_reference); ?>">
-                                                            <?php echo e(strlen($payment->transaction_reference) > 20 ? substr($payment->transaction_reference, 0, 20) . '...' : $payment->transaction_reference); ?>
+                                                            <?php echo e(strlen($payment->transaction_reference) > 15 ? substr($payment->transaction_reference, 0, 15) . '...' : $payment->transaction_reference); ?>
 
                                                         </span>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
                                                 </td>
+                                                <!-- Payment Receipt -->
                                                 <td style="padding: 12px; vertical-align: middle;">
-                                                    <?php
-                                                        $receiptPath = $payment->proof_of_payment ?? null;
-                                                        $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
-                                                    ?>
                                                     <?php if($hasReceipt): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#paymentReceiptModal<?php echo e($payment->paymentID); ?>">
-                                                            <i class="bi bi-receipt me-1"></i>View
+                                                            <i class="bi bi-receipt"></i> View
                                                         </button>
                                                         <!-- Receipt Modal -->
                                                         <div class="modal fade" id="paymentReceiptModal<?php echo e($payment->paymentID); ?>" tabindex="-1">
@@ -1676,12 +1683,12 @@
                                                                         <?php if(str_contains(strtolower($receiptPath ?? ''), '.pdf')): ?>
                                                                             <iframe src="<?php echo e(getFileUrl($receiptPath)); ?>" style="width: 100%; height: 500px; border: none;"></iframe>
                                                                         <?php else: ?>
-                                                                            <img src="<?php echo e(getFileUrl($receiptPath)); ?>" alt="Receipt" class="img-fluid rounded" style="max-height: 70vh;" onerror="this.parentElement.innerHTML='<div class=\'py-5\'><i class=\'bi bi-exclamation-triangle fs-1 text-warning\'></i><p class=\'text-muted mt-3\'>Image not found</p></div>';">
+                                                                            <img src="<?php echo e(getFileUrl($receiptPath)); ?>" alt="Receipt" class="img-fluid rounded" style="max-height: 70vh;">
                                                                         <?php endif; ?>
                                                                     </div>
                                                                     <div class="modal-footer">
                                                                         <a href="<?php echo e(getFileUrl($receiptPath)); ?>" target="_blank" class="btn btn-primary">
-                                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Open in New Tab
+                                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Open
                                                                         </a>
                                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                                                     </div>
@@ -1692,12 +1699,14 @@
                                                         <span class="text-muted small">No receipt</span>
                                                     <?php endif; ?>
                                                 </td>
+                                                <!-- Is Payment Complete -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <span class="badge <?php echo e($isPaymentComplete ? 'bg-success' : 'bg-warning text-dark'); ?>">
                                                         <?php echo e($isPaymentComplete ? 'Yes' : 'No'); ?>
 
                                                     </span>
                                                 </td>
+                                                <!-- Payment Status -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <?php
                                                         $status = $payment->payment_status ?? 'Pending';
@@ -1710,18 +1719,28 @@
                                                     ?>
                                                     <span class="badge <?php echo e($statusClass); ?>"><?php echo e($status); ?></span>
                                                 </td>
+                                                <!-- Payment is Verify (Dropdown) -->
                                                 <td style="padding: 12px; vertical-align: middle;">
-                                                    <span class="badge <?php echo e(($payment->payment_isVerify ?? false) ? 'bg-success' : 'bg-secondary'); ?>">
-                                                        <?php echo e(($payment->payment_isVerify ?? false) ? 'True' : 'False'); ?>
-
-                                                    </span>
+                                                    <select class="form-select form-select-sm" style="min-width: 90px;" 
+                                                            data-payment-id="<?php echo e($payment->paymentID); ?>"
+                                                            onchange="updatePaymentVerify(this, <?php echo e($payment->paymentID); ?>)">
+                                                        <option value="0" <?php echo e(!($payment->payment_isVerify ?? false) ? 'selected' : ''); ?>>False</option>
+                                                        <option value="1" <?php echo e(($payment->payment_isVerify ?? false) ? 'selected' : ''); ?>>True</option>
+                                                    </select>
                                                 </td>
+                                                <!-- Verified By (Dropdown) -->
                                                 <td style="padding: 12px; vertical-align: middle;">
-                                                    <?php if($verifiedByUser): ?>
-                                                        <span class="fw-medium"><?php echo e($verifiedByUser->name); ?></span>
-                                                    <?php else: ?>
-                                                        <span class="text-muted">Not Set</span>
-                                                    <?php endif; ?>
+                                                    <select class="form-select form-select-sm" style="min-width: 130px;"
+                                                            data-payment-id="<?php echo e($payment->paymentID); ?>"
+                                                            onchange="updatePaymentVerifiedBy(this, <?php echo e($payment->paymentID); ?>)">
+                                                        <option value="">Not Set</option>
+                                                        <?php $__currentLoopData = $verifyByUsers ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $staff): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                            <option value="<?php echo e($staff->userID); ?>" <?php echo e(($payment->verified_by ?? null) == $staff->userID ? 'selected' : ''); ?>>
+                                                                <?php echo e($staff->name); ?>
+
+                                                            </option>
+                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                    </select>
                                                 </td>
                                             </tr>
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -1739,44 +1758,51 @@
                         </div>
                     </div>
 
-                    <!-- GROUPING BOX 2: Deposit Details Table (Same UI as Admin Deposit Page) -->
+                    <!-- GROUPING BOX 2: Deposit Details Table -->
                     <div class="payment-table" style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
                         <div class="table-header" style="background: var(--admin-red); color: white; padding: 15px 20px; font-weight: 600;">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span><i class="bi bi-wallet me-2"></i>Deposit Details</span>
-                                <span class="badge bg-light text-danger">Deposit: RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></span>
+                                <span class="badge bg-light text-danger">Original Deposit: RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></span>
                             </div>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Deposit Payment</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Vehicle Condition Form</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Customer Choice</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Fine Amount</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Originally</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Refund Amount</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Refund Status</th>
-                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.9rem; white-space: nowrap;">Handled By</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Booking ID</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Customer Name</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Deposit Payment</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Vehicle Condition Form</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Customer Choice</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Fine Amount</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Originally</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Refund Amount</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Refund Status</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Handled By</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
                                         $hasReturnForm = $booking->vehicleConditionForms && $booking->vehicleConditionForms->where('form_type', 'RETURN')->first();
-                                        $refundStatus = $booking->deposit_refund_status ?? 'pending';
-                                        $refundStatusClass = match($refundStatus) {
-                                            'refunded' => 'bg-success',
-                                            'pending' => 'bg-warning text-dark',
-                                            'rejected' => 'bg-danger',
-                                            default => 'bg-secondary'
-                                        };
-                                        $depositHandler = $booking->deposit_handled_by ? \App\Models\User::find($booking->deposit_handled_by) : null;
                                     ?>
                                     <tr>
+                                        <!-- Booking ID -->
                                         <td style="padding: 12px; vertical-align: middle;">
-                                            <strong class="fs-5 text-dark">RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong>
+                                            <a href="<?php echo e(route('admin.bookings.reservations.show', $booking->bookingID)); ?>" class="text-decoration-none fw-bold text-primary">
+                                                #<?php echo e($booking->bookingID); ?>
+
+                                            </a>
                                         </td>
+                                        <!-- Customer Name -->
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <span class="fw-medium"><?php echo e($booking->customer->user->name ?? 'N/A'); ?></span>
+                                        </td>
+                                        <!-- Deposit Payment -->
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <strong class="text-dark fs-6">RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong>
+                                        </td>
+                                        <!-- Vehicle Condition Form -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             <?php if($hasReturnForm): ?>
                                                 <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Submitted</span>
@@ -1784,53 +1810,67 @@
                                                 <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
                                             <?php endif; ?>
                                         </td>
+                                        <!-- Customer Choice -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             <?php if($booking->deposit_customer_choice): ?>
                                                 <?php
-                                                    $choiceClass = $booking->deposit_customer_choice === 'hold' ? 'bg-info' : 'bg-primary';
+                                                    $choiceClass = match($booking->deposit_customer_choice) {
+                                                        'hold', 'wallet' => 'bg-info',
+                                                        'refund', 'bank_transfer' => 'bg-primary',
+                                                        default => 'bg-secondary'
+                                                    };
                                                 ?>
                                                 <span class="badge <?php echo e($choiceClass); ?>">
-                                                    <i class="bi bi-<?php echo e($booking->deposit_customer_choice === 'hold' ? 'pause-circle' : 'arrow-repeat'); ?> me-1"></i>
-                                                    <?php echo e(ucfirst($booking->deposit_customer_choice)); ?>
+                                                    <?php echo e(ucfirst(str_replace('_', ' ', $booking->deposit_customer_choice))); ?>
 
                                                 </span>
-                                                <?php if($booking->lastUpdateDate): ?>
-                                                    <div class="small text-muted mt-1"><?php echo e(\Carbon\Carbon::parse($booking->lastUpdateDate)->format('d M Y H:i')); ?></div>
-                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <span class="text-muted">-</span>
                                             <?php endif; ?>
                                         </td>
+                                        <!-- Fine Amount -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             <?php if($booking->deposit_fine_amount && $booking->deposit_fine_amount > 0): ?>
-                                                <strong class="text-danger fs-6">RM <?php echo e(number_format($booking->deposit_fine_amount, 2)); ?></strong>
+                                                <strong class="text-danger">RM <?php echo e(number_format($booking->deposit_fine_amount, 2)); ?></strong>
                                             <?php else: ?>
-                                                <span class="text-muted">-</span>
+                                                <span class="text-muted">RM 0.00</span>
                                             <?php endif; ?>
                                         </td>
+                                        <!-- Originally (Original Deposit) -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             <strong class="text-dark">RM <?php echo e(number_format($booking->deposit_amount ?? 0, 2)); ?></strong>
                                         </td>
+                                        <!-- Refund Amount -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             <?php if($booking->deposit_refund_amount && $booking->deposit_refund_amount > 0): ?>
-                                                <strong class="text-success fs-6">RM <?php echo e(number_format($booking->deposit_refund_amount, 2)); ?></strong>
+                                                <strong class="text-success">RM <?php echo e(number_format($booking->deposit_refund_amount, 2)); ?></strong>
                                             <?php else: ?>
-                                                <span class="text-muted">-</span>
+                                                <span class="text-muted">RM 0.00</span>
                                             <?php endif; ?>
                                         </td>
+                                        <!-- Refund Status (Dropdown) -->
                                         <td style="padding: 12px; vertical-align: middle;">
-                                            <span class="badge <?php echo e($refundStatusClass); ?>">
-                                                <i class="bi bi-<?php echo e($refundStatus === 'refunded' ? 'check-circle' : ($refundStatus === 'pending' ? 'hourglass-split' : 'x-circle')); ?> me-1"></i>
-                                                <?php echo e(ucfirst($refundStatus)); ?>
+                                            <select class="form-select form-select-sm" style="min-width: 110px;"
+                                                    data-booking-id="<?php echo e($booking->bookingID); ?>"
+                                                    onchange="updateDepositRefundStatus(this, <?php echo e($booking->bookingID); ?>)">
+                                                <option value="pending" <?php echo e(($booking->deposit_refund_status ?? 'pending') === 'pending' ? 'selected' : ''); ?>>Pending</option>
+                                                <option value="refunded" <?php echo e(($booking->deposit_refund_status ?? '') === 'refunded' ? 'selected' : ''); ?>>Refunded</option>
+                                                <option value="rejected" <?php echo e(($booking->deposit_refund_status ?? '') === 'rejected' ? 'selected' : ''); ?>>Rejected</option>
+                                            </select>
+                                        </td>
+                                        <!-- Handled By (Dropdown) -->
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <select class="form-select form-select-sm" style="min-width: 130px;"
+                                                    data-booking-id="<?php echo e($booking->bookingID); ?>"
+                                                    onchange="updateDepositHandledBy(this, <?php echo e($booking->bookingID); ?>)">
+                                                <option value="">Not Assigned</option>
+                                                <?php $__currentLoopData = $verifyByUsers ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $staff): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <option value="<?php echo e($staff->userID); ?>" <?php echo e(($booking->deposit_handled_by ?? null) == $staff->userID ? 'selected' : ''); ?>>
+                                                        <?php echo e($staff->name); ?>
 
-                                            </span>
-                                        </td>
-                                        <td style="padding: 12px; vertical-align: middle;">
-                                            <?php if($depositHandler): ?>
-                                                <span class="fw-medium"><?php echo e($depositHandler->name); ?></span>
-                                            <?php else: ?>
-                                                <span class="text-muted">Not Assigned</span>
-                                            <?php endif; ?>
+                                                    </option>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                            </select>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1944,14 +1984,25 @@
         }
     });
 
-    // Initialize active tab on page load
+    // Initialize active tab on page load - ensure correct tab is shown
     document.addEventListener('DOMContentLoaded', function() {
+        // Get tab from URL or use server-side activeTab value
         const urlParams = new URLSearchParams(window.location.search);
-        const tab = urlParams.get('tab') || 'booking-detail';
-        const tabButton = document.querySelector(`#${tab}-tab`);
-        if (tabButton && '<?php echo e($activeTab); ?>' !== tab) {
+        const tabFromUrl = urlParams.get('tab');
+        const serverTab = '<?php echo e($activeTab); ?>';
+        const targetTab = tabFromUrl || serverTab || 'booking-detail';
+        
+        // Ensure the correct tab is visible
+        const tabButton = document.querySelector(`#${targetTab}-tab`);
+        const tabPane = document.querySelector(`#${targetTab}`);
+        
+        if (tabButton && tabPane) {
+            // Force show the correct tab
             const tabInstance = new bootstrap.Tab(tabButton);
             tabInstance.show();
+            
+            // Debug log
+            console.log('Showing tab:', targetTab);
         }
     });
 
@@ -2032,6 +2083,112 @@
                 // Close modal
                 bootstrap.Modal.getInstance(document.getElementById('editRunnerModal')).hide();
                 showNotification('Runner assignment updated successfully.');
+            } else {
+                showNotification(data.message || 'Failed to update.', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred.', false);
+        });
+    }
+
+    // === TRANSACTION DETAIL TAB: Payment & Deposit Dropdown Handlers ===
+    
+    // Update Payment isVerify dropdown
+    function updatePaymentVerify(select, paymentId) {
+        const value = select.value;
+        
+        fetch('/admin/payments/' + paymentId + '/update-verify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+            },
+            body: JSON.stringify({ payment_isVerify: value })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Payment verification updated.');
+            } else {
+                showNotification(data.message || 'Failed to update.', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred.', false);
+        });
+    }
+
+    // Update Payment Verified By dropdown
+    function updatePaymentVerifiedBy(select, paymentId) {
+        const value = select.value;
+        
+        fetch('/admin/payments/' + paymentId + '/update-verified-by', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+            },
+            body: JSON.stringify({ verified_by: value || null })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Verified by updated.');
+            } else {
+                showNotification(data.message || 'Failed to update.', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred.', false);
+        });
+    }
+
+    // Update Deposit Refund Status dropdown
+    function updateDepositRefundStatus(select, bookingId) {
+        const value = select.value;
+        
+        fetch('/admin/deposits/' + bookingId + '/update-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+            },
+            body: JSON.stringify({ deposit_refund_status: value })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Refund status updated.');
+            } else {
+                showNotification(data.message || 'Failed to update.', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred.', false);
+        });
+    }
+
+    // Update Deposit Handled By dropdown
+    function updateDepositHandledBy(select, bookingId) {
+        const value = select.value;
+        
+        fetch('/admin/deposits/' + bookingId + '/update-handled-by', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+            },
+            body: JSON.stringify({ deposit_handled_by: value || null })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Handled by updated.');
             } else {
                 showNotification(data.message || 'Failed to update.', false);
             }

@@ -250,5 +250,59 @@ class AdminDepositController extends Controller
             return redirect()->back()->withInput()->with('error', 'Failed to update deposit: ' . $e->getMessage());
         }
     }
+
+    /**
+     * AJAX: Update deposit refund status
+     */
+    public function updateStatusAjax(Request $request, Booking $booking)
+    {
+        $validated = $request->validate([
+            'deposit_refund_status' => 'required|in:pending,refunded,rejected',
+        ]);
+
+        try {
+            $booking->update([
+                'deposit_refund_status' => $validated['deposit_refund_status'],
+                'lastUpdateDate' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Refund status updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update refund status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * AJAX: Update deposit handled by
+     */
+    public function updateHandledByAjax(Request $request, Booking $booking)
+    {
+        $validated = $request->validate([
+            'deposit_handled_by' => 'nullable|exists:user,userID',
+        ]);
+
+        try {
+            $booking->update([
+                'deposit_handled_by' => $validated['deposit_handled_by'] ?? null,
+                'lastUpdateDate' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Handled by updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update handled by: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
 

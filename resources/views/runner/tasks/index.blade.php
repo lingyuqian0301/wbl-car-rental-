@@ -3,6 +3,83 @@
 @section('title', 'Task List')
 @section('page-title', 'Task List')
 
+@push('styles')
+<style>
+    :root {
+        --hasta-red: #b91c1c;
+        --hasta-red-dark: #7f1d1d;
+        --hasta-rose: #fee2e2;
+    }
+    .grouping-box {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .grouping-box-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--hasta-red-dark);
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--hasta-rose);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .task-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .task-table thead th {
+        background: var(--hasta-rose);
+        color: var(--hasta-red-dark);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-bottom: 2px solid #fca5a5;
+    }
+    .task-table tbody td {
+        padding: 12px;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 0.9rem;
+    }
+    .task-table tbody tr:hover {
+        background: #fafafa;
+    }
+    .task-table tfoot td {
+        padding: 12px;
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+    .badge-pickup {
+        background: #3b82f6;
+        color: white;
+    }
+    .badge-return {
+        background: #8b5cf6;
+        color: white;
+    }
+    .badge-upcoming {
+        background: #fbbf24;
+        color: #92400e;
+    }
+    .badge-done {
+        background: #22c55e;
+        color: white;
+    }
+    .filter-box {
+        background: white;
+        border-radius: 12px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+</style>
+@endpush
+
 @section('content')
     <!-- Header Box -->
     <div class="header-box">
@@ -21,15 +98,11 @@
                 <div class="header-stat-value">{{ $doneTasks }}</div>
                 <div class="header-stat-label">Completed</div>
             </div>
-            <div class="header-stat">
-                <div class="header-stat-value">RM {{ number_format($totalCommission, 2) }}</div>
-                <div class="header-stat-label">Total Commission</div>
-            </div>
         </div>
     </div>
     
     <!-- Filters -->
-    <div class="filter-card">
+    <div class="filter-box">
         <form method="GET" action="{{ route('runner.tasks') }}" class="row g-3 align-items-end">
             <div class="col-md-2">
                 <label class="form-label small fw-semibold">Status</label>
@@ -68,14 +141,14 @@
         </form>
     </div>
     
-    <!-- Task List Table -->
-    <div class="runner-card">
-        <div class="card-header-green d-flex justify-content-between align-items-center">
+    <!-- Task List Table - Using Grouping Box UI -->
+    <div class="grouping-box">
+        <div class="grouping-box-header">
             <span><i class="bi bi-list-check"></i> Task List</span>
-            <span class="badge bg-light text-dark">{{ $totalTasks }} tasks</span>
+            <span class="badge bg-danger">{{ $totalTasks }} tasks</span>
         </div>
         <div class="table-responsive">
-            <table class="runner-table">
+            <table class="task-table">
                 <thead>
                     <tr>
                         <th style="width: 50px;">No</th>
@@ -87,7 +160,6 @@
                         <th>Vehicle</th>
                         <th>Customer</th>
                         <th>Status</th>
-                        <th class="text-end">Commission</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -120,11 +192,10 @@
                                     <span class="badge badge-upcoming">Upcoming</span>
                                 @endif
                             </td>
-                            <td class="text-end fw-semibold">RM {{ number_format($task['commission'], 2) }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
+                            <td colspan="9" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mb-0 mt-3">No tasks found for this period</p>
                             </td>
@@ -132,13 +203,10 @@
                     @endforelse
                 </tbody>
                 @if($tasks->count() > 0)
-                    <tfoot class="table-light">
+                    <tfoot>
                         <tr>
-                            <td colspan="9" class="text-end fw-semibold">
-                                Total Tasks: {{ $totalTasks }}
-                            </td>
-                            <td class="text-end fw-bold text-danger">
-                                RM {{ number_format($totalCommission, 2) }}
+                            <td colspan="9" class="text-end">
+                                Total Tasks: <strong>{{ $totalTasks }}</strong>
                             </td>
                         </tr>
                     </tfoot>
@@ -147,4 +215,3 @@
         </div>
     </div>
 @endsection
-

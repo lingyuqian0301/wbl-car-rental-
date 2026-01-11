@@ -235,7 +235,7 @@ class AdminSettingsController extends Controller
     public function updateStaff(Request $request, $id)
     {
         $staff = Staff::findOrFail($id);
-        $user = $staff->user;
+        $user = User::findOrFail($staff->userID);
 
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:user,username,' . $user->userID . ',userID',
@@ -250,24 +250,23 @@ class AdminSettingsController extends Controller
 
         DB::beginTransaction();
         try {
-            $user->update([
-                'username' => $validated['username'],
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'DOB' => $validated['DOB'],
-                'age' => Carbon::parse($validated['DOB'])->age,
-                'isActive' => $request->has('isActive'),
-            ]);
+            // Update user fields directly
+            $user->username = $validated['username'];
+            $user->name = $validated['name'];
+            $user->email = $validated['email'];
+            $user->phone = $validated['phone'];
+            $user->DOB = $validated['DOB'];
+            $user->age = Carbon::parse($validated['DOB'])->age;
+            $user->isActive = $request->has('isActive') ? 1 : 0;
+            $user->save();
 
             PersonDetails::updateOrCreate(
                 ['ic_no' => $validated['ic_no']],
                 ['fullname' => $validated['name']]
             );
 
-            $staff->update([
-                'ic_no' => $validated['ic_no'],
-            ]);
+            $staff->ic_no = $validated['ic_no'];
+            $staff->save();
 
             // Update staff type
             $existingStaffIT = $staff->staffIt;
@@ -290,7 +289,7 @@ class AdminSettingsController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('admin.settings.index', ['tab' => 'staff'])
+            return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])
                 ->with('success', 'Staff updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();

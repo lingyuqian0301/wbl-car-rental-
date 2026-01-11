@@ -3,6 +3,109 @@
 @section('title', 'Runner Dashboard')
 @section('page-title', 'Dashboard')
 
+@push('styles')
+<style>
+    :root {
+        --hasta-red: #b91c1c;
+        --hasta-red-dark: #7f1d1d;
+        --hasta-rose: #fee2e2;
+    }
+    .grouping-box {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .grouping-box-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--hasta-red-dark);
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--hasta-rose);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .grouping-box-header .badge {
+        font-size: 0.85rem;
+    }
+    .task-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .task-table thead th {
+        background: var(--hasta-rose);
+        color: var(--hasta-red-dark);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-bottom: 2px solid #fca5a5;
+    }
+    .task-table tbody td {
+        padding: 12px;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 0.9rem;
+    }
+    .task-table tbody tr:hover {
+        background: #fafafa;
+    }
+    .task-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .badge-pickup {
+        background: #3b82f6;
+        color: white;
+    }
+    .badge-return {
+        background: #8b5cf6;
+        color: white;
+    }
+    .stats-box {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .stats-box-header {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--hasta-red-dark);
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--hasta-rose);
+    }
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f1f1;
+    }
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    .stat-value {
+        font-weight: 600;
+        color: #333;
+    }
+    .badge-upcoming {
+        background: #fbbf24;
+        color: #92400e;
+    }
+    .badge-done {
+        background: #22c55e;
+        color: white;
+    }
+</style>
+@endpush
+
 @section('content')
     <!-- Header Box -->
     <div class="header-box">
@@ -21,23 +124,19 @@
                 <div class="header-stat-value">{{ $doneTasks }}</div>
                 <div class="header-stat-label">Completed</div>
             </div>
-            <div class="header-stat">
-                <div class="header-stat-value">RM {{ number_format($monthlyCommission, 2) }}</div>
-                <div class="header-stat-label">This Month Commission</div>
-            </div>
         </div>
     </div>
     
     <div class="row">
-        <!-- Today's Tasks -->
+        <!-- Today's Tasks - Using Grouping Box UI -->
         <div class="col-md-8">
-            <div class="runner-card">
-                <div class="card-header-green d-flex justify-content-between align-items-center">
+            <div class="grouping-box">
+                <div class="grouping-box-header">
                     <span><i class="bi bi-calendar-check"></i> Today's Tasks</span>
-                    <span class="badge bg-light text-dark">{{ $todayTasks->count() }}</span>
+                    <span class="badge bg-danger">{{ $todayTasks->count() }}</span>
                 </div>
                 <div class="table-responsive">
-                    <table class="runner-table">
+                    <table class="task-table">
                         <thead>
                             <tr>
                                 <th>Booking ID</th>
@@ -74,43 +173,23 @@
             </div>
         </div>
         
-        <!-- Quick Stats -->
+        <!-- Quick Stats - Using Grouping Box UI (No Commission) -->
         <div class="col-md-4">
-            <div class="runner-card mb-4">
-                <div class="card-header-green">
-                    <i class="bi bi-graph-up"></i> Quick Stats
+            <div class="grouping-box">
+                <div class="grouping-box-header">
+                    <span><i class="bi bi-graph-up"></i> Quick Stats</span>
                 </div>
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                        <span class="text-muted">Total Tasks</span>
-                        <strong>{{ $totalTasks }}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                        <span class="text-muted">Upcoming Tasks</span>
-                        <span class="badge badge-upcoming">{{ $upcomingTasks }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                        <span class="text-muted">Completed Tasks</span>
-                        <span class="badge badge-done">{{ $doneTasks }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-muted">This Month Commission</span>
-                        <strong class="text-danger">RM {{ number_format($monthlyCommission, 2) }}</strong>
-                    </div>
+                <div class="stat-row">
+                    <span class="stat-label">Total Tasks</span>
+                    <span class="stat-value">{{ $totalTasks }}</span>
                 </div>
-            </div>
-            
-            <div class="runner-card">
-                <div class="card-header-green">
-                    <i class="bi bi-lightning"></i> Quick Actions
+                <div class="stat-row">
+                    <span class="stat-label">Upcoming Tasks</span>
+                    <span class="badge badge-upcoming">{{ $upcomingTasks }}</span>
                 </div>
-                <div class="card-body p-4">
-                    <a href="{{ route('runner.tasks') }}" class="btn btn-danger w-100 mb-2">
-                        <i class="bi bi-list-task"></i> View All Tasks
-                    </a>
-                    <a href="{{ route('runner.tasks', ['status' => 'upcoming']) }}" class="btn btn-outline-danger w-100">
-                        <i class="bi bi-clock"></i> Upcoming Tasks
-                    </a>
+                <div class="stat-row">
+                    <span class="stat-label">Completed Tasks</span>
+                    <span class="badge badge-done">{{ $doneTasks }}</span>
                 </div>
             </div>
         </div>

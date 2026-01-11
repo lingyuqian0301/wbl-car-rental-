@@ -230,20 +230,6 @@
             </h4>
             <div class="calendar-controls">
                 <div class="btn-group" role="group">
-                    <a href="{{ route('runner.calendar', ['view' => 'month', 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'month' ? 'btn-danger' : 'btn-outline-danger' }}">
-                        Month
-                    </a>
-                    <a href="{{ route('runner.calendar', ['view' => 'week', 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'week' ? 'btn-danger' : 'btn-outline-danger' }}">
-                        Week
-                    </a>
-                    <a href="{{ route('runner.calendar', ['view' => 'day', 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'day' ? 'btn-danger' : 'btn-outline-danger' }}">
-                        Day
-                    </a>
-                </div>
-                <div class="btn-group ms-2" role="group">
                     <a href="{{ route('runner.calendar', ['view' => $currentView, 'date' => \Carbon\Carbon::parse($currentDate)->subMonth()->format('Y-m-d')]) }}" 
                        class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-chevron-left"></i>

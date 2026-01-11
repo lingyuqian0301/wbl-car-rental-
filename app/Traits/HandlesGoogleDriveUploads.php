@@ -126,7 +126,7 @@ trait HandlesGoogleDriveUploads
         }
 
         // Fallback - return as storage path
-        return asset('storage/' . $fileIdOrPath);
+            return asset('storage/' . $fileIdOrPath);
     }
 
     /**
@@ -137,7 +137,7 @@ trait HandlesGoogleDriveUploads
      */
     protected function deleteFile(string $fileIdOrPath): bool
     {
-        try {
+            try {
             // Try wbl_public disk first
             if (Storage::disk($this->uploadDisk)->exists($fileIdOrPath)) {
                 Storage::disk($this->uploadDisk)->delete($fileIdOrPath);

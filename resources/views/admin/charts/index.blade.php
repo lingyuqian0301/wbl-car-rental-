@@ -425,9 +425,9 @@
                         label: function(context) {
                             return context.parsed.x + ' bookings';
                         }
-                    }
-                },
-                legend: {
+                        }
+                    },
+                    legend: {
                     display: false
                 }
             },
@@ -523,9 +523,9 @@
                         label: function(context) {
                             return context.parsed.x + ' bookings';
                         }
-                    }
-                },
-                legend: {
+                        }
+                    },
+                    legend: {
                     display: false
                 }
             },

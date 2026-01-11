@@ -90,7 +90,7 @@ class PickupController extends Controller
             'left_image' => 'nullable|image|max:5120',
             'right_image' => 'nullable|image|max:5120',
             'fuel_image' => 'nullable|image|max:5120',
-            'additional_images.*' => 'nullable|image|max:5120', // Added validation for array
+            'additional_images.*' => 'nullable|image|max:5120',
         ]);
 
         // C. Fuel Mapping Logic
@@ -111,16 +111,9 @@ class PickupController extends Controller
             'bookingID' => $booking->bookingID,
         ]);
 
-
         // E. Save Images to myportfolio public folder
         // Uploads are stored in: C:\xampp\htdocs\myportfolio\public\uploads\vehicle_conditions
         $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
-        $destinationPath = public_path('images/vehicle_conditions');
-
-        // Ensure directory exists
-        if (!file_exists($destinationPath)) {
-            mkdir($destinationPath, 0755, true);
-        }
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
@@ -130,18 +123,8 @@ class PickupController extends Controller
                 // Upload to myportfolio public folder
                 $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public'); 
 
-                // Save path to database
-                // Generate a unique filename
-                $filename = uniqid() . '_' . time() . '_' . $field . '.' . $file->getClientOriginalExtension();
-                
-                // Move file to public/images/vehicle_conditions
-                $file->move($destinationPath, $filename);
-                
-                // Store the relative URL path in database
-                $relativePath = 'images/vehicle_conditions/' . $filename;
-
                 VehicleConditionImage::create([
-                    'image_path' => $relativePath, 
+                    'image_path' => $path, 
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);
@@ -153,11 +136,9 @@ class PickupController extends Controller
             foreach ($request->file('additional_images') as $index => $file) {
                 $fileName = time() . '_additional_' . $index . '_' . $file->getClientOriginalName();
                 $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public');
-                $filename = uniqid() . '_' . time() . '_additional_' . $index . '.' . $file->getClientOriginalExtension();
-                $file->move($destinationPath, $filename);
-                $relativePath = 'images/vehicle_conditions/' . $filename;
+
                 VehicleConditionImage::create([
-                    'image_path' => $relativePath,
+                    'image_path' => $path,
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);

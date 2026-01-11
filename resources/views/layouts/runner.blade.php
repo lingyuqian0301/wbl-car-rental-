@@ -231,7 +231,7 @@
             position: absolute;
             top: 5px;
             right: 5px;
-            background: var(--admin-red);
+            background: #6c757d;
             color: white;
             border-radius: 50%;
             width: 18px;
@@ -460,7 +460,7 @@
             <div class="dropdown">
                 <button class="notification-btn" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-bell"></i>
-                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    <span class="notification-badge" id="notificationBadge">0</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown" style="min-width: 350px; max-height: 400px; overflow-y: auto;">
                     <li class="dropdown-header d-flex justify-content-between align-items-center px-3 py-2">
@@ -543,7 +543,9 @@
                     
                     if (badge) {
                         badge.textContent = count;
-                        badge.style.display = count > 0 ? 'flex' : 'none';
+                        // Always show badge, change color based on count
+                        badge.style.display = 'flex';
+                        badge.style.background = count > 0 ? 'var(--admin-red)' : '#6c757d';
                     }
                     if (headerBadge) {
                         headerBadge.textContent = count;

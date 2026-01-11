@@ -76,7 +76,6 @@ class RunnerTaskController extends Controller
                             'plate_number' => $booking->vehicle->plate_number ?? 'N/A',
                             'customer_name' => $booking->customer->user->name ?? 'N/A',
                             'is_done' => $isDone,
-                            'commission' => 2.00,
                         ]);
                     }
                 }
@@ -102,7 +101,6 @@ class RunnerTaskController extends Controller
                             'plate_number' => $booking->vehicle->plate_number ?? 'N/A',
                             'customer_name' => $booking->customer->user->name ?? 'N/A',
                             'is_done' => $isDone,
-                            'commission' => 2.00,
                         ]);
                     }
                 }
@@ -120,7 +118,6 @@ class RunnerTaskController extends Controller
         
         // Calculate totals
         $totalTasks = $tasks->count();
-        $totalCommission = $tasks->sum('commission');
         $doneTasks = $tasks->where('is_done', true)->count();
         $upcomingTasks = $tasks->where('is_done', false)->count();
         
@@ -131,11 +128,9 @@ class RunnerTaskController extends Controller
             'filterMonth' => $filterMonth,
             'filterYear' => $filterYear,
             'totalTasks' => $totalTasks,
-            'totalCommission' => $totalCommission,
             'doneTasks' => $doneTasks,
             'upcomingTasks' => $upcomingTasks,
             'today' => $today,
         ]);
     }
 }
-
