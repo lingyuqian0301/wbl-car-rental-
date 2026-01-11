@@ -158,43 +158,63 @@ class ReturnController extends Controller
 
     /**
      * Handle deposit decision (add to wallet or request refund)
+/**
+     * Handle deposit decision (add to wallet or request refund)
      */
     public function handleDeposit(Request $request, Booking $booking)
     {
-        // Verify ownership
+        // 1. Verify ownership
         if ($booking->customer->userID !== auth()->id()) {
             abort(403, 'Unauthorized access');
+        }
+
+        // 2. SECURITY: Prevent Double Refund
+        // If status is not 'pending' (meaning it's 'refunded' or something else), stop.
+        // Note: Check your specific ENUM values. Usually distinct from booking_status.
+        if ($booking->deposit_refund_status === 'refunded' || $booking->deposit_refund_status === 'pending') {
+             return redirect()->route('bookings.index')
+                 ->with('error', 'Action denied. This deposit has already been processed.');
         }
 
         $request->validate([
             'deposit_action' => 'required|in:wallet,refund',
         ]);
 
+        // 3. Get Real Amount (Fixing the hardcoded 50)
         $depositAmount = $booking->deposit_amount ?? 0;
 
         if ($request->deposit_action === 'wallet') {
-            // Add deposit to wallet balance
+            // === OPTION A: HOLD IN WALLET (For next Auto-Booking) ===
             $wallet = $booking->customer->walletAccount;
             
             if ($wallet) {
-                $wallet->wallet_balance += 50;
+                // Add to Wallet Balance (which acts as Holding Balance)
+                $wallet->wallet_balance += $depositAmount;
                 $wallet->wallet_lastUpdate_Date_Time = now();
                 $wallet->save();
 
+                // Update Booking: Mark as Refunded so they can't claim again
+                $booking->deposit_refund_status = 'refunded'; 
+                $booking->deposit_customer_choice = 'wallet'; 
+                $booking->deposit_refund_amount = $depositAmount;
+                $booking->save();
+
                 return redirect()->route('bookings.index')
-                    ->with('success', "RM " . number_format(50, 2) . " has been added to your wallet balance!");
+                    ->with('success', "RM " . number_format($depositAmount, 2) . " is now HELD in your wallet. It will auto-pay the deposit for your next booking!");
             } else {
                 return redirect()->route('bookings.index')
                     ->with('error', 'Wallet account not found. Please contact support.');
             }
         } else {
-            // Redirect to refund page (when available)
-            // For now, show a message
+            // === OPTION B: REQUEST CASH REFUND ===
+            // Mark as 'pending' so Admin sees it in the Refund List
+            $booking->deposit_refund_status = 'pending';
+            $booking->deposit_customer_choice = 'bank_transfer';
+            $booking->deposit_refund_amount = $depositAmount;
+            $booking->save();
+
             return redirect()->route('bookings.index')
-                ->with('info', 'Refund request received. Our team will process your refund within 3-5 business days. Thank you for your patience.');
-            
-            // TODO: When refund functionality is ready, uncomment this:
-            // return redirect()->route('refunds.create', ['booking' => $booking->bookingID]);
+                ->with('info', 'Refund request received. Our team will process your bank transfer within 3-5 business days.');
         }
     }
 }
