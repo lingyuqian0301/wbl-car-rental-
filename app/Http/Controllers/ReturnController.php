@@ -86,13 +86,17 @@ class ReturnController extends Controller
             'bookingID' => $booking->bookingID,
         ]);
 
-        // E. Save Images
+        // E. Save Images to myportfolio public folder
+        // Uploads are stored in: C:\xampp\htdocs\myportfolio\public\uploads\vehicle_conditions
         $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
-                $path = $file->store('vehicle_conditions', 'public'); 
+                $fileName = time() . '_return_' . $field . '_' . $file->getClientOriginalName();
+                
+                // Upload to myportfolio public folder
+                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public'); 
 
                 VehicleConditionImage::create([
                     'image_path' => $path, 
@@ -104,8 +108,9 @@ class ReturnController extends Controller
 
         // Handle additional images
         if ($request->hasFile('additional_images')) {
-            foreach ($request->file('additional_images') as $file) {
-                $path = $file->store('vehicle_conditions', 'public');
+            foreach ($request->file('additional_images') as $index => $file) {
+                $fileName = time() . '_return_additional_' . $index . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public');
                 VehicleConditionImage::create([
                     'image_path' => $path,
                     'image_taken_time' => now(),

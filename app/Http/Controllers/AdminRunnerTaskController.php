@@ -160,10 +160,22 @@ class AdminRunnerTaskController extends Controller
             }
         }
 
+        // Get old runner ID to check if runner changed
+        $oldRunnerId = $booking->staff_served;
+
         $booking->update([
             'staff_served' => $request->runner_id ?: null,
             'lastUpdateDate' => now(),
         ]);
+
+        // Create notification for the new runner if a runner is assigned
+        if ($request->runner_id && $request->runner_id != $oldRunnerId) {
+            // Reload booking with relationships
+            $booking->load(['vehicle', 'customer.user']);
+            
+            // Create notifications for pickup and return tasks
+            RunnerCalendarController::createTaskAssignedNotification($booking, $request->runner_id, 'both');
+        }
 
         return response()->json([
             'success' => true,

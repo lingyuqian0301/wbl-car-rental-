@@ -113,18 +113,19 @@ class PickupController extends Controller
             'bookingID' => $booking->bookingID,
         ]);
 
-        // E. Save Images to Google Drive (Replaces "// 3. Loop and save...")
+        // E. Save Images to myportfolio public folder
+        // Uploads are stored in: C:\xampp\htdocs\myportfolio\public\uploads\vehicle_conditions
         $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
+                $fileName = time() . '_' . $field . '_' . $file->getClientOriginalName();
                 
-                // KEY CHANGE: 'google' is the 2nd argument
-                // This uploads the file to Drive and returns the Drive File ID/Path
-                $path = $file->store('vehicle_conditions', 'public'); 
+                // Upload to myportfolio public folder
+                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public'); 
 
-                // Save that Google Drive ID to your database
+                // Save path to database
                 VehicleConditionImage::create([
                     'image_path' => $path, 
                     'image_taken_time' => now(),
@@ -135,8 +136,9 @@ class PickupController extends Controller
 
         // Handle extra images if you have them
         if ($request->hasFile('additional_images')) {
-            foreach ($request->file('additional_images') as $file) {
-                $path = $file->store('vehicle_conditions', 'public');
+            foreach ($request->file('additional_images') as $index => $file) {
+                $fileName = time() . '_additional_' . $index . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public');
                 VehicleConditionImage::create([
                     'image_path' => $path,
                     'image_taken_time' => now(),

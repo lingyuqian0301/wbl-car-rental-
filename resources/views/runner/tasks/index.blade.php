@@ -58,7 +58,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-success btn-sm">
+                <button type="submit" class="btn btn-danger btn-sm">
                     <i class="bi bi-funnel"></i> Filter
                 </button>
                 <a href="{{ route('runner.tasks') }}" class="btn btn-outline-secondary btn-sm">
@@ -137,7 +137,7 @@
                             <td colspan="9" class="text-end fw-semibold">
                                 Total Tasks: {{ $totalTasks }}
                             </td>
-                            <td class="text-end fw-bold text-success">
+                            <td class="text-end fw-bold text-danger">
                                 RM {{ number_format($totalCommission, 2) }}
                             </td>
                         </tr>

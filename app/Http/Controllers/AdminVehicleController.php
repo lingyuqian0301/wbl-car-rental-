@@ -595,12 +595,12 @@ class AdminVehicleController extends Controller
         ]);
 
         try {
-            // Handle receipt image upload
+            // Handle receipt image upload to myportfolio public folder
             $receiptImgPath = null;
             if ($request->hasFile('receipt_img')) {
                 $file = $request->file('receipt_img');
                 $filename = 'fuel_receipt_' . $vehicle->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
-                // Upload to Google Drive
+                // Upload to myportfolio public folder
                 $receiptImgPath = $this->uploadToGoogleDrive($file, 'fuel_receipts', $filename);
             }
 
@@ -631,7 +631,7 @@ class AdminVehicleController extends Controller
         ]);
 
         try {
-            // Handle receipt image upload
+            // Handle receipt image upload to myportfolio public folder
             if ($request->hasFile('receipt_img')) {
                 // Delete old image if exists
                 if ($fuel->receipt_img) {
@@ -640,7 +640,7 @@ class AdminVehicleController extends Controller
                 
                 $file = $request->file('receipt_img');
                 $filename = 'fuel_receipt_' . $fuel->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
-                // Upload to Google Drive
+                // Upload to myportfolio public folder
                 $receiptImgPath = $this->uploadToGoogleDrive($file, 'fuel_receipts', $filename);
                 $validated['receipt_img'] = $receiptImgPath;
             }
@@ -713,12 +713,12 @@ class AdminVehicleController extends Controller
 
         DB::beginTransaction();
         try {
-            // Handle maintenance image upload
+            // Handle maintenance image upload to myportfolio public folder
             $maintenanceImgPath = null;
             if ($request->hasFile('maintenance_img')) {
                 $file = $request->file('maintenance_img');
                 $filename = 'maintenance_' . $vehicle->vehicleID . '_' . time() . '.' . $file->getClientOriginalExtension();
-                // Upload to Google Drive
+                // Upload to myportfolio public folder
                 $maintenanceImgPath = $this->uploadToGoogleDrive($file, 'maintenance_images', $filename);
             }
 
@@ -845,7 +845,7 @@ class AdminVehicleController extends Controller
         $file = $request->file('file');
         $fileName = time() . '_' . $file->getClientOriginalName();
         
-        // Upload to Google Drive
+        // Upload to myportfolio public folder (grant, roadtax, contract, insurance)
         $fileId = $this->uploadToGoogleDrive($file, 'vehicle_documents/' . $validated['document_type'], $fileName);
 
         // Check if document type column exists, if not use a different approach
@@ -879,12 +879,11 @@ class AdminVehicleController extends Controller
             $file = $request->file('photo');
             $fileName = time() . '_' . $file->getClientOriginalName();
             
-            // Upload to specific Google Drive folder: 1DhcVFFK9GpqLpQKOsFuj2mSXSexHZd0G
-            $driveFolderId = '1DhcVFFK9GpqLpQKOsFuj2mSXSexHZd0G';
-            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, $driveFolderId, $fileName, true);
+            // Upload car images to myportfolio public folder (C:\xampp\htdocs\myportfolio\public\uploads\car_images)
+            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, 'car_images', $fileName);
             
-            $fileId = $uploadResult['fileId'];
-            $fileUrl = $uploadResult['fileUrl']; // Google Drive URL
+            $fileId = $uploadResult['fileId'];  // File path relative to public folder (e.g., uploads/car_images/xxx.jpg)
+            $fileUrl = $uploadResult['fileUrl']; // Full URL to the file
 
             // Determine table name (check both Car_Img and car_img)
             $tableName = Schema::hasTable('Car_Img') ? 'Car_Img' : (Schema::hasTable('car_img') ? 'car_img' : 'Car_Img');
@@ -1837,18 +1836,17 @@ class AdminVehicleController extends Controller
             $file = $request->file('license_img');
             $filename = 'owner_license_' . $vehicle->owner->ownerID . '_' . time() . '.' . $file->getClientOriginalExtension();
             
-            // Upload to Google Drive - specific folder ID: 1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd
-            $driveFolderId = '1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd';
-            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, $driveFolderId, $filename, true);
+            // Upload owner license to myportfolio public folder
+            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, 'owner_license', $filename);
             
             $fileId = $uploadResult['fileId'];
             $fileUrl = $uploadResult['fileUrl'];
 
             $vehicle->owner->update([
-                'license_img' => $fileUrl, // Store Google Drive URL
+                'license_img' => $fileUrl, // Store URL
             ]);
 
-            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner license uploaded successfully to Google Drive.');
+            return redirect()->route('admin.vehicles.show', ['vehicle' => $vehicle->vehicleID, 'tab' => 'owner-info'])->with('success', 'Owner license uploaded successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to upload license: ' . $e->getMessage());
         }
@@ -1868,9 +1866,8 @@ class AdminVehicleController extends Controller
             $file = $request->file('ic_img');
             $filename = 'owner_ic_' . $vehicle->owner->ownerID . '_' . time() . '.' . $file->getClientOriginalExtension();
             
-            // Upload to Google Drive - specific folder ID: 1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd
-            $driveFolderId = '1Gl0EiUw9dU2XQzYGXz-bfOpIUdOTm5hd';
-            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, $driveFolderId, $filename, true);
+            // Upload owner IC to myportfolio public folder
+            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, 'owner_ic', $filename);
             
             $fileId = $uploadResult['fileId'];
             $fileUrl = $uploadResult['fileUrl'];

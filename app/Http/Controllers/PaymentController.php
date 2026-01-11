@@ -79,12 +79,12 @@ class PaymentController extends Controller
             abort(403, 'Unauthorized access to this booking.');
         }
 
-        // 3. File Upload to Google Drive
+        // 3. File Upload to myportfolio public folder
         $receiptImagePath = null;
         if ($request->hasFile('receipt_image')) {
             $file = $request->file('receipt_image');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            // Upload to Google Drive
+            // Upload to myportfolio public folder
             $receiptImagePath = $this->uploadToGoogleDrive($file, 'payment_receipts', $fileName);
         }
 
