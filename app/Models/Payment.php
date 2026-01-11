@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory; // Good practice to include
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
@@ -12,41 +11,44 @@ class Payment extends Model
 
     protected $table = 'payment';
     protected $primaryKey = 'paymentID';
-    public $incrementing = true;
-    protected $keyType = 'int';
-    public $timestamps = false;
-    
+    public $timestamps = false; // We use custom timestamp columns
+
     protected $fillable = [
+        'bookingID',
+        'total_amount',
         'payment_bank_name',
         'payment_bank_account_no',
-        'payment_date',
-        'total_amount',
-        'payment_status',
         'transaction_reference',
-        'proof_of_payment',
-        'isPayment_complete',
-        'payment_isVerify',
+        'payment_status',       // e.g., 'Pending', 'Verified'
+        'payment_date',
+        'isPayment_complete',   // boolean
+        'payment_isVerify',     // boolean
         'latest_Update_Date_Time',
-        'bookingID',
-        'verified_by',
+        'proof_of_payment',     // image path
+        'verified_by',          // ID of admin/staff who verified it
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'payment_date' => 'datetime',
+        'latest_Update_Date_Time' => 'datetime',
+        'isPayment_complete' => 'boolean',
+        'payment_isVerify' => 'boolean',
+        'total_amount' => 'decimal:2',
+    ];
+
+    /**
+     * Get the booking associated with the payment.
+     */
+    public function booking()
     {
-        return [
-            'payment_date' => 'datetime',
-            'total_amount' => 'decimal:2',
-            'latest_Update_Date_Time' => 'datetime',
-            'isPayment_complete' => 'boolean',
-            'payment_isVerify' => 'boolean',
-        ];
+        return $this->belongsTo(Booking::class, 'bookingID', 'bookingID');
     }
 
     /**
-     * Get the booking that owns this payment.
+     * Get the wallet transactions associated with the payment.
      */
-    public function booking(): BelongsTo
+    public function walletTransactions()
     {
-        return $this->belongsTo(Booking::class, 'bookingID', 'bookingID');
+        return $this->hasMany(WalletTransaction::class, 'paymentID', 'paymentID');
     }
 }

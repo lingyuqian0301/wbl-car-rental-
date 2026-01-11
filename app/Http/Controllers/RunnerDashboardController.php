@@ -16,22 +16,58 @@ class RunnerDashboardController extends Controller
         $user = Auth::user();
         $today = Carbon::today();
         
-        // Get runner's assigned tasks stats
-        $totalTasks = $this->getRunnerTasksQuery($user->userID)->count();
-        $upcomingTasks = $this->getRunnerTasksQuery($user->userID)
-            ->where('rental_start_date', '>', $today)
-            ->count();
-        $doneTasks = $this->getRunnerTasksQuery($user->userID)
-            ->where('rental_end_date', '<', $today)
-            ->count();
+        // Get runner's assigned bookings
+        $bookings = $this->getRunnerTasksQuery($user->userID)->get();
         
-        // Get today's tasks
-        $todayTasks = $this->getRunnerTasksQuery($user->userID)
-            ->where(function($q) use ($today) {
-                $q->whereDate('rental_start_date', $today)
-                  ->orWhereDate('rental_end_date', $today);
-            })
-            ->get();
+        // Count tasks properly: 1 pickup = 1 task, 1 return = 1 task
+        // If a booking has both pickup and return outside HQ = 2 tasks
+        $totalTasks = 0;
+        $upcomingTasks = 0;
+        $doneTasks = 0;
+        $todayTasksList = collect();
+        
+        foreach ($bookings as $booking) {
+            $pickupDate = $booking->rental_start_date ? Carbon::parse($booking->rental_start_date) : null;
+            $returnDate = $booking->rental_end_date ? Carbon::parse($booking->rental_end_date) : null;
+            $pickupLocation = $booking->pickup_point ?? null;
+            $returnLocation = $booking->return_point ?? null;
+            
+            // Count pickup task if location is not HASTA HQ Office
+            if (!empty($pickupLocation) && $pickupLocation !== 'HASTA HQ Office' && $pickupDate) {
+                $totalTasks++;
+                if ($pickupDate->gt($today)) {
+                    $upcomingTasks++;
+                } elseif ($pickupDate->lt($today)) {
+                    $doneTasks++;
+                }
+                // Add to today's tasks if pickup is today
+                if ($pickupDate->isToday()) {
+                    $todayTasksList->push([
+                        'booking' => $booking,
+                        'type' => 'pickup',
+                        'location' => $pickupLocation,
+                    ]);
+                }
+            }
+            
+            // Count return task if location is not HASTA HQ Office
+            if (!empty($returnLocation) && $returnLocation !== 'HASTA HQ Office' && $returnDate) {
+                $totalTasks++;
+                if ($returnDate->gt($today)) {
+                    $upcomingTasks++;
+                } elseif ($returnDate->lt($today)) {
+                    $doneTasks++;
+                }
+                // Add to today's tasks if return is today
+                if ($returnDate->isToday()) {
+                    $todayTasksList->push([
+                        'booking' => $booking,
+                        'type' => 'return',
+                        'location' => $returnLocation,
+                    ]);
+                }
+            }
+        }
         
         // Calculate total commission for current month
         $currentMonth = Carbon::now()->month;
@@ -44,7 +80,7 @@ class RunnerDashboardController extends Controller
             'totalTasks' => $totalTasks,
             'upcomingTasks' => $upcomingTasks,
             'doneTasks' => $doneTasks,
-            'todayTasks' => $todayTasks,
+            'todayTasks' => $todayTasksList,
             'monthlyCommission' => $monthlyCommission,
         ]);
     }
@@ -114,4 +150,3 @@ class RunnerDashboardController extends Controller
         return $commission;
     }
 }
-

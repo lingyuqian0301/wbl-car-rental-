@@ -39,14 +39,46 @@ class RunnerCalendarController extends Controller
             })
             ->get();
 
+        // Get unread notifications for this runner (grouped by booking_id and type)
+        $unreadNotifications = [];
+        try {
+            $notifications = RunnerNotification::where('runner_user_id', $user->userID)
+                ->where('is_read', false)
+                ->get();
+            
+            foreach ($notifications as $notification) {
+                $key = $notification->booking_id . '_' . ($notification->type === 'new_pickup_task' ? 'pickup' : 'return');
+                $unreadNotifications[$key] = true;
+            }
+        } catch (\Exception $e) {
+            // Table might not exist yet
+        }
+
         // Group tasks by date for calendar display
         // Each pickup task = 1 task, each return task = 1 task
         $tasksByDate = [];
+        $unreadPickups = [];
+        $unreadReturns = [];
+
         foreach ($bookings as $booking) {
             $pickupDate = $booking->rental_start_date ? Carbon::parse($booking->rental_start_date)->format('Y-m-d') : null;
             $returnDate = $booking->rental_end_date ? Carbon::parse($booking->rental_end_date)->format('Y-m-d') : null;
             $pickupLocation = $booking->pickup_point ?? null;
             $returnLocation = $booking->return_point ?? null;
+
+            // Check if pickup is unread
+            $pickupUnreadKey = $booking->bookingID . '_pickup';
+            $isPickupUnread = isset($unreadNotifications[$pickupUnreadKey]);
+            if ($isPickupUnread) {
+                $unreadPickups[] = $booking->bookingID;
+            }
+
+            // Check if return is unread
+            $returnUnreadKey = $booking->bookingID . '_return';
+            $isReturnUnread = isset($unreadNotifications[$returnUnreadKey]);
+            if ($isReturnUnread) {
+                $unreadReturns[] = $booking->bookingID;
+            }
 
             // Add pickup task if not at HASTA HQ Office
             if ($pickupDate && $pickupLocation && $pickupLocation !== 'HASTA HQ Office') {
@@ -59,6 +91,7 @@ class RunnerCalendarController extends Controller
                     'date' => Carbon::parse($booking->rental_start_date),
                     'location' => $pickupLocation,
                     'is_done' => Carbon::parse($pickupDate)->lt($today),
+                    'is_unread' => $isPickupUnread,
                 ];
             }
 
@@ -73,12 +106,13 @@ class RunnerCalendarController extends Controller
                     'date' => Carbon::parse($booking->rental_end_date),
                     'location' => $returnLocation,
                     'is_done' => Carbon::parse($returnDate)->lt($today),
+                    'is_unread' => $isReturnUnread,
                 ];
             }
         }
 
         // Get unread notification count
-        $unreadCount = $this->getUnreadNotificationCount();
+        $unreadCount = count($unreadPickups) + count($unreadReturns);
 
         return view('runner.calendar.index', [
             'user' => $user,
@@ -86,8 +120,32 @@ class RunnerCalendarController extends Controller
             'currentDate' => $currentDate,
             'currentView' => $currentView,
             'tasksByDate' => $tasksByDate,
+            'unreadPickups' => $unreadPickups,
+            'unreadReturns' => $unreadReturns,
             'unreadCount' => $unreadCount,
         ]);
+    }
+
+    /**
+     * Mark task as read
+     */
+    public function markTaskAsRead(Request $request, $bookingId): JsonResponse
+    {
+        $user = Auth::user();
+        $dateType = $request->input('date_type', 'pickup');
+        
+        try {
+            $notificationType = $dateType === 'pickup' ? 'new_pickup_task' : 'new_return_task';
+            
+            RunnerNotification::where('runner_user_id', $user->userID)
+                ->where('booking_id', $bookingId)
+                ->where('type', $notificationType)
+                ->update(['is_read' => true]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -243,4 +301,3 @@ class RunnerCalendarController extends Controller
         }
     }
 }
-

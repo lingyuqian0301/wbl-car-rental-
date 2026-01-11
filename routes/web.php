@@ -431,6 +431,7 @@ Route::middleware(['auth', 'runner'])->prefix('runner')->name('runner.')->group(
     
     // Runner Calendar
     Route::get('/calendar', [\App\Http\Controllers\RunnerCalendarController::class, 'index'])->name('calendar');
+    Route::post('/calendar/task/{booking}/mark-as-read', [\App\Http\Controllers\RunnerCalendarController::class, 'markTaskAsRead'])->name('calendar.mark-task-as-read');
     
     // Runner Notifications
     Route::get('/notifications', [\App\Http\Controllers\RunnerCalendarController::class, 'allNotifications'])->name('notifications');

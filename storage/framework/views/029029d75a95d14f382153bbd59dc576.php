@@ -1,9 +1,9 @@
-@extends('layouts.runner')
 
-@section('title', 'Task Calendar')
-@section('page-title', 'Task Calendar')
 
-@section('content')
+<?php $__env->startSection('title', 'Task Calendar'); ?>
+<?php $__env->startSection('page-title', 'Task Calendar'); ?>
+
+<?php $__env->startSection('content'); ?>
     <style>
         .calendar-container {
             background: white;
@@ -112,25 +112,23 @@
             position: relative;
         }
 
-        /* Unread - Light Green */
-        .task-item.unread {
-            background: #86efac;
-            color: #166534;
-            font-weight: 600;
-            border-left: 3px solid #16a34a;
-        }
-
-        /* Read - Light Red */
-        .task-item.read {
-            background: #fca5a5;
-            color: #991b1b;
-        }
-
-        /* Completed/Done - Dark Red */
-        .task-item.done {
-            background: #dc2626;
+        /* Pickup Task - Blue */
+        .task-item.pickup {
+            background: #3b82f6;
             color: white;
-            font-weight: 600;
+            border-left: 3px solid #1d4ed8;
+        }
+
+        /* Return Task - Purple */
+        .task-item.return {
+            background: #8b5cf6;
+            color: white;
+            border-left: 3px solid #6d28d9;
+        }
+
+        /* Done Task - Faded */
+        .task-item.done {
+            opacity: 0.6;
         }
 
         .task-floating-box {
@@ -180,20 +178,6 @@
             color: var(--admin-red);
         }
 
-        .floating-box-buttons {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #eee;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .floating-box-buttons .btn {
-            flex: 1;
-            min-width: 100px;
-        }
-
         .task-detail-row {
             padding: 6px 0;
             border-bottom: 1px solid #eee;
@@ -222,39 +206,46 @@
         <div class="calendar-header">
             <h4 class="mb-0">
                 <i class="bi bi-calendar-event"></i> Task Calendar
-                @if($unreadCount > 0)
+                <?php
+                    $totalTasks = 0;
+                    foreach($tasksByDate as $tasks) {
+                        $totalTasks += count($tasks);
+                    }
+                ?>
+                <?php if($totalTasks > 0): ?>
                     <span class="unread-badge">
-                        <i class="bi bi-exclamation-circle"></i> {{ $unreadCount }} Unread
+                        <i class="bi bi-list-task"></i> <?php echo e($totalTasks); ?> Tasks
                     </span>
-                @endif
+                <?php endif; ?>
             </h4>
             <div class="calendar-controls">
                 <div class="btn-group" role="group">
-                    <a href="{{ route('runner.calendar', ['view' => 'month', 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'month' ? 'btn-danger' : 'btn-outline-danger' }}">
+                    <a href="<?php echo e(route('runner.calendar', ['view' => 'month', 'date' => $currentDate])); ?>" 
+                       class="btn btn-sm <?php echo e($currentView === 'month' ? 'btn-danger' : 'btn-outline-danger'); ?>">
                         Month
                     </a>
-                    <a href="{{ route('runner.calendar', ['view' => 'week', 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'week' ? 'btn-danger' : 'btn-outline-danger' }}">
+                    <a href="<?php echo e(route('runner.calendar', ['view' => 'week', 'date' => $currentDate])); ?>" 
+                       class="btn btn-sm <?php echo e($currentView === 'week' ? 'btn-danger' : 'btn-outline-danger'); ?>">
                         Week
                     </a>
-                    <a href="{{ route('runner.calendar', ['view' => 'day', 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'day' ? 'btn-danger' : 'btn-outline-danger' }}">
+                    <a href="<?php echo e(route('runner.calendar', ['view' => 'day', 'date' => $currentDate])); ?>" 
+                       class="btn btn-sm <?php echo e($currentView === 'day' ? 'btn-danger' : 'btn-outline-danger'); ?>">
                         Day
                     </a>
                 </div>
                 <div class="btn-group ms-2" role="group">
-                    <a href="{{ route('runner.calendar', ['view' => $currentView, 'date' => \Carbon\Carbon::parse($currentDate)->subMonth()->format('Y-m-d')]) }}" 
+                    <a href="<?php echo e(route('runner.calendar', ['view' => $currentView, 'date' => \Carbon\Carbon::parse($currentDate)->subMonth()->format('Y-m-d')])); ?>" 
                        class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                     <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('datePicker').showPicker()">
-                        {{ \Carbon\Carbon::parse($currentDate)->format('M Y') }}
+                        <?php echo e(\Carbon\Carbon::parse($currentDate)->format('M Y')); ?>
+
                     </button>
-                    <input type="month" id="datePicker" value="{{ \Carbon\Carbon::parse($currentDate)->format('Y-m') }}" 
+                    <input type="month" id="datePicker" value="<?php echo e(\Carbon\Carbon::parse($currentDate)->format('Y-m')); ?>" 
                            style="display: none;" 
-                           onchange="window.location.href='{{ route('runner.calendar', ['view' => $currentView]) }}&date=' + this.value + '-01'">
-                    <a href="{{ route('runner.calendar', ['view' => $currentView, 'date' => \Carbon\Carbon::parse($currentDate)->addMonth()->format('Y-m-d')]) }}" 
+                           onchange="window.location.href='<?php echo e(route('runner.calendar', ['view' => $currentView])); ?>&date=' + this.value + '-01'">
+                    <a href="<?php echo e(route('runner.calendar', ['view' => $currentView, 'date' => \Carbon\Carbon::parse($currentDate)->addMonth()->format('Y-m-d')])); ?>" 
                        class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-chevron-right"></i>
                     </a>
@@ -263,7 +254,7 @@
         </div>
 
         <div class="calendar-grid">
-            @if($currentView === 'month')
+            <?php if($currentView === 'month'): ?>
                 <div class="calendar-month-view">
                     <!-- Day Headers -->
                     <div class="calendar-day-header">Sun</div>
@@ -274,16 +265,16 @@
                     <div class="calendar-day-header">Fri</div>
                     <div class="calendar-day-header">Sat</div>
 
-                    @php
+                    <?php
                         $startOfMonth = \Carbon\Carbon::parse($currentDate)->startOfMonth();
                         $endOfMonth = \Carbon\Carbon::parse($currentDate)->endOfMonth();
                         $startOfCalendar = $startOfMonth->copy()->startOfWeek(\Carbon\Carbon::SUNDAY);
                         $endOfCalendar = $endOfMonth->copy()->endOfWeek(\Carbon\Carbon::SATURDAY);
                         $currentDay = $startOfCalendar->copy();
-                    @endphp
+                    ?>
 
-                    @while($currentDay->lte($endOfCalendar))
-                        @php
+                    <?php while($currentDay->lte($endOfCalendar)): ?>
+                        <?php
                             $dateKey = $currentDay->format('Y-m-d');
                             $isToday = $currentDay->isToday();
                             $isOtherMonth = !$currentDay->isSameMonth($startOfMonth);
@@ -291,147 +282,117 @@
                             $cellClass = 'calendar-day-cell';
                             if ($isOtherMonth) $cellClass .= ' other-month';
                             if ($isToday) $cellClass .= ' today';
-                        @endphp
-                        <div class="{{ $cellClass }}" data-date="{{ $dateKey }}" 
-                             onmouseleave="handleCellMouseLeave('{{ $dateKey }}')">
-                            <div class="calendar-day-number">{{ $currentDay->format('j') }}</div>
-                            @foreach($dayTasks as $index => $task)
-                                @php
+                        ?>
+                        <div class="<?php echo e($cellClass); ?>" data-date="<?php echo e($dateKey); ?>" 
+                             onmouseleave="handleCellMouseLeave('<?php echo e($dateKey); ?>')">
+                            <div class="calendar-day-number"><?php echo e($currentDay->format('j')); ?></div>
+                            <?php $__currentLoopData = $dayTasks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $task): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php
                                     $booking = $task['booking'];
                                     $taskType = $task['type'];
-                                    $taskId = $booking->bookingID . '_' . $taskType;
+                                    $taskId = $booking->bookingID . '_' . $taskType . '_' . $dateKey;
                                     $isDone = $task['is_done'];
-                                    $isUnread = $task['is_unread'] ?? false;
-                                    
-                                    // Determine color class - Same as admin calendar
-                                    // Unread = Green, Read = Red, Done = Dark Red
-                                    $colorClass = '';
-                                    if ($isDone) {
-                                        $colorClass = 'done';
-                                    } elseif ($isUnread) {
-                                        $colorClass = 'unread';
-                                    } else {
-                                        $colorClass = 'read';
-                                    }
-                                @endphp
-                                <div class="task-item {{ $colorClass }}"
-                                     data-booking-id="{{ $booking->bookingID }}"
-                                     data-date-type="{{ $taskType }}"
-                                     data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
-                                     onmouseenter="showTaskBox('{{ $taskId }}', event)"
-                                     onmouseleave="hideTaskBox('{{ $taskId }}')"
-                                     onclick="event.stopPropagation(); toggleTaskBox('{{ $taskId }}')">
+                                ?>
+                                <div class="task-item <?php echo e($taskType); ?> <?php echo e($isDone ? 'done' : ''); ?>"
+                                     data-task-id="<?php echo e($taskId); ?>"
+                                     onmouseenter="showTaskBox('<?php echo e($taskId); ?>', event)"
+                                     onmouseleave="hideTaskBox('<?php echo e($taskId); ?>')"
+                                     onclick="event.stopPropagation(); toggleTaskBox('<?php echo e($taskId); ?>')">
                                     <div>
-                                        <span class="date-label {{ $taskType }}-label">
-                                            {{ $taskType === 'pickup' ? 'Pickup' : 'Return' }}
+                                        <span class="date-label <?php echo e($taskType); ?>-label">
+                                            <?php echo e($taskType === 'pickup' ? 'Pickup' : 'Return'); ?>
+
                                         </span>
-                                        @if($isUnread)
-                                            <i class="bi bi-circle-fill" style="font-size: 0.5rem; margin-left: 5px;"></i>
-                                        @endif
                                     </div>
                                     <div>
-                                        <strong>{{ $booking->customer->user->name ?? 'N/A' }}</strong>
+                                        <strong><?php echo e($booking->customer->user->name ?? 'N/A'); ?></strong>
                                     </div>
-                                    <div class="small">{{ $booking->vehicle->plate_number ?? 'N/A' }}</div>
+                                    <div class="small"><?php echo e($booking->vehicle->plate_number ?? 'N/A'); ?></div>
 
                                     <!-- Floating Task Details Box -->
                                     <div class="task-floating-box" 
-                                         id="task-box-{{ $taskId }}" 
-                                         data-task-id="{{ $taskId }}"
-                                         data-booking-id="{{ $booking->bookingID }}"
-                                         data-date-type="{{ $taskType }}"
-                                         data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
-                                         onmouseenter="keepTaskBoxOpen('{{ $taskId }}')"
-                                         onmouseleave="hideTaskBox('{{ $taskId }}')">
+                                         id="task-box-<?php echo e($taskId); ?>" 
+                                         data-task-id="<?php echo e($taskId); ?>"
+                                         onmouseenter="keepTaskBoxOpen('<?php echo e($taskId); ?>')"
+                                         onmouseleave="hideTaskBox('<?php echo e($taskId); ?>')">
                                         <div class="floating-box-header">
                                             <div>
                                                 <strong style="color: var(--admin-red); font-size: 1.1rem;">
-                                                    {{ $taskType === 'pickup' ? 'Pickup Task' : 'Return Task' }}
+                                                    <?php echo e($taskType === 'pickup' ? 'Pickup Task' : 'Return Task'); ?>
+
                                                 </strong>
                                                 <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">
-                                                    {{ $task['date']->format('d M Y, H:i') }}
+                                                    <?php echo e($task['date']->format('d M Y, H:i')); ?>
+
                                                 </div>
                                             </div>
-                                            <button type="button" class="floating-box-close" onclick="event.stopPropagation(); closeAndMarkRead('{{ $taskId }}', {{ $isUnread ? 'true' : 'false' }}, '{{ $taskType }}')" title="Close">
+                                            <button type="button" class="floating-box-close" onclick="event.stopPropagation(); closeTaskBox('<?php echo e($taskId); ?>')" title="Close">
                                                 <i class="bi bi-x-lg"></i>
                                             </button>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Booking ID:</span>
-                                            <span class="task-detail-value"><strong>#{{ $booking->bookingID }}</strong></span>
+                                            <span class="task-detail-value"><strong>#<?php echo e($booking->bookingID); ?></strong></span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Task Type:</span>
                                             <span class="task-detail-value">
-                                                <span class="badge {{ $taskType === 'pickup' ? 'bg-primary' : '' }}" style="{{ $taskType === 'return' ? 'background: #8b5cf6;' : '' }}">
-                                                    {{ ucfirst($taskType) }}
+                                                <span class="badge <?php echo e($taskType === 'pickup' ? 'bg-primary' : ''); ?>" style="<?php echo e($taskType === 'return' ? 'background: #8b5cf6;' : ''); ?>">
+                                                    <?php echo e(ucfirst($taskType)); ?>
+
                                                 </span>
                                             </span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Customer Name:</span>
-                                            <span class="task-detail-value">{{ $booking->customer->user->name ?? 'N/A' }}</span>
+                                            <span class="task-detail-value"><?php echo e($booking->customer->user->name ?? 'N/A'); ?></span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Phone:</span>
-                                            <span class="task-detail-value">{{ $booking->customer->user->phone ?? 'N/A' }}</span>
+                                            <span class="task-detail-value"><?php echo e($booking->customer->user->phone ?? 'N/A'); ?></span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Plate Number:</span>
-                                            <span class="task-detail-value">{{ $booking->vehicle->plate_number ?? 'N/A' }}</span>
+                                            <span class="task-detail-value"><?php echo e($booking->vehicle->plate_number ?? 'N/A'); ?></span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Location:</span>
-                                            <span class="task-detail-value">{{ $task['location'] }}</span>
+                                            <span class="task-detail-value"><?php echo e($task['location']); ?></span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Date & Time:</span>
-                                            <span class="task-detail-value">{{ $task['date']->format('d M Y, H:i') }}</span>
+                                            <span class="task-detail-value"><?php echo e($task['date']->format('d M Y, H:i')); ?></span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Status:</span>
                                             <span class="task-detail-value">
-                                                @if($isDone)
+                                                <?php if($isDone): ?>
                                                     <span class="badge bg-success">Completed</span>
-                                                @else
+                                                <?php else: ?>
                                                     <span class="badge bg-warning text-dark">Upcoming</span>
-                                                @endif
+                                                <?php endif; ?>
                                             </span>
                                         </div>
                                         <div class="task-detail-row">
                                             <span class="task-detail-label">Commission:</span>
                                             <span class="task-detail-value"><strong style="color: var(--admin-red);">RM 2.00</strong></span>
                                         </div>
-                                        
-                                        <!-- Action Buttons -->
-                                        <div class="floating-box-buttons" onclick="event.stopPropagation()">
-                                            <a href="{{ route('runner.tasks') }}" class="btn btn-sm btn-primary">
-                                                <i class="bi bi-list-task"></i> View All Tasks
-                                            </a>
-                                            @if($isUnread)
-                                                <button class="btn btn-sm btn-success mark-read-btn" 
-                                                        id="mark-read-btn-{{ $taskId }}"
-                                                        onclick="event.stopPropagation(); closeAndMarkRead('{{ $taskId }}', true, '{{ $taskType }}')">
-                                                    <i class="bi bi-check-lg"></i> Mark as Read
-                                                </button>
-                                            @endif
-                                        </div>
                                     </div>
                                 </div>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
-                        @php $currentDay->addDay(); @endphp
-                    @endwhile
+                        <?php $currentDay->addDay(); ?>
+                    <?php endwhile; ?>
                 </div>
-            @elseif($currentView === 'week')
+            <?php elseif($currentView === 'week'): ?>
                 <div class="alert alert-info">
                     Week view will be implemented here.
                 </div>
-            @else
+            <?php else: ?>
                 <div class="alert alert-info">
                     Day view will be implemented here.
                 </div>
-            @endif
+            <?php endif; ?>
         </div>
     </div>
 
@@ -440,7 +401,6 @@
         let hoveredBoxes = {};
         let hideTimeouts = {};
 
-        // taskId format: "bookingId_dateType" (e.g., "123_pickup" or "123_return")
         function showTaskBox(taskId, event) {
             const box = document.getElementById('task-box-' + taskId);
             if (!box) return;
@@ -597,22 +557,6 @@
             }
         }
 
-        function handleCellMouseLeave(dateKey) {
-            // Hide all non-sticky boxes in this cell
-            const cell = document.querySelector(`[data-date="${dateKey}"]`);
-            if (cell) {
-                const taskItems = cell.querySelectorAll('.task-item');
-                taskItems.forEach(item => {
-                    const bookingId = item.dataset.bookingId;
-                    const dateType = item.dataset.dateType;
-                    const taskId = bookingId + '_' + dateType;
-                    if (taskId && !stickyBoxes[taskId]) {
-                        hideTaskBox(taskId);
-                    }
-                });
-            }
-        }
-
         function closeTaskBox(taskId) {
             const box = document.getElementById('task-box-' + taskId);
             if (box) {
@@ -623,89 +567,17 @@
             }
         }
 
-        // taskId format: "bookingId_dateType", dateType is 'pickup' or 'return'
-        function closeAndMarkRead(taskId, isUnread, dateType) {
-            // Extract bookingId from taskId (format: "123_pickup" or "123_return")
-            const parts = taskId.split('_');
-            const bookingId = parts[0];
-            dateType = dateType || parts[1] || 'pickup';
-            
-            if (isUnread) {
-                // Mark as read, then close
-                fetch(`/runner/calendar/task/${bookingId}/mark-as-read`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ date_type: dateType })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update the task item appearance for this specific date type
-                        updateTaskItemToRead(taskId, dateType);
+        function handleCellMouseLeave(dateKey) {
+            // Hide all non-sticky boxes in this cell
+            const cell = document.querySelector(`[data-date="${dateKey}"]`);
+            if (cell) {
+                const taskItems = cell.querySelectorAll('.task-item');
+                taskItems.forEach(item => {
+                    const taskId = item.dataset.taskId;
+                    if (taskId && !stickyBoxes[taskId]) {
+                        hideTaskBox(taskId);
                     }
-                    // Close the box regardless
-                    closeTaskBox(taskId);
-                })
-                .catch(error => {
-                    console.error('Error marking as read:', error);
-                    // Still close the box even if API call fails
-                    closeTaskBox(taskId);
                 });
-            } else {
-                // Just close the box
-                closeTaskBox(taskId);
-            }
-        }
-
-        // taskId format: "bookingId_dateType"
-        function updateTaskItemToRead(taskId, dateType) {
-            // Extract bookingId and dateType from taskId
-            const parts = taskId.split('_');
-            const bookingId = parts[0];
-            dateType = dateType || parts[1] || 'pickup';
-            
-            // Find the specific task item for this date type
-            const taskItems = document.querySelectorAll(`.task-item[data-booking-id="${bookingId}"][data-date-type="${dateType}"]`);
-            
-            taskItems.forEach(taskItem => {
-                // Update color classes (green -> red)
-                taskItem.classList.remove('unread');
-                taskItem.classList.add('read');
-                
-                // Update data attribute
-                taskItem.dataset.isUnread = 'false';
-                
-                // Remove unread indicator
-                const unreadIndicator = taskItem.querySelector('.bi-circle-fill');
-                if (unreadIndicator) {
-                    unreadIndicator.remove();
-                }
-            });
-            
-            // Hide the "Mark as Read" button
-            const markReadBtn = document.getElementById('mark-read-btn-' + taskId);
-            if (markReadBtn) {
-                markReadBtn.style.display = 'none';
-            }
-            
-            // Update the floating box data attribute
-            const box = document.getElementById('task-box-' + taskId);
-            if (box) {
-                box.dataset.isUnread = 'false';
-            }
-            
-            // Update unread badge count
-            const unreadBadge = document.querySelector('.unread-badge');
-            if (unreadBadge) {
-                const currentCount = parseInt(unreadBadge.textContent.match(/\d+/)?.[0] || '0');
-                if (currentCount > 1) {
-                    unreadBadge.innerHTML = `<i class="bi bi-exclamation-circle"></i> ${currentCount - 1} Unread`;
-                } else {
-                    unreadBadge.style.display = 'none';
-                }
             }
         }
 
@@ -734,9 +606,7 @@
                 if (!relatedTarget || !event.target.contains(relatedTarget)) {
                     const taskItems = event.target.querySelectorAll('.task-item');
                     taskItems.forEach(item => {
-                        const bookingId = item.dataset.bookingId;
-                        const dateType = item.dataset.dateType;
-                        const taskId = bookingId + '_' + dateType;
+                        const taskId = item.dataset.taskId;
                         if (taskId && !stickyBoxes[taskId]) {
                             hideTaskBox(taskId);
                         }
@@ -756,4 +626,6 @@
             }
         }, true);
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.runner', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/runner/calendar/index.blade.php ENDPATH**/ ?>

@@ -56,10 +56,8 @@ class PickupController extends Controller
         }
 
         // =========================================================
-        // 3. KEY IMAGE LOGIC (REMOVED)
+        // 3. KEY IMAGE LOGIC
         // =========================================================
-        // The table 'booking_form' and column 'photo_key_location' do not exist in the current schema.
-        // We set a default or null to prevent the SQL error.
         $keyLocationImage = 'assets/dummy_key_location.jpg'; 
 
         // Get related data
@@ -79,7 +77,7 @@ class PickupController extends Controller
             abort(403, 'Unauthorized access');
         }
 
-        // B. Validation (Replaces "// ... validation logic ...")
+        // B. Validation
         $validated = $request->validate([
             'confirm_pickup' => 'required|accepted',
             'mileage' => 'required|integer|min:0',
@@ -92,10 +90,10 @@ class PickupController extends Controller
             'left_image' => 'nullable|image|max:5120',
             'right_image' => 'nullable|image|max:5120',
             'fuel_image' => 'nullable|image|max:5120',
+            'additional_images.*' => 'nullable|image|max:5120', // Added validation for array
         ]);
 
         // C. Fuel Mapping Logic
-        // Converts slider (0-100) to Database Enum (EMPTY, 1/4, etc.)
         $fuelVal = (int) $request->fuel_level;
         $fuelEnum = 'EMPTY';
         if ($fuelVal >= 88) $fuelEnum = 'FULL';
@@ -103,7 +101,7 @@ class PickupController extends Controller
         elseif ($fuelVal >= 38) $fuelEnum = '1/2';
         elseif ($fuelVal >= 13) $fuelEnum = '1/4';
 
-        // D. Create Database Record (Replaces "// 1. Create the database record")
+        // D. Create Database Record
         $form = VehicleConditionForm::create([
             'form_type' => 'RECEIVE',
             'odometer_reading' => $request->mileage,
@@ -113,9 +111,16 @@ class PickupController extends Controller
             'bookingID' => $booking->bookingID,
         ]);
 
+
         // E. Save Images to myportfolio public folder
         // Uploads are stored in: C:\xampp\htdocs\myportfolio\public\uploads\vehicle_conditions
         $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'fuel_image'];
+        $destinationPath = public_path('images/vehicle_conditions');
+
+        // Ensure directory exists
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
@@ -126,21 +131,33 @@ class PickupController extends Controller
                 $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public'); 
 
                 // Save path to database
+                // Generate a unique filename
+                $filename = uniqid() . '_' . time() . '_' . $field . '.' . $file->getClientOriginalExtension();
+                
+                // Move file to public/images/vehicle_conditions
+                $file->move($destinationPath, $filename);
+                
+                // Store the relative URL path in database
+                $relativePath = 'images/vehicle_conditions/' . $filename;
+
                 VehicleConditionImage::create([
-                    'image_path' => $path, 
+                    'image_path' => $relativePath, 
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);
             }
         }
 
-        // Handle extra images if you have them
+        // Handle extra images
         if ($request->hasFile('additional_images')) {
             foreach ($request->file('additional_images') as $index => $file) {
                 $fileName = time() . '_additional_' . $index . '_' . $file->getClientOriginalName();
                 $path = $file->storeAs('uploads/vehicle_conditions', $fileName, 'wbl_public');
+                $filename = uniqid() . '_' . time() . '_additional_' . $index . '.' . $file->getClientOriginalExtension();
+                $file->move($destinationPath, $filename);
+                $relativePath = 'images/vehicle_conditions/' . $filename;
                 VehicleConditionImage::create([
-                    'image_path' => $path,
+                    'image_path' => $relativePath,
                     'image_taken_time' => now(),
                     'formID' => $form->formID,
                 ]);

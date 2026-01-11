@@ -46,31 +46,19 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php $__empty_1 = true; $__currentLoopData = $todayTasks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $booking): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                                <?php
-                                    $pickupDate = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date) : null;
-                                    $returnDate = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date) : null;
-                                    $isPickupToday = $pickupDate && $pickupDate->isToday();
-                                    $isReturnToday = $returnDate && $returnDate->isToday();
-                                ?>
-                                <?php if($isPickupToday && !empty($booking->pickup_point) && $booking->pickup_point !== 'HASTA HQ Office'): ?>
-                                    <tr>
-                                        <td><strong>#<?php echo e($booking->bookingID); ?></strong></td>
-                                        <td><span class="badge badge-pickup">Pickup</span></td>
-                                        <td><?php echo e($booking->vehicle->plate_number ?? 'N/A'); ?></td>
-                                        <td><?php echo e($booking->customer->user->name ?? 'N/A'); ?></td>
-                                        <td><?php echo e($booking->pickup_point); ?></td>
-                                    </tr>
-                                <?php endif; ?>
-                                <?php if($isReturnToday && !empty($booking->return_point) && $booking->return_point !== 'HASTA HQ Office'): ?>
-                                    <tr>
-                                        <td><strong>#<?php echo e($booking->bookingID); ?></strong></td>
-                                        <td><span class="badge badge-return">Return</span></td>
-                                        <td><?php echo e($booking->vehicle->plate_number ?? 'N/A'); ?></td>
-                                        <td><?php echo e($booking->customer->user->name ?? 'N/A'); ?></td>
-                                        <td><?php echo e($booking->return_point); ?></td>
-                                    </tr>
-                                <?php endif; ?>
+                            <?php $__empty_1 = true; $__currentLoopData = $todayTasks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $task): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <tr>
+                                    <td><strong>#<?php echo e($task['booking']->bookingID); ?></strong></td>
+                                    <td>
+                                        <span class="badge <?php echo e($task['type'] === 'pickup' ? 'badge-pickup' : 'badge-return'); ?>">
+                                            <?php echo e(ucfirst($task['type'])); ?>
+
+                                        </span>
+                                    </td>
+                                    <td><?php echo e($task['booking']->vehicle->plate_number ?? 'N/A'); ?></td>
+                                    <td><?php echo e($task['booking']->customer->user->name ?? 'N/A'); ?></td>
+                                    <td><?php echo e($task['location']); ?></td>
+                                </tr>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <tr>
                                     <td colspan="5" class="text-center py-4 text-muted">
@@ -127,6 +115,5 @@
         </div>
     </div>
 <?php $__env->stopSection(); ?>
-
 
 <?php echo $__env->make('layouts.runner', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\myportfolio\resources\views/runner/dashboard.blade.php ENDPATH**/ ?>
