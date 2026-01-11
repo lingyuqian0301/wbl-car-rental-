@@ -122,7 +122,7 @@
 
                                     {{-- Cancel Button --}}
                                     <form action="{{ route('bookings.cancel', $booking->bookingID) }}" method="POST" class="inline-block"
-                                          onsubmit="return confirm('{{ $isLate ? 'FINAL WARNING: Because it is less than 12 hours before pickup, your payment will be FORFEITED (Not Refunded). Are you sure you want to proceed?' : 'Are you sure you want to cancel? Refund will be processed to your wallet.' }}');">
+                                            onsubmit="return confirm('Are you sure you want to cancel? Please ensure cancellation is made at least 12 hours before pickup, otherwise no refund will be issued to your wallet.');"
                                         @csrf
                                         <button type="submit" 
                                                 class="inline-flex items-center px-4 py-2 bg-white border border-red-300 rounded-md font-semibold text-xs text-red-700 uppercase tracking-widest shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
