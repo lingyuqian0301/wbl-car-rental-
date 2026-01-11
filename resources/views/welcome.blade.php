@@ -447,7 +447,7 @@
     @include('components.header')
 
     <section class="hero">
-        <div class="hero-container">!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
+        <div class="hero-container"><!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
             <h2>Your Loyalty, Rewarded</h2>
             <p>For every 5 bookings you complete, receive a voucher toward your next rental.</p>
             <a href="{{ auth()->check() ? route('loyalty.show') : route('login') }}" class="hero-btn">Loyalty Rewards</a>
