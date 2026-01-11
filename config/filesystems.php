@@ -47,6 +47,16 @@ return [
             'report' => false,
         ],
 
+        // Local Public Folder - For all uploads (owner IC, owner license, staff IC, runner IC, fuel receipt, maintenance img, car image, grant, roadtax, contract)
+        'wbl_public' => [
+            'driver' => 'local',
+            'root' => public_path(),
+            'url' => env('APP_URL', 'http://127.0.0.1:8000'),
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

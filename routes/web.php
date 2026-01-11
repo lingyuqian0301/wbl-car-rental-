@@ -428,6 +428,17 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
 Route::middleware(['auth', 'runner'])->prefix('runner')->name('runner.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\RunnerDashboardController::class, 'index'])->name('dashboard');
     Route::get('/tasks', [\App\Http\Controllers\RunnerTaskController::class, 'index'])->name('tasks');
+    
+    // Runner Calendar
+    Route::get('/calendar', [\App\Http\Controllers\RunnerCalendarController::class, 'index'])->name('calendar');
+    Route::post('/calendar/task/{booking}/mark-as-read', [\App\Http\Controllers\RunnerCalendarController::class, 'markTaskAsRead'])->name('calendar.mark-task-as-read');
+    
+    // Runner Notifications
+    Route::get('/notifications', [\App\Http\Controllers\RunnerCalendarController::class, 'allNotifications'])->name('notifications');
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\RunnerCalendarController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get('/notifications/dropdown-list', [\App\Http\Controllers\RunnerCalendarController::class, 'dropdownList'])->name('notifications.dropdown-list');
+    Route::post('/notifications/{notification}/mark-read', [\App\Http\Controllers\RunnerCalendarController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\RunnerCalendarController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
 });
 
 require __DIR__ . '/auth.php';

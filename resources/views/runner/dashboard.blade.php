@@ -48,31 +48,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($todayTasks as $booking)
-                                @php
-                                    $pickupDate = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date) : null;
-                                    $returnDate = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date) : null;
-                                    $isPickupToday = $pickupDate && $pickupDate->isToday();
-                                    $isReturnToday = $returnDate && $returnDate->isToday();
-                                @endphp
-                                @if($isPickupToday && !empty($booking->pickup_point) && $booking->pickup_point !== 'HASTA HQ Office')
-                                    <tr>
-                                        <td><strong>#{{ $booking->bookingID }}</strong></td>
-                                        <td><span class="badge badge-pickup">Pickup</span></td>
-                                        <td>{{ $booking->vehicle->plate_number ?? 'N/A' }}</td>
-                                        <td>{{ $booking->customer->user->name ?? 'N/A' }}</td>
-                                        <td>{{ $booking->pickup_point }}</td>
-                                    </tr>
-                                @endif
-                                @if($isReturnToday && !empty($booking->return_point) && $booking->return_point !== 'HASTA HQ Office')
-                                    <tr>
-                                        <td><strong>#{{ $booking->bookingID }}</strong></td>
-                                        <td><span class="badge badge-return">Return</span></td>
-                                        <td>{{ $booking->vehicle->plate_number ?? 'N/A' }}</td>
-                                        <td>{{ $booking->customer->user->name ?? 'N/A' }}</td>
-                                        <td>{{ $booking->return_point }}</td>
-                                    </tr>
-                                @endif
+                            @forelse($todayTasks as $task)
+                                <tr>
+                                    <td><strong>#{{ $task['booking']->bookingID }}</strong></td>
+                                    <td>
+                                        <span class="badge {{ $task['type'] === 'pickup' ? 'badge-pickup' : 'badge-return' }}">
+                                            {{ ucfirst($task['type']) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $task['booking']->vehicle->plate_number ?? 'N/A' }}</td>
+                                    <td>{{ $task['booking']->customer->user->name ?? 'N/A' }}</td>
+                                    <td>{{ $task['location'] }}</td>
+                                </tr>
                             @empty
                                 <tr>
                                     <td colspan="5" class="text-center py-4 text-muted">
@@ -108,7 +95,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="text-muted">This Month Commission</span>
-                        <strong class="text-success">RM {{ number_format($monthlyCommission, 2) }}</strong>
+                        <strong class="text-danger">RM {{ number_format($monthlyCommission, 2) }}</strong>
                     </div>
                 </div>
             </div>
@@ -118,10 +105,10 @@
                     <i class="bi bi-lightning"></i> Quick Actions
                 </div>
                 <div class="card-body p-4">
-                    <a href="{{ route('runner.tasks') }}" class="btn btn-success w-100 mb-2">
+                    <a href="{{ route('runner.tasks') }}" class="btn btn-danger w-100 mb-2">
                         <i class="bi bi-list-task"></i> View All Tasks
                     </a>
-                    <a href="{{ route('runner.tasks', ['status' => 'upcoming']) }}" class="btn btn-outline-warning w-100">
+                    <a href="{{ route('runner.tasks', ['status' => 'upcoming']) }}" class="btn btn-outline-danger w-100">
                         <i class="bi bi-clock"></i> Upcoming Tasks
                     </a>
                 </div>
@@ -129,4 +116,3 @@
         </div>
     </div>
 @endsection
-

@@ -541,12 +541,12 @@ class AdminSettingsController extends Controller
             if ($request->hasFile('ic_img')) {
                 $file = $request->file('ic_img');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                // Upload to Google Drive
-                $fileId = $this->uploadToGoogleDrive($file, 'staff_documents/ic', $fileName);
+                // Upload to myportfolio public folder (staff IC / runner IC / staffit IC)
+                $fileId = $this->uploadToGoogleDrive($file, 'staff_ic', $fileName);
 
                 // Update IC image in staff table
                 $staff->update([
-                    'ic_img' => $fileId, // Store Google Drive file ID
+                    'ic_img' => $fileId, // Store file path
                 ]);
 
                 return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])->with('success', 'IC uploaded successfully.');

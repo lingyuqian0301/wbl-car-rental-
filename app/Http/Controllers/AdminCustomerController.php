@@ -571,15 +571,15 @@ class AdminCustomerController extends Controller
             if ($request->hasFile('license_img')) {
                 $file = $request->file('license_img');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                // Upload to Google Drive
-                $fileId = $this->uploadToGoogleDrive($file, 'customer_documents/licenses', $fileName);
+                // Upload to myportfolio public folder
+                $fileId = $this->uploadToGoogleDrive($file, 'customer_licenses', $fileName);
 
                 // Update license image in customer table
                 $customer->update([
-                    'customer_license_img' => $fileId, // Store Google Drive file ID
+                    'customer_license_img' => $fileId, // Store file path
                 ]);
 
-                return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('success', 'License uploaded successfully to Google Drive.');
+                return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('success', 'License uploaded successfully.');
             }
 
             return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('error', 'No file uploaded.');
@@ -598,15 +598,15 @@ class AdminCustomerController extends Controller
             if ($request->hasFile('ic_img')) {
                 $file = $request->file('ic_img');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                // Upload to Google Drive
-                $fileId = $this->uploadToGoogleDrive($file, 'customer_documents/ic_passport', $fileName);
+                // Upload to myportfolio public folder
+                $fileId = $this->uploadToGoogleDrive($file, 'customer_ic_passport', $fileName);
 
                 // Update IC image in customer table
                 $customer->update([
-                    'customer_ic_img' => $fileId, // Store Google Drive file ID
+                    'customer_ic_img' => $fileId, // Store file path
                 ]);
 
-                return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('success', ($customer->local ? 'IC' : 'Passport') . ' uploaded successfully to Google Drive.');
+                return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('success', ($customer->local ? 'IC' : 'Passport') . ' uploaded successfully.');
             }
 
             return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])->with('error', 'No file uploaded.');

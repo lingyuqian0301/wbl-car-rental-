@@ -1155,9 +1155,10 @@
                                                 </button>
                                                 @if($isCarImg)
                                                     @php
-                                                        $photoImgId = is_object($photo) ? $photo->imgID : ($photo['imgID'] ?? $photoId);
+                                                        $photoImgId = is_object($photo) ? ($photo->imgID ?? null) : ($photo['imgID'] ?? null);
                                                     @endphp
-                                                    <form method="POST" action="{{ route('admin.vehicles.photos.destroy', $photoImgId) }}" 
+                                                    @if($photoImgId)
+                                                    <form method="POST" action="{{ route('admin.vehicles.photos.destroy', ['imgId' => $photoImgId]) }}" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">
                                                         @csrf
                                                         @method('DELETE')
@@ -1165,6 +1166,7 @@
                                                             <i class="bi bi-trash"></i> Delete
                                                         </button>
                                                     </form>
+                                                    @endif
                                                 @else
                                                     <form method="POST" action="{{ route('admin.vehicles.documents.destroy', $photo->documentID) }}" 
                                                           onsubmit="return confirm('Are you sure?');" class="d-inline">

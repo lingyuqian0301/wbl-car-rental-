@@ -1,0 +1,759 @@
+@extends('layouts.runner')
+
+@section('title', 'Task Calendar')
+@section('page-title', 'Task Calendar')
+
+@section('content')
+    <style>
+        .calendar-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .calendar-header {
+            padding: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .unread-badge {
+            background: #dc2626;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .calendar-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .calendar-grid {
+            padding: 20px;
+        }
+
+        .calendar-month-view {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #e0e0e0;
+        }
+
+        .calendar-day-header {
+            background: var(--admin-red);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .calendar-day-cell {
+            background: white;
+            min-height: 120px;
+            padding: 8px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calendar-day-cell:hover {
+            background: #f8f9fa;
+            z-index: 10;
+        }
+
+        .date-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .date-label.pickup-label {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .date-label.return-label {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .calendar-day-cell.other-month {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .calendar-day-cell.today {
+            border: 2px solid var(--admin-red);
+        }
+
+        .calendar-day-number {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .task-item {
+            padding: 5px;
+            margin: 3px 0;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* Unread - Light Green */
+        .task-item.unread {
+            background: #86efac;
+            color: #166534;
+            font-weight: 600;
+            border-left: 3px solid #16a34a;
+        }
+
+        /* Read - Light Red */
+        .task-item.read {
+            background: #fca5a5;
+            color: #991b1b;
+        }
+
+        /* Completed/Done - Dark Red */
+        .task-item.done {
+            background: #dc2626;
+            color: white;
+            font-weight: 600;
+        }
+
+        .task-floating-box {
+            position: fixed;
+            background: white;
+            border: 2px solid var(--admin-red);
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 350px;
+            max-width: 400px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            cursor: default;
+        }
+
+        .task-item:hover .task-floating-box:not(.sticky),
+        .task-floating-box.sticky {
+            display: block;
+        }
+
+        .task-floating-box.sticky {
+            cursor: default;
+        }
+
+        .floating-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--admin-red);
+        }
+
+        .floating-box-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+            line-height: 1;
+        }
+
+        .floating-box-close:hover {
+            color: var(--admin-red);
+        }
+
+        .floating-box-buttons {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .floating-box-buttons .btn {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .task-detail-row {
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .task-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .task-detail-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .task-detail-value {
+            color: #333;
+            font-size: 0.9rem;
+            text-align: right;
+        }
+    </style>
+
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <h4 class="mb-0">
+                <i class="bi bi-calendar-event"></i> Task Calendar
+                @if($unreadCount > 0)
+                    <span class="unread-badge">
+                        <i class="bi bi-exclamation-circle"></i> {{ $unreadCount }} Unread
+                    </span>
+                @endif
+            </h4>
+            <div class="calendar-controls">
+                <div class="btn-group" role="group">
+                    <a href="{{ route('runner.calendar', ['view' => 'month', 'date' => $currentDate]) }}" 
+                       class="btn btn-sm {{ $currentView === 'month' ? 'btn-danger' : 'btn-outline-danger' }}">
+                        Month
+                    </a>
+                    <a href="{{ route('runner.calendar', ['view' => 'week', 'date' => $currentDate]) }}" 
+                       class="btn btn-sm {{ $currentView === 'week' ? 'btn-danger' : 'btn-outline-danger' }}">
+                        Week
+                    </a>
+                    <a href="{{ route('runner.calendar', ['view' => 'day', 'date' => $currentDate]) }}" 
+                       class="btn btn-sm {{ $currentView === 'day' ? 'btn-danger' : 'btn-outline-danger' }}">
+                        Day
+                    </a>
+                </div>
+                <div class="btn-group ms-2" role="group">
+                    <a href="{{ route('runner.calendar', ['view' => $currentView, 'date' => \Carbon\Carbon::parse($currentDate)->subMonth()->format('Y-m-d')]) }}" 
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('datePicker').showPicker()">
+                        {{ \Carbon\Carbon::parse($currentDate)->format('M Y') }}
+                    </button>
+                    <input type="month" id="datePicker" value="{{ \Carbon\Carbon::parse($currentDate)->format('Y-m') }}" 
+                           style="display: none;" 
+                           onchange="window.location.href='{{ route('runner.calendar', ['view' => $currentView]) }}&date=' + this.value + '-01'">
+                    <a href="{{ route('runner.calendar', ['view' => $currentView, 'date' => \Carbon\Carbon::parse($currentDate)->addMonth()->format('Y-m-d')]) }}" 
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="calendar-grid">
+            @if($currentView === 'month')
+                <div class="calendar-month-view">
+                    <!-- Day Headers -->
+                    <div class="calendar-day-header">Sun</div>
+                    <div class="calendar-day-header">Mon</div>
+                    <div class="calendar-day-header">Tue</div>
+                    <div class="calendar-day-header">Wed</div>
+                    <div class="calendar-day-header">Thu</div>
+                    <div class="calendar-day-header">Fri</div>
+                    <div class="calendar-day-header">Sat</div>
+
+                    @php
+                        $startOfMonth = \Carbon\Carbon::parse($currentDate)->startOfMonth();
+                        $endOfMonth = \Carbon\Carbon::parse($currentDate)->endOfMonth();
+                        $startOfCalendar = $startOfMonth->copy()->startOfWeek(\Carbon\Carbon::SUNDAY);
+                        $endOfCalendar = $endOfMonth->copy()->endOfWeek(\Carbon\Carbon::SATURDAY);
+                        $currentDay = $startOfCalendar->copy();
+                    @endphp
+
+                    @while($currentDay->lte($endOfCalendar))
+                        @php
+                            $dateKey = $currentDay->format('Y-m-d');
+                            $isToday = $currentDay->isToday();
+                            $isOtherMonth = !$currentDay->isSameMonth($startOfMonth);
+                            $dayTasks = $tasksByDate[$dateKey] ?? [];
+                            $cellClass = 'calendar-day-cell';
+                            if ($isOtherMonth) $cellClass .= ' other-month';
+                            if ($isToday) $cellClass .= ' today';
+                        @endphp
+                        <div class="{{ $cellClass }}" data-date="{{ $dateKey }}" 
+                             onmouseleave="handleCellMouseLeave('{{ $dateKey }}')">
+                            <div class="calendar-day-number">{{ $currentDay->format('j') }}</div>
+                            @foreach($dayTasks as $index => $task)
+                                @php
+                                    $booking = $task['booking'];
+                                    $taskType = $task['type'];
+                                    $taskId = $booking->bookingID . '_' . $taskType;
+                                    $isDone = $task['is_done'];
+                                    $isUnread = $task['is_unread'] ?? false;
+                                    
+                                    // Determine color class - Same as admin calendar
+                                    // Unread = Green, Read = Red, Done = Dark Red
+                                    $colorClass = '';
+                                    if ($isDone) {
+                                        $colorClass = 'done';
+                                    } elseif ($isUnread) {
+                                        $colorClass = 'unread';
+                                    } else {
+                                        $colorClass = 'read';
+                                    }
+                                @endphp
+                                <div class="task-item {{ $colorClass }}"
+                                     data-booking-id="{{ $booking->bookingID }}"
+                                     data-date-type="{{ $taskType }}"
+                                     data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
+                                     onmouseenter="showTaskBox('{{ $taskId }}', event)"
+                                     onmouseleave="hideTaskBox('{{ $taskId }}')"
+                                     onclick="event.stopPropagation(); toggleTaskBox('{{ $taskId }}')">
+                                    <div>
+                                        <span class="date-label {{ $taskType }}-label">
+                                            {{ $taskType === 'pickup' ? 'Pickup' : 'Return' }}
+                                        </span>
+                                        @if($isUnread)
+                                            <i class="bi bi-circle-fill" style="font-size: 0.5rem; margin-left: 5px;"></i>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <strong>{{ $booking->customer->user->name ?? 'N/A' }}</strong>
+                                    </div>
+                                    <div class="small">{{ $booking->vehicle->plate_number ?? 'N/A' }}</div>
+
+                                    <!-- Floating Task Details Box -->
+                                    <div class="task-floating-box" 
+                                         id="task-box-{{ $taskId }}" 
+                                         data-task-id="{{ $taskId }}"
+                                         data-booking-id="{{ $booking->bookingID }}"
+                                         data-date-type="{{ $taskType }}"
+                                         data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
+                                         onmouseenter="keepTaskBoxOpen('{{ $taskId }}')"
+                                         onmouseleave="hideTaskBox('{{ $taskId }}')">
+                                        <div class="floating-box-header">
+                                            <div>
+                                                <strong style="color: var(--admin-red); font-size: 1.1rem;">
+                                                    {{ $taskType === 'pickup' ? 'Pickup Task' : 'Return Task' }}
+                                                </strong>
+                                                <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">
+                                                    {{ $task['date']->format('d M Y, H:i') }}
+                                                </div>
+                                            </div>
+                                            <button type="button" class="floating-box-close" onclick="event.stopPropagation(); closeAndMarkRead('{{ $taskId }}', {{ $isUnread ? 'true' : 'false' }}, '{{ $taskType }}')" title="Close">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Booking ID:</span>
+                                            <span class="task-detail-value"><strong>#{{ $booking->bookingID }}</strong></span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Task Type:</span>
+                                            <span class="task-detail-value">
+                                                <span class="badge {{ $taskType === 'pickup' ? 'bg-primary' : '' }}" style="{{ $taskType === 'return' ? 'background: #8b5cf6;' : '' }}">
+                                                    {{ ucfirst($taskType) }}
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Customer Name:</span>
+                                            <span class="task-detail-value">{{ $booking->customer->user->name ?? 'N/A' }}</span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Phone:</span>
+                                            <span class="task-detail-value">{{ $booking->customer->user->phone ?? 'N/A' }}</span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Plate Number:</span>
+                                            <span class="task-detail-value">{{ $booking->vehicle->plate_number ?? 'N/A' }}</span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Location:</span>
+                                            <span class="task-detail-value">{{ $task['location'] }}</span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Date & Time:</span>
+                                            <span class="task-detail-value">{{ $task['date']->format('d M Y, H:i') }}</span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Status:</span>
+                                            <span class="task-detail-value">
+                                                @if($isDone)
+                                                    <span class="badge bg-success">Completed</span>
+                                                @else
+                                                    <span class="badge bg-warning text-dark">Upcoming</span>
+                                                @endif
+                                            </span>
+                                        </div>
+                                        <div class="task-detail-row">
+                                            <span class="task-detail-label">Commission:</span>
+                                            <span class="task-detail-value"><strong style="color: var(--admin-red);">RM 2.00</strong></span>
+                                        </div>
+                                        
+                                        <!-- Action Buttons -->
+                                        <div class="floating-box-buttons" onclick="event.stopPropagation()">
+                                            <a href="{{ route('runner.tasks') }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-list-task"></i> View All Tasks
+                                            </a>
+                                            @if($isUnread)
+                                                <button class="btn btn-sm btn-success mark-read-btn" 
+                                                        id="mark-read-btn-{{ $taskId }}"
+                                                        onclick="event.stopPropagation(); closeAndMarkRead('{{ $taskId }}', true, '{{ $taskType }}')">
+                                                    <i class="bi bi-check-lg"></i> Mark as Read
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        @php $currentDay->addDay(); @endphp
+                    @endwhile
+                </div>
+            @elseif($currentView === 'week')
+                <div class="alert alert-info">
+                    Week view will be implemented here.
+                </div>
+            @else
+                <div class="alert alert-info">
+                    Day view will be implemented here.
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <script>
+        let stickyBoxes = {};
+        let hoveredBoxes = {};
+        let hideTimeouts = {};
+
+        // taskId format: "bookingId_dateType" (e.g., "123_pickup" or "123_return")
+        function showTaskBox(taskId, event) {
+            const box = document.getElementById('task-box-' + taskId);
+            if (!box) return;
+            
+            // Clear any pending hide timeout
+            if (hideTimeouts[taskId]) {
+                clearTimeout(hideTimeouts[taskId]);
+                delete hideTimeouts[taskId];
+            }
+            
+            if (!stickyBoxes[taskId]) {
+                box.style.display = 'block';
+                hoveredBoxes[taskId] = true;
+                // Position the box after it's displayed
+                requestAnimationFrame(() => {
+                    positionTaskBox(box, event);
+                });
+            }
+        }
+
+        function hideTaskBox(taskId) {
+            hoveredBoxes[taskId] = false;
+            
+            // Set a small delay before hiding to allow moving to the box
+            if (hideTimeouts[taskId]) {
+                clearTimeout(hideTimeouts[taskId]);
+            }
+            
+            hideTimeouts[taskId] = setTimeout(() => {
+                const box = document.getElementById('task-box-' + taskId);
+                
+                // Check if mouse is still over box
+                const isMouseOverBox = box && (box.matches(':hover') || box.querySelector(':hover'));
+                
+                if (box && !stickyBoxes[taskId] && !hoveredBoxes[taskId] && !isMouseOverBox) {
+                    box.style.display = 'none';
+                }
+                delete hideTimeouts[taskId];
+            }, 200);
+        }
+
+        function keepTaskBoxOpen(taskId) {
+            hoveredBoxes[taskId] = true;
+            if (hideTimeouts[taskId]) {
+                clearTimeout(hideTimeouts[taskId]);
+                delete hideTimeouts[taskId];
+            }
+        }
+
+        function positionTaskBox(box, event) {
+            if (!box) return;
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const margin = 15;
+            
+            // Get the task item element
+            const taskItem = box.closest('.task-item');
+            if (!taskItem) return;
+            
+            const itemRect = taskItem.getBoundingClientRect();
+            
+            // Reset position and styles first
+            box.style.top = 'auto';
+            box.style.left = 'auto';
+            box.style.right = 'auto';
+            box.style.bottom = 'auto';
+            box.style.maxHeight = '';
+            box.style.overflowY = '';
+            
+            // Get measurements after display
+            const boxRect = box.getBoundingClientRect();
+            const boxWidth = boxRect.width;
+            const boxHeight = boxRect.height;
+            
+            // Calculate initial position (below the item)
+            let top = itemRect.bottom + 5;
+            let left = itemRect.left;
+            
+            // Check if box goes off the right edge of viewport
+            if (left + boxWidth > viewportWidth - margin) {
+                left = viewportWidth - boxWidth - margin;
+            }
+            
+            // Check if box goes off the left edge of viewport
+            if (left < margin) {
+                left = margin;
+            }
+            
+            // Check if box goes off the bottom edge of viewport
+            if (top + boxHeight > viewportHeight - margin) {
+                // Try to show above the item instead
+                const topAbove = itemRect.top - boxHeight - 5;
+                
+                if (topAbove >= margin) {
+                    // Can fit above
+                    top = topAbove;
+                } else {
+                    // Can't fit above, constrain height and show below or center
+                    const spaceBelow = viewportHeight - itemRect.bottom - margin;
+                    const spaceAbove = itemRect.top - margin;
+                    
+                    if (spaceBelow >= spaceAbove && spaceBelow > 150) {
+                        // Show below with constrained height
+                        top = itemRect.bottom + 5;
+                        box.style.maxHeight = (spaceBelow - 10) + 'px';
+                        box.style.overflowY = 'auto';
+                    } else if (spaceAbove > 150) {
+                        // Show above with constrained height
+                        top = margin;
+                        box.style.maxHeight = (spaceAbove - 10) + 'px';
+                        box.style.overflowY = 'auto';
+                    } else {
+                        // Center vertically with constrained height
+                        top = margin;
+                        box.style.maxHeight = (viewportHeight - margin * 2) + 'px';
+                        box.style.overflowY = 'auto';
+                    }
+                }
+            }
+            
+            // Apply position (using fixed positioning)
+            box.style.top = top + 'px';
+            box.style.left = left + 'px';
+        }
+
+        function toggleTaskBox(taskId) {
+            const box = document.getElementById('task-box-' + taskId);
+            if (box) {
+                if (stickyBoxes[taskId]) {
+                    box.classList.remove('sticky');
+                    box.style.display = 'none';
+                    delete stickyBoxes[taskId];
+                } else {
+                    // Close all other sticky boxes
+                    Object.keys(stickyBoxes).forEach(id => {
+                        const otherBox = document.getElementById('task-box-' + id);
+                        if (otherBox) {
+                            otherBox.classList.remove('sticky');
+                            otherBox.style.display = 'none';
+                        }
+                        delete stickyBoxes[id];
+                    });
+                    box.classList.add('sticky');
+                    box.style.display = 'block';
+                    stickyBoxes[taskId] = true;
+                    // Reposition when made sticky
+                    const taskItem = box.closest('.task-item');
+                    if (taskItem) {
+                        const fakeEvent = { clientX: 0, clientY: 0 };
+                        positionTaskBox(box, fakeEvent);
+                    }
+                }
+            }
+        }
+
+        function handleCellMouseLeave(dateKey) {
+            // Hide all non-sticky boxes in this cell
+            const cell = document.querySelector(`[data-date="${dateKey}"]`);
+            if (cell) {
+                const taskItems = cell.querySelectorAll('.task-item');
+                taskItems.forEach(item => {
+                    const bookingId = item.dataset.bookingId;
+                    const dateType = item.dataset.dateType;
+                    const taskId = bookingId + '_' + dateType;
+                    if (taskId && !stickyBoxes[taskId]) {
+                        hideTaskBox(taskId);
+                    }
+                });
+            }
+        }
+
+        function closeTaskBox(taskId) {
+            const box = document.getElementById('task-box-' + taskId);
+            if (box) {
+                box.classList.remove('sticky');
+                box.style.display = 'none';
+                delete stickyBoxes[taskId];
+                delete hoveredBoxes[taskId];
+            }
+        }
+
+        // taskId format: "bookingId_dateType", dateType is 'pickup' or 'return'
+        function closeAndMarkRead(taskId, isUnread, dateType) {
+            // Extract bookingId from taskId (format: "123_pickup" or "123_return")
+            const parts = taskId.split('_');
+            const bookingId = parts[0];
+            dateType = dateType || parts[1] || 'pickup';
+            
+            if (isUnread) {
+                // Mark as read, then close
+                fetch(`/runner/calendar/task/${bookingId}/mark-as-read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ date_type: dateType })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the task item appearance for this specific date type
+                        updateTaskItemToRead(taskId, dateType);
+                    }
+                    // Close the box regardless
+                    closeTaskBox(taskId);
+                })
+                .catch(error => {
+                    console.error('Error marking as read:', error);
+                    // Still close the box even if API call fails
+                    closeTaskBox(taskId);
+                });
+            } else {
+                // Just close the box
+                closeTaskBox(taskId);
+            }
+        }
+
+        // taskId format: "bookingId_dateType"
+        function updateTaskItemToRead(taskId, dateType) {
+            // Extract bookingId and dateType from taskId
+            const parts = taskId.split('_');
+            const bookingId = parts[0];
+            dateType = dateType || parts[1] || 'pickup';
+            
+            // Find the specific task item for this date type
+            const taskItems = document.querySelectorAll(`.task-item[data-booking-id="${bookingId}"][data-date-type="${dateType}"]`);
+            
+            taskItems.forEach(taskItem => {
+                // Update color classes (green -> red)
+                taskItem.classList.remove('unread');
+                taskItem.classList.add('read');
+                
+                // Update data attribute
+                taskItem.dataset.isUnread = 'false';
+                
+                // Remove unread indicator
+                const unreadIndicator = taskItem.querySelector('.bi-circle-fill');
+                if (unreadIndicator) {
+                    unreadIndicator.remove();
+                }
+            });
+            
+            // Hide the "Mark as Read" button
+            const markReadBtn = document.getElementById('mark-read-btn-' + taskId);
+            if (markReadBtn) {
+                markReadBtn.style.display = 'none';
+            }
+            
+            // Update the floating box data attribute
+            const box = document.getElementById('task-box-' + taskId);
+            if (box) {
+                box.dataset.isUnread = 'false';
+            }
+            
+            // Update unread badge count
+            const unreadBadge = document.querySelector('.unread-badge');
+            if (unreadBadge) {
+                const currentCount = parseInt(unreadBadge.textContent.match(/\d+/)?.[0] || '0');
+                if (currentCount > 1) {
+                    unreadBadge.innerHTML = `<i class="bi bi-exclamation-circle"></i> ${currentCount - 1} Unread`;
+                } else {
+                    unreadBadge.style.display = 'none';
+                }
+            }
+        }
+
+        // Close floating boxes when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.task-item') && !event.target.closest('.task-floating-box')) {
+                Object.keys(stickyBoxes).forEach(id => {
+                    if (!hoveredBoxes[id]) {
+                        const box = document.getElementById('task-box-' + id);
+                        if (box) {
+                            box.classList.remove('sticky');
+                            box.style.display = 'none';
+                        }
+                        delete stickyBoxes[id];
+                    }
+                });
+            }
+        });
+
+        // Close boxes when mouse leaves the calendar day cell or floating box
+        document.addEventListener('mouseout', function(event) {
+            const relatedTarget = event.relatedTarget;
+            
+            // Check if leaving a calendar day cell
+            if (event.target.classList.contains('calendar-day-cell')) {
+                if (!relatedTarget || !event.target.contains(relatedTarget)) {
+                    const taskItems = event.target.querySelectorAll('.task-item');
+                    taskItems.forEach(item => {
+                        const bookingId = item.dataset.bookingId;
+                        const dateType = item.dataset.dateType;
+                        const taskId = bookingId + '_' + dateType;
+                        if (taskId && !stickyBoxes[taskId]) {
+                            hideTaskBox(taskId);
+                        }
+                    });
+                }
+            }
+            
+            // Check if leaving a floating box (but not moving to its parent task item)
+            if (event.target.classList.contains('task-floating-box')) {
+                const box = event.target;
+                const taskId = box.dataset.taskId;
+                
+                // If not moving to task item or staying in box, hide it (unless sticky)
+                if (!stickyBoxes[taskId] && (!relatedTarget || !box.contains(relatedTarget))) {
+                    hideTaskBox(taskId);
+                }
+            }
+        }, true);
+    </script>
+@endsection
