@@ -270,4 +270,30 @@ class Booking extends Model
     {
         return $this->isReadBy($userId, 'return');
     }
+
+    /**
+     * Get all vehicle condition forms for this booking.
+     */
+    public function vehicleConditionForms(): HasMany
+    {
+        return $this->hasMany(VehicleConditionForm::class, 'bookingID', 'bookingID');
+    }
+
+    /**
+     * Get the pickup (RECEIVE) condition form for this booking.
+     */
+    public function pickupConditionForm(): HasOne
+    {
+        return $this->hasOne(VehicleConditionForm::class, 'bookingID', 'bookingID')
+            ->where('form_type', 'RECEIVE');
+    }
+
+    /**
+     * Get the return condition form for this booking.
+     */
+    public function returnConditionForm(): HasOne
+    {
+        return $this->hasOne(VehicleConditionForm::class, 'bookingID', 'bookingID')
+            ->where('form_type', 'RETURN');
+    }
 }

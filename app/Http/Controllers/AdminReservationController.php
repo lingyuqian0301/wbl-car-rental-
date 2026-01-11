@@ -275,6 +275,7 @@ class AdminReservationController extends Controller
             'invoice',
             'review',
             'additionalCharges',
+            'vehicleConditionForms.images', // Load vehicle condition forms with images
         ]);
 
         // Calculate payment totals
@@ -296,6 +297,26 @@ class AdminReservationController extends Controller
         // Get active tab from query parameter - default to 'booking-detail'
         $activeTab = request()->get('tab', 'booking-detail');
 
+        // Get all staff (admin and staff IT) for Served By dropdown - exclude runners
+        $staffUsers = \App\Models\User::where(function($query) {
+            $query->whereHas('staff', function($q) {
+                $q->whereDoesntHave('runner'); // Exclude runners
+            })->orWhereHas('admin');
+        })->where('isActive', true)->orderBy('name')->get();
+
+        // Get all runners for Runner Assigned dropdown
+        $runners = \App\Models\User::whereHas('staff.runner')
+            ->where('isActive', true)
+            ->orderBy('name')
+            ->get();
+
+        // Get runner assigned info
+        $runnerAssigned = $booking->staff_served ? \App\Models\User::find($booking->staff_served) : null;
+        // Check if runnerAssigned is actually a runner
+        if ($runnerAssigned && !$runnerAssigned->isRunner()) {
+            $runnerAssigned = null; // Not a runner, so clear it
+        }
+
         return view('admin.reservations.show', [
             'booking' => $booking,
             'totalPaid' => $totalPaid,
@@ -305,6 +326,29 @@ class AdminReservationController extends Controller
             'verifyByUsers' => $verifyByUsers,
             'transactions' => $transactions,
             'activeTab' => $activeTab,
+            'staffUsers' => $staffUsers,
+            'runners' => $runners,
+            'runnerAssigned' => $runnerAssigned,
+        ]);
+    }
+
+    /**
+     * Update runner assigned to booking
+     */
+    public function updateRunner(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'runner_id' => 'nullable|integer',
+        ]);
+
+        $booking->update([
+            'staff_served' => $request->runner_id ?: null,
+            'lastUpdateDate' => Carbon::now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Runner assignment updated successfully.',
         ]);
     }
 

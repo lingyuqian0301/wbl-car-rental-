@@ -329,28 +329,26 @@
                                 </span>
                             </td>
                             <td>
-                                <form action="{{ route('admin.payments.update-verify', $payment->paymentID) }}" method="POST" class="d-inline" id="verifyForm{{ $payment->paymentID }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <select name="payment_isVerify" class="form-select form-select-sm verify-dropdown" onchange="this.form.submit();">
-                                        <option value="0" {{ ($payment->payment_isVerify ?? false) ? '' : 'selected' }}>False</option>
-                                        <option value="1" {{ ($payment->payment_isVerify ?? false) ? 'selected' : '' }}>True</option>
-                                    </select>
-                                </form>
+                                <select class="form-select form-select-sm verify-dropdown" 
+                                        data-payment-id="{{ $payment->paymentID }}"
+                                        data-field="payment_isVerify"
+                                        onchange="updatePaymentVerify(this)">
+                                    <option value="0" {{ ($payment->payment_isVerify ?? false) ? '' : 'selected' }}>False</option>
+                                    <option value="1" {{ ($payment->payment_isVerify ?? false) ? 'selected' : '' }}>True</option>
+                                </select>
                             </td>
                             <td>
-                                <form action="{{ route('admin.payments.update-verified-by', $payment->paymentID) }}" method="POST" class="d-inline" id="verifiedByForm{{ $payment->paymentID }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <select name="verified_by" class="form-select form-select-sm verify-dropdown" onchange="this.form.submit();">
-                                        <option value="">Not Set</option>
-                                        @foreach($staffUsers ?? [] as $staff)
-                                            <option value="{{ $staff->userID }}" {{ ($payment->verified_by ?? null) == $staff->userID ? 'selected' : '' }}>
-                                                {{ $staff->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </form>
+                                <select class="form-select form-select-sm verified-by-dropdown" 
+                                        data-payment-id="{{ $payment->paymentID }}"
+                                        data-field="verified_by"
+                                        onchange="updateVerifiedBy(this)">
+                                    <option value="">Not Set</option>
+                                    @foreach($staffUsers ?? [] as $staff)
+                                        <option value="{{ $staff->userID }}" {{ ($payment->verified_by ?? null) == $staff->userID ? 'selected' : '' }}>
+                                            {{ $staff->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </td>
                             <td>
                                 @php
@@ -386,4 +384,115 @@
         @endif
     </div>
 </div>
+
+<!-- Success/Error Notification Toast (same style as booking detail page) -->
+<div id="notificationToast" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; display: none;">
+    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="toastHeader">
+            <i class="bi bi-check-circle me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <button type="button" class="btn-close" onclick="hideNotification()"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Message here
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    // Update Payment isVerify via AJAX
+    function updatePaymentVerify(selectElement) {
+        const paymentId = selectElement.dataset.paymentId;
+        const newValue = selectElement.value;
+        const oldValue = selectElement.dataset.currentValue || (newValue === '1' ? '0' : '1');
+        
+        fetch(`{{ url('admin/payments') }}/${paymentId}/update-verify`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                payment_isVerify: newValue
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                selectElement.dataset.currentValue = newValue;
+                showNotification(data.message || 'Payment verification updated successfully.', true);
+                // Optionally refresh the page to update other fields
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification(data.message || 'Failed to update payment verification.', false);
+                selectElement.value = oldValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while updating.', false);
+            selectElement.value = oldValue;
+        });
+    }
+
+    // Update Verified By via AJAX
+    function updateVerifiedBy(selectElement) {
+        const paymentId = selectElement.dataset.paymentId;
+        const newValue = selectElement.value;
+        const oldValue = selectElement.dataset.currentValue || '';
+        
+        fetch(`{{ url('admin/payments') }}/${paymentId}/update-verified-by`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                verified_by: newValue || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                selectElement.dataset.currentValue = newValue;
+                showNotification(data.message || 'Verified by updated successfully.', true);
+            } else {
+                showNotification(data.message || 'Failed to update verified by.', false);
+                selectElement.value = oldValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while updating.', false);
+            selectElement.value = oldValue;
+        });
+    }
+
+    // Show notification (same style as booking detail page)
+    function showNotification(message, isSuccess = true) {
+        const toast = document.getElementById('notificationToast');
+        const header = document.getElementById('toastHeader');
+        const icon = document.getElementById('toastIcon');
+        const title = document.getElementById('toastTitle');
+        const body = document.getElementById('toastMessage');
+
+        header.className = 'toast-header ' + (isSuccess ? 'bg-success text-white' : 'bg-danger text-white');
+        icon.className = 'bi me-2 ' + (isSuccess ? 'bi-check-circle' : 'bi-x-circle');
+        title.textContent = isSuccess ? 'Success' : 'Error';
+        body.textContent = message;
+        toast.style.display = 'block';
+
+        setTimeout(() => {
+            hideNotification();
+        }, 4000);
+    }
+
+    function hideNotification() {
+        document.getElementById('notificationToast').style.display = 'none';
+    }
+</script>
+@endpush
 @endsection

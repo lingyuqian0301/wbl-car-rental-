@@ -265,6 +265,20 @@
     </div>
 </div>
 
+<!-- Success/Error Notification Toast (same style as booking detail page) -->
+<div id="notificationToast" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; display: none;">
+    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="toastHeader">
+            <i class="bi bi-check-circle me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <button type="button" class="btn-close" onclick="hideNotification()"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Message here
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
@@ -307,43 +321,41 @@
                         `;
                     }
                     // Show success message
-                    showNotification('Runner assigned successfully.', 'success');
+                    showNotification('Runner assigned successfully.', true);
                 } else {
-                    showNotification(data.message || 'Failed to update runner.', 'danger');
+                    showNotification(data.message || 'Failed to update runner.', false);
                     this.value = oldRunnerId || '';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showNotification('An error occurred while updating runner.', 'danger');
+                showNotification('An error occurred while updating runner.', false);
                 this.value = oldRunnerId || '';
             });
         });
     });
 
-    // Notification function (same style as payment page)
-    function showNotification(message, type = 'success') {
-        // Remove existing notifications
-        const existingNotifications = document.querySelectorAll('.floating-notification');
-        existingNotifications.forEach(n => n.remove());
+    // Show notification (same style as booking detail page)
+    function showNotification(message, isSuccess = true) {
+        const toast = document.getElementById('notificationToast');
+        const header = document.getElementById('toastHeader');
+        const icon = document.getElementById('toastIcon');
+        const title = document.getElementById('toastTitle');
+        const body = document.getElementById('toastMessage');
 
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const notification = document.createElement('div');
-        notification.className = `floating-notification alert ${alertClass} alert-dismissible fade show`;
-        notification.setAttribute('role', 'alert');
-        notification.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
-        notification.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.body.appendChild(notification);
-        
-        // Auto remove after 3 seconds
+        header.className = 'toast-header ' + (isSuccess ? 'bg-success text-white' : 'bg-danger text-white');
+        icon.className = 'bi me-2 ' + (isSuccess ? 'bi-check-circle' : 'bi-x-circle');
+        title.textContent = isSuccess ? 'Success' : 'Error';
+        body.textContent = message;
+        toast.style.display = 'block';
+
         setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 3000);
+            hideNotification();
+        }, 4000);
+    }
+
+    function hideNotification() {
+        document.getElementById('notificationToast').style.display = 'none';
     }
 </script>
 @endpush
