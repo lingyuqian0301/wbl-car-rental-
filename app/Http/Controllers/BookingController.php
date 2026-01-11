@@ -418,7 +418,7 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
         }
     }
 
-    public function finalize(Request $request)
+public function finalize(Request $request)
     {
         Log::info('Finalize booking called', ['request' => $request->all()]);
 
@@ -445,9 +445,39 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
                 ->select('voucher.*')
                 ->first();
 
-            // 2. USE SESSION DATA FOR TOTAL (Safer than request input)
+            // 2. USE SESSION DATA FOR TOTAL
             $bookingData = session('booking_data');
             $finalRentalAmount = $bookingData['final_total'] ?? $request->total_amount;
+            $requiredDeposit = $bookingData['deposit_amount'] ?? 50; // Get deposit amount
+
+            // =========================================================
+            // NEW LOGIC: CHECK WALLET HOLDING & AUTO-RESERVE
+            // =========================================================
+            $bookingStatus = 'Pending'; // Default
+            $depositMessage = '';
+            
+            // Get Wallet
+            $wallet = DB::table('walletaccount')->where('customerID', $customer->customerID)->first();
+
+            // Check if wallet has enough for deposit
+            if ($wallet && $wallet->wallet_balance >= $requiredDeposit) {
+                // A. Deduct from Wallet (Holding Logic)
+                DB::table('walletaccount')
+                    ->where('accountID', $wallet->accountID)
+                    ->update([
+                        'wallet_balance' => $wallet->wallet_balance - $requiredDeposit,
+                        'wallet_lastUpdate_Date_Time' => now()
+                    ]);
+
+                // B. Set Status to RESERVED (Skip Admin)
+                $bookingStatus = 'Reserved';
+                $depositMessage = ' Deposit was auto-deducted from your wallet.';
+                
+                Log::info("Booking Auto-Reserved. RM $requiredDeposit deducted from Wallet ID: $wallet->accountID");
+            }
+            // =========================================================
+            // END NEW LOGIC
+            // =========================================================
 
             // 3. CREATE BOOKING
             $booking = new Booking();
@@ -460,20 +490,21 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             $booking->return_point = $request->return_point;
             $booking->rental_amount = $finalRentalAmount;
             $booking->addOns_item = $bookingData['addOns_item'] ?? null;
-            $booking->deposit_amount = $bookingData['deposit_amount'] ?? 50;
-            $booking->booking_status = 'Pending';
+            $booking->deposit_amount = $requiredDeposit;
+            
+            // USE THE STATUS DETERMINED ABOVE
+            $booking->booking_status = $bookingStatus; 
+            
             $booking->lastUpdateDate = now();
 
             $booking->save();
 
             // 4. DEACTIVATE VOUCHER AND DEDUCT 5 STAMPS
             if ($activeVoucher && isset($bookingData['discount_amount']) && $bookingData['discount_amount'] > 0) {
-                // Deactivate the voucher
                 DB::table('voucher')
                     ->where('voucherID', $activeVoucher->voucherID)
                     ->update(['voucher_isActive' => 0]);
 
-                // Deduct 5 stamps from loyalty card
                 $loyaltyCard = DB::table('loyaltycard')
                     ->where('loyaltyCardID', $activeVoucher->loyaltyCardID)
                     ->first();
@@ -485,19 +516,25 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
                             'total_stamps' => max(0, $loyaltyCard->total_stamps - 5),
                             'loyalty_last_updated' => now()
                         ]);
-
-                    Log::info("Voucher {$activeVoucher->voucherID} applied to Booking #{$booking->bookingID}. 5 stamps deducted.");
                 }
             }
 
-            // 5. WALLET & NOTIFICATION
+            // 5. WALLET & NOTIFICATION (Existing helper)
             $this->updateWalletAndNotify($customer, $booking);
 
             session()->forget('booking_data');
             DB::commit();
 
-            return redirect()->route('payments.create', ['booking' => $booking->bookingID])
-                ->with('success', 'Booking confirmed! Voucher applied.');
+            // Redirect based on status
+            if ($booking->booking_status === 'Reserved') {
+                // If auto-approved, go to Bookings List or Payment for Rental Fee
+                return redirect()->route('bookings.index')
+                    ->with('success', 'Booking Confirmed (Reserved)!' . $depositMessage);
+            } else {
+                // If Pending, go to Payment page to pay Deposit manually
+                return redirect()->route('payments.create', ['booking' => $booking->bookingID])
+                    ->with('success', 'Booking placed! Please pay the deposit.');
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();
