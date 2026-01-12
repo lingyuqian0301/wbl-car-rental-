@@ -13,25 +13,68 @@
     .table-header {
         background: var(--admin-red);
         color: white;
-        padding: 15px 20px;
+        padding: 12px 16px;
         font-weight: 600;
     }
-    .table thead th {
+    /* Compact table styles */
+    .payment-table .table {
+        font-size: 0.75rem;
+        table-layout: fixed;
+        width: 100%;
+    }
+    .payment-table .table thead th {
         background: var(--admin-red-light);
         color: var(--admin-red-dark);
         font-weight: 600;
         border-bottom: 2px solid var(--admin-red);
-        padding: 12px;
-        font-size: 0.9rem;
-        white-space: nowrap;
-    }
-    .table tbody td {
-        padding: 12px;
+        padding: 8px 6px;
+        font-size: 0.7rem;
+        white-space: normal;
+        word-wrap: break-word;
+        text-align: center;
         vertical-align: middle;
     }
+    .payment-table .table tbody td {
+        padding: 8px 6px;
+        vertical-align: middle;
+        font-size: 0.75rem;
+        word-wrap: break-word;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    /* Column widths */
+    .payment-table .table th:nth-child(1),
+    .payment-table .table td:nth-child(1) { width: 5%; } /* Booking ID */
+    .payment-table .table th:nth-child(2),
+    .payment-table .table td:nth-child(2) { width: 5%; } /* Payment ID */
+    .payment-table .table th:nth-child(3),
+    .payment-table .table td:nth-child(3) { width: 8%; } /* Bank Name */
+    .payment-table .table th:nth-child(4),
+    .payment-table .table td:nth-child(4) { width: 8%; } /* Bank Account */
+    .payment-table .table th:nth-child(5),
+    .payment-table .table td:nth-child(5) { width: 7%; } /* Date */
+    .payment-table .table th:nth-child(6),
+    .payment-table .table td:nth-child(6) { width: 6%; } /* Type */
+    .payment-table .table th:nth-child(7),
+    .payment-table .table td:nth-child(7) { width: 7%; } /* Amount */
+    .payment-table .table th:nth-child(8),
+    .payment-table .table td:nth-child(8) { width: 10%; } /* Transaction Ref */
+    .payment-table .table th:nth-child(9),
+    .payment-table .table td:nth-child(9) { width: 7%; } /* Receipt */
+    .payment-table .table th:nth-child(10),
+    .payment-table .table td:nth-child(10) { width: 6%; } /* Is Complete */
+    .payment-table .table th:nth-child(11),
+    .payment-table .table td:nth-child(11) { width: 6%; } /* Status */
+    .payment-table .table th:nth-child(12),
+    .payment-table .table td:nth-child(12) { width: 7%; } /* Is Verify */
+    .payment-table .table th:nth-child(13),
+    .payment-table .table td:nth-child(13) { width: 8%; } /* Verified By */
+    .payment-table .table th:nth-child(14),
+    .payment-table .table td:nth-child(14) { width: 10%; } /* Invoice */
+    
     .receipt-image {
-        max-width: 80px;
-        max-height: 80px;
+        max-width: 50px;
+        max-height: 50px;
         object-fit: cover;
         border-radius: 4px;
         cursor: pointer;
@@ -40,7 +83,22 @@
         opacity: 0.8;
     }
     .verify-dropdown {
-        min-width: 120px;
+        min-width: 80px;
+        font-size: 0.7rem;
+        padding: 4px 6px;
+    }
+    .verified-by-dropdown {
+        min-width: 90px;
+        font-size: 0.7rem;
+        padding: 4px 6px;
+    }
+    .payment-table .badge {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+    }
+    .payment-table .btn-sm {
+        font-size: 0.65rem;
+        padding: 3px 8px;
     }
 </style>
 @endpush
@@ -159,24 +217,24 @@
         <div class="table-header">
             <i class="bi bi-credit-card"></i> All Payments ({{ $payments->total() }})
         </div>
-        <div class="table-responsive">
+        <div style="overflow-x: auto;">
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Booking ID</th>
-                        <th>Payment ID</th>
-                        <th>Payment Bank Name</th>
-                        <th>Payment Bank Account No</th>
-                        <th>Payment Date</th>
-                        <th>Payment Type</th>
-                        <th>Payment Amount</th>
-                        <th>Transaction Reference</th>
-                        <th>Payment Receipt</th>
-                        <th>Is Payment Complete</th>
-                        <th>Payment Status</th>
-                        <th>Payment is Verify</th>
+                        <th>Booking</th>
+                        <th>Payment</th>
+                        <th>Bank</th>
+                        <th>Account No</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Txn Ref</th>
+                        <th>Receipt</th>
+                        <th>Complete</th>
+                        <th>Status</th>
+                        <th>Verify</th>
                         <th>Verified By</th>
-                        <th>Generate Invoice</th>
+                        <th>Invoice</th>
                     </tr>
                 </thead>
                 <tbody>
