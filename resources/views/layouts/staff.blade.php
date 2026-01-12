@@ -12,62 +12,225 @@
 
     <style>
         :root {
-            --hasta-red: #b91c1c;
-            --hasta-red-dark: #7f1d1d;
+            /* Primary Colors */
+            --admin-red: #dc2626;
+            --admin-red-dark: #991b1b;
+            --admin-red-light: #fee2e2;
+            --admin-red-lighter: #fef2f2;
+            
+            /* Neutral Colors */
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            
+            /* Status Colors */
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --info: #0284c7;
+            --info-light: #e0f2fe;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            
+            /* Typography */
+            --font-sans: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            
+            /* Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            
+            /* Legacy aliases */
+            --hasta-red: #dc2626;
+            --hasta-red-dark: #991b1b;
             --hasta-rose: #fee2e2;
             --hasta-slate: #111827;
         }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            font-size: 13px; /* Zoom out effect */
+        }
+        
         body {
-            background: linear-gradient(135deg, #fff7f7 0%, #fff 35%, #fff7f7 100%);
-            color: #1f2937;
+            font-family: var(--font-sans);
+            font-size: var(--font-size-sm);
+            background-color: var(--gray-100);
+            color: var(--gray-800);
+            line-height: 1.5;
         }
+        
         .page-header {
-            background: linear-gradient(120deg, var(--hasta-red) 0%, var(--hasta-red-dark) 100%);
+            background: linear-gradient(120deg, var(--admin-red) 0%, var(--admin-red-dark) 100%);
             color: #fff;
-            border-radius: 20px;
-            box-shadow: 0 20px 35px rgba(185, 28, 28, 0.25);
-            padding: 24px 28px;
+            border-radius: var(--radius-xl);
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.2);
+            padding: 1.5rem 1.75rem;
         }
+        
+        /* ===== CARD STYLES ===== */
+        .card {
+            border: none;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            background: white;
+        }
+        
         .metric-card {
             border: none;
-            border-radius: 16px;
-            box-shadow: 0 12px 25px rgba(0,0,0,0.05);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        
         .metric-icon {
             width: 48px;
             height: 48px;
-            border-radius: 12px;
+            border-radius: var(--radius-lg);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: var(--hasta-rose);
-            color: var(--hasta-red);
-            font-size: 1.35rem;
+            background: var(--admin-red-light);
+            color: var(--admin-red);
+            font-size: 1.25rem;
         }
+        
         .card-header-red {
-            background: var(--hasta-red);
+            background: var(--admin-red);
             color: #fff;
-            border-radius: 12px 12px 0 0;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            padding: 0.875rem 1.25rem;
+            font-weight: 600;
         }
+        
+        .card-body {
+            padding: 1.25rem;
+        }
+        
+        /* ===== TABLE STYLES ===== */
+        .table {
+            font-size: var(--font-size-sm);
+            margin-bottom: 0;
+        }
+        
         .table thead th {
-            background: var(--hasta-rose);
-            color: var(--hasta-slate);
-            border-bottom: 2px solid #fca5a5;
+            background: var(--admin-red-light);
+            color: var(--admin-red-dark);
+            font-weight: 600;
+            font-size: var(--font-size-xs);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--admin-red);
+            white-space: nowrap;
         }
-        .badge-soft {
-            background: var(--hasta-rose);
-            color: var(--hasta-red);
-            border: 1px solid #fecdd3;
+        
+        .table tbody td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--gray-200);
         }
+        
+        .table tbody tr:hover {
+            background-color: var(--gray-50);
+        }
+        
+        /* ===== BUTTON STYLES ===== */
+        .btn {
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            transition: all 0.15s ease;
+        }
+        
+        .btn-sm {
+            font-size: var(--font-size-xs);
+            padding: 0.375rem 0.75rem;
+        }
+        
+        .btn-danger {
+            background: var(--admin-red);
+            border-color: var(--admin-red);
+        }
+        
+        .btn-danger:hover {
+            background: var(--admin-red-dark);
+            border-color: var(--admin-red-dark);
+        }
+        
+        .btn-outline-danger {
+            color: var(--admin-red);
+            border-color: var(--admin-red);
+        }
+        
+        .btn-outline-danger:hover {
+            background: var(--admin-red);
+            color: white;
+        }
+        
         .pill-btn {
             border-radius: 999px;
-            padding-inline: 16px;
+            padding-inline: 1rem;
         }
+        
+        /* ===== BADGE STYLES ===== */
+        .badge {
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+            border-radius: var(--radius-sm);
+        }
+        
+        .badge-soft {
+            background: var(--admin-red-light);
+            color: var(--admin-red);
+            border: 1px solid #fecdd3;
+        }
+        
+        /* ===== ALERT STYLES ===== */
+        .alert {
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            padding: 0.875rem 1rem;
+        }
+        
+        .alert-success { background: var(--success-light); color: var(--success); }
+        .alert-danger { background: var(--danger-light); color: var(--danger); }
+        .alert-warning { background: var(--warning-light); color: var(--warning); }
+        .alert-info { background: var(--info-light); color: var(--info); }
+        
+        /* ===== UTILITY ===== */
         .text-muted-small {
-            color: #6b7280;
-            font-size: 0.9rem;
+            color: var(--gray-500);
+            font-size: var(--font-size-sm);
         }
+        
+        .text-danger { color: var(--admin-red) !important; }
     </style>
 </head>
 <body>

@@ -6,33 +6,74 @@
 <style>
     .chart-card {
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 20px;
-        margin-bottom: 25px;
+        border-radius: var(--radius-lg, 12px);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--gray-200, #e5e7eb);
+    }
+    .chart-card h5 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800, #1f2937);
+        margin: 0;
+    }
+    .chart-card h5 i {
+        color: var(--admin-red, #dc2626);
+        margin-right: 0.5rem;
     }
     .chart-container {
         position: relative;
-        height: 400px;
-        margin-top: 20px;
+        height: 320px;
+        margin-top: 1rem;
+        padding: 0.5rem;
+    }
+    /* Horizontal bar charts need more height */
+    .chart-container.horizontal {
+        height: 280px;
+    }
+    .chart-description {
+        font-size: 0.75rem;
+        color: var(--gray-500, #6b7280);
+        background: var(--gray-50, #f9fafb);
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-sm, 6px);
+        margin-bottom: 0;
+        display: inline-block;
     }
     .filter-card {
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 15px;
-        margin-bottom: 25px;
+        border-radius: var(--radius-lg, 12px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .nav-tabs {
+        border-bottom: 2px solid var(--gray-200, #e5e7eb);
+        gap: 0.25rem;
     }
     .nav-tabs .nav-link {
-        color: var(--admin-red);
+        color: var(--gray-600, #4b5563);
         border: none;
-        border-bottom: 2px solid transparent;
+        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+    }
+    .nav-tabs .nav-link:hover {
+        color: var(--admin-red, #dc2626);
+        border-bottom-color: var(--admin-red-light, #fee2e2);
     }
     .nav-tabs .nav-link.active {
-        color: var(--admin-red-dark);
+        color: var(--admin-red, #dc2626);
         background: transparent;
-        border-bottom: 2px solid var(--admin-red);
+        border-bottom: 3px solid var(--admin-red, #dc2626);
         font-weight: 600;
+    }
+    .nav-tabs .nav-link i {
+        margin-right: 0.375rem;
     }
     @media print {
         .no-print {
@@ -43,6 +84,15 @@
             margin-bottom: 20px;
             font-size: 1.5rem;
             font-weight: bold;
+        }
+        .chart-card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+    }
+    @media (max-width: 768px) {
+        .chart-container {
+            height: 280px;
         }
     }
 </style>
@@ -119,7 +169,7 @@
                 <input type="week" name="selected_week" class="form-control form-control-sm" value="{{ $selectedWeek }}" onchange="this.form.submit()">
             </form>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 7 days (Mon-Sun), Y = 0-22 bookings (step: 2)</p>
+        <p class="chart-description">X-axis: Days of the week (Mon-Sun) | Y-axis: Number of bookings</p>
         <div class="chart-container">
             <canvas id="weeklyChart"></canvas>
         </div>
@@ -136,7 +186,7 @@
                 <input type="month" name="selected_month" class="form-control form-control-sm" value="{{ $selectedMonth }}" onchange="this.form.submit()">
             </form>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 31 days (show every 7 days), Y = 0-52 bookings (step: 2)</p>
+        <p class="chart-description">X-axis: Days of the month (1-31) | Y-axis: Number of bookings</p>
         <div class="chart-container">
             <canvas id="monthlyChart"></canvas>
         </div>
@@ -155,8 +205,8 @@
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 0-30 bookings, Y = Faculties</p>
-        <div class="chart-container">
+        <p class="chart-description">Horizontal bar chart showing bookings by faculty</p>
+        <div class="chart-container horizontal">
             <canvas id="facultyChart"></canvas>
         </div>
     </div>
@@ -178,8 +228,8 @@
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 0-30 bookings, Y = Vehicle Brands</p>
-        <div class="chart-container">
+        <p class="chart-description">Horizontal bar chart showing bookings by vehicle brand</p>
+        <div class="chart-container horizontal">
             <canvas id="brandChart"></canvas>
         </div>
     </div>
@@ -191,7 +241,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5><i class="bi bi-bar-chart-line"></i> Comparison Bar Chart (Latest 4 Months)</h5>
         </div>
-        <p class="text-muted small mb-2">Fixed axis: X = 4 months, Y = 0-102 bookings (step: 2)</p>
+        <p class="chart-description">Comparing total, car, and motorcycle bookings over the last 4 months</p>
         <div class="chart-container">
             <canvas id="comparisonChart"></canvas>
         </div>
@@ -229,22 +279,32 @@
         data: {
             labels: fixedWeekDays,
             datasets: [{
-                label: 'Number of Bookings',
+                label: 'Bookings',
                 data: weeklyMappedData,
-                backgroundColor: 'rgba(220, 53, 69, 0.7)',
-                borderColor: '#dc3545',
-                borderWidth: 1,
-                borderRadius: 4
+                backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                borderColor: '#dc2626',
+                borderWidth: 0,
+                borderRadius: 6,
+                barThickness: 40,
+                maxBarThickness: 50
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
+                legend: {
+                    display: false
+                },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 13, weight: '600' },
+                    bodyFont: { size: 12 },
+                    cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            return 'Bookings: ' + context.parsed.y;
+                            return ' ' + context.parsed.y + ' bookings';
                         }
                     }
                 }
@@ -252,25 +312,26 @@
             scales: {
                 x: {
                     display: true,
-                    title: {
-                        display: true,
-                        text: 'Day of Week'
-                    },
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        font: { size: 11, weight: '500' },
+                        color: '#6b7280'
                     }
                 },
                 y: {
                     beginAtZero: true,
-                    min: 0,
-                    max: 22,
+                    grace: '10%',
                     ticks: {
-                        stepSize: 2,
-                        precision: 0
+                        stepSize: 1,
+                        precision: 0,
+                        font: { size: 11 },
+                        color: '#6b7280'
                     },
-                    title: {
-                        display: true,
-                        text: 'Number of Bookings'
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.06)',
+                        drawBorder: false
                     }
                 }
             }
@@ -305,22 +366,33 @@
         data: {
             labels: fixedMonthDays,
             datasets: [{
-                label: 'Number of Bookings',
+                label: 'Bookings',
                 data: monthlyMappedData,
-                backgroundColor: 'rgba(220, 53, 69, 0.7)',
-                borderColor: '#dc3545',
-                borderWidth: 1,
-                borderRadius: 4
+                backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                borderColor: '#dc2626',
+                borderWidth: 0,
+                borderRadius: 3,
+                barPercentage: 0.85,
+                categoryPercentage: 0.9
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
+                legend: {
+                    display: false
+                },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
                     callbacks: {
+                        title: function(context) {
+                            return 'Day ' + context[0].label;
+                        },
                         label: function(context) {
-                            return 'Day ' + context.label + ': ' + context.parsed.y + ' bookings';
+                            return ' ' + context.parsed.y + ' bookings';
                         }
                     }
                 }
@@ -328,20 +400,17 @@
             scales: {
                 x: {
                     display: true,
-                    title: {
-                        display: true,
-                        text: 'Day of Month'
-                    },
                     grid: {
                         display: false
                     },
                     ticks: {
                         maxRotation: 0,
                         autoSkip: false,
+                        font: { size: 10 },
+                        color: '#6b7280',
                         callback: function(value, index) {
-                            // Show labels every 7 days: 1, 7, 14, 21, 28
                             const day = index + 1;
-                            if (day === 1 || day % 7 === 0) {
+                            if (day === 1 || day === 7 || day === 14 || day === 21 || day === 28 || day === 31) {
                                 return day;
                             }
                             return '';
@@ -350,15 +419,16 @@
                 },
                 y: {
                     beginAtZero: true,
-                    min: 0,
-                    max: 52,
+                    grace: '10%',
                     ticks: {
-                        stepSize: 2,
-                        precision: 0
+                        stepSize: 1,
+                        precision: 0,
+                        font: { size: 11 },
+                        color: '#6b7280'
                     },
-                    title: {
-                        display: true,
-                        text: 'Number of Bookings'
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.06)',
+                        drawBorder: false
                     }
                 }
             }
@@ -397,22 +467,21 @@
         data: {
             labels: facultyLabels,
             datasets: [{
-                label: 'Number of Bookings',
+                label: 'Bookings',
                 data: facultyValues,
                 backgroundColor: [
-                    'rgba(220, 53, 69, 0.7)',
-                    'rgba(253, 126, 20, 0.7)',
-                    'rgba(255, 193, 7, 0.7)',
-                    'rgba(32, 201, 151, 0.7)',
-                    'rgba(13, 110, 253, 0.7)',
-                    'rgba(111, 66, 193, 0.7)',
-                    'rgba(232, 62, 140, 0.7)'
+                    'rgba(220, 38, 38, 0.85)',
+                    'rgba(234, 88, 12, 0.85)',
+                    'rgba(202, 138, 4, 0.85)',
+                    'rgba(22, 163, 74, 0.85)',
+                    'rgba(37, 99, 235, 0.85)',
+                    'rgba(124, 58, 237, 0.85)',
+                    'rgba(219, 39, 119, 0.85)'
                 ],
-                borderColor: [
-                    '#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0d6efd', '#6f42c1', '#e83e8c'
-                ],
-                borderWidth: 1,
-                borderRadius: 4
+                borderWidth: 0,
+                borderRadius: 4,
+                barThickness: 28,
+                maxBarThickness: 35
             }]
         },
         options: {
@@ -420,39 +489,43 @@
             maintainAspectRatio: false,
             indexAxis: 'y',
             plugins: {
+                legend: {
+                    display: false
+                },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            return context.parsed.x + ' bookings';
+                            return ' ' + context.parsed.x + ' bookings';
                         }
-                        }
-                    },
-                    legend: {
-                    display: false
+                    }
                 }
             },
             scales: {
                 x: {
                     beginAtZero: true,
-                    min: 0,
-                    max: 30,
+                    grace: '10%',
                     ticks: {
                         stepSize: 5,
-                        precision: 0
+                        precision: 0,
+                        font: { size: 11 },
+                        color: '#6b7280'
                     },
-                    title: {
-                        display: true,
-                        text: 'Number of Bookings'
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.06)',
+                        drawBorder: false
                     }
                 },
                 y: {
                     display: true,
-                    title: {
-                        display: true,
-                        text: 'Faculty'
-                    },
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        font: { size: 11, weight: '500' },
+                        color: '#374151'
                     }
                 }
             }
@@ -494,23 +567,22 @@
         data: {
             labels: brandLabels,
             datasets: [{
-                label: 'Number of Bookings',
+                label: 'Bookings',
                 data: brandValues,
                 backgroundColor: [
-                    'rgba(220, 53, 69, 0.7)',
-                    'rgba(253, 126, 20, 0.7)',
-                    'rgba(255, 193, 7, 0.7)',
-                    'rgba(32, 201, 151, 0.7)',
-                    'rgba(13, 110, 253, 0.7)',
-                    'rgba(111, 66, 193, 0.7)',
-                    'rgba(232, 62, 140, 0.7)',
-                    'rgba(25, 135, 84, 0.7)'
+                    'rgba(220, 38, 38, 0.85)',
+                    'rgba(234, 88, 12, 0.85)',
+                    'rgba(202, 138, 4, 0.85)',
+                    'rgba(22, 163, 74, 0.85)',
+                    'rgba(37, 99, 235, 0.85)',
+                    'rgba(124, 58, 237, 0.85)',
+                    'rgba(219, 39, 119, 0.85)',
+                    'rgba(20, 184, 166, 0.85)'
                 ],
-                borderColor: [
-                    '#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0d6efd', '#6f42c1', '#e83e8c', '#198754'
-                ],
-                borderWidth: 1,
-                borderRadius: 4
+                borderWidth: 0,
+                borderRadius: 4,
+                barThickness: 28,
+                maxBarThickness: 35
             }]
         },
         options: {
@@ -518,39 +590,43 @@
             maintainAspectRatio: false,
             indexAxis: 'y',
             plugins: {
+                legend: {
+                    display: false
+                },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            return context.parsed.x + ' bookings';
+                            return ' ' + context.parsed.x + ' bookings';
                         }
-                        }
-                    },
-                    legend: {
-                    display: false
+                    }
                 }
             },
             scales: {
                 x: {
                     beginAtZero: true,
-                    min: 0,
-                    max: 30,
+                    grace: '10%',
                     ticks: {
                         stepSize: 5,
-                        precision: 0
+                        precision: 0,
+                        font: { size: 11 },
+                        color: '#6b7280'
                     },
-                    title: {
-                        display: true,
-                        text: 'Number of Bookings'
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.06)',
+                        drawBorder: false
                     }
                 },
                 y: {
                     display: true,
-                    title: {
-                        display: true,
-                        text: 'Vehicle Brand'
-                    },
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        font: { size: 11, weight: '500' },
+                        color: '#374151'
                     }
                 }
             }
@@ -598,26 +674,23 @@
                 {
                     label: 'Total',
                     data: comparisonTotal,
-                    backgroundColor: 'rgba(220, 53, 69, 0.8)',
-                    borderColor: '#dc3545',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    backgroundColor: 'rgba(220, 38, 38, 0.85)',
+                    borderWidth: 0,
+                    borderRadius: 6
                 },
                 {
                     label: 'Cars',
                     data: comparisonCars,
-                    backgroundColor: 'rgba(13, 110, 253, 0.8)',
-                    borderColor: '#0d6efd',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    backgroundColor: 'rgba(37, 99, 235, 0.85)',
+                    borderWidth: 0,
+                    borderRadius: 6
                 },
                 {
                     label: 'Motorcycles',
                     data: comparisonMotorcycles,
-                    backgroundColor: 'rgba(25, 135, 84, 0.8)',
-                    borderColor: '#198754',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    backgroundColor: 'rgba(22, 163, 74, 0.85)',
+                    borderWidth: 0,
+                    borderRadius: 6
                 }
             ]
         },
@@ -627,37 +700,46 @@
             scales: {
                 x: {
                     display: true,
-                    title: {
-                        display: true,
-                        text: 'Month'
-                    },
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        font: { size: 11, weight: '500' },
+                        color: '#374151'
                     }
                 },
                 y: {
                     beginAtZero: true,
-                    min: 0,
-                    max: 102,
+                    grace: '10%',
                     ticks: {
-                        stepSize: 2,
-                        precision: 0
+                        precision: 0,
+                        font: { size: 11 },
+                        color: '#6b7280'
                     },
-                    title: {
-                        display: true,
-                        text: 'Number of Bookings'
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.06)',
+                        drawBorder: false
                     }
                 }
             },
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
+                        padding: 20,
+                        font: { size: 12, weight: '500' }
+                    }
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y + ' bookings';
+                            return ' ' + context.dataset.label + ': ' + context.parsed.y + ' bookings';
                         }
                     }
                 }

@@ -178,8 +178,8 @@
 
     <!-- Customer List -->
     <div class="card">
-        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Customers</h5>
+        <div class="card-header card-header-red d-flex justify-content-between align-items-center">
+            <span class="fw-semibold"><i class="bi bi-people me-2"></i>Customers</span>
             <span class="badge bg-light text-dark">{{ $customers->total() }} total</span>
         </div>
         <div class="card-body p-0">

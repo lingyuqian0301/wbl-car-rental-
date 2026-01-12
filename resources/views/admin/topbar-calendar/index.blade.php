@@ -6,6 +6,14 @@
 
 @section('title', 'Top Bar Calendar')
 
+@push('styles')
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+@endpush
+
+@push('scripts')
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+@endpush
+
 @section('content')
     <style>
         .calendar-container {
@@ -71,6 +79,8 @@
             position: relative;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
         }
 
         .calendar-day-cell:hover {
@@ -78,13 +88,109 @@
             z-index: 10;
         }
 
-        .date-label {
-            font-size: 0.65rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            padding: 2px 6px;
-            border-radius: 3px;
+        /* Duration-based booking bars that span multiple days */
+        .booking-bars-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
             margin-top: 4px;
+            position: relative;
+        }
+
+        /* Multi-day booking bar */
+        .booking-duration-bar {
+            height: 28px;
+            display: flex;
+            align-items: center;
+            padding: 0 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s ease;
+            overflow: hidden;
+            white-space: nowrap;
+            min-width: 0;
+            margin: 2px 0;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .booking-duration-bar:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 5;
+        }
+
+        .booking-duration-bar.unread {
+            border: 2px solid currentColor;
+            font-weight: 600;
+        }
+
+        /* Date type labels on bars */
+        .bar-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 4px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.3);
+            margin-right: 4px;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+
+        .bar-label.pickup {
+            background: rgba(255,255,255,0.4);
+            margin-left: 0;
+        }
+
+        .bar-label.return {
+            background: rgba(0,0,0,0.15);
+            margin-right: 0;
+            margin-left: 4px;
+        }
+
+        .bar-customer {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+            text-align: center;
+            padding: 0 4px;
+        }
+
+        .bar-plate {
+            font-size: 0.65rem;
+            opacity: 0.9;
+            margin-left: 4px;
+            flex-shrink: 0;
+        }
+
+        /* Unread indicator on bar */
+        .booking-duration-bar.unread::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 7px;
+            height: 7px;
+            background: #fef08a;
+            border-radius: 50%;
+            box-shadow: 0 0 3px #fcd34d;
+            z-index: 2;
+        }
+
+        .date-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 1px 3px;
+            border-radius: 2px;
+            margin-top: 2px;
             display: inline-block;
         }
 
@@ -110,52 +216,6 @@
         .calendar-day-number {
             font-weight: 600;
             margin-bottom: 5px;
-        }
-
-        .booking-item {
-            padding: 5px;
-            margin: 3px 0;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            position: relative;
-        }
-
-        /* Unread - Light Green (Deposit Only) */
-        .booking-item.unread.deposit-only {
-            background: #86efac;
-            color: #166534;
-            font-weight: 600;
-            border-left: 3px solid #16a34a;
-        }
-
-        /* Unread - Dark Green (Full Payment or Balance) */
-        .booking-item.unread.fully-paid,
-        .booking-item.unread.balance-paid {
-            background: #16a34a;
-            color: white;
-            font-weight: 600;
-            border-left: 3px solid #15803d;
-        }
-
-        /* Read - Light Red (Deposit Only) */
-        .booking-item.read.deposit-only {
-            background: #fca5a5;
-            color: #991b1b;
-        }
-
-        /* Read - Dark Red (Full Payment or Balance) */
-        .booking-item.read.fully-paid,
-        .booking-item.read.balance-paid {
-            background: #dc2626;
-            color: white;
-        }
-
-        /* Completed - Red */
-        .booking-item.completed {
-            background: #dc2626;
-            color: white;
-            font-weight: 600;
         }
 
         .booking-floating-box {
@@ -306,6 +366,132 @@
             border: 5px solid transparent;
             border-top-color: #333;
         }
+
+        /* Booking Detail Popup */
+        .booking-detail-popup {
+            position: fixed;
+            background: white;
+            border: 2px solid #dc2626;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            width: 320px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dc2626;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .popup-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            margin-left: 10px;
+        }
+
+        .popup-close:hover {
+            color: #dc2626;
+        }
+
+        .popup-body {
+            padding: 12px 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+
+        .popup-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 80px;
+        }
+
+        .popup-value {
+            text-align: right;
+            color: #333;
+            flex: 1;
+            margin-left: 10px;
+            word-break: break-word;
+        }
+
+        .popup-footer {
+            padding: 10px 15px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .popup-footer .btn {
+            width: 100%;
+        }
+
+        /* FullCalendar Theme Styling */
+        .fc-button-primary {
+            background-color: #dc2626 !important;
+            border-color: #dc2626 !important;
+        }
+
+        .fc-button-primary:hover {
+            background-color: #b91c1c !important;
+            border-color: #b91c1c !important;
+        }
+
+        .fc-button-primary:not(:disabled):active,
+        .fc-button-primary:not(:disabled).fc-button-active {
+            background-color: #991b1b !important;
+            border-color: #991b1b !important;
+        }
+
+        .fc-button-primary:disabled {
+            background-color: #fca5a5 !important;
+            border-color: #fca5a5 !important;
+        }
+
+        .fc .fc-button-group > .fc-button.fc-button-primary.fc-button-active {
+            background-color: #dc2626 !important;
+            border-color: #dc2626 !important;
+        }
+
+        .fc .fc-col-header-cell {
+            background-color: #f3f4f6;
+            border-color: #e5e7eb;
+        }
+
+        .fc .fc-daygrid-day.fc-day-today {
+            background-color: #fef2f2;
+        }
+
+        .fc .fc-highlight {
+            background-color: #fee2e2;
+        }
     </style>
 
     <!-- Receipt Modal -->
@@ -339,38 +525,6 @@
                     </span>
                 @endif
             </h4>
-            <div class="calendar-controls">
-                <div class="btn-group" role="group">
-                    <a href="{{ route('admin.topbar-calendar.index', ['view' => 'month', 'vehicle_id' => $selectedVehicle, 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'month' ? 'btn-danger' : 'btn-outline-danger' }}">
-                        Month
-                    </a>
-                    <a href="{{ route('admin.topbar-calendar.index', ['view' => 'week', 'vehicle_id' => $selectedVehicle, 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'week' ? 'btn-danger' : 'btn-outline-danger' }}">
-                        Week
-                    </a>
-                    <a href="{{ route('admin.topbar-calendar.index', ['view' => 'day', 'vehicle_id' => $selectedVehicle, 'date' => $currentDate]) }}" 
-                       class="btn btn-sm {{ $currentView === 'day' ? 'btn-danger' : 'btn-outline-danger' }}">
-                        Day
-                    </a>
-                </div>
-                <div class="btn-group ms-2" role="group">
-                    <a href="{{ route('admin.topbar-calendar.index', ['view' => $currentView, 'vehicle_id' => $selectedVehicle, 'date' => \Carbon\Carbon::parse($currentDate)->subMonth()->format('Y-m-d')]) }}" 
-                       class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('datePicker').showPicker()">
-                        {{ \Carbon\Carbon::parse($currentDate)->format('M Y') }}
-                    </button>
-                    <input type="month" id="datePicker" value="{{ \Carbon\Carbon::parse($currentDate)->format('Y-m') }}" 
-                           style="display: none;" 
-                           onchange="window.location.href='{{ route('admin.topbar-calendar.index', ['view' => $currentView, 'vehicle_id' => $selectedVehicle]) }}&date=' + this.value + '-01'">
-                    <a href="{{ route('admin.topbar-calendar.index', ['view' => $currentView, 'vehicle_id' => $selectedVehicle, 'date' => \Carbon\Carbon::parse($currentDate)->addMonth()->format('Y-m-d')]) }}" 
-                       class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </div>
-            </div>
         </div>
 
         <div class="calendar-filters">
@@ -402,271 +556,199 @@
 
         <div class="calendar-grid">
             @if($currentView === 'month')
-                <div class="calendar-month-view">
-                    <!-- Day Headers -->
-                    <div class="calendar-day-header">Sun</div>
-                    <div class="calendar-day-header">Mon</div>
-                    <div class="calendar-day-header">Tue</div>
-                    <div class="calendar-day-header">Wed</div>
-                    <div class="calendar-day-header">Thu</div>
-                    <div class="calendar-day-header">Fri</div>
-                    <div class="calendar-day-header">Sat</div>
+                <!-- FullCalendar Container -->
+                <div id="calendar"></div>
 
-                    @php
-                        $startOfMonth = \Carbon\Carbon::parse($currentDate)->startOfMonth();
-                        $endOfMonth = \Carbon\Carbon::parse($currentDate)->endOfMonth();
-                        $startOfCalendar = $startOfMonth->copy()->startOfWeek();
-                        $endOfCalendar = $endOfMonth->copy()->endOfWeek();
-                        $currentDay = $startOfCalendar->copy();
-                    @endphp
+                @php
+                    // Color palette for bookings
+                    $colorPalette = [
+                        '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
+                        '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+                        '#14b8a6', '#a855f7', '#22c55e', '#eab308', '#0ea5e9',
+                        '#d946ef', '#64748b', '#dc2626', '#059669', '#7c3aed'
+                    ];
 
-                    @while($currentDay->lte($endOfCalendar))
-                        @php
-                            $dateKey = $currentDay->format('Y-m-d');
-                            $isToday = $currentDay->isToday();
-                            $isOtherMonth = !$currentDay->isSameMonth($startOfMonth);
-                            $dayBookings = $bookingsByDate[$dateKey] ?? [];
-                            $cellClass = 'calendar-day-cell';
-                            if ($isOtherMonth) $cellClass .= ' other-month';
-                            if ($isToday) $cellClass .= ' today';
-                        @endphp
-                        <div class="{{ $cellClass }}" data-date="{{ $dateKey }}" 
-                             onmouseleave="handleCellMouseLeave('{{ $dateKey }}')">
-                            <div class="calendar-day-number">{{ $currentDay->format('j') }}</div>
-                            @foreach($dayBookings as $booking)
-                                @php
-                                    // Determine if this is pickup or return date for this cell
-                                    $pickupDateForCompare = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->format('Y-m-d') : '';
-                                    $returnDateForCompare = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date)->format('Y-m-d') : '';
-                                    $isPickupDateCell = $currentDay->format('Y-m-d') === $pickupDateForCompare;
-                                    $isReturnDateCell = $currentDay->format('Y-m-d') === $returnDateForCompare;
-                                    
-                                    // Check unread status based on which date type this cell represents
-                                    $isUnread = false;
-                                    if ($isPickupDateCell) {
-                                        $isUnread = in_array($booking->bookingID, $unreadPickups ?? []);
-                                    } elseif ($isReturnDateCell) {
-                                        $isUnread = in_array($booking->bookingID, $unreadReturns ?? []);
-                                    } else {
-                                        // For dates in between, use general unread status
-                                        $isUnread = in_array($booking->bookingID, $unreadBookings);
-                                    }
-                                    
-                                    $paymentStatus = $booking->payment_status;
-                                    $isCompleted = $booking->booking_status === 'Completed';
-                                    
-                                    $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
-                                    $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
-                                    $hasFullPayment = $totalPaid >= $totalRequired;
-                                    $hasBalancePayment = $totalPaid > 0 && $totalPaid < $totalRequired;
-                                    $isDepositOnly = $totalPaid > 0 && $totalPaid < ($booking->deposit_amount ?? 0);
-                                    
-                                    // Determine color class
-                                    $colorClass = '';
-                                    if ($isCompleted) {
-                                        $colorClass = 'completed';
-                                    } elseif ($isUnread) {
-                                        // Unread: light green (deposit only) or dark green (full/balance)
-                                        $colorClass = $isDepositOnly ? 'unread deposit-only' : 'unread fully-paid';
-                                    } else {
-                                        // Read: light red (deposit only) or dark red (full/balance)
-                                        $colorClass = $isDepositOnly ? 'read deposit-only' : 'read fully-paid';
-                                    }
-                                    
-                                    // Use confirmed_by instead of servedBy (booking_served_by table doesn't exist)
-                                    $confirmedBy = $booking->confirmedByUser ?? null;
-                                    $servedByRecords = collect();
-                                    if ($confirmedBy) {
-                                        $servedByRecords = collect([['servedByUser' => ['name' => $confirmedBy->name]]]);
-                                    }
-                                    
-                                    $hasReceipt = $booking->payments()->whereNotNull('proof_of_payment')->exists();
-                                    $firstPaymentWithReceipt = $booking->payments()->whereNotNull('proof_of_payment')->first();
-                                    $latestPayment = $booking->payments()->orderBy('payment_date', 'desc')->first();
-                                    
-                                    // Determine the date type for this cell
-                                    $dateTypeForCell = $isPickupDateCell ? 'pickup' : ($isReturnDateCell ? 'return' : 'rental');
-                                @endphp
-                                <div class="booking-item {{ $colorClass }}"
-                                     data-booking-id="{{ $booking->bookingID }}"
-                                     data-date-type="{{ $dateTypeForCell }}"
-                                     data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
-                                     onmouseenter="showBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}', event)"
-                                     onmouseleave="hideBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')"
-                                     onclick="event.stopPropagation(); toggleBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')">
-                                    <div>
-                                        @if($isPickupDateCell)
-                                            <span class="date-label pickup-label">Pickup</span>
-                                        @elseif($isReturnDateCell)
-                                            <span class="date-label return-label">Return</span>
-                                        @endif
-                                    </div>
-                                    <div>
-                                        <strong>{{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'N/A' }}</strong>
-                                        @if($isUnread)
-                                            <i class="bi bi-circle-fill" style="font-size: 0.5rem; margin-left: 5px;"></i>
-                                        @endif
-                                    </div>
-                                    <div class="small">{{ $booking->vehicle->plate_number ?? ($booking->vehicle->plate_no ?? 'N/A') }}</div>
-                                    
-                                    @if($booking->booking_status === 'Confirmed' || $booking->booking_status === 'Done')
-                                        <div class="mt-1">
-                                            @php
-                                                $staffCount = 1;
-                                                $adminCount = 1;
-                                            @endphp
-                                            @if($booking->confirmedByUser)
-                                                @php
-                                                    $confirmedUser = $booking->confirmedByUser;
-                                                    $tickClass = '';
-                                                    if ($confirmedUser->role === 'staff') {
-                                                        $tickClass = 'staff' . min($staffCount++, 2);
-                                                    } elseif ($confirmedUser->role === 'admin') {
-                                                        $tickClass = 'admin' . min($adminCount++, 2);
-                                                    }
-                                                @endphp
-                                                @if($tickClass)
-                                                    <span class="staff-tick {{ $tickClass }}" 
-                                                          data-staff-name="{{ $confirmedUser->name }}">
-                                                        <span class="staff-name-tooltip">{{ $confirmedUser->name }} (Confirmed)</span>
-                                                    </span>
-                                                @endif
-                                            @endif
-                                            @if($booking->completedByUser)
-                                                @php
-                                                    $completedUser = $booking->completedByUser;
-                                                    $tickClass = '';
-                                                    if ($completedUser->role === 'staff') {
-                                                        $tickClass = 'staff' . min($staffCount++, 2);
-                                                    } elseif ($completedUser->role === 'admin') {
-                                                        $tickClass = 'admin' . min($adminCount++, 2);
-                                                    }
-                                                @endphp
-                                                @if($tickClass)
-                                                    <span class="staff-tick {{ $tickClass }}" 
-                                                          data-staff-name="{{ $completedUser->name }}">
-                                                        <span class="staff-name-tooltip">{{ $completedUser->name }} (Completed)</span>
-                                                    </span>
-                                                @endif
-                                            @endif
-                                        </div>
-                                    @endif
+                    // Prepare booking events for FullCalendar
+                    $calendarEvents = $bookings->map(function($booking) use ($colorPalette) {
+                        // Generate consistent color based on customer + plate number
+                        $customerName = $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'Unknown';
+                        $plateNumber = $booking->vehicle->plate_number ?? $booking->vehicle->plate_no ?? 'N/A';
+                        $colorKey = md5($customerName . $plateNumber . $booking->bookingID);
+                        $colorIndex = hexdec(substr($colorKey, 0, 8)) % count($colorPalette);
+                        $backgroundColor = $colorPalette[$colorIndex];
+                        
+                        return [
+                            'id' => (string)$booking->bookingID,
+                            'title' => $customerName,
+                            'start' => $booking->rental_start_date ? $booking->rental_start_date->format('Y-m-d') : null,
+                            'end' => $booking->rental_end_date ? $booking->rental_end_date->addDay()->format('Y-m-d') : null,
+                            'backgroundColor' => $backgroundColor,
+                            'borderColor' => $backgroundColor,
+                            'textColor' => '#fff',
+                            'extendedProps' => [
+                                'bookingId' => $booking->bookingID,
+                                'customerId' => $customerName,
+                                'plateNumber' => $plateNumber,
+                                'vehicleModel' => $booking->vehicle->full_model ?? 'N/A',
+                                'duration' => $booking->duration,
+                                'status' => $booking->booking_status,
+                                'pickupDate' => $booking->rental_start_date ? $booking->rental_start_date->format('Y-m-d H:i') : null,
+                                'returnDate' => $booking->rental_end_date ? $booking->rental_end_date->format('Y-m-d H:i') : null
+                            ]
+                        ];
+                    })->toArray();
+                @endphp
 
-                                    <!-- Floating Booking Details Box -->
-                                    <div class="booking-floating-box" 
-                                         id="booking-box-{{ $booking->bookingID }}_{{ $dateTypeForCell }}" 
-                                         data-booking-id="{{ $booking->bookingID }}"
-                                         data-date-type="{{ $dateTypeForCell }}"
-                                         data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
-                                         onmouseenter="keepBookingBoxOpen('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')"
-                                         onmouseleave="hideBookingBox('{{ $booking->bookingID }}_{{ $dateTypeForCell }}')">
-                                        @php
-                                            $eventType = $isPickupDateCell ? 'Pickup' : ($isReturnDateCell ? 'Return' : 'Rental');
-                                            $pickupDateTime = $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date) : null;
-                                            $returnDateTime = $booking->rental_end_date ? \Carbon\Carbon::parse($booking->rental_end_date) : null;
-                                        @endphp
-                                        <div class="floating-box-header">
-                                            <div>
-                                                <strong style="color: var(--admin-red); font-size: 1.1rem;">{{ $eventType }}</strong>
-                                                <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">
-                                                    @if($isPickupDateCell && $pickupDateTime)
-                                                        {{ $pickupDateTime->format('d M Y H:i') }}
-                                                    @elseif($isReturnDateCell && $returnDateTime)
-                                                        {{ $returnDateTime->format('d M Y H:i') }}
-                                                    @else
-                                                        {{ $pickupDateTime ? $pickupDateTime->format('d M Y') : 'N/A' }} - {{ $returnDateTime ? $returnDateTime->format('d M Y') : 'N/A' }}
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            <button type="button" class="floating-box-close" onclick="event.stopPropagation(); closeAndMarkRead('{{ $booking->bookingID }}_{{ $dateTypeForCell }}', {{ $isUnread ? 'true' : 'false' }}, '{{ $dateTypeForCell }}')" title="Close">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </div>
-                                        <div class="booking-detail-row">
-                                            <span class="booking-detail-label">Booking ID:</span>
-                                            <span class="booking-detail-value"><strong>#{{ $booking->bookingID }}</strong></span>
-                                        </div>
-                                        <div class="booking-detail-row">
-                                            <span class="booking-detail-label">Booking Status:</span>
-                                            <span class="booking-detail-value">
-                                                <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-secondary')) }}">
-                                                    {{ $booking->booking_status ?? 'N/A' }}
-                                                </span>
-                                            </span>
-                                        </div>
-                                        <div class="booking-detail-row">
-                                            <span class="booking-detail-label">Customer Name:</span>
-                                            <span class="booking-detail-value">{{ $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'N/A' }}</span>
-                                        </div>
-                                        <div class="booking-detail-row">
-                                            <span class="booking-detail-label">Plate Number:</span>
-                                            <span class="booking-detail-value">{{ $booking->vehicle->plate_number ?? ($booking->vehicle->plate_no ?? 'N/A') }}</span>
-                                        </div>
-                                        @if($isPickupDateCell)
-                                            <div class="booking-detail-row">
-                                                <span class="booking-detail-label">Pickup Location:</span>
-                                                <span class="booking-detail-value">{{ $booking->pickup_point ?? 'Not set' }}</span>
-                                            </div>
-                                        @elseif($isReturnDateCell)
-                                            <div class="booking-detail-row">
-                                                <span class="booking-detail-label">Return Location:</span>
-                                                <span class="booking-detail-value">{{ $booking->return_point ?? 'Not set' }}</span>
-                                            </div>
-                                        @endif
-                                        <div class="booking-detail-row">
-                                            <span class="booking-detail-label">Duration:</span>
-                                            <span class="booking-detail-value">{{ $booking->duration ?? 0 }} days</span>
-                                        </div>
-                                        <div class="booking-detail-row">
-                                            <span class="booking-detail-label">Payment Status:</span>
-                                            <span class="booking-detail-value">
-                                                @if($hasFullPayment)
-                                                    <span class="badge bg-success">Fully Paid</span>
-                                                @elseif($hasBalancePayment)
-                                                    <span class="badge bg-warning text-dark">Balance Pending</span>
-                                                @elseif($isDepositOnly)
-                                                    <span class="badge bg-info">Deposit Only</span>
-                                                @else
-                                                    <span class="badge bg-secondary">Unpaid</span>
-                                                @endif
-                                            </span>
-                                        </div>
-                                        @if($latestPayment && $latestPayment->payment_method)
-                                            <div class="booking-detail-row">
-                                                <span class="booking-detail-label">Payment Method:</span>
-                                                <span class="booking-detail-value">
-                                                    <span class="badge bg-info">{{ $latestPayment->payment_method }}</span>
-                                                </span>
-                                            </div>
-                                        @endif
-                                        
-                                        <!-- Action Buttons -->
-                                        <div class="floating-box-buttons" onclick="event.stopPropagation()">
-                                            @if($hasReceipt && $firstPaymentWithReceipt)
-                                                <button class="btn btn-sm btn-info" 
-                                                        onclick="event.stopPropagation(); showReceipt('{{ getFileUrl($firstPaymentWithReceipt->transaction_reference ?? $firstPaymentWithReceipt->proof_of_payment ?? '') }}')">
-                                                    <i class="bi bi-receipt"></i> Receipt
-                                                </button>
-                                            @endif
-                                            <button class="btn btn-sm btn-primary" 
-                                                    onclick="event.stopPropagation(); goToBookingDetail({{ $booking->bookingID }})">
-                                                <i class="bi bi-eye"></i> Booking Detail
-                                            </button>
-                                            @if($isUnread)
-                                                <button class="btn btn-sm btn-success mark-read-btn" 
-                                                        id="mark-read-btn-{{ $booking->bookingID }}_{{ $dateTypeForCell }}"
-                                                        onclick="event.stopPropagation(); closeAndMarkRead('{{ $booking->bookingID }}_{{ $dateTypeForCell }}', true, '{{ $dateTypeForCell }}')">
-                                                    <i class="bi bi-check-lg"></i> Mark as Read
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </div>
+                <!-- FullCalendar Script -->
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const calendarEl = document.getElementById('calendar');
+                        const bookingEvents = @json($calendarEvents);
+                        
+                        const calendar = new FullCalendar.Calendar(calendarEl, {
+                            initialView: 'dayGridMonth',
+                            initialDate: '{{ $currentDate }}',
+                            events: bookingEvents,
+                            headerToolbar: {
+                                left: 'prev,next today',
+                                center: 'title',
+                                right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                            },
+                            editable: false,
+                            selectable: true,
+                            selectConstraint: 'businessHours',
+                            selectOverlap: false,
+                            eventClick: function(info) {
+    info.jsEvent.preventDefault();
+    info.jsEvent.stopPropagation();
+
+    showBookingDetails(
+        info.event.id,
+        info.event.extendedProps,
+        info.jsEvent,
+        true
+    );
+}
+
+                        });
+                        
+                        calendar.render();
+                    });
+
+                    // State tracking for popup locking
+                    let lockedPopup = null;
+                    let popupTimeouts = {};
+
+                    document.addEventListener('click', function (e) {
+    if (!lockedPopup) return;
+
+    const popup = document.getElementById('booking-popup-' + lockedPopup);
+
+    if (popup && !popup.contains(e.target)) {
+        closeAndUnlockPopup(lockedPopup);
+    }
+});
+
+
+                    function showBookingDetails(bookingId, props, event, isLocking = false) {
+                        // Remove existing popup
+                        const existingPopup = document.getElementById('booking-popup-' + bookingId);
+                        if (existingPopup) {
+                            existingPopup.remove();
+                        }
+
+                        // Clear any pending timeout for this popup
+                        if (popupTimeouts[bookingId]) {
+                            clearTimeout(popupTimeouts[bookingId]);
+                            delete popupTimeouts[bookingId];
+                        }
+
+                        // Create popup element
+                        const popup = document.createElement('div');
+                        popup.id = 'booking-popup-' + bookingId;
+                        popup.className = 'booking-detail-popup';
+                        popup.style.zIndex = '10000';
+                        popup.dataset.bookingId = bookingId;
+                        
+                        // Format dates
+                        const pickupDate = new Date(props.pickupDate);
+                        const returnDate = new Date(props.returnDate);
+                        const pickupFormatted = pickupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        const returnFormatted = returnDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                        popup.innerHTML = `
+                            <div class="popup-header">
+                                <strong style="color: #dc2626; font-size: 1.1rem;">Booking #${props.bookingId}</strong>
+                                <button type="button" class="popup-close" onclick="closeAndUnlockPopup(${bookingId})" title="Close">
+                                    <i class="bi bi-x-lg"></i> ×
+                                </button>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-row">
+                                    <span class="popup-label">Customer:</span>
+                                    <span class="popup-value">${props.customerId}</span>
                                 </div>
-                            @endforeach
-                        </div>
-                        @php $currentDay->addDay(); @endphp
-                    @endwhile
-                </div>
+                                <div class="popup-row">
+                                    <span class="popup-label">Vehicle:</span>
+                                    <span class="popup-value">${props.vehicleModel}</span>
+                                </div>
+                                <div class="popup-row">
+                                    <span class="popup-label">Plate:</span>
+                                    <span class="popup-value">${props.plateNumber}</span>
+                                </div>
+                                <div class="popup-row">
+                                    <span class="popup-label">Duration:</span>
+                                    <span class="popup-value">${props.duration} days</span>
+                                </div>
+                                <div class="popup-row">
+                                    <span class="popup-label">Status:</span>
+                                    <span class="popup-value"><span class="badge ${props.status === 'Confirmed' ? 'bg-success' : (props.status === 'Pending' ? 'bg-warning text-dark' : 'bg-secondary')}">${props.status}</span></span>
+                                </div>
+                                <div class="popup-row">
+                                    <span class="popup-label">Pickup:</span>
+                                    <span class="popup-value">${pickupFormatted}</span>
+                                </div>
+                                <div class="popup-row">
+                                    <span class="popup-label">Return:</span>
+                                    <span class="popup-value">${returnFormatted}</span>
+                                </div>
+                            </div>
+                            <div class="popup-footer">
+                                <button class="btn btn-sm btn-primary" onclick="goToBookingDetail(${props.bookingId})">
+                                    <i class="bi bi-eye"></i> View Details
+                                </button>
+                            </div>
+                        `;
+
+                        document.body.appendChild(popup);
+                        popup.addEventListener('click', function(e) {
+    e.stopPropagation();
+});
+
+
+                        // Position popup near the event
+                        if (event) {
+                            const rect = event.target.getBoundingClientRect();
+                            popup.style.position = 'fixed';
+                            popup.style.top = (rect.bottom + 10) + 'px';
+                            popup.style.left = (rect.left - 150) + 'px';
+                        }
+
+                        // When clicked, popup is locked and stays open until closed
+                        // Always lock the popup since there's no hover
+                        lockedPopup = bookingId;
+                    }
+                    function closeAndUnlockPopup(bookingId) {
+    const popup = document.getElementById('booking-popup-' + bookingId);
+    if (popup) {
+        popup.remove();
+    }
+    lockedPopup = null;
+}
+
+
+                   
+                </script>
             @elseif($currentView === 'week')
                 <div class="alert alert-info">
                     Week view will be implemented here.
@@ -680,57 +762,33 @@
     </div>
 
     <script>
-        let stickyBoxes = {};
-        let hoveredBoxes = {};
-        let hideTimeouts = {};
-
-        // boxId format: "bookingId_dateType" (e.g., "123_pickup" or "123_return")
-        function showBookingBox(boxId, event) {
-            const box = document.getElementById('booking-box-' + boxId);
-            if (!box) return;
-            
-            // Clear any pending hide timeout
-            if (hideTimeouts[boxId]) {
-                clearTimeout(hideTimeouts[boxId]);
-                delete hideTimeouts[boxId];
-            }
-            
-            if (!stickyBoxes[boxId]) {
-                box.style.display = 'block';
-                hoveredBoxes[boxId] = true;
-                // Position the box after it's displayed (using requestAnimationFrame for accurate measurements)
-                requestAnimationFrame(() => {
-                    positionBookingBox(box, event);
-                });
+       
             }
         }
 
-        function hideBookingBox(boxId) {
-            hoveredBoxes[boxId] = false;
+        function hideBookingBox(bookingId) {
+            hoveredBoxes[bookingId] = false;
             
-            // Set a small delay before hiding to allow moving to the box
-            if (hideTimeouts[boxId]) {
-                clearTimeout(hideTimeouts[boxId]);
+            if (hideTimeouts[bookingId]) {
+                clearTimeout(hideTimeouts[bookingId]);
             }
             
-            hideTimeouts[boxId] = setTimeout(() => {
-                const box = document.getElementById('booking-box-' + boxId);
-                
-                // Check if mouse is still over box
+            hideTimeouts[bookingId] = setTimeout(() => {
+                const box = document.getElementById('booking-box-' + bookingId);
                 const isMouseOverBox = box && (box.matches(':hover') || box.querySelector(':hover'));
                 
-                if (box && !stickyBoxes[boxId] && !hoveredBoxes[boxId] && !isMouseOverBox) {
+                if (box && !stickyBoxes[bookingId] && !hoveredBoxes[bookingId] && !isMouseOverBox) {
                     box.style.display = 'none';
                 }
-                delete hideTimeouts[boxId];
+                delete hideTimeouts[bookingId];
             }, 200);
         }
 
-        function keepBookingBoxOpen(boxId) {
-            hoveredBoxes[boxId] = true;
-            if (hideTimeouts[boxId]) {
-                clearTimeout(hideTimeouts[boxId]);
-                delete hideTimeouts[boxId];
+        function keepBookingBoxOpen(bookingId) {
+            hoveredBoxes[bookingId] = true;
+            if (hideTimeouts[bookingId]) {
+                clearTimeout(hideTimeouts[bookingId]);
+                delete hideTimeouts[bookingId];
             }
         }
 
@@ -740,16 +798,14 @@
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const margin = 15;
-            const scrollY = window.scrollY || window.pageYOffset;
-            const scrollX = window.scrollX || window.pageXOffset;
             
-            // Get the booking item element
-            const bookingItem = box.closest('.booking-item');
-            if (!bookingItem) return;
+            // Get the booking bar element
+            const bookingBar = document.querySelector(`.booking-duration-bar[data-booking-id="${box.dataset.bookingId}"]`);
+            if (!bookingBar) return;
             
-            const itemRect = bookingItem.getBoundingClientRect();
+            const barRect = bookingBar.getBoundingClientRect();
             
-            // Reset position and styles first
+            // Reset position
             box.style.top = 'auto';
             box.style.left = 'auto';
             box.style.right = 'auto';
@@ -757,69 +813,46 @@
             box.style.maxHeight = '';
             box.style.overflowY = '';
             
-            // Get measurements after display
+            // Get box dimensions
             const boxRect = box.getBoundingClientRect();
             const boxWidth = boxRect.width;
             const boxHeight = boxRect.height;
             
-            // Calculate initial position (below the item)
-            let top = itemRect.bottom + 5;
-            let left = itemRect.left;
+            // Position below the bar
+            let top = barRect.bottom + 8;
+            let left = barRect.left;
             
-            // Check if box goes off the right edge of viewport
+            // Constrain horizontally
             if (left + boxWidth > viewportWidth - margin) {
                 left = viewportWidth - boxWidth - margin;
             }
-            
-            // Check if box goes off the left edge of viewport
             if (left < margin) {
                 left = margin;
             }
             
-            // Check if box goes off the bottom edge of viewport
+            // Constrain vertically
             if (top + boxHeight > viewportHeight - margin) {
-                // Try to show above the item instead
-                const topAbove = itemRect.top - boxHeight - 5;
-                
+                const topAbove = barRect.top - boxHeight - 8;
                 if (topAbove >= margin) {
-                    // Can fit above
                     top = topAbove;
                 } else {
-                    // Can't fit above, constrain height and show below or center
-                    const spaceBelow = viewportHeight - itemRect.bottom - margin;
-                    const spaceAbove = itemRect.top - margin;
-                    
-                    if (spaceBelow >= spaceAbove && spaceBelow > 150) {
-                        // Show below with constrained height
-                        top = itemRect.bottom + 5;
-                        box.style.maxHeight = (spaceBelow - 10) + 'px';
-                        box.style.overflowY = 'auto';
-                    } else if (spaceAbove > 150) {
-                        // Show above with constrained height
-                        top = margin;
-                        box.style.maxHeight = (spaceAbove - 10) + 'px';
-                        box.style.overflowY = 'auto';
-                    } else {
-                        // Center vertically with constrained height
-                        top = margin;
-                        box.style.maxHeight = (viewportHeight - margin * 2) + 'px';
-                        box.style.overflowY = 'auto';
-                    }
+                    top = margin;
+                    box.style.maxHeight = (viewportHeight - margin * 2) + 'px';
+                    box.style.overflowY = 'auto';
                 }
             }
             
-            // Apply position (using fixed positioning)
             box.style.top = top + 'px';
             box.style.left = left + 'px';
         }
 
-        function toggleBookingBox(boxId) {
-            const box = document.getElementById('booking-box-' + boxId);
+        function toggleBookingBox(bookingId) {
+            const box = document.getElementById('booking-box-' + bookingId);
             if (box) {
-                if (stickyBoxes[boxId]) {
+                if (stickyBoxes[bookingId]) {
                     box.classList.remove('sticky');
                     box.style.display = 'none';
-                    delete stickyBoxes[boxId];
+                    delete stickyBoxes[bookingId];
                 } else {
                     // Close all other sticky boxes
                     Object.keys(stickyBoxes).forEach(id => {
@@ -832,140 +865,17 @@
                     });
                     box.classList.add('sticky');
                     box.style.display = 'block';
-                    stickyBoxes[boxId] = true;
-                    // Reposition when made sticky
-                    const bookingItem = box.closest('.booking-item');
-                    if (bookingItem) {
-                        const fakeEvent = { clientX: 0, clientY: 0 };
-                        positionBookingBox(box, fakeEvent);
-                    }
+                    stickyBoxes[bookingId] = true;
+                    
+                    const fakeEvent = { clientX: 0, clientY: 0 };
+                    positionBookingBox(box, fakeEvent);
                 }
             }
         }
 
-        function handleCellMouseLeave(dateKey) {
-            // Hide all non-sticky boxes in this cell
-            const cell = document.querySelector(`[data-date="${dateKey}"]`);
-            if (cell) {
-                const bookingItems = cell.querySelectorAll('.booking-item');
-                bookingItems.forEach(item => {
-                    const bookingId = item.dataset.bookingId;
-                    const dateType = item.dataset.dateType;
-                    const boxId = bookingId + '_' + dateType;
-                    if (boxId && !stickyBoxes[boxId]) {
-                        hideBookingBox(boxId);
-                    }
-                });
-            }
-        }
-
-        function navigateToBooking(bookingId, isUnread, event) {
-            // Prevent event bubbling
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            
-            if (isUnread) {
-                // Mark as read first, then navigate
-                fetch(`/admin/topbar-calendar/bookings/${bookingId}/mark-as-read`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Navigate to booking detail
-                    window.location.href = `/admin/bookings/reservations/${bookingId}?tab=booking-detail`;
-                })
-                .catch(error => {
-                    console.error('Error marking as read:', error);
-                    // Navigate even if mark as read fails
-                    window.location.href = `/admin/bookings/reservations/${bookingId}?tab=booking-detail`;
-                });
-            } else {
-                // Navigate directly
-                window.location.href = `/admin/bookings/reservations/${bookingId}?tab=booking-detail`;
-            }
-        }
-
-        function confirmBooking(bookingId) {
-            if (confirm('Confirm this booking? This will change the status from Pending to Confirmed.')) {
-                fetch(`/admin/topbar-calendar/bookings/${bookingId}/confirm`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Error: ' + (data.message || 'Failed to confirm booking'));
-                    }
-                })
-                .catch(error => {
-                    alert('Error confirming booking');
-                    console.error(error);
-                });
-            }
-        }
-
-        function completeBooking(bookingId) {
-            if (confirm('Mark this booking as completed?')) {
-                fetch(`/admin/topbar-calendar/bookings/${bookingId}/complete`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Error: ' + (data.message || 'Failed to complete booking'));
-                    }
-                })
-                .catch(error => {
-                    alert('Error completing booking');
-                    console.error(error);
-                });
-            }
-        }
-
-        function sendBalanceReminder(bookingId) {
-            if (confirm('Send balance reminder email to customer?')) {
-                fetch(`/admin/topbar-calendar/bookings/${bookingId}/send-balance-reminder`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Balance reminder email sent successfully!');
-                    } else {
-                        alert('Error: ' + (data.message || 'Failed to send email'));
-                    }
-                })
-                .catch(error => {
-                    alert('Error sending email');
-                    console.error(error);
-                });
-            }
-        }
-
-        // Close floating boxes when clicking outside (but not sticky ones on hover)
+        // Close floating boxes when clicking outside
         document.addEventListener('click', function(event) {
-            if (!event.target.closest('.booking-item') && !event.target.closest('.booking-floating-box')) {
+            if (!event.target.closest('.booking-duration-bar') && !event.target.closest('.booking-floating-box')) {
                 Object.keys(stickyBoxes).forEach(id => {
                     if (!hoveredBoxes[id]) {
                         const box = document.getElementById('booking-box-' + id);
@@ -979,52 +889,19 @@
             }
         });
 
-        // Close boxes when mouse leaves the calendar day cell or floating box
-        document.addEventListener('mouseout', function(event) {
-            const relatedTarget = event.relatedTarget;
-            
-            // Check if leaving a calendar day cell
-            if (event.target.classList.contains('calendar-day-cell')) {
-                if (!relatedTarget || !event.target.contains(relatedTarget)) {
-                    const bookingItems = event.target.querySelectorAll('.booking-item');
-                    bookingItems.forEach(item => {
-                        const bookingId = item.dataset.bookingId;
-                        const dateType = item.dataset.dateType;
-                        const boxId = bookingId + '_' + dateType;
-                        if (boxId && !stickyBoxes[boxId]) {
-                            hideBookingBox(boxId);
-                        }
-                    });
-                }
-            }
-            
-            // Check if leaving a floating box (but not moving to its parent booking item)
-            if (event.target.classList.contains('booking-floating-box')) {
-                const box = event.target;
-                const bookingId = box.dataset.bookingId;
-                const dateType = box.dataset.dateType;
-                const boxId = bookingId + '_' + dateType;
-                
-                // If not moving to booking item or staying in box, hide it (unless sticky)
-                if (!stickyBoxes[boxId] && (!relatedTarget || !box.contains(relatedTarget))) {
-                    hideBookingBox(boxId);
-                }
-            }
-        }, true);
-
         function showReceipt(receiptUrl) {
             document.getElementById('receiptImage').src = receiptUrl;
             document.getElementById('receiptDownloadLink').href = receiptUrl;
             new bootstrap.Modal(document.getElementById('receiptModal')).show();
         }
 
-        function closeBookingBox(boxId) {
-            const box = document.getElementById('booking-box-' + boxId);
+        function closeBookingBox(bookingId) {
+            const box = document.getElementById('booking-box-' + bookingId);
             if (box) {
                 box.classList.remove('sticky');
                 box.style.display = 'none';
-                delete stickyBoxes[boxId];
-                delete hoveredBoxes[boxId];
+                delete stickyBoxes[bookingId];
+                delete hoveredBoxes[bookingId];
             }
         }
 
@@ -1032,127 +909,40 @@
             window.location.href = `/admin/bookings/reservations/${bookingId}?tab=booking-detail`;
         }
 
-        // boxId format: "bookingId_dateType", dateType is 'pickup' or 'return'
-        function closeAndMarkRead(boxId, isUnread, dateType) {
-            // Extract bookingId from boxId (format: "123_pickup" or "123_return")
-            const parts = boxId.split('_');
-            const bookingId = parts[0];
-            dateType = dateType || parts[1] || 'pickup';
-            
+        function markAsReadAndClose(bookingId, isUnread) {
             if (isUnread) {
-                // Mark as read, then close
                 fetch(`/admin/topbar-calendar/bookings/${bookingId}/mark-as-read`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify({ date_type: dateType })
+                    body: JSON.stringify({ date_type: 'pickup' })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update the booking item appearance for this specific date type
-                        updateBookingItemToRead(boxId, dateType);
+                        // Update bar appearance
+                        const bar = document.querySelector(`.booking-duration-bar[data-booking-id="${bookingId}"]`);
+                        if (bar) {
+                            bar.classList.remove('unread');
+                            bar.dataset.isUnread = 'false';
+                            const dot = bar.querySelector('.unread-dot');
+                            if (dot) dot.remove();
+                        }
+                        // Update floating box
+                        const box = document.getElementById('booking-box-' + bookingId);
+                        if (box) box.dataset.isUnread = 'false';
                     }
-                    // Close the box regardless
-                    closeBookingBox(boxId);
+                    closeBookingBox(bookingId);
                 })
                 .catch(error => {
                     console.error('Error marking as read:', error);
-                    // Still close the box even if API call fails
-                    closeBookingBox(boxId);
+                    closeBookingBox(bookingId);
                 });
             } else {
-                // Just close the box
-                closeBookingBox(boxId);
+                closeBookingBox(bookingId);
             }
-        }
-
-        // boxId format: "bookingId_dateType"
-        function updateBookingItemToRead(boxId, dateType) {
-            // Extract bookingId and dateType from boxId
-            const parts = boxId.split('_');
-            const bookingId = parts[0];
-            dateType = dateType || parts[1] || 'pickup';
-            
-            // Find the specific booking item for this date type
-            const bookingItems = document.querySelectorAll(`.booking-item[data-booking-id="${bookingId}"][data-date-type="${dateType}"]`);
-            
-            bookingItems.forEach(bookingItem => {
-                // Update color classes
-                bookingItem.classList.remove('unread');
-                bookingItem.classList.add('read');
-                
-                // Update data attribute
-                bookingItem.dataset.isUnread = 'false';
-                
-                // Remove unread indicator
-                const unreadIndicator = bookingItem.querySelector('.bi-circle-fill');
-                if (unreadIndicator) {
-                    unreadIndicator.remove();
-                }
-            });
-            
-            // Hide the "Mark as Read" button
-            const markReadBtn = document.getElementById('mark-read-btn-' + boxId);
-            if (markReadBtn) {
-                markReadBtn.style.display = 'none';
-            }
-            
-            // Update the floating box data attribute
-            const box = document.getElementById('booking-box-' + boxId);
-            if (box) {
-                box.dataset.isUnread = 'false';
-            }
-            
-            // Update unread badge count
-            const unreadBadge = document.querySelector('.unread-badge');
-            if (unreadBadge) {
-                const currentCount = parseInt(unreadBadge.textContent.match(/\d+/)?.[0] || '0');
-                if (currentCount > 1) {
-                    unreadBadge.innerHTML = `<i class="bi bi-exclamation-circle"></i> ${currentCount - 1} Unread`;
-                } else {
-                    unreadBadge.style.display = 'none';
-                }
-            }
-        }
-
-        // Mark as read with date type and navigate
-        function markAsRead(boxId, dateType, navigateAfter = false) {
-            const parts = boxId.split('_');
-            const bookingId = parts[0];
-            dateType = dateType || parts[1] || 'pickup';
-            
-            return fetch(`/admin/topbar-calendar/bookings/${bookingId}/mark-as-read`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({ date_type: dateType })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update the booking item appearance
-                    updateBookingItemToRead(boxId, dateType);
-                    
-                    if (!navigateAfter) {
-                        closeBookingBox(boxId);
-                    }
-                    return data;
-                } else {
-                    throw new Error(data.message || 'Failed to mark as read');
-                }
-            })
-            .catch(error => {
-                console.error('Error marking as read:', error);
-                if (!navigateAfter) {
-                    closeBookingBox(boxId);
-                }
-                throw error;
-            });
         }
     </script>
 @endsection
