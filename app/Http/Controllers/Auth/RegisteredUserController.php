@@ -38,7 +38,7 @@ class RegisteredUserController extends Controller
    
 public function store(Request $request): RedirectResponse
     {
-        // 1. Validation - Removed 'name'
+        // 1. Validation - REMOVED 'name'
         $request->validate([
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -47,10 +47,10 @@ public function store(Request $request): RedirectResponse
         try {
             DB::beginTransaction();
 
-            // 2. Create User Account - Removed 'name' assignment
+            // 2. Create User Account - REMOVED 'name'
             $user = User::create([
                 'username' => $request->email,
-                // 'name' => $request->name, // REMOVED
+                // 'name' => $request->name, // REMOVED THIS LINE
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'dateRegistered' => now(),
@@ -58,10 +58,9 @@ public function store(Request $request): RedirectResponse
             ]);
 
             // 3. Create Customer Profile
-            // Removed 'fullname' assignment
             $customer = Customer::create([
                 'userID' => $user->getKey(), 
-                // 'fullname' => $request->name, // REMOVED
+                'fullname' => '', // Set to empty string or null since we don't have the name
                 'phone_number' => '',
                 'address' => '',
                 'customer_license' => '',
@@ -79,7 +78,6 @@ public function store(Request $request): RedirectResponse
 
             DB::commit();
 
-            // 5. Final Steps
             event(new Registered($user));
             Auth::login($user);
 
