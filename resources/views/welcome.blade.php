@@ -676,7 +676,7 @@
                     </div>
                 </div>
                 @empty
-                <p style="text-align:center; padding: 2rem;">No cars available.</p>
+                <p style="text-align:center; padding: 2rem;"></p>
                 @endforelse
             </div>
         </div>

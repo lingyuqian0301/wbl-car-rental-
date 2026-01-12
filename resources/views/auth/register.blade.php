@@ -539,25 +539,6 @@
                     @csrf
 
 
-                    <div class="input-wrapper animate-fade-in" style="animation-delay: 0.4s;">
-                        <div class="input-icon">
-                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
-                        </div>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            class="input-field"
-                            placeholder="Full Name"
-                            value="{{ old('name') }}"
-                            required
-                            autocomplete="name"
-                        />
-                        <x-input-error :messages="$errors->get('name')" class="error-message" />
-                    </div>
-
                     <div class="input-wrapper animate-fade-in" style="animation-delay: 0.5s;">
                         <div class="input-icon">
                             <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -36,11 +36,10 @@ class RegisteredUserController extends Controller
      */
    
    
-   public function store(Request $request): RedirectResponse
+public function store(Request $request): RedirectResponse
     {
-        // 1. Validation
+        // 1. Validation - Removed 'name'
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
@@ -48,10 +47,10 @@ class RegisteredUserController extends Controller
         try {
             DB::beginTransaction();
 
-            // 2. Create User Account
+            // 2. Create User Account - Removed 'name' assignment
             $user = User::create([
                 'username' => $request->email,
-                'name' => $request->name,
+                // 'name' => $request->name, // REMOVED
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'dateRegistered' => now(),
@@ -59,10 +58,10 @@ class RegisteredUserController extends Controller
             ]);
 
             // 3. Create Customer Profile
-            // We use $user->getKey() to automatically get the correct ID (id or userID)
+            // Removed 'fullname' assignment
             $customer = Customer::create([
                 'userID' => $user->getKey(), 
-                'fullname' => $request->name,
+                // 'fullname' => $request->name, // REMOVED
                 'phone_number' => '',
                 'address' => '',
                 'customer_license' => '',
