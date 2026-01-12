@@ -293,6 +293,40 @@
         cursor: not-allowed;
     }
 
+    .btn-delete {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #dc2626;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 0.5rem;
+    }
+
+    .btn-delete:hover {
+        background: #dc2626;
+        color: white;
+    }
+
+    .additional-image-wrapper {
+        position: relative;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    .additional-image-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
     @media (max-width: 768px) {
         .inspection-header {
             flex-direction: column;
@@ -316,6 +350,16 @@
 
     <div class="inspection-header">
         <h1>Return Car</h1>
+    </div>
+
+    {{-- Return Location Info --}}
+    <div class="inspection-card">
+        <div style="margin-bottom: 0.5rem;">
+            <strong>Return Location:</strong> {{ $booking->return_point ?? 'Not specified' }}
+        </div>
+        <div>
+            <strong>Return Date:</strong> {{ \Carbon\Carbon::parse($booking->rental_end_date)->format('d M Y, h:i A') }}
+        </div>
     </div>
 
     <form method="POST" action="{{ route('return.confirm', $booking) }}" id="inspectionForm" enctype="multipart/form-data">
@@ -377,9 +421,22 @@
                         <label class="form-label">Date Check</label>
                         <input type="datetime-local" name="date_check" class="form-input" value="{{ date('Y-m-d\TH:i') }}">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label class="form-label">Mileage</label>
                         <input type="number" name="mileage" class="form-input" placeholder="Enter mileage">
+                    </div>
+                    <div class="form-group">
+                        <div class="photo-upload">
+                            <div class="photo-label">Key Location</div>
+                            <div class="photo-box" id="keyLocationBox" style="min-height: 150px;">
+                                <svg width="60" height="60" fill="#ccc" viewBox="0 0 16 16">
+                                    <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                                    <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
+                                </svg>
+                            </div>
+                            <input type="file" id="key_location_image" name="key_location_image" accept="image/*" style="display: none;">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('key_location_image').click()">Upload</button>
+                        </div>
                     </div>
                 </div>
 
@@ -401,9 +458,17 @@
                     </div>
 
                     <div style="margin-top: 1rem;">
-                        <div class="form-label">Fuel Image</div>
-                        <input type="file" id="fuel_image" name="fuel_image" accept="image/*" style="display: none;">
-                        <button type="button" class="btn-upload" onclick="document.getElementById('fuel_image').click()">Upload</button>
+                        <div class="photo-upload">
+                            <div class="photo-label">Fuel Image</div>
+                            <div class="photo-box" id="fuelImageBox" style="min-height: 150px;">
+                                <svg width="60" height="60" fill="#ccc" viewBox="0 0 16 16">
+                                    <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                                    <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
+                                </svg>
+                            </div>
+                            <input type="file" id="fuel_image" name="fuel_image" accept="image/*" style="display: none;">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('fuel_image').click()">Upload</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -451,28 +516,50 @@
     setupImagePreview('back_image', 'backImageBox');
     setupImagePreview('left_image', 'leftImageBox');
     setupImagePreview('right_image', 'rightImageBox');
+    setupImagePreview('fuel_image', 'fuelImageBox');
+    setupImagePreview('key_location_image', 'keyLocationBox');
 
     let additionalImageCount = 0;
     document.getElementById('addImageBtn').addEventListener('click', function() {
         additionalImageCount++;
+        const currentCount = additionalImageCount;
         const container = document.getElementById('additionalImagesContainer');
         const newImageDiv = document.createElement('div');
-        newImageDiv.className = 'photo-upload';
-        newImageDiv.style.marginTop = '1rem';
+        newImageDiv.className = 'additional-image-wrapper';
+        newImageDiv.id = `additionalWrapper${currentCount}`;
         newImageDiv.innerHTML = `
-            <div class="photo-label">Additional Image ${additionalImageCount}</div>
-            <div class="photo-box" id="additionalBox${additionalImageCount}">
-                <svg width="60" height="60" fill="#ccc" viewBox="0 0 16 16">
-                    <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-                    <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
-                </svg>
+            <div class="additional-image-header">
+                <div class="photo-label" style="margin: 0;">Additional Image ${currentCount}</div>
+                <button type="button" class="btn-delete" onclick="removeAdditionalImage(${currentCount})">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 3px;">
+                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                    </svg>
+                    Delete
+                </button>
             </div>
-            <input type="file" id="additional${additionalImageCount}" name="additional_images[]" accept="image/*" style="display: none;">
-            <button type="button" class="btn-upload" onclick="document.getElementById('additional${additionalImageCount}').click()">Upload</button>
+            <div class="photo-upload" style="margin-top: 0.5rem;">
+                <div class="photo-box" id="additionalBox${currentCount}">
+                    <svg width="60" height="60" fill="#ccc" viewBox="0 0 16 16">
+                        <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                        <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
+                    </svg>
+                </div>
+                <input type="file" id="additional${currentCount}" name="additional_images[]" accept="image/*" style="display: none;">
+                <button type="button" class="btn-upload" onclick="document.getElementById('additional${currentCount}').click()">Upload</button>
+            </div>
         `;
         container.appendChild(newImageDiv);
-        setupImagePreview(`additional${additionalImageCount}`, `additionalBox${additionalImageCount}`);
+        setupImagePreview(`additional${currentCount}`, `additionalBox${currentCount}`);
     });
+
+    // Function to remove additional image
+    function removeAdditionalImage(imageId) {
+        const wrapper = document.getElementById(`additionalWrapper${imageId}`);
+        if (wrapper) {
+            wrapper.remove();
+        }
+    }
 
     const fuelSlider = document.getElementById('fuelSlider');
     const fuelPercentage = document.getElementById('fuelPercentage');

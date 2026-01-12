@@ -38,21 +38,55 @@ class PickupController extends Controller
         // }
 
         // =========================================================
-        // 2. PAYMENT CHECK: Full Payment Required
+        // 2. PAYMENT CHECK: Deposit must be verified, Balance can be pending
         // =========================================================
         $totalCost = $booking->total_amount ?? $booking->rental_amount;
+        $depositAmount = $booking->deposit_amount ?? 50;
         
-        // Sum only VERIFIED payments
-        $totalPaid = $booking->payments()
+        // Sum VERIFIED payments
+        $verifiedPaid = $booking->payments()
             ->where('payment_status', 'Verified')
             ->sum('total_amount');
+        
+        // Sum PENDING payments (for balance check)
+        $pendingPaid = $booking->payments()
+            ->where('payment_status', 'Pending')
+            ->sum('total_amount');
 
-        // Check if Paid Amount is less than Total Cost (allow RM 1 difference for rounding issues)
-        if ($totalPaid < ($totalCost - 1)) {
-            $balance = $totalCost - $totalPaid;
-            // Redirect to Payment Page
+        // Check if wallet deposit was used
+        $hasDepositPayment = $booking->payments()
+            ->where('payment_status', 'Verified')
+            ->get()
+            ->filter(function($p) use ($depositAmount) {
+                return abs($p->total_amount - $depositAmount) < 5;
+            })->count() > 0;
+        
+        $walletDepositUsed = in_array($booking->booking_status, ['Reserved', 'Ongoing', 'Completed', 'Confirmed']) 
+                             && !$hasDepositPayment;
+        
+        // Calculate effective paid (verified + wallet if used)
+        $effectivePaid = $verifiedPaid;
+        if ($walletDepositUsed) {
+            $effectivePaid = $verifiedPaid + $depositAmount;
+        }
+        
+        // Check if deposit is secured (required to proceed)
+        $depositSecured = ($verifiedPaid >= $depositAmount) || $walletDepositUsed;
+        
+        // Check if balance is paid (verified OR pending - customer doesn't need to wait)
+        $totalPaidIncludingPending = $effectivePaid + $pendingPaid;
+        $balancePaidOrPending = ($totalPaidIncludingPending >= ($totalCost - 1));
+
+        // Customer can proceed if: deposit is secured AND balance is paid (even if pending)
+        if (!$depositSecured) {
             return redirect()->route('payments.create', ['booking' => $booking->bookingID])
-                ->with('error', "You must complete Full Payment before picking up the car. Outstanding balance: RM " . number_format($balance, 2));
+                ->with('error', "You must pay the deposit first before proceeding.");
+        }
+        
+        if (!$balancePaidOrPending) {
+            $balance = $totalCost - $effectivePaid;
+            return redirect()->route('payments.create', ['booking' => $booking->bookingID])
+                ->with('error', "Please pay the remaining balance of RM " . number_format($balance, 2) . " to proceed.");
         }
 
         // =========================================================
@@ -77,21 +111,23 @@ class PickupController extends Controller
             abort(403, 'Unauthorized access');
         }
 
-        // B. Validation
+        // B. Validation - use mimes instead of image for better compatibility
         $validated = $request->validate([
             'confirm_pickup' => 'required|accepted',
             'mileage' => 'required|integer|min:0',
             'fuel_level' => 'required|integer|min:0|max:100',
             'date_check' => 'required|date',
             'remarks' => 'nullable|string',
-            // Validate images
-            'front_image' => 'nullable|image|max:5120',
-            'back_image' => 'nullable|image|max:5120',
-            'left_image' => 'nullable|image|max:5120',
-            'right_image' => 'nullable|image|max:5120',
-            'fuel_image' => 'nullable|image|max:5120',
-            'additional_images.*' => 'nullable|image|max:5120',
+            // Validate images - use file + mimes for better Windows compatibility
+            'front_image' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'back_image' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'left_image' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'right_image' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'fuel_image' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            'additional_images.*' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
+
+        try {
 
         // C. Fuel Mapping Logic
         $fuelVal = (int) $request->fuel_level;
@@ -124,8 +160,8 @@ class PickupController extends Controller
             'scratches_notes' => $request->remarks,
             'reported_dated_time' => $request->date_check,
             'bookingID' => $booking->bookingID,
-            'rental_agreement' => true,    // Fix 1: Added missing default
-            'fuel_img' => $fuelImgPath,    // Fix 2: Added missing fuel_img
+            'rental_agreement' => true,
+            'fuel_img' => $fuelImgPath ?: null,
         ]);
 
         // Create the VehicleConditionImage entry for fuel explicitly (since file is already moved)
@@ -182,5 +218,10 @@ class PickupController extends Controller
 
         return redirect()->route('bookings.show', $booking)
             ->with('success', 'Vehicle pickup confirmed. Your booking is now ongoing.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Pickup Confirm Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to confirm pickup: ' . $e->getMessage());
+        }
     }
 }

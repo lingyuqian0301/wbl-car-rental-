@@ -158,8 +158,11 @@ class BookingController extends Controller
     }
    public function store(Request $request, $vehicleID)
     {
+        Log::info('Store booking called', ['vehicleID' => $vehicleID, 'request' => $request->all()]);
+        
         // Check if user is authenticated
         if (!Auth::check()) {
+            Log::info('Store: User not authenticated, redirecting to login');
             $request->session()->put('url.intended', url()->previous());
             return redirect()->route('login')->with('error', 'Please sign in to proceed with booking.');
         }
@@ -251,6 +254,8 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
         ];
 
         session(['booking_data' => $bookingData]);
+        
+        Log::info('Store: Session booking_data set successfully', ['vehicleID' => $vehicleID]);
 
         // Redirect to confirmation page
         return redirect()->route('booking.confirm');
@@ -288,47 +293,29 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
         try {
             $bookingData = session('booking_data');
             if (!$bookingData) {
-                return redirect('/')->with('error', 'Session expired.');
+                Log::warning('Confirm: Session booking_data is empty. Redirecting to homepage.');
+                return redirect('/')->with('error', 'Session expired. Please start your booking again.');
             }
+            
+            Log::info('Confirm: Loading confirmation page', ['vehicleID' => $bookingData['vehicleID'] ?? 'N/A']);
 
             $vehicle = Vehicle::findOrFail($bookingData['vehicleID']);
             $user = Auth::user();
             $customer = $user->customer;
 
             // === VOUCHER LOGIC ===
+            // Vouchers are now manually claimed by users via the "Claim Discount" button
+            // Here we only check for existing active vouchers to auto-apply
             $activeVoucher = null;
             $discountAmount = 0;
 
             if ($customer) {
-                // 1. Check if customer has loyalty card and enough stamps to auto-create voucher
+                // Get loyalty card to check stamps (for display purposes)
                 $loyaltyCard = DB::table('loyaltycard')
                     ->where('customerID', $customer->customerID)
                     ->first();
 
-                // Auto-create voucher if customer has 5+ stamps and no active voucher
-                if ($loyaltyCard && $loyaltyCard->total_stamps >= 5) {
-                    // Check if customer already has an active voucher
-                    $existingVoucher = DB::table('voucher')
-                        ->join('loyaltycard', 'voucher.loyaltyCardID', '=', 'loyaltycard.loyaltyCardID')
-                        ->where('loyaltycard.customerID', $customer->customerID)
-                        ->where('voucher.voucher_isActive', 1)
-                        ->select('voucher.*')
-                        ->first();
-
-                    // If no active voucher exists, create one
-                    if (!$existingVoucher) {
-                        DB::table('voucher')->insert([
-                            'loyaltyCardID' => $loyaltyCard->loyaltyCardID,
-                            'discount_type' => 'PERCENT',
-                            'discount_amount' => 10, // 10% discount
-                            'voucher_isActive' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ]);
-                    }
-                }
-
-                // 2. Get active voucher for this customer
+                // Get active voucher for this customer (if they claimed one)
                 $activeVoucher = DB::table('voucher')
                     ->join('loyaltycard', 'voucher.loyaltyCardID', '=', 'loyaltycard.loyaltyCardID')
                     ->where('loyaltycard.customerID', $customer->customerID)
@@ -428,8 +415,8 @@ $endDateTime   = $request->end_date   . ' ' . $request->end_time;
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Confirmation Page Error: ' . $e->getMessage());
-            return redirect('/')->with('error', 'Error loading confirmation page.');
+            Log::error('Confirmation Page Error: ' . $e->getMessage() . ' | Line: ' . $e->getLine() . ' | File: ' . $e->getFile());
+            return redirect('/')->with('error', 'Error loading confirmation page: ' . $e->getMessage());
         }
     }
 
@@ -438,6 +425,13 @@ public function finalize(Request $request)
         Log::info('Finalize booking called', ['request' => $request->all()]);
 
         try {
+            // Check session first - if empty, redirect to homepage
+            $bookingData = session('booking_data');
+            if (!$bookingData) {
+                Log::warning('Finalize: Session booking_data is empty. Booking may have already been created.');
+                return redirect('/')->with('error', 'Session expired or booking already submitted. Please check your bookings or start a new booking.');
+            }
+
             // Validation
             $request->validate([
                 'vehicle_id' => 'required|integer',
@@ -461,7 +455,6 @@ public function finalize(Request $request)
                 ->first();
 
             // 2. USE SESSION DATA FOR TOTAL
-            $bookingData = session('booking_data');
             $finalRentalAmount = $bookingData['final_total'] ?? $request->total_amount;
             $requiredDeposit = $bookingData['deposit_amount'] ?? 50; // Get deposit amount
 
@@ -520,31 +513,23 @@ public function finalize(Request $request)
 
             $booking->save();
 
-            // 4. DEACTIVATE VOUCHER AND DEDUCT 5 STAMPS
+            // 4. DEACTIVATE VOUCHER AFTER USE
+            // Note: Stamps are already deducted when user clicks "Claim Discount" button
             if ($activeVoucher && isset($bookingData['discount_amount']) && $bookingData['discount_amount'] > 0) {
                 DB::table('voucher')
                     ->where('voucherID', $activeVoucher->voucherID)
                     ->update(['voucher_isActive' => 0]);
-
-                $loyaltyCard = DB::table('loyaltycard')
-                    ->where('loyaltyCardID', $activeVoucher->loyaltyCardID)
-                    ->first();
-
-                if ($loyaltyCard && $loyaltyCard->total_stamps >= 5) {
-                    DB::table('loyaltycard')
-                        ->where('loyaltyCardID', $activeVoucher->loyaltyCardID)
-                        ->update([
-                            'total_stamps' => max(0, $loyaltyCard->total_stamps - 5),
-                            'loyalty_last_updated' => now()
-                        ]);
-                }
+                
+                Log::info("Voucher #{$activeVoucher->voucherID} used and deactivated for booking.");
             }
 
             // 5. WALLET & NOTIFICATION (Existing helper)
             $this->updateWalletAndNotify($customer, $booking);
 
-            session()->forget('booking_data');
             DB::commit();
+            
+            // Clear session AFTER successful commit
+            session()->forget('booking_data');
 
             // Redirect based on status
             if ($booking->booking_status === 'Reserved') {
@@ -559,8 +544,8 @@ public function finalize(Request $request)
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Finalize Booking Error: ' . $e->getMessage());
-            return redirect()->route('booking.confirm')->with('error', 'System Error. Please try again.');
+            Log::error('Finalize Booking Error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+            return redirect()->route('booking.confirm')->with('error', 'System Error: ' . $e->getMessage());
         }
     }
 

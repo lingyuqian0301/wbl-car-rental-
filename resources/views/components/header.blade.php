@@ -27,19 +27,19 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
 
     header {
         background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 9999 !important;
     }
 
     .header-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0.75rem 1rem; /* smaller padding */
-    display: flex;
-    align-items: center;
-}
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1rem 1.5rem; /* increased padding */
+        display: flex;
+        align-items: center;
+    }
 
     .logo {
         display: flex;
@@ -47,7 +47,7 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
     }
 
     .logo h1 {
-        font-size: 1.5rem;
+        font-size: 1.75rem; /* increased from 1.5rem */
         font-weight: 700;
         color: var(--primary-orange);
     }
@@ -55,6 +55,7 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
     .logo span {
         color: #6b7280;
         margin-left: 0.5rem;
+        font-size: 1.25rem; /* added size for Travel text */
     }
 
     nav {
@@ -74,12 +75,14 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
 
     .header-btn {
         display: inline-block;
-        padding: 0.5rem 1rem;
+        padding: 0.6rem 1.25rem; /* increased padding */
         background-color: var(--primary-orange);
         color: white;
         text-decoration: none;
-        border-radius: 0.375rem;
+        border-radius: 0.5rem;
         transition: background-color 0.3s;
+        font-size: 1rem; /* added font size */
+        font-weight: 500;
     }
 
     .header-btn:hover {
@@ -195,6 +198,7 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
     color: #374151;
     text-decoration: none;
     font-weight: 500;
+    font-size: 1.05rem; /* increased */
 }
 
 .nav-link:hover {
@@ -204,20 +208,20 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
     display: flex;
     flex-direction: column;
     align-items: center; /* center looks cleaner in nav */
-    gap: 2px;            /* THIS fixes the big gap */
+    gap: 3px;            /* slightly increased gap */
     text-decoration: none;
 }
 
 
 .metric-label {
-    font-size: 0.8rem;
+    font-size: 0.9rem; /* increased from 0.8rem */
     color: #94a3b8;
     letter-spacing: 0.02em; /* reduce spacing */
     line-height: 1;         /* IMPORTANT */
 }
 
 .metric-value {
-    font-size: 0.85rem;
+    font-size: 1rem; /* increased from 0.85rem */
     font-weight: 600;
     color: #475569;
     line-height: 1.1;       /* IMPORTANT */
@@ -259,6 +263,7 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
 .home-link {
     font-weight: 500;
     color: #374151;
+    font-size: 1.1rem; /* increased */
 }
 
 .home-link:hover {

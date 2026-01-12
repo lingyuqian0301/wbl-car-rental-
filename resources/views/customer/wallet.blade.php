@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Wallet - HASTA Travel</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        body { font-family: 'Figtree', sans-serif; background-color: #f8fafc; }
+        html { font-size: 12px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; background-color: #f8fafc; }
         
         /* Custom Red Theme Styles */
         .text-hasta-red { color: #dc2626; }
@@ -23,22 +27,24 @@
     </style>
 </head>
 <body>
+    @include('components.header')
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-5">
-        <div class="container">
-            {{-- Logo Merah --}}
-            <a class="navbar-brand fw-bold text-hasta-red" href="{{ route('home') }}">HASTA Travel</a>
-            <div class="navbar-nav ms-auto">
-                <span class="nav-item nav-link text-muted">
-                    Hello, {{ Auth::user()->name ?? 'Guest' }}
-                </span>
-                {{-- Link Merah --}}
-                <a class="nav-link text-hasta-red fw-semibold" href="{{ route('bookings.index') }}">My Bookings</a>
+    <div class="container py-5">
+        <a href="{{ route('home') }}" class="btn btn-outline-secondary mb-4">&larr; Back to Home</a>
+
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-        </div>
-    </nav>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
-    <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-6">
 
@@ -104,5 +110,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @include('components.footer')
 </body>
 </html>

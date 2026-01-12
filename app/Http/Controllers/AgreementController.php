@@ -103,4 +103,42 @@ class AgreementController extends Controller
             ['Content-Type' => 'application/pdf']
         );
     }
+
+    /**
+     * Upload signed rental agreement and redirect to pickup
+     */
+    public function upload(Request $request, Booking $booking)
+    {
+        // Security Check
+        if ($booking->customer->userID !== auth()->id()) {
+            abort(403);
+        }
+
+        // Validate file upload
+        $request->validate([
+            'signed_agreement' => 'required|file|mimes:jpeg,jpg,png,gif,pdf|max:10240',
+        ], [
+            'signed_agreement.required' => 'Please upload the signed rental agreement.',
+            'signed_agreement.mimes' => 'The file must be an image (JPEG, PNG, GIF) or PDF.',
+            'signed_agreement.max' => 'The file size must not exceed 10MB.',
+        ]);
+
+        // Store the file
+        $destinationPath = public_path('images/signed_agreements');
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+
+        $file = $request->file('signed_agreement');
+        $filename = 'agreement_' . $booking->bookingID . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $file->move($destinationPath, $filename);
+
+        // Store path in booking (you may want to add a column for this)
+        // For now, we'll just redirect to pickup
+        // $booking->signed_agreement_path = 'images/signed_agreements/' . $filename;
+        // $booking->save();
+
+        return redirect()->route('pickup.show', $booking)
+            ->with('success', 'Signed agreement uploaded successfully. You can now proceed with vehicle pickup.');
+    }
 }

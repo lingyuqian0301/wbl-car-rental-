@@ -155,6 +155,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/my-wallet', [CustomerDashboardController::class, 'wallet'])->name('wallet.show');
     Route::get('/my-loyalty', [CustomerDashboardController::class, 'loyalty'])->name('loyalty.show');
+    Route::get('/my-loyalty/claim', [CustomerDashboardController::class, 'claimDiscount'])->name('loyalty.claim');
 
     // Booking Routes (Customer) - Require authentication
     Route::get('/booking/confirm', [BookingController::class, 'confirm'])->name('booking.confirm');
@@ -218,6 +219,7 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/{booking}', [AgreementController::class, 'show'])->name('show');
         Route::get('/{booking}/preview', [AgreementController::class, 'preview'])->name('preview');
         Route::post('/{booking}/download', [AgreementController::class, 'download'])->name('download');
+        Route::post('/{booking}/upload', [AgreementController::class, 'upload'])->name('upload');
     });
 
     // Pickup Routes (Customer) - Vehicle Pickup Confirmation

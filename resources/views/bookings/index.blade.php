@@ -40,16 +40,58 @@
                                             // 1. CALCULATE TOTALS
                                             $totalPrice = $booking->rental_amount;
                                             $verifiedPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+                                            $pendingPaid = $booking->payments->where('payment_status', 'Pending')->sum('total_amount');
                                             $hasPending = $booking->payments->where('payment_status', 'Pending')->count() > 0;
+                                            $depositAmount = $booking->deposit_amount ?? 50;
 
-                                            $percentage = $totalPrice > 0 ? ($verifiedPaid / $totalPrice) * 100 : 0;
+                                            // CHECK IF WALLET DEPOSIT WAS USED
+                                            // Wallet deposit was used ONLY if:
+                                            // 1. Status is 'Reserved' or beyond, AND
+                                            // 2. There's NO payment record for the deposit amount
+                                            //    (If customer paid deposit via bank, there would be a ~RM50 payment record)
+                                            $hasDepositPayment = $booking->payments
+                                                ->where('payment_status', 'Verified')
+                                                ->filter(function($p) use ($depositAmount) {
+                                                    return abs($p->total_amount - $depositAmount) < 5; // Within RM 5 of deposit
+                                                })->count() > 0;
+                                            
+                                            $walletDepositUsed = in_array($booking->booking_status, ['Reserved', 'Ongoing', 'Completed', 'Confirmed']) 
+                                                                 && !$hasDepositPayment;
+                                            
+                                            // Calculate effective paid amount (include wallet deposit if used)
+                                            $effectivePaid = $verifiedPaid;
+                                            if ($walletDepositUsed) {
+                                                $effectivePaid = $verifiedPaid + $depositAmount; // Add wallet deposit to verified payments
+                                            }
+                                            
+                                            // CHECK IF BALANCE IS PAID (even if pending)
+                                            // Customer can proceed to agreement/pickup if:
+                                            // 1. Deposit is secured (verified or wallet), AND
+                                            // 2. Balance payment has been made (verified OR pending)
+                                            $depositSecured = ($verifiedPaid >= $depositAmount) || $walletDepositUsed;
+                                            $balanceAmount = $totalPrice - $depositAmount;
+                                            $totalPaidIncludingPending = $effectivePaid + $pendingPaid;
+                                            $balancePaidOrPending = ($totalPaidIncludingPending >= ($totalPrice - 1));
+                                            $canProceedToAgreement = $depositSecured && $balancePaidOrPending;
+
+                                            $percentage = $totalPrice > 0 ? ($effectivePaid / $totalPrice) * 100 : 0;
                                             $percentage = min($percentage, 100);
 
                                             // 2. PAYMENT LABELS
-                                            if ($verifiedPaid >= ($totalPrice - 1)) {
+                                            if ($effectivePaid >= ($totalPrice - 1)) {
                                                 $payStatusLabel = 'Fully Verified';
                                                 $barColor = 'bg-green-500';
                                                 $textColor = 'text-green-700';
+                                            } elseif ($walletDepositUsed && $verifiedPaid > 0) {
+                                                // Has both wallet deposit and some verified payments
+                                                $payStatusLabel = 'Partial Payment';
+                                                $barColor = 'bg-yellow-400'; 
+                                                $textColor = 'text-yellow-700';
+                                            } elseif ($walletDepositUsed && $verifiedPaid == 0) {
+                                                // Only wallet deposit, no other payments yet
+                                                $payStatusLabel = 'Wallet Deposit Applied';
+                                                $barColor = 'bg-blue-400'; 
+                                                $textColor = 'text-blue-700';
                                             } elseif ($verifiedPaid > 0) {
                                                 $payStatusLabel = 'Deposit Verified';
                                                 $barColor = 'bg-yellow-400'; 
@@ -75,8 +117,8 @@
                                             } elseif ($dbStatus == 'Completed') {
                                                 $displayStatus = 'Completed';
                                                 $statusBadge = 'bg-gray-100 text-gray-800';
-                                            } elseif ($dbStatus == 'Confirmed' && $verifiedPaid >= ($totalPrice - 1)) {
-                                                // Confirmed + Fully Paid = Ready for Pickup
+                                            } elseif ($canProceedToAgreement && !in_array($dbStatus, ['Ongoing', 'Completed', 'Cancelled'])) {
+                                                // Balance paid (verified or pending) = Ready for Pickup
                                                 $displayStatus = 'Ready for Pickup';
                                                 $statusBadge = 'bg-green-100 text-green-800';
                                             } elseif ($dbStatus == 'Confirmed') {
@@ -143,8 +185,11 @@
                                                         <div class="{{ $barColor }} h-2.5 rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
                                                     </div>
                                                     <div class="text-xs text-gray-500 mt-1 font-medium">
-                                                        RM {{ number_format($verifiedPaid, 2) }} <span class="text-gray-400">/</span> RM {{ number_format($totalPrice, 2) }}
+                                                        RM {{ number_format($effectivePaid, 2) }} <span class="text-gray-400">/</span> RM {{ number_format($totalPrice, 2) }}
                                                     </div>
+                                                    @if($walletDepositUsed)
+                                                        <div class="text-[10px] text-blue-500 italic mt-1">* Includes RM {{ number_format($depositAmount, 2) }} from wallet</div>
+                                                    @endif
                                                     @if($hasPending)
                                                         <div class="text-[10px] text-blue-500 italic mt-1">* Verification Pending</div>
                                                     @endif
@@ -182,7 +227,7 @@
                                                                 </a>
 
                                                                 <!-- {{-- REFUND OPTION: Show if cancelled AND fully paid --}} -->
-                                                                @if($booking->booking_status == 'Cancelled' && $verifiedPaid >= ($totalPrice - 1))
+                                                                @if($booking->booking_status == 'Cancelled' && $effectivePaid >= ($totalPrice - 1))
                                                                     {{-- TODO: Implement refund functionality --}}
                                                                     {{-- Uncomment when refunds.create route is ready --}}
                                                                     {{-- <a href="{{ route('refunds.create', ['booking' => $booking->bookingID]) }}" class="block px-4 py-2 text-sm leading-5 text-purple-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
@@ -196,20 +241,21 @@
                                                                 @endif
 
                                                                 {{-- Show payment options if not fully paid and not cancelled and not ongoing --}}
-                                                                @if($verifiedPaid < ($totalPrice - 1) && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
-                                                                    @if($hasPending)
+                                                                @if(!$canProceedToAgreement && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
+                                                                    @if($hasPending && !$depositSecured)
+                                                                        {{-- Deposit is pending verification --}}
                                                                         <div class="block w-full px-4 py-2 text-left text-sm leading-5 text-gray-400 cursor-not-allowed">
-                                                                            {{ __('Verifying Payment...') }}
+                                                                            {{ __('Verifying Deposit...') }}
                                                                         </div>
-                                                                    @else
+                                                                    @elseif(!$hasPending)
                                                                         <a href="{{ route('payments.create', ['booking' => $booking->bookingID]) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                                                            {{ $verifiedPaid > 0 ? __('Pay Balance') : __('Pay Deposit') }}
+                                                                            {{ ($verifiedPaid > 0 || $walletDepositUsed) ? __('Pay Balance') : __('Pay Deposit') }}
                                                                         </a>
                                                                     @endif
                                                                 @endif
 
-                                                                <!-- {{-- Show continue booking and invoice if fully paid and not cancelled and not ongoing and not completed--}} -->
-                                                                  @if($verifiedPaid >= ($totalPrice - 1) && !in_array($dbStatus, ['Cancelled', 'Ongoing', 'Completed']))
+                                                                <!-- {{-- Show continue booking if deposit secured AND balance paid (verified or pending) --}} -->
+                                                                @if($canProceedToAgreement && !in_array($dbStatus, ['Cancelled', 'Ongoing', 'Completed']))
                                                                     <a href="{{ route('agreement.show', $booking->bookingID) }}" class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                                                         {{ __('Continue Booking') }}
                                                                     </a>
@@ -230,8 +276,8 @@
                                                                     </a>
                                                                 @endif
 
-                                                                {{-- Show cancel option if no payment made and not confirmed/cancelled/ongoing --}}
-                                                                @if($verifiedPaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing')
+                                                                {{-- Show cancel option if no payment made (including wallet) and not confirmed/cancelled/ongoing --}}
+                                                                @if($effectivePaid == 0 && $booking->booking_status != 'Confirmed' && $booking->booking_status != 'Cancelled' && $booking->booking_status != 'Ongoing' && $booking->booking_status != 'Reserved')
                                                                     <form method="POST" action="{{ route('bookings.cancel', $booking->bookingID) }}">
                                                                         @csrf
                                                                         <button type="submit" onclick="return confirm('Are you sure you want to cancel this booking?')" class="block w-full text-left px-4 py-2 text-sm leading-5 text-red-600 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">

@@ -192,19 +192,18 @@
             </svg>
         </div>
 
-        <h1 class="deposit-title">Return Successful!</h1>
-        <p class="deposit-subtitle">Your vehicle has been returned successfully</p>
+        <h1 class="deposit-title">Vehicle Returned Successfully</h1>
+        <p class="deposit-subtitle">Your vehicle return has been confirmed. Please choose how you would like to handle your deposit.</p>
 
-        @if(session('success'))
-            <div style="background: #d1fae5; color: #065f46; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                {{ session('success') }}
-            </div>
-        @endif
+        <div style="background: #d1fae5; color: #065f46; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            Vehicle return confirmed. Deposit action required.
+        </div>
 
         <div class="deposit-amount">RM {{ number_format(50, 2) }}</div>
-        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Deposit Amount</p>
+        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Deposit Amount</p>
+        <p style="color: #9ca3af; font-size: 0.85rem; margin-bottom: 1rem;">This deposit has not been refunded yet.</p>
 
-        <div class="deposit-question">What would you like to do with your deposit?</div>
+        <div class="deposit-question">How would you like to proceed with your deposit?</div>
 
         <form method="POST" action="{{ route('return.handleDeposit', $booking->bookingID) }}">
             @csrf

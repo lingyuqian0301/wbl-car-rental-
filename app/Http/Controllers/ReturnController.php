@@ -163,13 +163,44 @@ class ReturnController extends Controller
             $loyaltyCard->save();
         }
 
-        // H. Calculate Deposit Amount
-        $depositAmount = $booking->deposit_amount ?? 0;
+        // H. Check if wallet deposit was used for this booking
+        $depositAmount = $booking->deposit_amount ?? 50;
+        $totalCost = $booking->total_amount ?? $booking->rental_amount;
+        
+        // Sum verified payments
+        $verifiedPaid = $booking->payments()
+            ->where('payment_status', 'Verified')
+            ->sum('total_amount');
+        
+        // Check if there's a payment record for the deposit amount
+        $hasDepositPayment = $booking->payments()
+            ->where('payment_status', 'Verified')
+            ->get()
+            ->filter(function($p) use ($depositAmount) {
+                return abs($p->total_amount - $depositAmount) < 5;
+            })->count() > 0;
+        
+        // Wallet deposit was used if no deposit payment exists
+        // (Wallet deductions don't create payment records)
+        $walletDepositUsed = !$hasDepositPayment && $verifiedPaid < $totalCost;
 
-        // Redirect to deposit handling page with deposit info
+        // If wallet deposit was used, skip the deposit options page
+        // because the deposit money was already from their wallet
+        if ($walletDepositUsed) {
+            // Mark deposit as handled (no refund needed - it was from wallet)
+            $booking->deposit_refund_status = 'refunded';
+            $booking->deposit_customer_choice = 'wallet_used';
+            $booking->deposit_refund_amount = 0;
+            $booking->save();
+
+            return redirect()->route('bookings.index')
+                ->with('success', 'Vehicle return confirmed successfully! Your booking is now completed.');
+        }
+
+        // If regular deposit was paid (via bank transfer), show deposit options
         return redirect()->route('return.deposit', $booking->bookingID)
             ->with('success', 'Vehicle return confirmed successfully!')
-            ->with('deposit_amount', 50);
+            ->with('deposit_amount', $depositAmount);
     }
 
     /**

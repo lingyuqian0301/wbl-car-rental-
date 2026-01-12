@@ -176,14 +176,34 @@ input[readonly] {
         @php
             // 1. Calculate Totals
             $total = $booking->total_amount ?? $booking->rental_amount;
+            $bookingDeposit = $booking->deposit_amount ?? 50;
             
             // 2. Calculate Paid Amount (Verified Only)
-            $paidAmount = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
+            $verifiedPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
             
-            // 3. Determine Mode
-            $isReserved = $booking->booking_status === 'Reserved';
+            // 3. Check if wallet deposit was used
+            // Wallet deposit was used ONLY if:
+            // 1. Status is 'Reserved' or beyond, AND
+            // 2. There's NO payment record for the deposit amount
+            $hasDepositPayment = $booking->payments
+                ->where('payment_status', 'Verified')
+                ->filter(function($p) use ($bookingDeposit) {
+                    return abs($p->total_amount - $bookingDeposit) < 5; // Within RM 5 of deposit
+                })->count() > 0;
             
-            // 4. Determine Amount to Pay NOW
+            $walletDepositUsed = in_array($booking->booking_status, ['Reserved', 'Ongoing', 'Completed', 'Confirmed']) 
+                                 && !$hasDepositPayment;
+            
+            // 4. Calculate effective paid amount (include wallet deposit if used)
+            $paidAmount = $verifiedPaid;
+            if ($walletDepositUsed) {
+                $paidAmount = $verifiedPaid + $bookingDeposit; // Add wallet deposit to verified payments
+            }
+            
+            // 5. Determine Mode - Reserved OR has some payment means deposit is done
+            $isReserved = $booking->booking_status === 'Reserved' || $verifiedPaid > 0 || $walletDepositUsed;
+            
+            // 6. Determine Amount to Pay NOW
             if ($isReserved) {
                 // Paying remaining balance
                 $amountToPay = $total - $paidAmount;
@@ -204,6 +224,9 @@ input[readonly] {
             @if($isReserved)
                 <p class="text-success fw-bold">
                     Already Paid: RM {{ number_format($paidAmount, 2) }}
+                    @if($walletDepositUsed)
+                        <span style="font-size: 0.85rem; color: #3b82f6;">(from wallet)</span>
+                    @endif
                 </p>
                 <p class="text-maroon fw-bold">
                     Balance Due: RM {{ number_format($amountToPay, 2) }}

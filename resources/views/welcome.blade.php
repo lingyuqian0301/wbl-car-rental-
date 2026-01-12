@@ -51,6 +51,27 @@
         padding: 2rem;
     }
 
+    .hero-text {
+        flex: 1;
+        min-width: 280px;
+    }
+
+    .hero-loyalty-card {
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+        .hero-container {
+            flex-direction: column !important;
+            text-align: center;
+        }
+        .hero-loyalty-card {
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+    }
+
     .hero h2 {
         font-size: 2.5rem;
         font-weight: 700;
@@ -446,12 +467,78 @@
 <body>
     @include('components.header')
 
-    <section class="hero">
-        <div class="hero-container"><!-- <a href="{{ route('home') }}" class="hero-btn">View all cars</a> -->
-            <h2>Your Loyalty, Rewarded</h2>
-            <p>For every 5 bookings you complete, receive a voucher toward your next rental.</p>
-            <a href="{{ auth()->check() ? route('loyalty.show') : route('login') }}" class="hero-btn">Loyalty Rewards</a>
+    {{-- Display flash messages --}}
+    @if(session('error'))
+        <div style="max-width: 1280px; margin: 1rem auto; padding: 0 1rem;">
+            <div style="background: #fee2e2; border: 1px solid #dc2626; color: #991b1b; padding: 1rem; border-radius: 8px; font-weight: 500;">
+                ⚠️ {{ session('error') }}
+            </div>
+        </div>
+    @endif
+    @if(session('success'))
+        <div style="max-width: 1280px; margin: 1rem auto; padding: 0 1rem;">
+            <div style="background: #d1fae5; border: 1px solid #059669; color: #065f46; padding: 1rem; border-radius: 8px; font-weight: 500;">
+                ✓ {{ session('success') }}
+            </div>
+        </div>
+    @endif
+    @if(session('warning'))
+        <div style="max-width: 1280px; margin: 1rem auto; padding: 0 1rem;">
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 1rem; border-radius: 8px; font-weight: 500;">
+                ⚠️ {{ session('warning') }}
+            </div>
+        </div>
+    @endif
 
+    <section class="hero">
+        <div class="hero-container" style="display: flex; justify-content: space-between; align-items: center; gap: 2rem; flex-wrap: wrap;">
+            <div class="hero-text">
+                <h2>Your Loyalty, Rewarded</h2>
+                <p>Earn 1 stamp for every completed booking. Collect 5 stamps to claim a discount on your next rental.</p>
+                @auth
+                    @php
+                        $customerForBtn = auth()->user()->customer;
+                        $loyaltyCardForBtn = $customerForBtn ? \DB::table('loyaltycard')->where('customerID', $customerForBtn->customerID)->first() : null;
+                        $stampsForBtn = $loyaltyCardForBtn->total_stamps ?? 0;
+                        $canClaim = $stampsForBtn >= 5;
+                    @endphp
+                    @if($canClaim)
+                        <a href="{{ route('loyalty.claim') }}" class="hero-btn" onclick="return confirm('Claim your 10% discount voucher? This will use 5 stamps.')"> Claim Discount</a>
+                    @else
+                        <span class="hero-btn" style="opacity: 0.5; cursor: not-allowed; pointer-events: none;"> Claim Discount ({{ $stampsForBtn }}/5 stamps)</span>
+                    @endif
+                @else
+                    <a href="{{ route('login') }}" class="hero-btn">Login to Earn Stamps</a>
+                @endauth
+            </div>
+            
+            @auth
+                @php
+                    $customer = auth()->user()->customer;
+                    $loyaltyCard = $customer ? \DB::table('loyaltycard')->where('customerID', $customer->customerID)->first() : null;
+                    $stamps = $loyaltyCard->total_stamps ?? 0;
+                    $percentage = min(($stamps / 5) * 100, 100);
+                @endphp
+                <div class="hero-loyalty-card">
+                    <div style="background: linear-gradient(135deg, #b45309, #f59e0b, #fbbf24); border-radius: 15px; padding: 1.5rem; min-width: 280px; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-weight: 600; font-size: 0.9rem;">🏆 HASTA LOYALTY</span>
+                            <span style="background: white; color: #b45309; padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">Gold Member</span>
+                        </div>
+                        <div style="text-align: center; margin: 1.5rem 0;">
+                            <div style="font-size: 3rem; font-weight: 700; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">{{ $stamps }}</div>
+                            <div style="font-size: 0.85rem; opacity: 0.95;">Total Stamps</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.4); border-radius: 10px; height: 10px; overflow: hidden;">
+                            <div style="background: white; height: 100%; width: {{ $percentage }}%; border-radius: 10px; transition: width 0.5s ease;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.75rem; opacity: 0.95;">
+                            <span>0</span>
+                            <span> 5 stamps = 10% discount</span>
+                        </div>
+                    </div>
+                </div>
+            @endauth
         </div>
     </section>
 
