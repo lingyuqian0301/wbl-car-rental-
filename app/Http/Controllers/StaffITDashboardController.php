@@ -46,6 +46,24 @@ class StaffITDashboardController extends Controller
             ->whereIn('booking_status', ['Pending', 'Confirmed', 'Completed'])
             ->count();
 
+        // Calculate unassigned runner tasks count
+        $runnerTaskCondition = function($query) {
+            $query->where(function($q) {
+                $q->whereNotNull('pickup_point')
+                  ->where('pickup_point', '!=', '')
+                  ->where('pickup_point', '!=', 'HASTA HQ Office');
+            })->orWhere(function($q) {
+                $q->whereNotNull('return_point')
+                  ->where('return_point', '!=', '')
+                  ->where('return_point', '!=', 'HASTA HQ Office');
+            });
+        };
+        $unassignedRunnerTasks = Booking::where('rental_start_date', '>', $today)
+            ->whereIn('booking_status', ['Pending', 'Confirmed'])
+            ->whereNull('staff_served')
+            ->where($runnerTaskCondition)
+            ->count();
+
         $metrics = [
             'totalBookings' => Booking::count(),
             'activeBookings' => Booking::whereIn('booking_status', ['Pending', 'Confirmed'])->count(),
@@ -62,6 +80,7 @@ class StaffITDashboardController extends Controller
             'currentDayAvailableFleet' => $currentDayAvailableFleet,
             'todayPickupBookings' => $todayPickupBookings,
             'todayReturnBookings' => $todayReturnBookings,
+            'unassignedRunnerTasks' => $unassignedRunnerTasks,
         ];
 
         $recentBookings = Booking::with(['vehicle', 'customer.user'])
@@ -134,17 +153,7 @@ class StaffITDashboardController extends Controller
         $bookingsNeedRunner = Booking::with(['vehicle', 'customer.user'])
             ->where('rental_start_date', '>', $today)
             ->whereIn('booking_status', ['Pending', 'Confirmed'])
-            ->where(function($query) {
-                $query->where(function($q) {
-                    $q->whereNotNull('pickup_point')
-                      ->where('pickup_point', '!=', '')
-                      ->where('pickup_point', '!=', 'HASTA HQ Office');
-                })->orWhere(function($q) {
-                    $q->whereNotNull('return_point')
-                      ->where('return_point', '!=', '')
-                      ->where('return_point', '!=', 'HASTA HQ Office');
-                });
-            })
+            ->where($runnerTaskCondition)
             ->orderBy('rental_start_date', 'asc')
             ->take(10)
             ->get()

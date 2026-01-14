@@ -32,6 +32,16 @@
     .chart-container.horizontal {
         height: 280px;
     }
+    /* Vehicle rental chart needs more space - scalable based on content */
+    .chart-container.horizontal.vehicle-rental {
+        min-height: 600px;
+        height: auto;
+    }
+    
+    /* Make vehicle rental chart card full width and taller */
+    .chart-card.vehicle-rental-card {
+        min-height: 700px;
+    }
     .chart-description {
         font-size: 0.75rem;
         color: var(--gray-500, #6b7280);
@@ -110,12 +120,15 @@
             <h2 class="mb-1"><i class="bi bi-bar-chart"></i> Charts & Analytics</h2>
             <p class="text-muted mb-0">Visualize rental data and trends</p>
         </div>
-        <div>
-            <button onclick="window.print()" class="btn btn-danger btn-sm">
-                <i class="bi bi-printer"></i> Print
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-printer me-1"></i> Print
             </button>
-            <a href="{{ route('admin.reports.charts.export-pdf', array_merge(request()->all(), ['tab' => $activeTab])) }}" class="btn btn-danger btn-sm" target="_blank">
-                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            <a href="{{ route('admin.reports.charts.export-pdf', array_merge(request()->all(), ['tab' => $activeTab])) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+            <a href="{{ route('admin.reports.charts.export-excel', array_merge(request()->all(), ['tab' => $activeTab])) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
             </a>
         </div>
     </div>
@@ -148,13 +161,7 @@
         <li class="nav-item" role="presentation">
             <a class="nav-link {{ $activeTab === 'brand' ? 'active' : '' }}" 
                href="{{ route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'brand'])) }}">
-                <i class="bi bi-pie-chart-fill"></i> Car Brand Rental
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link {{ $activeTab === 'comparison' ? 'active' : '' }}" 
-               href="{{ route('admin.reports.charts', array_merge(request()->except('tab'), ['tab' => 'comparison'])) }}">
-                <i class="bi bi-bar-chart-line"></i> Comparison
+                <i class="bi bi-pie-chart-fill"></i> Vehicle Rental
             </a>
         </li>
     </ul>
@@ -205,48 +212,31 @@
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
         </div>
-        <p class="chart-description">Horizontal bar chart showing bookings by faculty</p>
+        <p class="chart-description">Horizontal bar chart showing number of people from each faculty who booked from the system</p>
         <div class="chart-container horizontal">
             <canvas id="facultyChart"></canvas>
         </div>
     </div>
     @endif
 
-    <!-- Car Brand Rental Bar Chart -->
+    <!-- Vehicle Rental Bar Chart -->
     @if($activeTab === 'brand')
-    <div class="chart-card">
+    <div class="chart-card vehicle-rental-card">
         <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-            <h5><i class="bi bi-bar-chart-steps"></i> Car Brand Rental Bar Chart</h5>
+            <h5><i class="bi bi-bar-chart-steps"></i> Vehicle Rental Bar Chart</h5>
             <form method="GET" class="d-flex gap-2">
                 <input type="hidden" name="tab" value="brand">
                 <input type="month" name="brand_month" class="form-control form-control-sm" value="{{ $brandMonth }}">
-                <select name="brand_vehicle_type" class="form-select form-select-sm">
-                    <option value="all" {{ $brandVehicleType === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="car" {{ $brandVehicleType === 'car' ? 'selected' : '' }}>Car</option>
-                    <option value="motorcycle" {{ $brandVehicleType === 'motorcycle' ? 'selected' : '' }}>Motorcycle</option>
-                </select>
                 <button type="submit" class="btn btn-sm btn-danger">Apply</button>
             </form>
         </div>
-        <p class="chart-description">Horizontal bar chart showing bookings by vehicle brand</p>
-        <div class="chart-container horizontal">
+        <p class="chart-description">Horizontal bar chart showing number of bookings per vehicle (all vehicles) in the selected month. Y-axis shows vehicle plate numbers, X-axis shows booking count.</p>
+        <div class="chart-container horizontal vehicle-rental" id="vehicleRentalChartContainer">
             <canvas id="brandChart"></canvas>
         </div>
     </div>
     @endif
 
-    <!-- Comparison Bar Chart -->
-    @if($activeTab === 'comparison')
-    <div class="chart-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5><i class="bi bi-bar-chart-line"></i> Comparison Bar Chart (Latest 4 Months)</h5>
-        </div>
-        <p class="chart-description">Comparing total, car, and motorcycle bookings over the last 4 months</p>
-        <div class="chart-container">
-            <canvas id="comparisonChart"></canvas>
-        </div>
-    </div>
-    @endif
 </div>
 
 @push('scripts')
@@ -279,7 +269,7 @@
         data: {
             labels: fixedWeekDays,
             datasets: [{
-                label: 'Bookings',
+                label: 'Number of People',
                 data: weeklyMappedData,
                 backgroundColor: 'rgba(220, 38, 38, 0.8)',
                 borderColor: '#dc2626',
@@ -366,7 +356,7 @@
         data: {
             labels: fixedMonthDays,
             datasets: [{
-                label: 'Bookings',
+                label: 'Number of People',
                 data: monthlyMappedData,
                 backgroundColor: 'rgba(220, 38, 38, 0.8)',
                 borderColor: '#dc2626',
@@ -467,7 +457,7 @@
         data: {
             labels: facultyLabels,
             datasets: [{
-                label: 'Bookings',
+                label: 'Number of People',
                 data: facultyValues,
                 backgroundColor: [
                     'rgba(220, 38, 38, 0.85)',
@@ -533,56 +523,49 @@
     });
     @endif
 
-    // Brand Chart - Bar Chart with Fixed Y (30 max)
+    // Vehicle Rental Chart - Bar Chart showing bookings per vehicle (all vehicles)
     @if($activeTab === 'brand')
     const brandCtx = document.getElementById('brandChart').getContext('2d');
     const brandRawLabels = {!! json_encode(array_keys($brandData)) !!};
     const brandRawValues = {!! json_encode(array_values($brandData)) !!};
     
-    // Default brands if no data
-    const defaultBrands = ['Perodua', 'Proton', 'Honda', 'Toyota', 'Yamaha', 'Modenas', 'Other'];
+    // Use actual data - plate numbers only
+    let brandLabels = brandRawLabels.length > 0 ? brandRawLabels : [];
+    let brandValues = brandRawLabels.length > 0 ? brandRawValues : [];
     
-    // Use actual data if available, otherwise use defaults with zeros
-    let brandLabels = brandRawLabels.length > 0 ? brandRawLabels : defaultBrands;
-    let brandValues = brandRawLabels.length > 0 ? brandRawValues : Array(defaultBrands.length).fill(0);
+    // Calculate dynamic chart height based on number of vehicles
+    const vehicleCount = brandLabels.length;
+    const minBarHeight = 35; // Minimum height per bar
+    const baseHeight = 200; // Base height for chart
+    const calculatedHeight = Math.max(600, baseHeight + (vehicleCount * minBarHeight));
     
-    // Ensure we always have at least some brands shown
-    if (brandLabels.length < 3) {
-        brandLabels = defaultBrands;
-        brandValues = Array(defaultBrands.length).fill(0);
-        // Map existing data to default brands
-        brandRawLabels.forEach((label, idx) => {
-            const matchIdx = defaultBrands.findIndex(b => b.toLowerCase() === label.toLowerCase());
-            if (matchIdx !== -1) {
-                brandValues[matchIdx] = brandRawValues[idx];
-            } else {
-                // Add to Other category
-                brandValues[defaultBrands.length - 1] += brandRawValues[idx];
-            }
-        });
+    // Update container height dynamically
+    const chartContainer = document.getElementById('vehicleRentalChartContainer');
+    if (chartContainer) {
+        chartContainer.style.height = calculatedHeight + 'px';
     }
+    
+    // Calculate max value for better step size
+    const maxValue = brandValues.length > 0 ? Math.max(...brandValues) : 0;
+    const stepSize = maxValue <= 10 ? 1 : (maxValue <= 20 ? 2 : (maxValue <= 50 ? 5 : 10));
+    
+    // Use a single consistent color for all bars (red theme)
+    const barColor = 'rgba(220, 38, 38, 0.85)'; // Hasta red
     
     new Chart(brandCtx, {
         type: 'bar',
         data: {
             labels: brandLabels,
             datasets: [{
-                label: 'Bookings',
+                label: 'Number of Bookings',
                 data: brandValues,
-                backgroundColor: [
-                    'rgba(220, 38, 38, 0.85)',
-                    'rgba(234, 88, 12, 0.85)',
-                    'rgba(202, 138, 4, 0.85)',
-                    'rgba(22, 163, 74, 0.85)',
-                    'rgba(37, 99, 235, 0.85)',
-                    'rgba(124, 58, 237, 0.85)',
-                    'rgba(219, 39, 119, 0.85)',
-                    'rgba(20, 184, 166, 0.85)'
-                ],
-                borderWidth: 0,
-                borderRadius: 4,
-                barThickness: 28,
-                maxBarThickness: 35
+                backgroundColor: barColor,
+                borderColor: 'rgba(220, 38, 38, 1)',
+                borderWidth: 1,
+                borderRadius: 6,
+                barThickness: 'flex',
+                maxBarThickness: 40,
+                minBarLength: 2
             }]
         },
         options: {
@@ -594,12 +577,19 @@
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    padding: 14,
                     cornerRadius: 8,
+                    titleFont: { size: 14, weight: '600' },
+                    bodyFont: { size: 13 },
+                    displayColors: false,
                     callbacks: {
+                        title: function(context) {
+                            return 'Plate Number: ' + context[0].label;
+                        },
                         label: function(context) {
-                            return ' ' + context.parsed.x + ' bookings';
+                            const count = context.parsed.x;
+                            return 'Bookings: ' + count + ' booking' + (count !== 1 ? 's' : '');
                         }
                     }
                 }
@@ -607,35 +597,73 @@
             scales: {
                 x: {
                     beginAtZero: true,
-                    grace: '10%',
+                    grace: '5%',
+                    title: {
+                        display: true,
+                        text: 'Number of Bookings',
+                        font: { size: 13, weight: '600' },
+                        color: '#374151',
+                        padding: { top: 15, bottom: 10 }
+                    },
                     ticks: {
-                        stepSize: 5,
+                        stepSize: stepSize,
                         precision: 0,
-                        font: { size: 11 },
-                        color: '#6b7280'
+                        font: { size: 12, weight: '500' },
+                        color: '#6b7280',
+                        padding: 8
                     },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.06)',
-                        drawBorder: false
+                        color: 'rgba(0, 0, 0, 0.08)',
+                        drawBorder: true,
+                        borderColor: '#e5e7eb',
+                        lineWidth: 1
                     }
                 },
                 y: {
                     display: true,
+                    title: {
+                        display: true,
+                        text: 'Vehicle Plate Numbers',
+                        font: { size: 13, weight: '600' },
+                        color: '#374151',
+                        padding: { left: 10, right: 15, top: 0, bottom: 0 }
+                    },
                     grid: {
                         display: false
                     },
                     ticks: {
-                        font: { size: 11, weight: '500' },
-                        color: '#374151'
+                        font: { size: 12, weight: '600' },
+                        color: '#374151',
+                        padding: 12,
+                        callback: function(value, index) {
+                            // Show full plate number - ensure all are visible
+                            const label = this.getLabelForValue(value);
+                            return label || '';
+                        }
+                    },
+                    afterFit: function(scaleInstance) {
+                        // Increase the width allocated to y-axis labels for better readability
+                        scaleInstance.width = Math.max(scaleInstance.width, 140);
                     }
                 }
+            },
+            layout: {
+                padding: {
+                    left: 15,
+                    right: 15,
+                    top: 15,
+                    bottom: 15
+                }
+            },
+            animation: {
+                duration: 1000
             }
         }
     });
     @endif
 
-    // Comparison Chart - Bar Chart with Fixed X (4 months) and Y (102 max)
-    @if($activeTab === 'comparison')
+    // Comparison Chart - REMOVED (tab hidden)
+    @if(false && $activeTab === 'comparison')
     const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
     const comparisonRawLabels = {!! json_encode(array_column($comparisonData, 'month')) !!};
     const comparisonRawTotal = {!! json_encode(array_column($comparisonData, 'total')) !!};

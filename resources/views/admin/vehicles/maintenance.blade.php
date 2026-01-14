@@ -9,15 +9,17 @@
         --hasta-red-dark: #7f1d1d;
         --hasta-rose: #fee2e2;
     }
-    .maintenance-img {
-        max-width: 100px;
-        max-height: 100px;
-        object-fit: cover;
-        border-radius: 4px;
-        cursor: pointer;
+    /* Zoomed image modal styles */
+    .maintenance-image-zoom {
+        cursor: zoom-in;
+        transition: transform 0.3s ease;
     }
-    .maintenance-img:hover {
-        opacity: 0.8;
+    .maintenance-image-zoom:hover {
+        transform: scale(1.02);
+    }
+    .maintenance-image-zoom.zoomed {
+        cursor: zoom-out;
+        transform: scale(1.5);
     }
 </style>
 @endpush
@@ -131,15 +133,16 @@
                                         N/A
                                     @endif
                                 </td>
-                                <td>
+                                <td style="width: 80px;">
                                     @if($maintenance->maintenance_img)
-                                        <img src="{{ asset('storage/' . $maintenance->maintenance_img) }}" 
-                                             alt="Maintenance Image" 
-                                             class="maintenance-img"
-                                             data-bs-toggle="modal" 
-                                             data-bs-target="#viewMaintenanceImgModal{{ $maintenance->maintenanceID }}">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#viewMaintenanceImgModal{{ $maintenance->maintenanceID }}">
+                                            <i class="bi bi-eye"></i> View
+                                        </button>
                                     @else
-                                        <span class="text-muted">No image</span>
+                                        <span class="text-muted small">No image</span>
                                     @endif
                                 </td>
                                 <td>
@@ -182,24 +185,28 @@
                             <!-- View Maintenance Image Modal -->
                             @if($maintenance->maintenance_img)
                             <div class="modal fade" id="viewMaintenanceImgModal{{ $maintenance->maintenanceID }}" tabindex="-1">
-                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-dialog modal-xl modal-dialog-centered">
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h5 class="modal-title">Maintenance Image</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
-                                        <div class="modal-body text-center" style="min-height: 400px;">
-                                            <img src="{{ asset('storage/' . $maintenance->maintenance_img) }}" 
+                                        <div class="modal-body text-center" style="min-height: 500px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; padding: 20px;">
+                                            <img src="{{ getFileUrl($maintenance->maintenance_img) }}" 
                                                  alt="Maintenance Image" 
-                                                 class="img-fluid" 
-                                                 style="max-height: 70vh; width: auto; border-radius: 6px;"
+                                                 id="maintenanceImage{{ $maintenance->maintenanceID }}"
+                                                 class="img-fluid maintenance-image-zoom" 
+                                                 style="max-height: 75vh; max-width: 100%; width: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
                                                  onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                         </div>
                                         <div class="modal-footer">
-                                            <a href="{{ asset('storage/' . $maintenance->maintenance_img) }}" 
+                                            <button type="button" class="btn btn-outline-secondary" id="zoomBtn{{ $maintenance->maintenanceID }}">
+                                                <i class="bi bi-zoom-in"></i> Zoom
+                                            </button>
+                                            <a href="{{ getFileUrl($maintenance->maintenance_img) }}" 
                                                target="_blank" 
                                                class="btn btn-primary">
-                                                <i class="bi bi-download"></i> Open in New Tab
+                                                <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
                                             </a>
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                         </div>
@@ -355,6 +362,52 @@
             alert('Block end date must be after or equal to block start date');
             this.value = '';
         }
+    });
+
+    // Image zoom functionality for maintenance images
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle all maintenance image modals
+        const maintenanceModals = document.querySelectorAll('[id^="viewMaintenanceImgModal"]');
+        
+        maintenanceModals.forEach(function(modal) {
+            const modalId = modal.id;
+            const maintenanceId = modalId.replace('viewMaintenanceImgModal', '');
+            const image = document.getElementById('maintenanceImage' + maintenanceId);
+            const zoomBtn = document.getElementById('zoomBtn' + maintenanceId);
+            
+            if (image && zoomBtn) {
+                let isZoomed = false;
+                
+                // Toggle zoom on image click
+                image.addEventListener('click', function() {
+                    toggleZoom();
+                });
+                
+                // Toggle zoom on button click
+                zoomBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    toggleZoom();
+                });
+                
+                function toggleZoom() {
+                    isZoomed = !isZoomed;
+                    if (isZoomed) {
+                        image.classList.add('zoomed');
+                        zoomBtn.innerHTML = '<i class="bi bi-zoom-out"></i> Zoom Out';
+                    } else {
+                        image.classList.remove('zoomed');
+                        zoomBtn.innerHTML = '<i class="bi bi-zoom-in"></i> Zoom';
+                    }
+                }
+                
+                // Reset zoom when modal is closed
+                modal.addEventListener('hidden.bs.modal', function() {
+                    isZoomed = false;
+                    image.classList.remove('zoomed');
+                    zoomBtn.innerHTML = '<i class="bi bi-zoom-in"></i> Zoom';
+                });
+            }
+        });
     });
 </script>
 @endpush

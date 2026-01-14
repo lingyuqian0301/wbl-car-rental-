@@ -579,7 +579,7 @@
                         
                         return [
                             'id' => (string)$booking->bookingID,
-                            'title' => $customerName,
+                            'title' => $plateNumber,
                             'start' => $booking->rental_start_date ? $booking->rental_start_date->format('Y-m-d') : null,
                             'end' => $booking->rental_end_date ? $booking->rental_end_date->addDay()->format('Y-m-d') : null,
                             'backgroundColor' => $backgroundColor,

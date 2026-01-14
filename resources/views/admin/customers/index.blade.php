@@ -234,6 +234,11 @@
                                 </td>
                                 <td>
                                     <strong>{{ $user->name ?? 'Unknown' }}</strong>
+                                    @if($customer->loyaltyCard)
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-stars"></i> Loyalty Card: {{ $customer->loyaltyCard->total_stamps ?? 0 }} stamps
+                                        </div>
+                                    @endif
                                     <div class="customer-info-text">
                                         <div><strong>Username:</strong> {{ $username }}</div>
                                         @if($dob)

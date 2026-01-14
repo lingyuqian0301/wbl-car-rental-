@@ -214,7 +214,14 @@
                                         #{{ $booking->bookingID }}
                                     </a>
                                 </td>
-                                <td>{{ $user->name ?? 'Unknown' }}</td>
+                                <td>
+                                    {{ $user->name ?? 'Unknown' }}
+                                    @if($customer->loyaltyCard)
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-stars"></i> Loyalty Card: {{ $customer->loyaltyCard->total_stamps ?? 0 }} stamps
+                                        </div>
+                                    @endif
+                                </td>
                                 <td>
                                     <strong>{{ $vehicle->plate_number ?? ($vehicle->plate_no ?? 'N/A') }}</strong>
                                 </td>

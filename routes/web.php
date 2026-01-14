@@ -252,6 +252,8 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
 
         Route::prefix('admin/payments')->name('admin.payments.')->group(function () {
             Route::get('/', [AdminPaymentController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [AdminPaymentController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/export-excel', [AdminPaymentController::class, 'exportExcel'])->name('export-excel');
             Route::get('/{id}/invoice', [AdminPaymentController::class, 'generateInvoice'])->name('invoice');
             Route::get('/{payment}', [AdminPaymentController::class, 'show'])->name('show');
             Route::post('/{payment}/approve', [AdminPaymentController::class, 'approve'])->name('approve');
@@ -262,11 +264,15 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
 
         Route::prefix('admin/deposits')->name('admin.deposits.')->group(function () {
             Route::get('/', [AdminDepositController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [AdminDepositController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/export-excel', [AdminDepositController::class, 'exportExcel'])->name('export-excel');
             Route::get('/{booking}', [AdminDepositController::class, 'show'])->name('show');
             Route::put('/{booking}', [AdminDepositController::class, 'update'])->name('update');
             // AJAX routes for booking detail transaction tab
             Route::post('/{booking}/update-status', [AdminDepositController::class, 'updateStatusAjax'])->name('update-status-ajax');
             Route::post('/{booking}/update-handled-by', [AdminDepositController::class, 'updateHandledByAjax'])->name('update-handled-by-ajax');
+            Route::post('/{booking}/update-fine-amount-ajax', [AdminDepositController::class, 'updateFineAmountAjax'])->name('update-fine-amount-ajax');
+            Route::post('/{booking}/upload-receipt', [AdminDepositController::class, 'uploadReceipt'])->name('upload-receipt');
         });
 
         Route::prefix('admin/notifications')->name('admin.notifications.')->group(function () {
@@ -342,11 +348,15 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
             Route::post('/reservations/{booking}/update-status', [AdminReservationController::class, 'updateBookingStatus'])->name('reservations.update-status');
             Route::post('/reservations/{booking}/update-runner', [AdminReservationController::class, 'updateRunner'])->name('reservations.update-runner');
             Route::get('/calendar', [AdminCalendarController::class, 'index'])->name('calendar');
+            Route::get('/calendar/vehicles', [AdminCalendarController::class, 'getVehiclesForDate'])->name('calendar.vehicles');
+            Route::get('/calendar/status-summary', [AdminCalendarController::class, 'getVehicleStatusSummary'])->name('calendar.status-summary');
+            Route::post('/calendar/update-availability', [AdminCalendarController::class, 'updateVehicleAvailability'])->name('calendar.update-availability');
             Route::get('/cancellation', [AdminCancellationController::class, 'index'])->name('cancellation');
             Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews');
             Route::get('/reviews/get-by-booking', [AdminReviewController::class, 'getByBookingId'])->name('reviews.get-by-booking');
             Route::post('/cancellation/{booking}/update', [AdminCancellationController::class, 'updateCancellation'])->name('cancellation.update');
             Route::post('/cancellation/{booking}/send-email', [AdminCancellationController::class, 'sendEmail'])->name('cancellation.send-email');
+            Route::post('/cancellation/{booking}/upload-receipt', [AdminCancellationController::class, 'uploadReceipt'])->name('cancellation.upload-receipt');
         });
 
         Route::prefix('admin/runner')->name('admin.runner.')->group(function () {
@@ -386,6 +396,8 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
 
         Route::prefix('admin/invoices')->name('admin.invoices.')->group(function () {
             Route::get('/', [AdminInvoiceController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [AdminInvoiceController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/export-excel', [AdminInvoiceController::class, 'exportExcel'])->name('export-excel');
         });
 
         Route::prefix('admin/vouchers')->name('admin.vouchers.')->group(function () {
@@ -420,10 +432,13 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::prefix('admin/reports')->name('admin.reports.')->group(function () {
             Route::get('/rentals', [AdminRentalReportController::class, 'index'])->name('rentals');
             Route::get('/rentals/export-pdf', [AdminRentalReportController::class, 'exportPDF'])->name('rentals.export-pdf');
+            Route::get('/rentals/export-excel', [AdminRentalReportController::class, 'exportExcel'])->name('rentals.export-excel');
             Route::get('/charts', [AdminChartsController::class, 'index'])->name('charts');
             Route::get('/charts/export-pdf', [AdminChartsController::class, 'exportPdf'])->name('charts.export-pdf');
+            Route::get('/charts/export-excel', [AdminChartsController::class, 'exportExcel'])->name('charts.export-excel');
             Route::get('/finance', [AdminFinanceController::class, 'index'])->name('finance');
             Route::get('/finance/export-pdf', [AdminFinanceController::class, 'exportPdf'])->name('finance.export-pdf');
+            Route::get('/finance/export-excel', [AdminFinanceController::class, 'exportExcel'])->name('finance.export-excel');
             Route::put('/finance/owner/{owner}/leasing-price', [AdminFinanceController::class, 'updateLeasingPrice'])->name('finance.update-leasing-price');
         });
     });

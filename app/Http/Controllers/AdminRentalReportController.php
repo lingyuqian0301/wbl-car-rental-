@@ -416,6 +416,140 @@ class AdminRentalReportController extends Controller
             'facultyBookingCount' => $facultyBookingCount,
         ];
     }
+
+    /**
+     * Export rentals as Excel (CSV)
+     */
+    public function exportExcel(Request $request)
+    {
+        // Get same filters as index
+        $dateRange = $request->get('date_range', 'all');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $vehicleType = $request->get('vehicle_type', 'all');
+        $bookingStatus = $request->get('booking_status', 'all');
+        $paymentStatus = $request->get('payment_status', 'all');
+        $customerId = $request->get('customer_id');
+        $customerName = $request->get('customer_name');
+        $vehicleId = $request->get('vehicle_id');
+        $vehicleBrand = $request->get('vehicle_brand');
+        $vehicleModel = $request->get('vehicle_model');
+        $plateNo = $request->get('plate_no');
+
+        $query = Booking::with(['customer.user', 'vehicle', 'payments']);
+
+        // Apply same filters as index (simplified version)
+        if ($dateRange === 'daily') {
+            $query->whereDate('rental_start_date', Carbon::today());
+        } elseif ($dateRange === 'weekly') {
+            $startOfWeek = Carbon::now()->startOfWeek();
+            $endOfWeek = Carbon::now()->endOfWeek();
+            $query->whereBetween('rental_start_date', [$startOfWeek, $endOfWeek]);
+        } elseif ($dateRange === 'monthly') {
+            $query->whereMonth('rental_start_date', Carbon::now()->month)
+                  ->whereYear('rental_start_date', Carbon::now()->year);
+        } elseif ($dateRange === 'custom' && $dateFrom && $dateTo) {
+            $query->whereBetween('rental_start_date', [$dateFrom, $dateTo]);
+        } elseif ($dateFrom && $dateTo) {
+            $query->whereBetween('rental_start_date', [$dateFrom, $dateTo]);
+        }
+
+        if ($bookingStatus === 'done') {
+            $query->where(function($q) {
+                $q->where('booking_status', 'Done')
+                  ->orWhere('booking_status', 'Completed');
+            });
+        } elseif ($bookingStatus === 'upcoming') {
+            $query->whereIn('booking_status', ['Pending', 'Confirmed'])
+                  ->where('rental_start_date', '>=', Carbon::today());
+        } elseif ($bookingStatus === 'cancelled') {
+            $query->where('booking_status', 'Cancelled');
+        }
+
+        if ($customerId) {
+            $query->where('customerID', $customerId);
+        }
+        if ($customerName) {
+            $query->whereHas('customer.user', function($q) use ($customerName) {
+                $q->where('name', 'like', "%{$customerName}%");
+            });
+        }
+        if ($vehicleId) {
+            $query->where('vehicleID', $vehicleId);
+        }
+        if ($plateNo) {
+            $query->whereHas('vehicle', function($vQuery) use ($plateNo) {
+                $vQuery->where('plate_number', 'like', "%{$plateNo}%");
+            });
+        }
+
+        $bookings = $query->orderBy('rental_start_date', 'desc')->get();
+
+        // Filter by vehicle type and payment status
+        $vehicleTypeFilter = $vehicleType === 'motor' ? 'motorcycle' : $vehicleType;
+        $filteredBookings = $bookings->filter(function($booking) use ($vehicleType, $vehicleTypeFilter, $paymentStatus) {
+            $vehicle = $booking->vehicle;
+            
+            if ($vehicleType !== 'all') {
+                if ($vehicleType === 'car' && !($vehicle instanceof Car)) return false;
+                if (($vehicleType === 'motor' || $vehicleTypeFilter === 'motorcycle') && !($vehicle instanceof Motorcycle)) return false;
+            }
+
+            if ($paymentStatus !== 'all') {
+                $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
+                $totalPaid = $booking->payments()->whereIn('payment_status', ['Verified', 'Full'])->sum('total_amount');
+                $refundedAmount = $booking->payments()->where('payment_status', 'Refunded')->sum('total_amount');
+                
+                if ($paymentStatus === 'deposit') {
+                    if ($totalPaid >= $totalRequired || $totalPaid == 0) return false;
+                } elseif ($paymentStatus === 'fully') {
+                    if ($totalPaid < $totalRequired) return false;
+                } elseif ($paymentStatus === 'refunded') {
+                    if ($refundedAmount <= 0) return false;
+                }
+            }
+
+            return true;
+        });
+
+        $data = $filteredBookings->map(function($booking) {
+            $vehicle = $booking->vehicle;
+            $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+            
+            return [
+                'Booking ID' => $booking->bookingID,
+                'Customer Name' => $booking->customer && $booking->customer->user ? $booking->customer->user->name : 'Unknown',
+                'Vehicle Brand' => $vehicle ? ($vehicle->vehicle_brand ?? 'N/A') : 'N/A',
+                'Vehicle Model' => $vehicle ? ($vehicle->vehicle_model ?? 'N/A') : 'N/A',
+                'Plate No' => $vehicle ? ($vehicle->plate_number ?? $vehicle->plate_no ?? 'N/A') : 'N/A',
+                'Booking Date' => $booking->rental_start_date ? Carbon::parse($booking->rental_start_date)->format('Y-m-d') : 'N/A',
+                'Pickup Date' => $booking->rental_start_date ? Carbon::parse($booking->rental_start_date)->format('Y-m-d') : 'N/A',
+                'Return Date' => $booking->rental_end_date ? Carbon::parse($booking->rental_end_date)->format('Y-m-d') : 'N/A',
+                'Duration' => ($booking->duration ?? 0) . ' days',
+                'Payment Amount' => number_format($totalPaid, 2),
+                'Booking Status' => $booking->booking_status ?? 'N/A',
+            ];
+        });
+
+        $filename = 'rentals-export-' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            if ($data->isNotEmpty()) {
+                fputcsv($file, array_keys($data->first()));
+            }
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }
 
 

@@ -401,6 +401,157 @@
             font-size: 0.8rem;
         }
 
+        /* Vehicle Status Floating Box */
+        .vehicle-status-box {
+            position: fixed;
+            left: var(--sidebar-width);
+            bottom: 20px;
+            width: 320px;
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 2px solid var(--admin-red);
+            z-index: 999;
+            overflow: hidden;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .vehicle-status-box.collapsed {
+            transform: translateX(-240px);
+        }
+
+        .vehicle-status-box-header {
+            background: var(--admin-red);
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .vehicle-status-box-header h6 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vehicle-status-box-header .toggle-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .vehicle-status-box-header .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .vehicle-status-box-body {
+            padding: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .vehicle-status-summary {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            background: var(--gray-50);
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+        }
+
+        .vehicle-status-summary-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .vehicle-status-summary-item .count {
+            display: block;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .vehicle-status-summary-item .label {
+            font-size: 0.7rem;
+            color: var(--gray-600);
+            margin-top: 2px;
+        }
+
+        .vehicle-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            margin-bottom: 4px;
+            border-radius: var(--radius-sm);
+            background: var(--gray-50);
+            transition: background 0.2s;
+        }
+
+        .vehicle-list-item:hover {
+            background: var(--gray-100);
+        }
+
+        .vehicle-list-item-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .vehicle-list-item-plate {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--gray-800);
+        }
+
+        .vehicle-list-item-type {
+            font-size: 0.7rem;
+            color: var(--gray-500);
+        }
+
+        .vehicle-list-item-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .status-available { 
+            color: var(--success); 
+            background: var(--success-light);
+        }
+        .status-booked { 
+            color: var(--danger); 
+            background: var(--danger-light);
+        }
+        .status-maintenance { 
+            color: var(--warning); 
+            background: var(--warning-light);
+        }
+
+        .vehicle-status-date {
+            font-size: 0.7rem;
+            color: var(--gray-500);
+            text-align: center;
+            padding: 8px 0;
+            border-top: 1px solid var(--gray-200);
+            margin-top: 8px;
+        }
+
         /* Top Bar Styles */
         .admin-topbar {
             position: fixed;
@@ -731,6 +882,27 @@
         </nav>
     </aside>
 
+    <!-- Vehicle Status Floating Box -->
+    <div class="vehicle-status-box" id="vehicleStatusBox">
+        <div class="vehicle-status-box-header" onclick="toggleVehicleStatusBox()">
+            <h6>
+                <i class="bi bi-truck"></i>
+                <span>Vehicle Status</span>
+            </h6>
+            <button type="button" class="toggle-btn" id="vehicleStatusToggle">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+        <div class="vehicle-status-box-body" id="vehicleStatusBody">
+            <div class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-danger" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted small mt-2 mb-0">Loading vehicle status...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Top Bar -->
     <header class="admin-topbar">
         <div class="topbar-left">
@@ -940,6 +1112,122 @@
 
         // Refresh every 30 seconds
         setInterval(loadNotifications, 30000);
+
+        // Vehicle Status Box functionality
+        function loadVehicleStatus(date = null) {
+            const statusBody = document.getElementById('vehicleStatusBody');
+            if (!statusBody) return;
+
+            const targetDate = date || new Date().toISOString().split('T')[0];
+            const url = `{{ route('admin.bookings.calendar.status-summary') }}?date=${targetDate}`;
+
+            fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const formattedDate = new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+
+                    // Summary section
+                    let html = `
+                        <div class="vehicle-status-summary">
+                            <div class="vehicle-status-summary-item">
+                                <span class="count status-available">${data.available}</span>
+                                <span class="label">Available</span>
+                            </div>
+                            <div class="vehicle-status-summary-item">
+                                <span class="count status-booked">${data.booked}</span>
+                                <span class="label">Booked</span>
+                            </div>
+                            <div class="vehicle-status-summary-item">
+                                <span class="count status-maintenance">${data.maintenance}</span>
+                                <span class="label">Maintenance</span>
+                            </div>
+                        </div>
+                    `;
+
+                    // Vehicle list
+                    if (data.vehicles && data.vehicles.length > 0) {
+                        data.vehicles.forEach(vehicle => {
+                            html += `
+                                <div class="vehicle-list-item">
+                                    <div class="vehicle-list-item-info">
+                                        <div>
+                                            <div class="vehicle-list-item-plate">${vehicle.plate_number}</div>
+                                            <div class="vehicle-list-item-type">${vehicle.vehicle_type}</div>
+                                        </div>
+                                    </div>
+                                    <div class="vehicle-list-item-status ${vehicle.statusClass}">
+                                        <i class="bi ${vehicle.statusIcon}"></i>
+                                        <span>${vehicle.statusText}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `
+                            <div class="text-center py-3 text-muted">
+                                <i class="bi bi-inbox"></i>
+                                <p class="mb-0 mt-2 small">No vehicles found</p>
+                            </div>
+                        `;
+                    }
+
+                    // Date footer
+                    html += `
+                        <div class="vehicle-status-date">
+                            <i class="bi bi-calendar-event"></i> ${formattedDate}
+                        </div>
+                    `;
+
+                    statusBody.innerHTML = html;
+                } else {
+                    statusBody.innerHTML = `
+                        <div class="alert alert-danger alert-sm py-2">
+                            <i class="bi bi-exclamation-circle"></i> Failed to load status
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading vehicle status:', error);
+                statusBody.innerHTML = `
+                    <div class="alert alert-danger alert-sm py-2">
+                        <i class="bi bi-exclamation-circle"></i> Error loading status
+                    </div>
+                `;
+            });
+        }
+
+        function toggleVehicleStatusBox() {
+            const box = document.getElementById('vehicleStatusBox');
+            const toggleBtn = document.getElementById('vehicleStatusToggle');
+            if (box) {
+                const isCollapsed = box.classList.contains('collapsed');
+                box.classList.toggle('collapsed');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = isCollapsed 
+                        ? '<i class="bi bi-chevron-left"></i>' 
+                        : '<i class="bi bi-chevron-right"></i>';
+                }
+            }
+        }
+
+        // Load vehicle status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVehicleStatus();
+            
+            // Refresh every 60 seconds
+            setInterval(() => loadVehicleStatus(), 60000);
+        });
     </script>
 
     @yield('scripts')

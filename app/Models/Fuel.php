@@ -16,6 +16,7 @@ class Fuel extends Model
     protected $fillable = [
         'vehicleID',
         'fuel_date',
+        'service_type',
         'cost',
         'receipt_img',
         'handled_by',

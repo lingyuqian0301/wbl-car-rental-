@@ -44,33 +44,29 @@
     }
     /* Column widths */
     .payment-table .table th:nth-child(1),
-    .payment-table .table td:nth-child(1) { width: 5%; } /* Booking ID */
+    .payment-table .table td:nth-child(1) { width: 6%; } /* Booking ID */
     .payment-table .table th:nth-child(2),
-    .payment-table .table td:nth-child(2) { width: 5%; } /* Payment ID */
+    .payment-table .table td:nth-child(2) { width: 10%; } /* Customer Name */
     .payment-table .table th:nth-child(3),
-    .payment-table .table td:nth-child(3) { width: 8%; } /* Bank Name */
+    .payment-table .table td:nth-child(3) { width: 10%; } /* Bank */
     .payment-table .table th:nth-child(4),
-    .payment-table .table td:nth-child(4) { width: 8%; } /* Bank Account */
+    .payment-table .table td:nth-child(4) { width: 7%; } /* Date */
     .payment-table .table th:nth-child(5),
-    .payment-table .table td:nth-child(5) { width: 7%; } /* Date */
+    .payment-table .table td:nth-child(5) { width: 6%; } /* Type */
     .payment-table .table th:nth-child(6),
-    .payment-table .table td:nth-child(6) { width: 6%; } /* Type */
+    .payment-table .table td:nth-child(6) { width: 7%; } /* Amount */
     .payment-table .table th:nth-child(7),
-    .payment-table .table td:nth-child(7) { width: 7%; } /* Amount */
+    .payment-table .table td:nth-child(7) { width: 7%; } /* Receipt */
     .payment-table .table th:nth-child(8),
-    .payment-table .table td:nth-child(8) { width: 10%; } /* Transaction Ref */
+    .payment-table .table td:nth-child(8) { width: 6%; } /* Is Complete */
     .payment-table .table th:nth-child(9),
-    .payment-table .table td:nth-child(9) { width: 7%; } /* Receipt */
+    .payment-table .table td:nth-child(9) { width: 6%; } /* Status */
     .payment-table .table th:nth-child(10),
-    .payment-table .table td:nth-child(10) { width: 6%; } /* Is Complete */
+    .payment-table .table td:nth-child(10) { width: 7%; } /* Is Verify */
     .payment-table .table th:nth-child(11),
-    .payment-table .table td:nth-child(11) { width: 6%; } /* Status */
+    .payment-table .table td:nth-child(11) { width: 8%; } /* Verified By */
     .payment-table .table th:nth-child(12),
-    .payment-table .table td:nth-child(12) { width: 7%; } /* Is Verify */
-    .payment-table .table th:nth-child(13),
-    .payment-table .table td:nth-child(13) { width: 8%; } /* Verified By */
-    .payment-table .table th:nth-child(14),
-    .payment-table .table td:nth-child(14) { width: 10%; } /* Invoice */
+    .payment-table .table td:nth-child(12) { width: 10%; } /* Invoice */
     
     .receipt-image {
         max-width: 50px;
@@ -143,6 +139,12 @@
             <button class="btn btn-sm btn-light text-danger" onclick="window.print()">
                 <i class="bi bi-printer me-1"></i> Print
             </button>
+            <a href="{{ route('admin.payments.export-pdf', request()->query()) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+            <a href="{{ route('admin.payments.export-excel', request()->query()) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
+            </a>
         </div>
     </div>
 
@@ -191,10 +193,23 @@
                 <!-- Payment IsVerify Filter -->
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Payment IsVerify</label>
-                    <select name="filter_payment_isverify" class="form-select form-select-sm">
+                    <select name="payment_isVerify" class="form-select form-select-sm">
                         <option value="">All</option>
                         <option value="1" {{ ($filterPaymentIsVerify ?? '') == '1' ? 'selected' : '' }}>Verified</option>
                         <option value="0" {{ ($filterPaymentIsVerify ?? '') == '0' ? 'selected' : '' }}>Not Verified</option>
+                    </select>
+                </div>
+                
+                <!-- Verified By Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Verified By</label>
+                    <select name="filter_verify_by" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach($staffUsers ?? [] as $staff)
+                            <option value="{{ $staff->userID }}" {{ ($filterVerifyBy ?? '') == $staff->userID ? 'selected' : '' }}>
+                                {{ $staff->name }}
+                            </option>
+                        @endforeach
                     </select>
                 </div>
                 
@@ -202,7 +217,7 @@
                     <button type="submit" class="btn btn-danger btn-sm">
                         <i class="bi bi-funnel"></i> Apply Filters
                     </button>
-                    @if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify)
+                    @if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify || $filterVerifyBy)
                         <a href="{{ route('admin.payments.index') }}" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-x-circle"></i> Clear
                         </a>
@@ -222,13 +237,11 @@
                 <thead>
                     <tr>
                         <th>Booking</th>
-                        <th>Payment</th>
+                        <th>Customer Name</th>
                         <th>Bank</th>
-                        <th>Account No</th>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Amount</th>
-                        <th>Txn Ref</th>
                         <th>Receipt</th>
                         <th>Complete</th>
                         <th>Status</th>
@@ -276,17 +289,13 @@
                                 </a>
                             </td>
                             <td>
-                                <a href="{{ route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'transaction-detail']) }}" 
-                                   class="text-decoration-none fw-bold text-primary"
-                                   target="_blank">
-                                    <strong>#{{ $payment->paymentID }}</strong>
-                                </a>
+                                {{ $booking->customer->user->name ?? 'N/A' }}
                             </td>
                             <td>
-                                {{ $payment->payment_bank_name ?? 'N/A' }}
-                            </td>
-                            <td>
-                                {{ $payment->payment_bank_account_no ?? 'N/A' }}
+                                <div>{{ $payment->payment_bank_name ?? 'N/A' }}</div>
+                                @if($payment->payment_bank_account_no)
+                                    <div class="text-muted small">{{ $payment->payment_bank_account_no }}</div>
+                                @endif
                             </td>
                             <td>
                                 @if($payment->payment_date)
@@ -304,16 +313,9 @@
                                 <strong>RM {{ number_format($payment->total_amount ?? 0, 2) }}</strong>
                             </td>
                             <td>
-                                @if($payment->transaction_reference)
-                                    <span class="text-muted small" title="Transaction Reference">{{ strlen($payment->transaction_reference) > 30 ? substr($payment->transaction_reference, 0, 30) . '...' : $payment->transaction_reference }}</span>
-                                @else
-                                    <span class="text-muted">N/A</span>
-                                @endif
-                            </td>
-                            <td>
                                 @php
-                                    // Get receipt from proof_of_payment, fallback to transaction_reference
-                                    $receiptPath = $payment->proof_of_payment ?? $payment->transaction_reference ?? null;
+                                    // Get receipt from proof_of_payment field
+                                    $receiptPath = $payment->proof_of_payment ?? null;
                                     if ($receiptPath) {
                                         // Check if it's a file path (image or PDF)
                                         $isImagePath = str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/') || str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf');
@@ -424,7 +426,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14" class="text-center py-5 text-muted">
+                            <td colspan="12" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-3 mb-0">No payments available.</p>
                             </td>

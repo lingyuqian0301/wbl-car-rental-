@@ -63,6 +63,12 @@
             <button class="btn btn-sm btn-light text-danger" onclick="window.print()">
                 <i class="bi bi-printer me-1"></i> Print
             </button>
+            <a href="{{ route('admin.deposits.export-pdf', request()->query()) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+            <a href="{{ route('admin.deposits.export-excel', request()->query()) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
+            </a>
         </div>
     </div>
 
@@ -84,6 +90,7 @@
                     <select name="filter_refund_status" class="form-select form-select-sm">
                         <option value="">All</option>
                         <option value="pending" {{ ($filterRefundStatus ?? '') === 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="hold" {{ ($filterRefundStatus ?? '') === 'hold' ? 'selected' : '' }}>Hold</option>
                         <option value="refunded" {{ ($filterRefundStatus ?? '') === 'refunded' ? 'selected' : '' }}>Refunded</option>
                     </select>
                 </div>
@@ -166,7 +173,7 @@
                                 <strong>RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</strong>
                             </td>
                             <td>
-                                <a href="{{ route('admin.deposits.show', $booking->bookingID) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-file-earmark-text"></i> View Form
                                 </a>
                             </td>
@@ -201,27 +208,101 @@
                             </td>
                             <td>
                                 @php
-                                    $statusText = 'Pending';
-                                    $statusClass = 'bg-warning text-dark';
-                                    if ($booking->deposit_refund_status === 'refunded') {
-                                        $statusText = 'Refunded';
-                                        $statusClass = 'bg-success';
+                                    // Determine current status for dropdown
+                                    $currentStatus = 'pending';
+                                    if ($booking->deposit_customer_choice === 'hold') {
+                                        $currentStatus = 'hold';
+                                    } elseif ($booking->deposit_refund_status === 'refunded') {
+                                        $currentStatus = 'refunded';
                                     } elseif ($booking->deposit_refund_status === 'pending' || ($booking->deposit_customer_choice === 'refund' && !$booking->deposit_refund_status)) {
-                                        $statusText = 'Pending';
-                                        $statusClass = 'bg-warning text-dark';
+                                        $currentStatus = 'pending';
                                     }
                                 @endphp
-                                <span class="badge {{ $statusClass }}">
-                                    {{ $statusText }}
-                                </span>
+                                <select class="form-select form-select-sm refund-status-select" 
+                                        data-booking-id="{{ $booking->bookingID }}"
+                                        onchange="updateRefundStatus(this, {{ $booking->bookingID }})">
+                                    <option value="pending" {{ $currentStatus === 'pending' ? 'selected' : '' }}>Pending</option>
+                                    <option value="hold" {{ $currentStatus === 'hold' ? 'selected' : '' }}>Hold</option>
+                                    <option value="refunded" {{ $currentStatus === 'refunded' ? 'selected' : '' }}>Refunded</option>
+                                </select>
                             </td>
                             <td>
-                                {{ $handledBy->name ?? 'N/A' }}
+                                <select class="form-select form-select-sm handled-by-select" 
+                                        data-booking-id="{{ $booking->bookingID }}"
+                                        onchange="updateHandledBy(this, {{ $booking->bookingID }})">
+                                    <option value="">Not Assigned</option>
+                                    @foreach($staffUsers as $user)
+                                        <option value="{{ $user->userID }}" {{ $handledBy && $handledBy->userID == $user->userID ? 'selected' : '' }}>
+                                            {{ $user->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </td>
                             <td>
-                                <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
+                                @php
+                                    $receiptPath = $booking->deposit_refund_receipt ?? null;
+                                    $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
+                                @endphp
+                                @if($hasReceipt)
+                                    <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#viewDepositReceiptModal{{ $booking->bookingID }}">
+                                        <i class="bi bi-receipt"></i> View
+                                    </button>
+                                    <!-- View Receipt Modal -->
+                                    <div class="modal fade" id="viewDepositReceiptModal{{ $booking->bookingID }}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Deposit Refund Receipt - Booking #{{ $booking->bookingID }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body text-center p-4">
+                                                    @if(str_contains(strtolower($receiptPath ?? ''), '.pdf'))
+                                                        <iframe src="{{ getFileUrl($receiptPath) }}" style="width: 100%; height: 500px; border: none;"></iframe>
+                                                    @else
+                                                        <img src="{{ getFileUrl($receiptPath) }}" alt="Receipt" class="img-fluid rounded" style="max-height: 70vh;">
+                                                    @endif
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <a href="{{ getFileUrl($receiptPath) }}" target="_blank" class="btn btn-primary">
+                                                        <i class="bi bi-box-arrow-up-right me-1"></i>Open
+                                                    </a>
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadDepositReceiptModal{{ $booking->bookingID }}">
+                                        <i class="bi bi-upload"></i> Upload
+                                    </button>
+                                @endif
+                                <!-- Upload Receipt Modal -->
+                                <div class="modal fade" id="uploadDepositReceiptModal{{ $booking->bookingID }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Upload Deposit Refund Receipt</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form id="uploadDepositReceiptForm{{ $booking->bookingID }}" enctype="multipart/form-data">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="depositReceiptFile{{ $booking->bookingID }}" class="form-label">Select Receipt (JPG, PNG, PDF - Max 10MB)</label>
+                                                        <input type="file" class="form-control" id="depositReceiptFile{{ $booking->bookingID }}" name="receipt" accept=".jpg,.jpeg,.png,.pdf" required>
+                                                        <div class="form-text">Upload the refund receipt image or PDF.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="bi bi-upload me-1"></i>Upload Receipt
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -240,5 +321,145 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function updateRefundStatus(select, bookingID) {
+    const status = select.value;
+    const originalValue = select.getAttribute('data-original-value') || select.selectedOptions[0].text;
+    
+    // Store original value if not already stored
+    if (!select.getAttribute('data-original-value')) {
+        select.setAttribute('data-original-value', originalValue);
+    }
+    
+    // Disable select during update
+    select.disabled = true;
+    
+    fetch(`{{ route('admin.deposits.update-status-ajax', ':id') }}`.replace(':id', bookingID), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            deposit_refund_status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        select.disabled = false;
+        if (data.success) {
+            // Optionally show success message
+            select.setAttribute('data-original-value', status);
+        } else {
+            // Revert on error
+            select.value = select.getAttribute('data-original-value');
+            alert('Failed to update refund status: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        select.disabled = false;
+        select.value = select.getAttribute('data-original-value');
+        console.error('Error:', error);
+        alert('An error occurred while updating refund status');
+    });
+}
+
+function updateHandledBy(select, bookingID) {
+    const handledBy = select.value;
+    const originalValue = select.getAttribute('data-original-value') || select.value;
+    
+    // Store original value if not already stored
+    if (!select.getAttribute('data-original-value')) {
+        select.setAttribute('data-original-value', originalValue);
+    }
+    
+    // Disable select during update
+    select.disabled = true;
+    
+    fetch(`{{ route('admin.deposits.update-handled-by-ajax', ':id') }}`.replace(':id', bookingID), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            deposit_handled_by: handledBy || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        select.disabled = false;
+        if (data.success) {
+            select.setAttribute('data-original-value', handledBy);
+        } else {
+            select.value = select.getAttribute('data-original-value');
+            alert('Failed to update handled by: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        select.disabled = false;
+        select.value = select.getAttribute('data-original-value');
+        console.error('Error:', error);
+        alert('An error occurred while updating handled by');
+    });
+}
+
+// Handle deposit refund receipt upload
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for all upload receipt forms
+    const uploadForms = document.querySelectorAll('[id^="uploadDepositReceiptForm"]');
+    uploadForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const bookingId = this.id.replace('uploadDepositReceiptForm', '');
+            const modalId = 'uploadDepositReceiptModal' + bookingId;
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Uploading...';
+            
+            fetch(`{{ route('admin.deposits.upload-receipt', ':id') }}`.replace(':id', bookingId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Receipt uploaded successfully.');
+                    // Close modal and reload page to show new receipt
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert(data.message || 'Failed to upload receipt.');
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading receipt.');
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            });
+        });
+    });
+});
+</script>
+@endpush
 @endsection
 

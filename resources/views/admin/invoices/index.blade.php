@@ -95,6 +95,21 @@
         </div>
     @endif
 
+    <!-- Action Buttons - Right Top Corner -->
+    <div class="d-flex justify-content-end mb-3">
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-light text-danger" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print
+            </button>
+            <a href="{{ route('admin.invoices.export-pdf', request()->query()) }}" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+            <a href="{{ route('admin.invoices.export-excel', request()->query()) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
+            </a>
+        </div>
+    </div>
+
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.invoices.index') }}">
             <div class="row g-2 mb-2">

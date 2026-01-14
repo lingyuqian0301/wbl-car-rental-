@@ -323,15 +323,33 @@
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Booking Status:</dt>
                                     <dd class="d-inline ms-2">
-                                <span class="badge-status {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-secondary')) }}">
-                                    {{ $booking->booking_status }}
-                                </span>
+                                        <select class="form-select form-select-sm d-inline-block" style="width: auto; min-width: 150px;" 
+                                                data-booking-id="{{ $booking->bookingID }}"
+                                                onchange="updateBookingStatus(this, {{ $booking->bookingID }})">
+                                            <option value="Pending" {{ $booking->booking_status === 'Pending' ? 'selected' : '' }}>Pending</option>
+                                            <option value="Confirmed" {{ $booking->booking_status === 'Confirmed' ? 'selected' : '' }}>Confirmed</option>
+                                            <option value="Request Cancellation" {{ $booking->booking_status === 'Request Cancellation' ? 'selected' : '' }}>Request Cancellation</option>
+                                            <option value="Refunding" {{ $booking->booking_status === 'Refunding' ? 'selected' : '' }}>Refunding</option>
+                                            <option value="Cancelled" {{ $booking->booking_status === 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                            <option value="Done" {{ $booking->booking_status === 'Done' ? 'selected' : '' }}>Done</option>
+                                        </select>
                                     </dd>
-                            </div>
+                                </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Served By:</dt>
-                                    <dd class="d-inline ms-2" id="servedByDisplay">{{ $staffServed->name ?? 'Not Assigned' }}</dd>
-                        </div>
+                                    <dd class="d-inline ms-2">
+                                        <select class="form-select form-select-sm d-inline-block" style="width: auto; min-width: 150px;" 
+                                                data-booking-id="{{ $booking->bookingID }}"
+                                                onchange="updateServedByInline(this, {{ $booking->bookingID }})">
+                                            <option value="">Not Assigned</option>
+                                            @foreach($staffUsers ?? [] as $staff)
+                                                <option value="{{ $staff->userID }}" {{ ($staffServed && $staffServed->userID == $staff->userID) ? 'selected' : '' }}>
+                                                    {{ $staff->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </dd>
+                                </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Last Updated:</dt>
                                     <dd class="d-inline ms-2">
@@ -346,17 +364,14 @@
                 <!-- Runner Assigned Card -->
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <div class="card-header bg-danger text-white">
                             <h5 class="mb-0"><i class="bi bi-truck"></i> Runner Assigned</h5>
-                            <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#editRunnerModal">
-                                <i class="bi bi-pencil"></i> Edit
-                            </button>
                         </div>
                         <div class="card-body">
                             <dl class="mb-0">
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Runner:</dt>
-                                    <dd class="d-inline ms-2" id="runnerAssignedDisplay">
+                                    <dd class="d-inline ms-2">
                                         @php
                                             $runnerUser = null;
                                             if ($booking->staff_served) {
@@ -366,7 +381,16 @@
                                                 }
                                             }
                                         @endphp
-                                        {{ $runnerUser->name ?? 'Not Assigned' }}
+                                        <select class="form-select form-select-sm d-inline-block" style="width: auto; min-width: 150px;" 
+                                                data-booking-id="{{ $booking->bookingID }}"
+                                                onchange="updateRunnerAssignedInline(this, {{ $booking->bookingID }})">
+                                            <option value="">Not Assigned</option>
+                                            @foreach($runners ?? [] as $runner)
+                                                <option value="{{ $runner->userID }}" {{ ($runnerUser && $runnerUser->userID == $runner->userID) ? 'selected' : '' }}>
+                                                    {{ $runner->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </dd>
                                 </div>
                                 <div class="mb-2">
@@ -682,7 +706,14 @@
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Name:</dt>
-                                    <dd class="d-inline ms-2">{{ $booking->customer->user->name ?? 'N/A' }}</dd>
+                                    <dd class="d-inline ms-2">
+                                        {{ $booking->customer->user->name ?? 'N/A' }}
+                                        @if($booking->customer->loyaltyCard)
+                                            <span class="small text-muted ms-2">
+                                                <i class="bi bi-stars"></i> Loyalty Card: {{ $booking->customer->loyaltyCard->total_stamps ?? 0 }} stamps
+                                            </span>
+                                        @endif
+                                    </dd>
                                 </div>
                                 <div class="mb-2">
                                     <dt class="d-inline fw-semibold">Last Login:</dt>
@@ -922,7 +953,12 @@
                                         <i class="bi bi-person-badge fs-1 d-block mb-2" style="color: var(--admin-red);"></i>
                                         <h6 class="fw-semibold">{{ $booking->customer->local ? 'IC' : 'Passport' }}</h6>
                                         @php
-                                            $icImg = $booking->customer->customer_ic_img ?? null;
+                                            // Get IC image from local table for local customers, otherwise from customer table for international
+                                            if ($booking->customer->local) {
+                                                $icImg = $booking->customer->local->ic_img ?? null;
+                                            } else {
+                                                $icImg = $booking->customer->customer_ic_img ?? null;
+                                            }
                                         @endphp
                                         @if($icImg)
                                             <div class="mb-2">
@@ -1533,13 +1569,11 @@
                                 <table class="table table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment ID</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Bank Name</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Bank Account No</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Customer Name</th>
+                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Bank</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Date</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Type</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Amount</th>
-                                            <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Transaction Reference</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Receipt</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Is Payment Complete</th>
                                             <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Payment Status</th>
@@ -1572,19 +1606,16 @@
                                                 $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
                                             @endphp
                                             <tr>
-                                                <!-- Payment ID -->
+                                                <!-- Customer Name -->
                                                 <td style="padding: 12px; vertical-align: middle;">
-                                                    <a href="{{ route('admin.payments.index', ['search' => $payment->paymentID]) }}" class="text-decoration-none fw-bold text-danger" target="_blank">
-                                                        #{{ $payment->paymentID }}
-                                                    </a>
+                                                    {{ $booking->customer->user->name ?? 'N/A' }}
                                                 </td>
-                                                <!-- Payment Bank Name -->
+                                                <!-- Payment Bank -->
                                                 <td style="padding: 12px; vertical-align: middle;">
-                                                    {{ $payment->payment_bank_name ?? 'N/A' }}
-                                                </td>
-                                                <!-- Payment Bank Account No -->
-                                                <td style="padding: 12px; vertical-align: middle;">
-                                                    {{ $payment->payment_bank_account_no ?? 'N/A' }}
+                                                    <div>{{ $payment->payment_bank_name ?? 'N/A' }}</div>
+                                                    @if($payment->payment_bank_account_no)
+                                                        <div class="text-muted small">{{ $payment->payment_bank_account_no }}</div>
+                                                    @endif
                                                 </td>
                                                 <!-- Payment Date -->
                                                 <td style="padding: 12px; vertical-align: middle;">
@@ -1610,16 +1641,6 @@
                                                 <!-- Payment Amount -->
                                                 <td style="padding: 12px; vertical-align: middle;">
                                                     <strong class="text-dark">RM {{ number_format($payment->total_amount ?? 0, 2) }}</strong>
-                                                </td>
-                                                <!-- Transaction Reference -->
-                                                <td style="padding: 12px; vertical-align: middle;">
-                                                    @if($payment->transaction_reference)
-                                                        <span class="text-muted small" title="{{ $payment->transaction_reference }}">
-                                                            {{ strlen($payment->transaction_reference) > 15 ? substr($payment->transaction_reference, 0, 15) . '...' : $payment->transaction_reference }}
-                                                        </span>
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
                                                 </td>
                                                 <!-- Payment Receipt -->
                                                 <td style="padding: 12px; vertical-align: middle;">
@@ -1722,6 +1743,7 @@
                             <table class="table table-hover mb-0">
                                 <thead>
                                     <tr>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Customer Name</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Deposit Payment</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Vehicle Condition Form</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Customer Choice</th>
@@ -1730,6 +1752,7 @@
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Refund Amount</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Refund Status</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Handled By</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Receipt</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1737,6 +1760,10 @@
                                         $hasReturnForm = $booking->vehicleConditionForms && $booking->vehicleConditionForms->where('form_type', 'RETURN')->first();
                                     @endphp
                                     <tr>
+                                        <!-- Customer Name -->
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            {{ $booking->customer->user->name ?? 'N/A' }}
+                                        </td>
                                         <!-- Deposit Payment -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             <strong class="text-dark fs-6">RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</strong>
@@ -1787,33 +1814,117 @@
                                         </td>
                                         <!-- Refund Amount -->
                                         <td style="padding: 12px; vertical-align: middle;">
-                                            @if($booking->deposit_refund_amount && $booking->deposit_refund_amount > 0)
-                                                <strong class="text-success">RM {{ number_format($booking->deposit_refund_amount, 2) }}</strong>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
+                                            <span id="refund-amount-display-{{ $booking->bookingID }}">
+                                                @if($booking->deposit_refund_amount && $booking->deposit_refund_amount > 0)
+                                                    <strong class="text-success">RM {{ number_format($booking->deposit_refund_amount, 2) }}</strong>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </span>
                                         </td>
                                         <!-- Refund Status (Dropdown) -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             @php
-                                                $statusText = 'Pending';
-                                                $statusClass = 'bg-warning text-dark';
-                                                if ($booking->deposit_refund_status === 'refunded') {
-                                                    $statusText = 'Refunded';
-                                                    $statusClass = 'bg-success';
+                                                // Determine current status for dropdown
+                                                $currentStatus = 'pending';
+                                                if ($booking->deposit_customer_choice === 'hold') {
+                                                    $currentStatus = 'hold';
+                                                } elseif ($booking->deposit_refund_status === 'refunded') {
+                                                    $currentStatus = 'refunded';
                                                 } elseif ($booking->deposit_refund_status === 'pending' || ($booking->deposit_customer_choice === 'refund' && !$booking->deposit_refund_status)) {
-                                                    $statusText = 'Pending';
-                                                    $statusClass = 'bg-warning text-dark';
+                                                    $currentStatus = 'pending';
                                                 }
                                             @endphp
-                                            <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
+                                            <select class="form-select form-select-sm refund-status-select" 
+                                                    data-booking-id="{{ $booking->bookingID }}"
+                                                    onchange="updateRefundStatus(this, {{ $booking->bookingID }})">
+                                                <option value="pending" {{ $currentStatus === 'pending' ? 'selected' : '' }}>Pending</option>
+                                                <option value="hold" {{ $currentStatus === 'hold' ? 'selected' : '' }}>Hold</option>
+                                                <option value="refunded" {{ $currentStatus === 'refunded' ? 'selected' : '' }}>Refunded</option>
+                                            </select>
                                         </td>
-                                        <!-- Handled By -->
+                                        <!-- Handled By (Dropdown) -->
                                         <td style="padding: 12px; vertical-align: middle;">
                                             @php
                                                 $handledBy = $booking->deposit_handled_by ? \App\Models\User::find($booking->deposit_handled_by) : null;
                                             @endphp
-                                            {{ $handledBy->name ?? 'N/A' }}
+                                            <select class="form-select form-select-sm handled-by-select" 
+                                                    data-booking-id="{{ $booking->bookingID }}"
+                                                    onchange="updateHandledBy(this, {{ $booking->bookingID }})">
+                                                <option value="">Not Assigned</option>
+                                                @foreach($staffUsers ?? [] as $user)
+                                                    <option value="{{ $user->userID }}" {{ $handledBy && $handledBy->userID == $user->userID ? 'selected' : '' }}>
+                                                        {{ $user->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <!-- Receipt Upload Button -->
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            @php
+                                                $receiptPath = $booking->deposit_refund_receipt ?? null;
+                                                $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
+                                            @endphp
+                                            @if($hasReceipt)
+                                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#viewDepositReceiptModal{{ $booking->bookingID }}">
+                                                    <i class="bi bi-receipt"></i> View
+                                                </button>
+                                                <!-- View Receipt Modal -->
+                                                <div class="modal fade" id="viewDepositReceiptModal{{ $booking->bookingID }}" tabindex="-1">
+                                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-danger text-white">
+                                                                <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Deposit Refund Receipt - Booking #{{ $booking->bookingID }}</h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body text-center p-4">
+                                                                @if(str_contains(strtolower($receiptPath ?? ''), '.pdf'))
+                                                                    <iframe src="{{ getFileUrl($receiptPath) }}" style="width: 100%; height: 500px; border: none;"></iframe>
+                                                                @else
+                                                                    <img src="{{ getFileUrl($receiptPath) }}" alt="Receipt" class="img-fluid rounded" style="max-height: 70vh;">
+                                                                @endif
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <a href="{{ getFileUrl($receiptPath) }}" target="_blank" class="btn btn-primary">
+                                                                    <i class="bi bi-box-arrow-up-right me-1"></i>Open
+                                                                </a>
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadDepositReceiptModal{{ $booking->bookingID }}">
+                                                    <i class="bi bi-upload"></i> Upload
+                                                </button>
+                                            @endif
+                                            <!-- Upload Receipt Modal -->
+                                            <div class="modal fade" id="uploadDepositReceiptModal{{ $booking->bookingID }}" tabindex="-1">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header bg-danger text-white">
+                                                            <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Upload Deposit Refund Receipt</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <form id="uploadDepositReceiptForm{{ $booking->bookingID }}" enctype="multipart/form-data">
+                                                            @csrf
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label for="depositReceiptFile{{ $booking->bookingID }}" class="form-label">Select Receipt (JPG, PNG, PDF - Max 10MB)</label>
+                                                                    <input type="file" class="form-control" id="depositReceiptFile{{ $booking->bookingID }}" name="receipt" accept=".jpg,.jpeg,.png,.pdf" required>
+                                                                    <div class="form-text">Upload the refund receipt image or PDF.</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-danger">
+                                                                    <i class="bi bi-upload me-1"></i>Upload Receipt
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1849,7 +1960,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="updateServedBy()">Save Changes</button>
+                <button type="button" class="btn btn-danger" onclick="updateServedByModal()">Save Changes</button>
             </div>
         </div>
     </div>
@@ -1972,7 +2083,78 @@
     }
 
     // Update Served By
-    function updateServedBy() {
+    // Update Booking Status dropdown
+    function updateBookingStatus(select, bookingId) {
+        const value = select.value;
+        const originalValue = select.dataset.originalValue || select.value;
+        
+        select.disabled = true;
+        
+        fetch('{{ route('admin.bookings.reservations.update-status', $booking->bookingID) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ booking_status: value })
+        })
+        .then(response => response.json())
+        .then(data => {
+            select.disabled = false;
+            if (data.success) {
+                select.dataset.originalValue = value;
+                showNotification(data.message || 'Booking status updated successfully.', true);
+            } else {
+                select.value = originalValue;
+                showNotification(data.message || 'Failed to update booking status.', false);
+            }
+        })
+        .catch(error => {
+            select.disabled = false;
+            select.value = originalValue;
+            console.error('Error:', error);
+            showNotification('An error occurred while updating booking status.', false);
+        });
+    }
+
+    // Update Served By dropdown (for inline dropdown)
+    function updateServedByInline(select, bookingId) {
+        const value = select.value;
+        const originalValue = select.dataset.originalValue || select.value;
+        
+        select.disabled = true;
+        
+        fetch('{{ route('admin.bookings.reservations.update-status', $booking->bookingID) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ staff_served: value || null })
+        })
+        .then(response => response.json())
+        .then(data => {
+            select.disabled = false;
+            if (data.success) {
+                select.dataset.originalValue = value;
+                showNotification(data.message || 'Served by updated successfully.', true);
+            } else {
+                select.value = originalValue;
+                showNotification(data.message || 'Failed to update served by.', false);
+            }
+        })
+        .catch(error => {
+            select.disabled = false;
+            select.value = originalValue;
+            console.error('Error:', error);
+            showNotification('An error occurred while updating served by.', false);
+        });
+    }
+
+    // Update Served By (for modal - keep existing function name)
+    function updateServedByModal() {
         const staffServed = document.getElementById('editServedBy').value;
         
         fetch('{{ route('admin.bookings.reservations.update-status', $booking->bookingID) }}', {
@@ -2003,7 +2185,42 @@
         });
     }
 
-    // Update Runner Assigned
+    // Update Runner Assigned (for inline dropdown)
+    function updateRunnerAssignedInline(select, bookingId) {
+        const value = select.value;
+        const originalValue = select.dataset.originalValue || select.value;
+        
+        select.disabled = true;
+        
+        fetch('{{ route('admin.bookings.reservations.update-runner', $booking->bookingID) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ runner_id: value || null })
+        })
+        .then(response => response.json())
+        .then(data => {
+            select.disabled = false;
+            if (data.success) {
+                select.dataset.originalValue = value;
+                showNotification(data.message || 'Runner assignment updated successfully.', true);
+            } else {
+                select.value = originalValue;
+                showNotification(data.message || 'Failed to update runner assignment.', false);
+            }
+        })
+        .catch(error => {
+            select.disabled = false;
+            select.value = originalValue;
+            console.error('Error:', error);
+            showNotification('An error occurred while updating runner assignment.', false);
+        });
+    }
+
+    // Update Runner Assigned (for modal - keep existing function name)
     function updateRunnerAssigned() {
         const runnerId = document.getElementById('editRunnerAssigned').value;
         
@@ -2018,9 +2235,12 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update display
-                const selectedOption = document.getElementById('editRunnerAssigned').selectedOptions[0];
-                document.getElementById('runnerAssignedDisplay').textContent = selectedOption.value ? selectedOption.text : 'Not Assigned';
+                // Update display (if it exists - for backward compatibility)
+                const displayElement = document.getElementById('runnerAssignedDisplay');
+                if (displayElement) {
+                    const selectedOption = document.getElementById('editRunnerAssigned').selectedOptions[0];
+                    displayElement.textContent = selectedOption.value ? selectedOption.text : 'Not Assigned';
+                }
                 
                 // Close modal
                 bootstrap.Modal.getInstance(document.getElementById('editRunnerModal')).hide();
@@ -2090,56 +2310,201 @@
     }
 
     // Update Deposit Refund Status dropdown
-    function updateDepositRefundStatus(select, bookingId) {
-        const value = select.value;
+    function updateRefundStatus(select, bookingId) {
+        const status = select.value;
+        const originalValue = select.getAttribute('data-original-value') || select.selectedOptions[0].text;
         
-        fetch('/admin/deposits/' + bookingId + '/update-status', {
+        // Store original value if not already stored
+        if (!select.getAttribute('data-original-value')) {
+            select.setAttribute('data-original-value', originalValue);
+        }
+        
+        // Disable select during update
+        select.disabled = true;
+        
+        fetch(`{{ route('admin.deposits.update-status-ajax', ':id') }}`.replace(':id', bookingId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({ deposit_refund_status: value })
+            body: JSON.stringify({
+                deposit_refund_status: status
+            })
         })
         .then(response => response.json())
         .then(data => {
+            select.disabled = false;
             if (data.success) {
-                showNotification('Refund status updated.');
+                select.setAttribute('data-original-value', status);
+                showNotification('Refund status updated successfully.', true);
             } else {
-                showNotification(data.message || 'Failed to update.', false);
+                select.value = select.getAttribute('data-original-value');
+                showNotification(data.message || 'Failed to update refund status.', false);
             }
         })
         .catch(error => {
+            select.disabled = false;
+            select.value = select.getAttribute('data-original-value');
             console.error('Error:', error);
-            showNotification('An error occurred.', false);
+            showNotification('An error occurred while updating refund status.', false);
         });
     }
 
-    // Update Deposit Handled By dropdown
-    function updateDepositHandledBy(select, bookingId) {
-        const value = select.value;
+    // Edit Fine Amount function
+    function editFineAmount(bookingId, originalDeposit, currentFineAmount) {
+        const modal = new bootstrap.Modal(document.getElementById('editFineAmountModal'));
+        document.getElementById('fine-amount-booking-id').value = bookingId;
+        document.getElementById('fine-amount-original').value = 'RM ' + parseFloat(originalDeposit).toFixed(2);
+        const fineInput = document.getElementById('fine-amount-input');
+        fineInput.value = currentFineAmount || '';
         
-        fetch('/admin/deposits/' + bookingId + '/update-handled-by', {
+        // Calculate refund amount on input change
+        const refundDisplay = document.getElementById('fine-amount-refund');
+        
+        function updateRefundAmount() {
+            const fine = parseFloat(fineInput.value) || 0;
+            const original = parseFloat(originalDeposit) || 0;
+            const refund = Math.max(0, original - fine);
+            refundDisplay.value = 'RM ' + refund.toFixed(2);
+        }
+        
+        fineInput.oninput = updateRefundAmount;
+        updateRefundAmount();
+        
+        modal.show();
+    }
+
+    // Update Deposit Handled By dropdown
+    function updateHandledBy(select, bookingId) {
+        const handledBy = select.value;
+        const originalValue = select.getAttribute('data-original-value') || select.value;
+        
+        // Store original value if not already stored
+        if (!select.getAttribute('data-original-value')) {
+            select.setAttribute('data-original-value', originalValue);
+        }
+        
+        // Disable select during update
+        select.disabled = true;
+        
+        fetch(`{{ route('admin.deposits.update-handled-by-ajax', ':id') }}`.replace(':id', bookingId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({ deposit_handled_by: value || null })
+            body: JSON.stringify({
+                deposit_handled_by: handledBy || null
+            })
         })
         .then(response => response.json())
         .then(data => {
+            select.disabled = false;
             if (data.success) {
-                showNotification('Handled by updated.');
+                select.setAttribute('data-original-value', handledBy);
+                showNotification('Handled by updated successfully.', true);
             } else {
-                showNotification(data.message || 'Failed to update.', false);
+                select.value = select.getAttribute('data-original-value');
+                showNotification(data.message || 'Failed to update handled by.', false);
             }
         })
         .catch(error => {
+            select.disabled = false;
+            select.value = select.getAttribute('data-original-value');
             console.error('Error:', error);
-            showNotification('An error occurred.', false);
+            showNotification('An error occurred while updating handled by.', false);
         });
     }
+
+    // Handle deposit refund receipt upload
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners for all upload receipt forms
+        const uploadForms = document.querySelectorAll('[id^="uploadDepositReceiptForm"]');
+        uploadForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const bookingId = this.id.replace('uploadDepositReceiptForm', '');
+                const modalId = 'uploadDepositReceiptModal' + bookingId;
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Uploading...';
+                
+                fetch(`{{ route('admin.deposits.upload-receipt', ':id') }}`.replace(':id', bookingId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Receipt uploaded successfully.', true);
+                        // Close modal and reload page to show new receipt
+                        const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showNotification(data.message || 'Failed to upload receipt.', false);
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred while uploading receipt.', false);
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                });
+            });
+        });
+    });
 </script>
+
+<!-- Fine Amount Edit Modal -->
+<div class="modal fade" id="editFineAmountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Fine Amount</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editFineAmountForm">
+                <div class="modal-body">
+                    <input type="hidden" id="fine-amount-booking-id" name="booking_id">
+                    <div class="mb-3">
+                        <label class="form-label">Original Deposit Amount</label>
+                        <input type="text" id="fine-amount-original" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fine Amount (RM) <span class="text-danger">*</span></label>
+                        <input type="number" id="fine-amount-input" name="fine_amount" step="0.01" min="0" class="form-control" required>
+                        <small class="text-muted">Enter the fine amount to be deducted from the deposit</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Refund Amount (RM)</label>
+                        <input type="text" id="fine-amount-refund" class="form-control" readonly>
+                        <small class="text-muted">Calculated automatically: Original Deposit - Fine Amount</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 

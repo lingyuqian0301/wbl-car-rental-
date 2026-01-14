@@ -847,4 +847,75 @@ class AdminFinanceController extends Controller
         $filename = 'daily_income_' . $selectedYear . '_' . str_pad($selectedMonth, 2, '0', STR_PAD_LEFT) . '.pdf';
         return $pdf->download($filename);
     }
+
+    /**
+     * Export finance as Excel (CSV)
+     */
+    public function exportExcel(Request $request)
+    {
+        $activeTab = $request->get('tab', 'expenses-profit');
+        $data = [];
+
+        if ($activeTab === 'expenses-profit') {
+            $vehicleType = $request->get('vehicle_type', 'all');
+            $selectedMonth = $request->get('month');
+            $selectedYear = $request->get('year', date('Y'));
+            
+            $dateFrom = Carbon::create($selectedYear, $selectedMonth ?? date('m'), 1)->startOfMonth();
+            $dateTo = Carbon::create($selectedYear, $selectedMonth ?? date('m'), 1)->endOfMonth();
+            
+            $query = Vehicle::with(['owner', 'bookings.payments', 'maintenances', 'fuels']);
+            
+            if ($vehicleType === 'car') {
+                $query->whereHas('car');
+            } elseif ($vehicleType === 'motor') {
+                $query->whereHas('motorcycle');
+            }
+            
+            $vehicles = $query->get();
+            
+            foreach ($vehicles as $vehicle) {
+                $leasingPrice = $vehicle->owner->leasing_price ?? 0;
+                $earnings = $vehicle->bookings()
+                    ->whereBetween('rental_start_date', [$dateFrom, $dateTo])
+                    ->sum('rental_amount');
+                $maintenanceExpenses = $vehicle->maintenances()
+                    ->whereBetween('service_date', [$dateFrom, $dateTo])
+                    ->sum('cost');
+                
+                $data[] = [
+                    'Vehicle Plate' => $vehicle->plate_number ?? 'N/A',
+                    'Owner' => $vehicle->owner->name ?? 'N/A',
+                    'Leasing Price' => number_format($leasingPrice, 2),
+                    'Earnings' => number_format($earnings, 2),
+                    'Maintenance Expenses' => number_format($maintenanceExpenses, 2),
+                    'Profit' => number_format($earnings - $leasingPrice - $maintenanceExpenses, 2),
+                ];
+            }
+        } else {
+            // For income tabs, export simplified data
+            $data[] = [
+                'Note' => 'Excel export for ' . $activeTab . ' tab is available in PDF format. Please use PDF export for detailed reports.',
+            ];
+        }
+
+        $filename = 'finance-export-' . $activeTab . '-' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            if (!empty($data)) {
+                fputcsv($file, array_keys($data[0]));
+            }
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

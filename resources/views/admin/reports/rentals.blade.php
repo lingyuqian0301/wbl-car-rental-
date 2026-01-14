@@ -57,11 +57,14 @@
         :date="$today"
     >
         <x-slot name="actions">
-            <button onclick="window.print()" class="btn btn-light text-danger pill-btn">
+            <button onclick="window.print()" class="btn btn-sm btn-light text-danger">
                 <i class="bi bi-printer me-1"></i> Print
             </button>
-            <a href="{{ route('admin.reports.rentals.export-pdf', request()->all()) }}" class="btn btn-outline-light text-white pill-btn" target="_blank">
+            <a href="{{ route('admin.reports.rentals.export-pdf', request()->all()) }}" class="btn btn-sm btn-light text-danger" target="_blank">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+            <a href="{{ route('admin.reports.rentals.export-excel', request()->all()) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
             </a>
         </x-slot>
     </x-admin-page-header>

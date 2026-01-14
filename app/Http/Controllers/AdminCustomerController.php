@@ -26,6 +26,7 @@ class AdminCustomerController extends Controller
                 'internationalStudent.studentDetails',
                 'localUtmStaff',
                 'internationalUtmStaff',
+                'loyaltyCard',
                 'bookings' => function($q) {
                     $q->orderBy('rental_start_date', 'desc')->limit(1);
                 }

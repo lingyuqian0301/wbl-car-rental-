@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Vehicle Fuel Records')
+@section('title', 'Vehicle Fuel and Wash Records')
 
 @push('styles')
 <style>
@@ -43,7 +43,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#fuel" type="button" role="tab">
-                <i class="bi bi-fuel-pump"></i> Fuel
+                <i class="bi bi-fuel-pump"></i> Fuel and Wash
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -65,7 +65,7 @@
                 <i class="bi bi-arrow-left"></i> Back to Vehicle
             </a>
             <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#addFuelModal">
-                <i class="bi bi-plus-circle"></i> Add Fuel Record
+                <i class="bi bi-plus-circle"></i> Add Fuel/Wash Record
             </button>
         </div>
     </div>
@@ -87,7 +87,7 @@
     <!-- Fuel Records Table -->
     <div class="card">
         <div class="card-header bg-danger text-white">
-            <h5 class="mb-0"><i class="bi bi-fuel-pump"></i> Fuel Records</h5>
+            <h5 class="mb-0"><i class="bi bi-fuel-pump"></i> Fuel and Wash Records</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -95,6 +95,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Date</th>
+                            <th>Service Type</th>
                             <th>Cost (RM)</th>
                             <th>Receipt</th>
                             <th>Handled By</th>
@@ -105,6 +106,11 @@
                         @forelse($vehicle->fuels as $fuel)
                             <tr>
                                 <td>{{ $fuel->fuel_date ? \Carbon\Carbon::parse($fuel->fuel_date)->format('d M Y') : 'N/A' }}</td>
+                                <td>
+                                    <span class="badge {{ ($fuel->service_type ?? 'fuel') === 'fuel' ? 'bg-primary' : 'bg-info' }}">
+                                        {{ ucfirst($fuel->service_type ?? 'fuel') }}
+                                    </span>
+                                </td>
                                 <td><strong>RM {{ number_format($fuel->cost ?? 0, 2) }}</strong></td>
                                 <td>
                                     @if($fuel->receipt_img)
@@ -185,7 +191,7 @@
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Edit Fuel Record</h5>
+                                            <h5 class="modal-title">Edit Fuel/Wash Record</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <form method="POST" action="{{ route('admin.vehicles.fuel.update', $fuel->fuelID) }}" enctype="multipart/form-data">
@@ -195,6 +201,13 @@
                                                 <div class="mb-3">
                                                     <label class="form-label">Date <span class="text-danger">*</span></label>
                                                     <input type="date" name="fuel_date" class="form-control" value="{{ old('fuel_date', $fuel->fuel_date ? \Carbon\Carbon::parse($fuel->fuel_date)->format('Y-m-d') : '') }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Service Type <span class="text-danger">*</span></label>
+                                                    <select name="service_type" class="form-select" required>
+                                                        <option value="fuel" {{ old('service_type', $fuel->service_type ?? 'fuel') === 'fuel' ? 'selected' : '' }}>Fuel</option>
+                                                        <option value="wash" {{ old('service_type', $fuel->service_type ?? 'fuel') === 'wash' ? 'selected' : '' }}>Wash</option>
+                                                    </select>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label">Cost (RM) <span class="text-danger">*</span></label>
@@ -232,9 +245,9 @@
                             </div>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">
+                                <td colspan="6" class="text-center py-4 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    No fuel records found.
+                                    No fuel/wash records found.
                                 </td>
                             </tr>
                         @endforelse
@@ -250,7 +263,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Fuel Record</h5>
+                <h5 class="modal-title">Add Fuel/Wash Record</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ route('admin.vehicles.fuel.store', $vehicle->vehicleID) }}" enctype="multipart/form-data">
@@ -259,6 +272,13 @@
                     <div class="mb-3">
                         <label class="form-label">Date <span class="text-danger">*</span></label>
                         <input type="date" name="fuel_date" class="form-control" value="{{ old('fuel_date', date('Y-m-d')) }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Service Type <span class="text-danger">*</span></label>
+                        <select name="service_type" class="form-select" required>
+                            <option value="fuel" {{ old('service_type', 'fuel') === 'fuel' ? 'selected' : '' }}>Fuel</option>
+                            <option value="wash" {{ old('service_type') === 'wash' ? 'selected' : '' }}>Wash</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Cost (RM) <span class="text-danger">*</span></label>
@@ -283,7 +303,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Add Fuel Record</button>
+                    <button type="submit" class="btn btn-danger">Add Record</button>
                 </div>
             </form>
         </div>

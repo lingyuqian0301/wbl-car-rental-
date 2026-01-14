@@ -11,25 +11,64 @@
     .table-header {
         background: var(--admin-red);
         color: white;
-        padding: 15px 20px;
+        padding: 12px 16px;
         font-weight: 600;
     }
-    .table thead th {
+    /* Compact table styles */
+    .payment-table .table {
+        font-size: 0.75rem;
+        table-layout: fixed;
+        width: 100%;
+    }
+    .payment-table .table thead th {
         background: var(--admin-red-light);
         color: var(--admin-red-dark);
         font-weight: 600;
         border-bottom: 2px solid var(--admin-red);
-        padding: 12px;
-        font-size: 0.9rem;
-        white-space: nowrap;
-    }
-    .table tbody td {
-        padding: 12px;
+        padding: 8px 6px;
+        font-size: 0.7rem;
+        white-space: normal;
+        word-wrap: break-word;
+        text-align: center;
         vertical-align: middle;
     }
+    .payment-table .table tbody td {
+        padding: 8px 6px;
+        vertical-align: middle;
+        font-size: 0.75rem;
+        word-wrap: break-word;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    /* Column widths */
+    .payment-table .table th:nth-child(1),
+    .payment-table .table td:nth-child(1) { width: 6%; } /* Booking ID */
+    .payment-table .table th:nth-child(2),
+    .payment-table .table td:nth-child(2) { width: 10%; } /* Customer Name */
+    .payment-table .table th:nth-child(3),
+    .payment-table .table td:nth-child(3) { width: 10%; } /* Bank */
+    .payment-table .table th:nth-child(4),
+    .payment-table .table td:nth-child(4) { width: 7%; } /* Date */
+    .payment-table .table th:nth-child(5),
+    .payment-table .table td:nth-child(5) { width: 6%; } /* Type */
+    .payment-table .table th:nth-child(6),
+    .payment-table .table td:nth-child(6) { width: 7%; } /* Amount */
+    .payment-table .table th:nth-child(7),
+    .payment-table .table td:nth-child(7) { width: 7%; } /* Receipt */
+    .payment-table .table th:nth-child(8),
+    .payment-table .table td:nth-child(8) { width: 6%; } /* Is Complete */
+    .payment-table .table th:nth-child(9),
+    .payment-table .table td:nth-child(9) { width: 6%; } /* Status */
+    .payment-table .table th:nth-child(10),
+    .payment-table .table td:nth-child(10) { width: 7%; } /* Is Verify */
+    .payment-table .table th:nth-child(11),
+    .payment-table .table td:nth-child(11) { width: 8%; } /* Verified By */
+    .payment-table .table th:nth-child(12),
+    .payment-table .table td:nth-child(12) { width: 10%; } /* Invoice */
+    
     .receipt-image {
-        max-width: 80px;
-        max-height: 80px;
+        max-width: 50px;
+        max-height: 50px;
         object-fit: cover;
         border-radius: 4px;
         cursor: pointer;
@@ -38,7 +77,22 @@
         opacity: 0.8;
     }
     .verify-dropdown {
-        min-width: 120px;
+        min-width: 80px;
+        font-size: 0.7rem;
+        padding: 4px 6px;
+    }
+    .verified-by-dropdown {
+        min-width: 90px;
+        font-size: 0.7rem;
+        padding: 4px 6px;
+    }
+    .payment-table .badge {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+    }
+    .payment-table .btn-sm {
+        font-size: 0.65rem;
+        padding: 3px 8px;
     }
 </style>
 <?php $__env->stopPush(); ?>
@@ -104,6 +158,12 @@
             <button class="btn btn-sm btn-light text-danger" onclick="window.print()">
                 <i class="bi bi-printer me-1"></i> Print
             </button>
+            <a href="<?php echo e(route('admin.payments.export-pdf', request()->query())); ?>" class="btn btn-sm btn-light text-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+            <a href="<?php echo e(route('admin.payments.export-excel', request()->query())); ?>" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
+            </a>
         </div>
     </div>
 
@@ -152,10 +212,24 @@
                 <!-- Payment IsVerify Filter -->
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold">Payment IsVerify</label>
-                    <select name="filter_payment_isverify" class="form-select form-select-sm">
+                    <select name="payment_isVerify" class="form-select form-select-sm">
                         <option value="">All</option>
                         <option value="1" <?php echo e(($filterPaymentIsVerify ?? '') == '1' ? 'selected' : ''); ?>>Verified</option>
                         <option value="0" <?php echo e(($filterPaymentIsVerify ?? '') == '0' ? 'selected' : ''); ?>>Not Verified</option>
+                    </select>
+                </div>
+                
+                <!-- Verified By Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Verified By</label>
+                    <select name="filter_verify_by" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <?php $__currentLoopData = $staffUsers ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $staff): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($staff->userID); ?>" <?php echo e(($filterVerifyBy ?? '') == $staff->userID ? 'selected' : ''); ?>>
+                                <?php echo e($staff->name); ?>
+
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
                 
@@ -163,7 +237,7 @@
                     <button type="submit" class="btn btn-danger btn-sm">
                         <i class="bi bi-funnel"></i> Apply Filters
                     </button>
-                    <?php if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify): ?>
+                    <?php if($search || $filterPaymentDate || $filterPaymentStatus || $filterPaymentIsComplete || $filterPaymentIsVerify || $filterVerifyBy): ?>
                         <a href="<?php echo e(route('admin.payments.index')); ?>" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-x-circle"></i> Clear
                         </a>
@@ -178,24 +252,22 @@
         <div class="table-header">
             <i class="bi bi-credit-card"></i> All Payments (<?php echo e($payments->total()); ?>)
         </div>
-        <div class="table-responsive">
+        <div style="overflow-x: auto;">
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Booking ID</th>
-                        <th>Payment ID</th>
-                        <th>Payment Bank Name</th>
-                        <th>Payment Bank Account No</th>
-                        <th>Payment Date</th>
-                        <th>Payment Type</th>
-                        <th>Payment Amount</th>
-                        <th>Transaction Reference</th>
-                        <th>Payment Receipt</th>
-                        <th>Is Payment Complete</th>
-                        <th>Payment Status</th>
-                        <th>Payment is Verify</th>
+                        <th>Booking</th>
+                        <th>Customer Name</th>
+                        <th>Bank</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Receipt</th>
+                        <th>Complete</th>
+                        <th>Status</th>
+                        <th>Verify</th>
                         <th>Verified By</th>
-                        <th>Generate Invoice</th>
+                        <th>Invoice</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -238,19 +310,14 @@
                                 </a>
                             </td>
                             <td>
-                                <a href="<?php echo e(route('admin.bookings.reservations.show', ['booking' => $booking->bookingID, 'tab' => 'transaction-detail'])); ?>" 
-                                   class="text-decoration-none fw-bold text-primary"
-                                   target="_blank">
-                                    <strong>#<?php echo e($payment->paymentID); ?></strong>
-                                </a>
-                            </td>
-                            <td>
-                                <?php echo e($payment->payment_bank_name ?? 'N/A'); ?>
+                                <?php echo e($booking->customer->user->name ?? 'N/A'); ?>
 
                             </td>
                             <td>
-                                <?php echo e($payment->payment_bank_account_no ?? 'N/A'); ?>
-
+                                <div><?php echo e($payment->payment_bank_name ?? 'N/A'); ?></div>
+                                <?php if($payment->payment_bank_account_no): ?>
+                                    <div class="text-muted small"><?php echo e($payment->payment_bank_account_no); ?></div>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php if($payment->payment_date): ?>
@@ -270,16 +337,9 @@
                                 <strong>RM <?php echo e(number_format($payment->total_amount ?? 0, 2)); ?></strong>
                             </td>
                             <td>
-                                <?php if($payment->transaction_reference): ?>
-                                    <span class="text-muted small" title="Transaction Reference"><?php echo e(strlen($payment->transaction_reference) > 30 ? substr($payment->transaction_reference, 0, 30) . '...' : $payment->transaction_reference); ?></span>
-                                <?php else: ?>
-                                    <span class="text-muted">N/A</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
                                 <?php
-                                    // Get receipt from proof_of_payment, fallback to transaction_reference
-                                    $receiptPath = $payment->proof_of_payment ?? $payment->transaction_reference ?? null;
+                                    // Get receipt from proof_of_payment field
+                                    $receiptPath = $payment->proof_of_payment ?? null;
                                     if ($receiptPath) {
                                         // Check if it's a file path (image or PDF)
                                         $isImagePath = str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/') || str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf');
@@ -393,7 +453,7 @@
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
-                            <td colspan="14" class="text-center py-5 text-muted">
+                            <td colspan="12" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-3 mb-0">No payments available.</p>
                             </td>

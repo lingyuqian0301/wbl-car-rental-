@@ -12,7 +12,7 @@ class Voucher extends Model
     protected $primaryKey = 'voucherID';
     public $incrementing = true;
     protected $keyType = 'int';
-    public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'voucher_code',
@@ -37,8 +37,6 @@ class Voucher extends Model
             'num_valid' => 'integer',
             'num_applied' => 'integer',
             'isActive' => 'boolean',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 

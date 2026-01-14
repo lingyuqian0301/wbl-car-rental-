@@ -175,6 +175,7 @@
                         <th>Account Type</th>
                         <th>Receipts</th>
                         <th>Refund Status</th>
+                        <th>Reject Reason</th>
                         <th>Handled By</th>
                         <th>Email</th>
                     </tr>
@@ -186,15 +187,14 @@
                             $payments = $booking->payments()->where('payment_status', 'Verified')->get();
                             $vehiclePlate = $booking->vehicle->plate_number ?? 'N/A';
                             $customerEmail = $booking->customer->user->email ?? null;
+                            $customer = $booking->customer;
                             
-                            // Map booking_status to display status
-                            $statusDisplay = [
-                                'request cancelling' => 'Request',
-                                'refunding' => 'Refunding',
-                                'Cancelled' => 'Cancelled',
-                                'cancelled' => 'Cancelled',
-                            ];
-                            $currentStatus = $statusDisplay[$booking->booking_status] ?? $booking->booking_status;
+                            // Get account info from customer database
+                            $accountNo = $customer->default_account_no ?? 'N/A';
+                            $accountType = $customer->default_bank_name ?? 'N/A';
+                            
+                            // Check if booking is rejected (has cancellation_reject_reason and status is Cancelled)
+                            $isRejected = $booking->booking_status === 'Cancelled' && !empty($booking->cancellation_reject_reason);
                         @endphp
                         <tr>
                             <td>
@@ -218,23 +218,17 @@
                             </td>
                             <td>
                                 <strong>RM {{ number_format($totalPaid, 2) }}</strong>
-                                <div class="small text-muted">Total: RM {{ number_format($booking->total_price, 2) }}</div>
+                                <div class="small text-muted">Paid amount</div>
                             </td>
                             <td>
-                                @php
-                                    $firstPayment = $payments->first();
-                                @endphp
-                                {{ $firstPayment->payment_bank_account_no ?? 'N/A' }}
+                                {{ $accountNo }}
                             </td>
                             <td>
-                                @php
-                                    $firstPayment = $payments->first();
-                                @endphp
-                                {{ $firstPayment->payment_bank_name ?? 'N/A' }}
+                                {{ $accountType }}
                             </td>
                             <td>
-                                @if($payments->count() > 0)
-                                    <div class="d-flex flex-column gap-1">
+                                <div class="d-flex flex-column gap-1">
+                                    @if($payments->count() > 0)
                                         @foreach($payments as $payment)
                                             @if($payment->proof_of_payment || $payment->transaction_reference)
                                                 <button type="button" 
@@ -244,20 +238,43 @@
                                                 </button>
                                             @endif
                                         @endforeach
-                                    </div>
-                                @else
-                                    <span class="text-muted small">No receipts</span>
-                                @endif
+                                    @endif
+                                    @if($booking->cancellation_receipt)
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-primary btn-update-cancellation" 
+                                                onclick="showCancellationReceipt('{{ asset($booking->cancellation_receipt) }}', {{ $booking->bookingID }})">
+                                            <i class="bi bi-file-earmark-image"></i> Refund Receipt
+                                        </button>
+                                    @else
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-secondary btn-update-cancellation" 
+                                                onclick="showUploadReceiptModal({{ $booking->bookingID }})">
+                                            <i class="bi bi-cloud-upload"></i> Upload Receipt
+                                        </button>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <select class="form-select form-select-sm refund-status-select" 
                                         data-booking-id="{{ $booking->bookingID }}"
-                                        onchange="updateRefundStatus({{ $booking->bookingID }}, this.value)">
-                                    <option value="request" {{ $booking->booking_status === 'request cancelling' ? 'selected' : '' }}>Request</option>
+                                        data-is-rejected="{{ $isRejected ? 'true' : 'false' }}"
+                                        onchange="handleRefundStatusChange({{ $booking->bookingID }}, this.value, this)">
+                                    <option value="request" {{ $booking->booking_status === 'request cancelling' ? 'selected' : '' }}>Request Cancel</option>
                                     <option value="refunding" {{ $booking->booking_status === 'refunding' ? 'selected' : '' }}>Refunding</option>
-                                    <option value="cancelled" {{ in_array($booking->booking_status, ['Cancelled', 'cancelled']) ? 'selected' : '' }}>Cancelled</option>
-                                    <option value="rejected" {{ $booking->booking_status === 'Cancelled' && $currentStatus === 'Rejected' ? 'selected' : '' }}>Rejected</option>
+                                    <option value="cancelled" {{ in_array($booking->booking_status, ['Cancelled', 'cancelled']) && !$isRejected ? 'selected' : '' }}>Cancelled</option>
+                                    <option value="rejected" {{ $isRejected ? 'selected' : '' }}>Rejected</option>
                                 </select>
+                            </td>
+                            <td>
+                                @if($booking->cancellation_reject_reason)
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger" 
+                                            onclick="showRejectReasonModal('{{ addslashes($booking->cancellation_reject_reason) }}')">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
                             </td>
                             <td>
                                 <select class="form-select form-select-sm handled-by-select" 
@@ -291,7 +308,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="text-center py-5 text-muted">
+                            <td colspan="12" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-3 mb-0">No cancellations found</p>
                             </td>
@@ -330,6 +347,78 @@
                 </a>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Reason Modal -->
+<div class="modal fade" id="rejectReasonModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i> Reject Reason</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="rejectReasonContent">
+                    <!-- Reject reason will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Reason Input Modal -->
+<div class="modal fade" id="rejectReasonInputModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i> Reject Cancellation Request</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectReasonForm" onsubmit="submitRejectReason(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="rejectBookingId" name="booking_id">
+                    <div class="mb-3">
+                        <label for="rejectReasonText" class="form-label fw-semibold">Reason for Rejection <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="rejectReasonText" name="reject_reason" rows="5" required placeholder="Please enter the reason for rejecting this cancellation request..."></textarea>
+                        <small class="text-muted">This reason will be sent to the customer via email.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Receipt Modal -->
+<div class="modal fade" id="uploadReceiptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i> Upload Refund Receipt</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="uploadReceiptForm" enctype="multipart/form-data" onsubmit="submitReceiptUpload(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="uploadBookingId" name="booking_id">
+                    <div class="mb-3">
+                        <label for="receiptFile" class="form-label fw-semibold">Receipt Image/PDF <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="receiptFile" name="receipt" accept="image/*,application/pdf" required>
+                        <small class="text-muted">Accepted formats: JPEG, PNG, PDF (Max: 10MB)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload Receipt</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -375,8 +464,30 @@
         document.getElementById('notificationToast').style.display = 'none';
     }
 
-    function updateRefundStatus(bookingId, status) {
-        const selectElement = document.querySelector(`.refund-status-select[data-booking-id="${bookingId}"]`);
+    function handleRefundStatusChange(bookingId, status, selectElement) {
+        if (status === 'rejected') {
+            // Show reject reason input modal
+            document.getElementById('rejectBookingId').value = bookingId;
+            document.getElementById('rejectReasonText').value = '';
+            const modal = new bootstrap.Modal(document.getElementById('rejectReasonInputModal'));
+            modal.show();
+            
+            // Store original value for cancellation
+            selectElement.dataset.pendingReject = 'true';
+            selectElement.dataset.originalValue = selectElement.value;
+            
+            // Reset select to original value (will be updated after modal submission)
+            selectElement.value = selectElement.dataset.originalValue || 'request';
+        } else {
+            // For other statuses, update directly
+            updateRefundStatus(bookingId, status, selectElement);
+        }
+    }
+
+    function updateRefundStatus(bookingId, status, selectElement = null) {
+        if (!selectElement) {
+            selectElement = document.querySelector(`.refund-status-select[data-booking-id="${bookingId}"]`);
+        }
         const originalValue = selectElement.dataset.originalValue || selectElement.value;
         
         fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/update`, {
@@ -395,6 +506,9 @@
             if (data.success) {
                 showNotification('Refund status updated successfully.', true);
                 selectElement.dataset.originalValue = status;
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
             } else {
                 showNotification(data.message || 'Failed to update refund status.', false);
                 selectElement.value = originalValue;
@@ -405,6 +519,144 @@
             showNotification('An error occurred while updating the status.', false);
             selectElement.value = originalValue;
         });
+    }
+
+    function submitRejectReason(event) {
+        event.preventDefault();
+        const bookingId = document.getElementById('rejectBookingId').value;
+        const reason = document.getElementById('rejectReasonText').value.trim();
+        
+        if (!reason) {
+            showNotification('Please enter a rejection reason.', false);
+            return;
+        }
+
+        const selectElement = document.querySelector(`.refund-status-select[data-booking-id="${bookingId}"]`);
+        
+        fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                refund_status: 'rejected',
+                cancellation_reject_reason: reason
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('rejectReasonInputModal'));
+                modal.hide();
+                showNotification('Cancellation request rejected. Email sent to customer.', true);
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification(data.message || 'Failed to reject cancellation request.', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while rejecting the cancellation request.', false);
+        });
+    }
+
+    function showRejectReasonModal(reason) {
+        document.getElementById('rejectReasonContent').innerHTML = `
+            <div class="alert alert-warning">
+                <strong>Rejection Reason:</strong>
+                <p class="mb-0 mt-2" style="white-space: pre-wrap;">${reason}</p>
+            </div>
+        `;
+        const modal = new bootstrap.Modal(document.getElementById('rejectReasonModal'));
+        modal.show();
+    }
+
+    function showUploadReceiptModal(bookingId) {
+        document.getElementById('uploadBookingId').value = bookingId;
+        document.getElementById('receiptFile').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('uploadReceiptModal'));
+        modal.show();
+    }
+
+    function submitReceiptUpload(event) {
+        event.preventDefault();
+        const bookingId = document.getElementById('uploadBookingId').value;
+        const formData = new FormData();
+        formData.append('receipt', document.getElementById('receiptFile').files[0]);
+        formData.append('_token', csrfToken);
+
+        fetch(`{{ url('/admin/bookings/cancellation') }}/${bookingId}/upload-receipt`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('uploadReceiptModal'));
+                modal.hide();
+                showNotification('Receipt uploaded successfully.', true);
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification(data.message || 'Failed to upload receipt.', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while uploading the receipt.', false);
+        });
+    }
+
+    function showCancellationReceipt(receiptUrl, bookingId) {
+        const receiptContent = document.getElementById('receiptContent');
+        const receiptPaymentInfo = document.getElementById('receiptPaymentInfo');
+        const downloadLink = document.getElementById('receiptDownloadLink');
+        
+        receiptContent.innerHTML = '';
+        receiptPaymentInfo.textContent = `Booking ID: #${bookingId} - Refund Receipt`;
+        downloadLink.style.display = 'none';
+        
+        if (receiptUrl.match(/\.pdf$/i)) {
+            receiptContent.innerHTML = `
+                <div class="py-4">
+                    <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 4rem;"></i>
+                    <p class="mt-3">PDF Receipt</p>
+                    <a href="${receiptUrl}" target="_blank" class="btn btn-danger">
+                        <i class="bi bi-eye me-1"></i> View PDF
+                    </a>
+                </div>
+            `;
+            downloadLink.href = receiptUrl;
+            downloadLink.style.display = 'inline-block';
+        } else {
+            receiptContent.innerHTML = `
+                <div class="position-relative">
+                    <div class="spinner-border text-primary mb-3" role="status" id="receiptSpinner">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <img src="${receiptUrl}" 
+                         alt="Refund Receipt" 
+                         class="img-fluid rounded shadow-sm" 
+                         style="max-height: 70vh; object-fit: contain; display: none;"
+                         onload="this.style.display='block'; document.getElementById('receiptSpinner').style.display='none';"
+                         onerror="this.style.display='none'; document.getElementById('receiptSpinner').style.display='none'; document.getElementById('receiptContent').innerHTML='<div class=\\'py-4\\'><i class=\\'bi bi-exclamation-triangle text-warning\\' style=\\'font-size: 4rem;\\'></i><p class=\\'mt-3 text-muted\\'>Failed to load image</p><a href=\\'' + '${receiptUrl}' + '\\' target=\\'_blank\\' class=\\'btn btn-sm btn-outline-primary mt-2\\'>Open Link</a></div>';">
+                </div>
+            `;
+            downloadLink.href = receiptUrl;
+            downloadLink.style.display = 'inline-block';
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
+        modal.show();
     }
 
     function updateHandledBy(bookingId, staffId) {

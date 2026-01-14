@@ -41,6 +41,9 @@ class Booking extends Model
         'deposit_fine_amount',
         'deposit_refund_amount',
         'deposit_customer_choice',
+        'cancellation_reject_reason',
+        'cancellation_receipt',
+        'deposit_refund_receipt',
     ];
 
     protected function casts(): array

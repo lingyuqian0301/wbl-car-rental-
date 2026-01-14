@@ -71,15 +71,23 @@
 
     <!-- Dynamic Tabs -->
     <ul class="nav nav-tabs mb-3" role="tablist">
+        @php
+            $defaultTab = ($staff->runner ?? false) ? 'task-list' : 'staff-detail';
+            $isStaffDetailTabActive = ($activeTab ?? $defaultTab) === 'staff-detail';
+        @endphp
         <li class="nav-item" role="presentation">
-            <button class="nav-link {{ ($activeTab ?? 'staff-detail') === 'staff-detail' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#staff-detail" type="button" role="tab">
+            <button class="nav-link {{ $isStaffDetailTabActive ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#staff-detail" type="button" role="tab">
                 <i class="bi bi-person-circle"></i> Staff Detail
             </button>
         </li>
         @if($staff->runner)
             <!-- Runner Task List Tab -->
+            @php
+                $defaultTab = $staff->runner ? 'task-list' : 'staff-detail';
+                $isTaskListActive = ($activeTab ?? $defaultTab) === 'task-list';
+            @endphp
             <li class="nav-item" role="presentation">
-                <button class="nav-link {{ ($activeTab ?? '') === 'task-list' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#task-list" type="button" role="tab">
+                <button class="nav-link {{ $isTaskListActive ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#task-list" type="button" role="tab">
                     <i class="bi bi-truck"></i> Task List
                 </button>
             </li>
@@ -101,7 +109,11 @@
     <div class="tab-content">
         <!-- Runner Task List Tab -->
         @if($staff->runner)
-        <div class="tab-pane fade {{ ($activeTab ?? '') === 'task-list' ? 'show active' : '' }}" id="task-list" role="tabpanel">
+        @php
+            $defaultTab = $staff->runner ? 'task-list' : 'staff-detail';
+            $isTaskListActive = ($activeTab ?? $defaultTab) === 'task-list';
+        @endphp
+        <div class="tab-pane fade {{ $isTaskListActive ? 'show active' : '' }}" id="task-list" role="tabpanel">
             <!-- Header Box -->
             <x-admin-page-header 
                 title="Runner Task List" 
@@ -193,7 +205,11 @@
         @endif
 
         <!-- Staff Detail Tab -->
-        <div class="tab-pane fade {{ ($activeTab ?? 'staff-detail') === 'staff-detail' ? 'show active' : '' }}" id="staff-detail" role="tabpanel">
+        @php
+            $defaultTab = ($staff->runner ?? false) ? 'task-list' : 'staff-detail';
+            $isStaffDetailActive = ($activeTab ?? $defaultTab) === 'staff-detail';
+        @endphp
+        <div class="tab-pane fade {{ $isStaffDetailActive ? 'show active' : '' }}" id="staff-detail" role="tabpanel">
             <!-- Staff Info Card -->
             <div class="card mb-3">
                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">

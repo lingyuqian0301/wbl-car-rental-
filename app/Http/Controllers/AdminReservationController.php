@@ -21,7 +21,7 @@ class AdminReservationController extends Controller
         $filterBookingStatus = $request->get('filter_booking_status');
         $filterPaymentStatus = $request->get('filter_payment_status');
 
-        $query = Booking::with(['customer.user', 'vehicle', 'payments', 'invoice']);
+        $query = Booking::with(['customer.user', 'customer.loyaltyCard', 'vehicle', 'payments', 'invoice']);
 
         // Search by booking ID, plate number, or customer name
         if ($search) {
@@ -267,6 +267,7 @@ class AdminReservationController extends Controller
             'customer.localUtmStaff.staffDetails',
             'customer.internationalUtmStaff.staffDetails',
             'customer.bookings',
+            'customer.loyaltyCard',
             'vehicle.car',
             'vehicle.motorcycle',
             'vehicle.owner.personDetails',

@@ -510,6 +510,7 @@ class AdminVehicleController extends Controller
 
     /**
      * Get available vehicles for a date range (for accompany vehicle dropdown).
+     * Vehicles must be available on BOTH the start and end dates.
      */
     public function getAvailableVehicles(Request $request): \Illuminate\Http\JsonResponse
     {
@@ -524,26 +525,23 @@ class AdminVehicleController extends Controller
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
 
-        // Get vehicles that are available on the start and end dates (not between)
+        // Get vehicles that are available on BOTH the start AND end dates
         $availableVehicles = Vehicle::where('availability_status', '!=', 'maintenance')
             ->where('isActive', true)
             ->when($excludeVehicleId, function($query) use ($excludeVehicleId) {
                 $query->where('vehicleID', '!=', $excludeVehicleId);
             })
-            ->whereDoesntHave('bookings', function($query) use ($start, $end) {
+            ->whereDoesntHave('bookings', function($query) use ($start) {
+                // Not booked on start date
                 $query->where('booking_status', '!=', 'Cancelled')
-                      ->where(function($q) use ($start, $end) {
-                          // Not booked on start date
-                          $q->where(function($sq) use ($start) {
-                              $sq->whereDate('rental_start_date', '<=', $start)
-                                 ->whereDate('rental_end_date', '>=', $start);
-                          })
-                          // Not booked on end date
-                          ->orWhere(function($sq) use ($end) {
-                              $sq->whereDate('rental_start_date', '<=', $end)
-                                 ->whereDate('rental_end_date', '>=', $end);
-                          });
-                      });
+                      ->whereDate('rental_start_date', '<=', $start)
+                      ->whereDate('rental_end_date', '>=', $start);
+            })
+            ->whereDoesntHave('bookings', function($query) use ($end) {
+                // Not booked on end date
+                $query->where('booking_status', '!=', 'Cancelled')
+                      ->whereDate('rental_start_date', '<=', $end)
+                      ->whereDate('rental_end_date', '>=', $end);
             })
             ->select('vehicleID', 'plate_number', 'vehicle_brand', 'vehicle_model')
             ->orderBy('plate_number')
@@ -589,6 +587,7 @@ class AdminVehicleController extends Controller
     {
         $validated = $request->validate([
             'fuel_date' => 'required|date',
+            'service_type' => 'required|string|in:fuel,wash',
             'cost' => 'required|numeric|min:0',
             'receipt_img' => 'nullable|file|mimes:jpeg,jpg,png,gif,pdf|max:5120',
             'handled_by' => 'nullable|exists:user,userID',
@@ -607,6 +606,7 @@ class AdminVehicleController extends Controller
             \App\Models\Fuel::create([
                 'vehicleID' => $vehicle->vehicleID,
                 'fuel_date' => $validated['fuel_date'],
+                'service_type' => $validated['service_type'],
                 'cost' => $validated['cost'],
                 'receipt_img' => $receiptImgPath,
                 'handled_by' => $validated['handled_by'] ?? Auth::user()->userID ?? null,
@@ -625,6 +625,7 @@ class AdminVehicleController extends Controller
     {
         $validated = $request->validate([
             'fuel_date' => 'required|date',
+            'service_type' => 'required|string|in:fuel,wash',
             'cost' => 'required|numeric|min:0',
             'receipt_img' => 'nullable|file|mimes:jpeg,jpg,png,gif,pdf|max:5120',
             'handled_by' => 'nullable|exists:user,userID',
@@ -879,10 +880,18 @@ class AdminVehicleController extends Controller
             $file = $request->file('photo');
             $fileName = time() . '_' . $file->getClientOriginalName();
             
-            // Upload car images to myportfolio public folder (C:\xampp\htdocs\myportfolio\public\uploads\car_images)
-            $uploadResult = $this->uploadToGoogleDriveWithUrl($file, 'car_images', $fileName);
+            // Upload car images to myportfolio public storage folder (C:\xampp\htdocs\myportfolio\public\storage\vehicle_photos)
+            // Store directly in public/storage/vehicle_photos (bypass uploads/ normalization)
+            $destinationPath = public_path('storage/vehicle_photos');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+            $file->move($destinationPath, $fileName);
+            $filePath = 'storage/vehicle_photos/' . $fileName;
+            $fileUrl = asset($filePath);
+            $uploadResult = ['fileId' => $filePath, 'fileUrl' => $fileUrl];
             
-            $fileId = $uploadResult['fileId'];  // File path relative to public folder (e.g., uploads/car_images/xxx.jpg)
+            $fileId = $uploadResult['fileId'];  // File path relative to public folder (e.g., storage/vehicle_photos/xxx.jpg)
             $fileUrl = $uploadResult['fileUrl']; // Full URL to the file
 
             // Determine table name (check both Car_Img and car_img)

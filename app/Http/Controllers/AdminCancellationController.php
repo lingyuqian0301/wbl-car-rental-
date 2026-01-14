@@ -39,19 +39,22 @@ class AdminCancellationController extends Controller
                 });
             } else {
                 // Map refund_status filter to booking_status values
-                $statusMap = [
-                    'request' => 'request cancelling',
-                    'refunding' => 'refunding',
-                    'cancelled' => ['Cancelled', 'cancelled'],
-                    'rejected' => ['Cancelled', 'cancelled'],
-                ];
-                
-                if (isset($statusMap[$request->refund_status])) {
-                    $statusValue = $statusMap[$request->refund_status];
-                    if (is_array($statusValue)) {
-                        $query->whereIn('booking_status', $statusValue);
-                    } else {
-                        $query->where('booking_status', $statusValue);
+                if ($request->refund_status === 'rejected') {
+                    // Rejected bookings are Cancelled status with cancellation_reject_reason set
+                    $query->where('booking_status', 'Cancelled')
+                          ->whereNotNull('cancellation_reject_reason');
+                } elseif ($request->refund_status === 'cancelled') {
+                    // Cancelled bookings (not rejected) are Cancelled status without cancellation_reject_reason
+                    $query->where('booking_status', 'Cancelled')
+                          ->whereNull('cancellation_reject_reason');
+                } else {
+                    $statusMap = [
+                        'request' => 'request cancelling',
+                        'refunding' => 'refunding',
+                    ];
+                    
+                    if (isset($statusMap[$request->refund_status])) {
+                        $query->where('booking_status', $statusMap[$request->refund_status]);
                     }
                 }
             }
@@ -124,7 +127,7 @@ class AdminCancellationController extends Controller
         if ($request->filled('refund_status')) {
             $request->validate([
                 'refund_status' => 'required|in:request,refunding,cancelled,rejected',
-                'refund_reason' => 'required_if:refund_status,rejected|nullable|string|max:1000',
+                'cancellation_reject_reason' => 'required_if:refund_status,rejected|nullable|string|max:1000',
             ]);
 
             // Map refund_status to booking_status
@@ -137,14 +140,24 @@ class AdminCancellationController extends Controller
 
             $updateData['booking_status'] = $statusMap[$request->refund_status] ?? $booking->booking_status;
 
-            if ($request->filled('refund_reason')) {
-                // Store refund reason in a note or comment field if available
-                // For now, we'll just update the status
-            } elseif ($request->refund_status === 'rejected') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Reason is required when status is Rejected.',
-                ], 422);
+            // If refund status is 'cancelled', set deposit_refund_status to 'refunded'
+            if ($request->refund_status === 'cancelled') {
+                $updateData['deposit_refund_status'] = 'refunded';
+            }
+
+            // Store reject reason if rejected
+            if ($request->refund_status === 'rejected') {
+                if ($request->filled('cancellation_reject_reason')) {
+                    $updateData['cancellation_reject_reason'] = $request->cancellation_reject_reason;
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Reason is required when status is Rejected.',
+                    ], 422);
+                }
+            } else {
+                // Clear reject reason if not rejected
+                $updateData['cancellation_reject_reason'] = null;
             }
         }
 
@@ -161,6 +174,20 @@ class AdminCancellationController extends Controller
         }
 
         $booking->update($updateData);
+        $booking->refresh(); // Refresh to get updated values
+
+        // Send email to customer if rejected
+        if ($request->filled('refund_status') && $request->refund_status === 'rejected' && $request->filled('cancellation_reject_reason')) {
+            try {
+                $customer = $booking->customer->user;
+                if ($customer && $customer->email) {
+                    \Illuminate\Support\Facades\Mail::to($customer->email)
+                        ->send(new \App\Mail\CancellationNotificationMail($booking));
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to send cancellation rejection email: ' . $e->getMessage());
+            }
+        }
 
         // Create notification for cancellation update
         try {
@@ -192,6 +219,39 @@ class AdminCancellationController extends Controller
             'success' => true,
             'message' => 'Cancellation updated successfully.',
         ]);
+    }
+
+    public function uploadReceipt(Request $request, Booking $booking): JsonResponse
+    {
+        $request->validate([
+            'receipt' => 'required|file|mimes:jpeg,jpg,png,pdf|max:10240',
+        ]);
+
+        try {
+            $destinationPath = public_path('uploads/cancellation_receipts');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            $file = $request->file('receipt');
+            $filename = 'cancellation_receipt_' . $booking->bookingID . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $receiptPath = 'uploads/cancellation_receipts/' . $filename;
+
+            $booking->cancellation_receipt = $receiptPath;
+            $booking->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Receipt uploaded successfully.',
+                'receipt_url' => asset($receiptPath),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload receipt: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function sendEmail(Request $request, Booking $booking): JsonResponse

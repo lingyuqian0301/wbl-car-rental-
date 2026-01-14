@@ -24,6 +24,14 @@
             <p><strong>Rental Period:</strong> {{ $booking->rental_start_date?->format('d M Y') ?? 'N/A' }} - {{ $booking->rental_end_date?->format('d M Y') ?? 'N/A' }}</p>
         </div>
         
+        @if($booking->booking_status === 'Cancelled' && $booking->cancellation_reject_reason)
+        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #856404;">Cancellation Request Rejected</h3>
+            <p><strong>Reason:</strong></p>
+            <p style="white-space: pre-wrap;">{{ $booking->cancellation_reject_reason }}</p>
+        </div>
+        @endif
+        
         <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
         
         <p>Best regards,<br>

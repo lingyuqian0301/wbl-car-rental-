@@ -219,7 +219,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <a href="{{ route('admin.vehicles.fuel', $vehicle->vehicleID) }}" class="nav-link {{ ($activeTab ?? '') === 'fuel' ? 'active' : '' }}">
-                <i class="bi bi-fuel-pump"></i> Fuel
+                <i class="bi bi-fuel-pump"></i> Fuel and Wash
             </a>
         </li>
         <li class="nav-item" role="presentation">
@@ -960,7 +960,7 @@
                                             @endphp
                                             @if($icImg)
                                                 <div class="mb-2">
-                                                    <img src="{{ asset('storage/' . $icImg) }}" 
+                                                    <img src="{{ getFileUrl($icImg) }}" 
                                                          alt="IC" 
                                                          class="img-fluid mb-2" 
                                                          style="max-height: 150px; border-radius: 6px;"
@@ -991,14 +991,14 @@
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <div class="modal-body text-center" style="min-height: 400px;">
-                                                                <img src="{{ asset('storage/' . $icImg) }}" 
+                                                                <img src="{{ getFileUrl($icImg) }}" 
                                                                      alt="Owner IC" 
                                                                      class="img-fluid" 
                                                                      style="max-height: 70vh; width: auto; border-radius: 6px;"
                                                                      onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>Image not found</p>';">
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <a href="{{ asset('storage/' . $icImg) }}" 
+                                                                <a href="{{ getFileUrl($icImg) }}" 
                                                                    target="_blank" 
                                                                    class="btn btn-primary">
                                                                     <i class="bi bi-download"></i> Open in New Tab

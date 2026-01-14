@@ -59,4 +59,12 @@ class Staff extends Model
     {
         return $this->hasMany(VehicleMaintenance::class, 'staffID', 'staffID');
     }
+
+    /**
+     * Get the route key for the model (for route model binding).
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'staffID';
+    }
 }

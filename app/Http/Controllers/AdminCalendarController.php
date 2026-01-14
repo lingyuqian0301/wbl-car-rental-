@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Car;
 use App\Models\Motorcycle;
+use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
+use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
 
 class AdminCalendarController extends Controller
@@ -111,6 +113,175 @@ class AdminCalendarController extends Controller
             'currentView' => $view,
             'currentDate' => $currentDate,
         ]);
+    }
+
+    /**
+     * Get all vehicles with availability status for a specific date
+     */
+    public function getVehiclesForDate(Request $request): JsonResponse
+    {
+        $date = $request->get('date');
+        if (!$date) {
+            return response()->json(['error' => 'Date is required'], 400);
+        }
+
+        try {
+            $targetDate = Carbon::parse($date)->startOfDay();
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid date format'], 400);
+        }
+
+        // Get all vehicles (cars and motorcycles)
+        $vehicles = Vehicle::where('isActive', true)
+            ->with(['car', 'motorcycle'])
+            ->orderBy('plate_number')
+            ->get();
+
+        // Get bookings for this date
+        $bookingsOnDate = Booking::where('booking_status', '!=', 'Cancelled')
+            ->whereDate('rental_start_date', '<=', $targetDate)
+            ->whereDate('rental_end_date', '>=', $targetDate)
+            ->pluck('vehicleID')
+            ->toArray();
+
+        $vehiclesData = $vehicles->map(function($vehicle) use ($bookingsOnDate, $targetDate) {
+            $isBooked = in_array($vehicle->vehicleID, $bookingsOnDate);
+            $isMaintenance = $vehicle->availability_status === 'maintenance';
+            $isAvailable = !$isBooked && !$isMaintenance && $vehicle->isActive;
+
+            // Get vehicle type
+            $vehicleType = $vehicle->car ? 'Car' : ($vehicle->motorcycle ? 'Motorcycle' : 'Unknown');
+            $fullModel = $vehicle->vehicle_brand . ' ' . $vehicle->vehicle_model;
+
+            return [
+                'vehicleID' => $vehicle->vehicleID,
+                'plate_number' => $vehicle->plate_number,
+                'full_model' => $fullModel,
+                'vehicle_type' => $vehicleType,
+                'is_available' => $isAvailable,
+                'is_booked' => $isBooked,
+                'is_maintenance' => $isMaintenance,
+                'availability_status' => $vehicle->availability_status,
+            ];
+        });
+
+        return response()->json([
+            'date' => $targetDate->format('Y-m-d'),
+            'vehicles' => $vehiclesData,
+        ]);
+    }
+
+    /**
+     * Update vehicle availability status
+     */
+    public function updateVehicleAvailability(Request $request): JsonResponse
+    {
+        $request->validate([
+            'vehicle_id' => 'required|exists:vehicle,vehicleID',
+            'availability_status' => 'required|in:available,rented,maintenance',
+        ]);
+
+        try {
+            $vehicle = Vehicle::findOrFail($request->vehicle_id);
+            $vehicle->availability_status = $request->availability_status;
+            $vehicle->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Vehicle availability updated successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update vehicle availability: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get vehicle availability status summary for today
+     */
+    public function getVehicleStatusSummary(Request $request): JsonResponse
+    {
+        try {
+            $date = $request->get('date', Carbon::today()->format('Y-m-d'));
+            $targetDate = Carbon::parse($date)->startOfDay();
+            
+            // Get all active vehicles
+            $allVehicles = Vehicle::where('isActive', true)
+                ->with(['car', 'motorcycle'])
+                ->orderBy('plate_number')
+                ->get();
+            
+            // Get bookings for this date
+            $bookingsOnDate = Booking::where('booking_status', '!=', 'Cancelled')
+                ->whereDate('rental_start_date', '<=', $targetDate)
+                ->whereDate('rental_end_date', '>=', $targetDate)
+                ->pluck('vehicleID')
+                ->toArray();
+            
+            $availableCount = 0;
+            $bookedCount = 0;
+            $maintenanceCount = 0;
+            $vehiclesList = [];
+            
+            foreach ($allVehicles as $vehicle) {
+                $isBooked = in_array($vehicle->vehicleID, $bookingsOnDate);
+                $isMaintenance = $vehicle->availability_status === 'maintenance';
+                
+                // Determine status
+                $status = 'available';
+                $statusText = 'Available';
+                $statusClass = 'status-available';
+                $statusIcon = 'bi-check-circle-fill';
+                
+                if ($isMaintenance) {
+                    $maintenanceCount++;
+                    $status = 'maintenance';
+                    $statusText = 'Maintenance';
+                    $statusClass = 'status-maintenance';
+                    $statusIcon = 'bi-tools';
+                } elseif ($isBooked) {
+                    $bookedCount++;
+                    $status = 'booked';
+                    $statusText = 'Booked';
+                    $statusClass = 'status-booked';
+                    $statusIcon = 'bi-x-circle-fill';
+                } else {
+                    $availableCount++;
+                }
+                
+                // Get vehicle type
+                $vehicleType = $vehicle->car ? 'Car' : ($vehicle->motorcycle ? 'Motorcycle' : 'Unknown');
+                
+                $vehiclesList[] = [
+                    'vehicleID' => $vehicle->vehicleID,
+                    'plate_number' => $vehicle->plate_number ?? 'N/A',
+                    'vehicle_type' => $vehicleType,
+                    'status' => $status,
+                    'statusText' => $statusText,
+                    'statusClass' => $statusClass,
+                    'statusIcon' => $statusIcon,
+                ];
+            }
+            
+            $totalCount = $allVehicles->count();
+            
+            return response()->json([
+                'success' => true,
+                'date' => $targetDate->format('Y-m-d'),
+                'total' => $totalCount,
+                'available' => $availableCount,
+                'booked' => $bookedCount,
+                'maintenance' => $maintenanceCount,
+                'vehicles' => $vehiclesList,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get vehicle status summary: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
 

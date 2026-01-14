@@ -289,7 +289,7 @@ class AdminSettingsController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])
+            return redirect()->route('admin.settings.staff.show', $staff->staffID)->with('tab', 'staff-detail')
                 ->with('success', 'Staff updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -299,7 +299,9 @@ class AdminSettingsController extends Controller
 
     public function showStaff(Staff $staff, Request $request): View
     {
-        $activeTab = $request->get('tab', 'staff-detail');
+        // Default to 'task-list' tab for runners, 'staff-detail' for others
+        $defaultTab = $staff->runner ? 'task-list' : 'staff-detail';
+        $activeTab = $request->get('tab', $defaultTab);
         
         $staff->load([
             'user',
@@ -548,12 +550,12 @@ class AdminSettingsController extends Controller
                     'ic_img' => $fileId, // Store file path
                 ]);
 
-                return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])->with('success', 'IC uploaded successfully.');
+                return redirect()->route('admin.settings.staff.show', $staff->staffID)->with('tab', 'staff-detail')->with('success', 'IC uploaded successfully.');
             }
 
-            return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])->with('error', 'No file uploaded.');
+            return redirect()->route('admin.settings.staff.show', $staff->staffID)->with('tab', 'staff-detail')->with('error', 'No file uploaded.');
         } catch (\Exception $e) {
-            return redirect()->route('admin.settings.staff.show', ['staff' => $staff->staffID, 'tab' => 'staff-detail'])->with('error', 'Failed to upload IC: ' . $e->getMessage());
+            return redirect()->route('admin.settings.staff.show', $staff->staffID)->with('tab', 'staff-detail')->with('error', 'Failed to upload IC: ' . $e->getMessage());
         }
     }
 

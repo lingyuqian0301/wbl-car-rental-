@@ -183,6 +183,9 @@
             <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'expenses-profit', 'vehicle_type' => $vehicleType ?? 'all', 'month' => $selectedMonth ?? date('m'), 'year' => $selectedYear ?? date('Y')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
             </a>
+            <a href="{{ route('admin.reports.finance.export-excel', ['tab' => 'expenses-profit', 'vehicle_type' => $vehicleType ?? 'all', 'month' => $selectedMonth ?? date('m'), 'year' => $selectedYear ?? date('Y')]) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
+            </a>
         </div>
 
         <!-- Filter -->
@@ -303,6 +306,9 @@
             <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'monthly-income', 'year' => $selectedYear ?? date('Y')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
             </a>
+            <a href="{{ route('admin.reports.finance.export-excel', ['tab' => 'monthly-income', 'year' => $selectedYear ?? date('Y')]) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
+            </a>
         </div>
 
         <div class="mb-3">
@@ -396,6 +402,9 @@
             <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'daily-income', 'year' => $selectedYear ?? date('Y'), 'month' => $selectedMonth ?? date('m')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
             </a>
+            <a href="{{ route('admin.reports.finance.export-excel', ['tab' => 'daily-income', 'year' => $selectedYear ?? date('Y'), 'month' => $selectedMonth ?? date('m')]) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
+            </a>
         </div>
 
         <div class="mb-3">
@@ -481,6 +490,9 @@
             </button>
             <a href="{{ route('admin.reports.finance.export-pdf', ['tab' => 'weekly-income', 'start_date' => $startDate ?? Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d')]) }}" class="btn btn-sm btn-light text-danger" target="_blank">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </a>
+            <a href="{{ route('admin.reports.finance.export-excel', ['tab' => 'weekly-income', 'start_date' => $startDate ?? Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d')]) }}" class="btn btn-sm btn-light text-danger">
+                <i class="bi bi-file-excel me-1"></i> Export Excel
             </a>
         </div>
 

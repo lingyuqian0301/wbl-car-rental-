@@ -68,10 +68,10 @@ class AdminVoucherController extends Controller
         $sortBy = $request->get('sort_by', 'latest');
         switch ($sortBy) {
             case 'latest':
-                $query->orderBy('created_at', 'desc');
+                $query->orderBy('voucherID', 'desc');
                 break;
             case 'oldest':
-                $query->orderBy('created_at', 'asc');
+                $query->orderBy('voucherID', 'asc');
                 break;
             case 'code_asc':
                 $query->orderBy('voucher_code', 'asc');
@@ -86,7 +86,7 @@ class AdminVoucherController extends Controller
                 $query->orderBy('expiry_date', 'desc');
                 break;
             default:
-                $query->orderBy('created_at', 'desc');
+                $query->orderBy('voucherID', 'desc');
         }
 
         $vouchers = $query->paginate(20)->withQueryString();

@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
 
 class AdminDepositController extends Controller
 {
@@ -24,15 +27,10 @@ class AdminDepositController extends Controller
         $filterHandledBy = $request->get('filter_handled_by');
         $filterCustomerChoice = $request->get('filter_customer_choice');
 
-        // Show only bookings where customer requested deposit return
-        // (deposit_refund_status = 'pending' OR deposit_refund_status IS NULL)
+        // Show all bookings with deposits (including hold, pending, and refunded)
         $query = Booking::with(['customer.user', 'vehicle', 'payments'])
             ->whereNotNull('deposit_amount')
-            ->where('deposit_amount', '>', 0)
-            ->where(function($q) {
-                $q->where('deposit_refund_status', 'pending')
-                  ->orWhereNull('deposit_refund_status');
-            });
+            ->where('deposit_amount', '>', 0);
 
         // Search by booking ID or customer name
         if ($search) {
@@ -47,11 +45,22 @@ class AdminDepositController extends Controller
             });
         }
 
-        // Filter by refund status (only pending/refunded)
+        // Filter by refund status (pending, hold, refunded)
         if ($filterRefundStatus === 'pending') {
             $query->where(function($q) {
                 $q->where('deposit_refund_status', 'pending')
-                  ->orWhereNull('deposit_refund_status');
+                  ->orWhere(function($subQ) {
+                      $subQ->whereNull('deposit_refund_status')
+                           ->where('deposit_customer_choice', 'refund');
+                  });
+            });
+        } elseif ($filterRefundStatus === 'hold') {
+            $query->where(function($q) {
+                $q->where('deposit_customer_choice', 'hold')
+                  ->orWhere(function($subQ) {
+                      $subQ->whereNull('deposit_refund_status')
+                           ->where('deposit_customer_choice', 'hold');
+                  });
             });
         } elseif ($filterRefundStatus === 'refunded') {
             $query->where('deposit_refund_status', 'refunded');
@@ -257,14 +266,25 @@ class AdminDepositController extends Controller
     public function updateStatusAjax(Request $request, Booking $booking)
     {
         $validated = $request->validate([
-            'deposit_refund_status' => 'required|in:pending,refunded,rejected',
+            'deposit_refund_status' => 'required|in:pending,hold,refunded',
         ]);
 
         try {
-            $booking->update([
-                'deposit_refund_status' => $validated['deposit_refund_status'],
-                'lastUpdateDate' => now(),
-            ]);
+            $status = $validated['deposit_refund_status'];
+            $updateData = ['lastUpdateDate' => now()];
+            
+            // If status is 'hold', set refund_status to null (or keep it as 'hold' if you have that in DB)
+            // For 'hold', we typically don't set a refund_status, it's determined by customer_choice
+            if ($status === 'hold') {
+                // Keep refund_status as is, but ensure customer_choice is 'hold'
+                $updateData['deposit_customer_choice'] = 'hold';
+                // Optionally set refund_status to null if it exists
+                $updateData['deposit_refund_status'] = null;
+            } else {
+                $updateData['deposit_refund_status'] = $status;
+            }
+            
+            $booking->update($updateData);
 
             return response()->json([
                 'success' => true,
@@ -274,6 +294,35 @@ class AdminDepositController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update refund status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * AJAX: Update deposit fine amount and refund amount
+     */
+    public function updateFineAmountAjax(Request $request, Booking $booking): JsonResponse
+    {
+        $validated = $request->validate([
+            'deposit_fine_amount' => 'required|numeric|min:0',
+            'deposit_refund_amount' => 'required|numeric|min:0',
+        ]);
+
+        try {
+            $booking->update([
+                'deposit_fine_amount' => $validated['deposit_fine_amount'],
+                'deposit_refund_amount' => $validated['deposit_refund_amount'],
+                'lastUpdateDate' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fine amount updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update fine amount: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -303,6 +352,159 @@ class AdminDepositController extends Controller
                 'message' => 'Failed to update handled by: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Upload deposit refund receipt
+     */
+    public function uploadReceipt(Request $request, Booking $booking): JsonResponse
+    {
+        $request->validate([
+            'receipt' => 'required|file|mimes:jpeg,jpg,png,pdf|max:10240',
+        ]);
+
+        try {
+            $destinationPath = public_path('uploads/deposit_refund_receipts');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            $file = $request->file('receipt');
+            $filename = 'deposit_refund_receipt_' . $booking->bookingID . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move($destinationPath, $filename);
+            $receiptPath = 'uploads/deposit_refund_receipts/' . $filename;
+
+            $booking->deposit_refund_receipt = $receiptPath;
+            $booking->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Receipt uploaded successfully.',
+                'receipt_url' => asset($receiptPath),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload receipt: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Export deposits as PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = $this->buildDepositQuery($request);
+        $bookings = $query->get();
+
+        $pdf = Pdf::loadView('admin.deposits.export-pdf', [
+            'bookings' => $bookings,
+            'filters' => $request->all(),
+        ]);
+
+        return $pdf->download('deposits-export-' . date('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Export deposits as Excel (CSV)
+     */
+    public function exportExcel(Request $request)
+    {
+        $query = $this->buildDepositQuery($request);
+        $bookings = $query->get();
+
+        $data = $bookings->map(function($booking) {
+            $customer = $booking->customer;
+            $user = $customer->user ?? null;
+            $vehicle = $booking->vehicle ?? null;
+            $handledBy = $booking->deposit_handled_by ? \App\Models\User::find($booking->deposit_handled_by) : null;
+            $hasReturnForm = $booking->vehicleConditionForms && $booking->vehicleConditionForms->where('form_type', 'RETURN')->first();
+
+            return [
+                'Booking ID' => $booking->bookingID,
+                'Customer Name' => $user->name ?? 'N/A',
+                'Customer Email' => $user->email ?? 'N/A',
+                'Vehicle Plate' => $vehicle->plate_number ?? 'N/A',
+                'Deposit Amount' => number_format($booking->deposit_amount ?? 0, 2),
+                'Vehicle Condition Form' => $hasReturnForm ? 'Submitted' : 'Pending',
+                'Customer Choice' => $booking->deposit_customer_choice ? ucfirst(str_replace('_', ' ', $booking->deposit_customer_choice)) : 'N/A',
+                'Fine Amount' => number_format($booking->deposit_fine_amount ?? 0, 2),
+                'Refund Amount' => number_format($booking->deposit_refund_amount ?? 0, 2),
+                'Refund Status' => ucfirst($booking->deposit_refund_status ?? 'pending'),
+                'Handled By' => $handledBy->name ?? 'N/A',
+                'Last Updated' => $booking->lastUpdateDate ? $booking->lastUpdateDate->format('Y-m-d H:i') : 'N/A',
+            ];
+        });
+
+        $filename = 'deposits-export-' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            if ($data->isNotEmpty()) {
+                fputcsv($file, array_keys($data->first()));
+            }
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Build deposit query with filters
+     */
+    private function buildDepositQuery(Request $request)
+    {
+        $search = $request->get('search');
+        $filterRefundStatus = $request->get('filter_refund_status');
+        $filterHandledBy = $request->get('filter_handled_by');
+        $filterCustomerChoice = $request->get('filter_customer_choice');
+
+        $query = Booking::with(['customer.user', 'vehicle', 'payments', 'vehicleConditionForms'])
+            ->whereNotNull('deposit_amount')
+            ->where('deposit_amount', '>', 0)
+            ->where(function($q) {
+                $q->where('deposit_refund_status', 'pending')
+                  ->orWhereNull('deposit_refund_status');
+            });
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('bookingID', 'like', "%{$search}%")
+                  ->orWhereHas('customer.user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('vehicle', function($vQuery) use ($search) {
+                      $vQuery->where('plate_number', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($filterRefundStatus === 'pending') {
+            $query->where(function($q) {
+                $q->where('deposit_refund_status', 'pending')
+                  ->orWhereNull('deposit_refund_status');
+            });
+        } elseif ($filterRefundStatus === 'refunded') {
+            $query->where('deposit_refund_status', 'refunded');
+        }
+
+        if ($filterHandledBy) {
+            $query->where('deposit_handled_by', $filterHandledBy);
+        }
+
+        if ($filterCustomerChoice) {
+            $query->where('deposit_customer_choice', $filterCustomerChoice);
+        }
+
+        return $query->orderBy('lastUpdateDate', 'desc')->orderBy('bookingID', 'desc');
     }
 }
 

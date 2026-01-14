@@ -63,14 +63,13 @@ class AdminPaymentController extends Controller
             $query->where('payment_isVerify', (bool)$filterPaymentIsVerify);
         }
 
-        // Filter by verify_by
+        // Filter by verified_by
         if ($filterVerifyBy) {
-            $query->where('verify_by', $filterVerifyBy);
+            $query->where('verified_by', $filterVerifyBy);
         }
 
-        // No sort function but usually display by desc payment time and date (default)
-        $payments = $query->orderBy('payment_date', 'desc')
-            ->orderBy('latest_Update_Date_Time', 'desc')
+        // Default ordering: desc booking ID
+        $payments = $query->orderBy('bookingID', 'desc')
             ->orderBy('paymentID', 'desc')
             ->paginate(20)->withQueryString();
 
@@ -109,6 +108,7 @@ class AdminPaymentController extends Controller
             'filterPaymentStatus' => $filterPaymentStatus,
             'filterPaymentIsComplete' => $filterPaymentIsComplete,
             'filterPaymentIsVerify' => $filterPaymentIsVerify,
+            'filterVerifyBy' => $filterVerifyBy,
             'totalPayments' => $totalPayments,
             'totalPending' => $totalPending,
             'totalVerified' => $totalVerified,
@@ -622,14 +622,18 @@ class AdminPaymentController extends Controller
             }
         }
 
-        // C. Pickup Surcharge (Logic: RM10 if not HQ)
-        $pickupSurcharge = ($booking->pickup_point === 'HASTA HQ Office') ? 0 : 10;
+        // C. Surcharges
+        $pickupSurcharge = $booking->pickup_surcharge ?? 0;
+        $returnSurcharge = $booking->return_surcharge ?? 0;
+        $totalSurcharge = $pickupSurcharge + $returnSurcharge;
+        $pickupCustomLocation = $booking->pickup_custom_location ?? null;
+        $returnCustomLocation = $booking->return_custom_location ?? null;
 
         // D. Deposit
         $depositAmount = $booking->deposit_amount ?? 50; // Default 50 if null
 
         // 4. CALCULATE TOTALS & DISCOUNT
-        $baseAmount = $rentalBase + $addonsTotal + $pickupSurcharge; // Subtotal before discount
+        $baseAmount = $rentalBase + $addonsTotal + $totalSurcharge; // Subtotal before discount
         $calculatedTotalWithDeposit = $baseAmount + $depositAmount;
         
         // The 'rental_amount' in DB is the FINAL amount the user agreed to pay.
@@ -666,6 +670,7 @@ class AdminPaymentController extends Controller
         $invoiceData->update(['issue_date' => now()]);
 
         // 7. GENERATE PDF
+        $rentalAmount = $booking->rental_amount; // Legacy support
         $pdf = Pdf::loadView('pdf.invoice', compact(
             'invoiceData',
             'booking',
@@ -674,12 +679,16 @@ class AdminPaymentController extends Controller
             'localCustomer',
             'localstudent',
             'internationalCustomer',
-            'vehicle',              // <--- Fixes error
-            'dailyRate',            // <--- Required by PDF
-            'rentalBase',           // <--- Required by PDF
-            'addonsBreakdown',      // <--- Required by PDF
-            'pickupSurcharge',      // <--- Required by PDF
-            'baseAmount',           // <--- Required by PDF
+            'vehicle',
+            'dailyRate',
+            'rentalBase',
+            'pickupSurcharge',
+            'returnSurcharge',
+            'totalSurcharge',
+            'pickupCustomLocation',
+            'returnCustomLocation',
+            'addonsBreakdown',
+            'baseAmount',
             'voucher',
             'discountAmount',
             'subtotalAfterDiscount',
@@ -687,7 +696,8 @@ class AdminPaymentController extends Controller
             'finalTotal',
             'allPayments',
             'totalPaid',
-            'outstandingBalance'
+            'outstandingBalance',
+            'rentalAmount'
         ));
 
         return $pdf->download('Invoice-' . $booking->bookingID . '.pdf');
@@ -718,5 +728,120 @@ class AdminPaymentController extends Controller
         }
 
         return redirect()->route('admin.payments.index')->with('success', 'Verified by updated successfully.');
+    }
+
+    /**
+     * Export payments as PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = $this->buildPaymentQuery($request);
+        $payments = $query->get();
+
+        $pdf = Pdf::loadView('admin.payments.export-pdf', [
+            'payments' => $payments,
+            'filters' => $request->all(),
+        ]);
+
+        return $pdf->download('payments-export-' . date('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Export payments as Excel (CSV)
+     */
+    public function exportExcel(Request $request)
+    {
+        $query = $this->buildPaymentQuery($request);
+        $payments = $query->get();
+
+        $data = $payments->map(function($payment) {
+            $booking = $payment->booking;
+            $customer = $booking->customer ?? null;
+            $user = $customer->user ?? null;
+            $vehicle = $booking->vehicle ?? null;
+            $verifiedBy = $payment->verified_by ? \App\Models\User::find($payment->verified_by) : null;
+
+            return [
+                'Payment ID' => $payment->paymentID,
+                'Booking ID' => $payment->bookingID,
+                'Customer Name' => $user->name ?? 'N/A',
+                'Vehicle Plate' => $vehicle->plate_number ?? 'N/A',
+                'Bank Name' => $payment->payment_bank_name ?? 'N/A',
+                'Account No' => $payment->payment_bank_account_no ?? 'N/A',
+                'Payment Date' => $payment->payment_date ? $payment->payment_date->format('Y-m-d H:i') : 'N/A',
+                'Amount' => number_format($payment->total_amount ?? 0, 2),
+                'Transaction Reference' => $payment->transaction_reference ?? 'N/A',
+                'Payment Status' => $payment->payment_status ?? 'N/A',
+                'Is Verified' => $payment->payment_isVerify ? 'Yes' : 'No',
+                'Is Complete' => $payment->isPayment_complete ? 'Yes' : 'No',
+                'Verified By' => $verifiedBy->name ?? 'N/A',
+                'Last Updated' => $payment->latest_Update_Date_Time ? $payment->latest_Update_Date_Time->format('Y-m-d H:i') : 'N/A',
+            ];
+        });
+
+        $filename = 'payments-export-' . date('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($data) {
+            $file = fopen('php://output', 'w');
+            if ($data->isNotEmpty()) {
+                fputcsv($file, array_keys($data->first()));
+            }
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Build payment query with filters (reused for export functions)
+     */
+    private function buildPaymentQuery(Request $request)
+    {
+        $search = $request->get('search');
+        $filterPaymentDate = $request->get('filter_payment_date');
+        $filterPaymentStatus = $request->get('filter_payment_status');
+        $filterPaymentIsComplete = $request->get('filter_payment_is_complete');
+        $filterPaymentIsVerify = $request->get('payment_isVerify');
+        $filterVerifyBy = $request->get('filter_verify_by');
+        
+        $query = Payment::with(['booking.customer.user', 'booking.vehicle']);
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('bookingID', 'like', "%{$search}%")
+                  ->orWhereHas('booking.vehicle', function($vQuery) use ($search) {
+                      $vQuery->where('plate_number', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($filterPaymentDate) {
+            $query->whereDate('payment_date', $filterPaymentDate);
+        }
+
+        if ($filterPaymentStatus) {
+            $query->where('payment_status', $filterPaymentStatus);
+        }
+
+        if ($filterPaymentIsComplete !== null && $filterPaymentIsComplete !== '') {
+            $query->where('isPayment_complete', (bool)$filterPaymentIsComplete);
+        }
+
+        if ($filterPaymentIsVerify !== null && $filterPaymentIsVerify !== '') {
+            $query->where('payment_isVerify', (bool)$filterPaymentIsVerify);
+        }
+
+        if ($filterVerifyBy) {
+            $query->where('verified_by', $filterVerifyBy);
+        }
+
+        return $query->orderBy('bookingID', 'desc')->orderBy('paymentID', 'desc');
     }
 }
