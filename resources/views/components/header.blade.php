@@ -314,7 +314,7 @@ $stamps = $loyalty ? $loyalty->total_stamps : 0;
 
 
             <a href="{{ route('profile.edit') }}" class="header-btn">
-                {{ Auth::user()->name }}
+                {{ Auth::user()->name ?? Auth::user()->username ?? 'My Profile' }}
             </a>
         @else
             <a href="{{ route('login') }}?redirect={{ urlencode(request()->fullUrl()) }}"
