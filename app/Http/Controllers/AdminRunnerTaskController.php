@@ -16,25 +16,24 @@ class AdminRunnerTaskController extends Controller
         $today = Carbon::today();
         
         // Get bookings that need runner:
-        // 1. Only pickup NOT at HASTA HQ Office (return is at HASTA HQ Office) → Show
-        // 2. Only return NOT at HASTA HQ Office (pickup is at HASTA HQ Office) → Show
-        // 3. Both pickup AND return NOT at HASTA HQ Office → Show
-        // Only hide if BOTH are at HASTA HQ Office or both are NULL/empty
+        // Show tasks where at least one location (pickup OR return) is NOT "HASTA HQ Office"
+        // Hide only if BOTH pickup AND return are "HASTA HQ Office"
+        // This includes NULL/empty values (they are not "HASTA HQ Office")
         $query = Booking::with(['customer.user', 'vehicle'])
             ->where('rental_start_date', '>', $today)
             ->whereIn('booking_status', ['Pending', 'Confirmed'])
             ->where(function($q) {
-                // Show if pickup_point exists and is NOT 'HASTA HQ Office'
+                // Show if pickup_point is NOT 'HASTA HQ Office' (including NULL/empty)
                 $q->where(function($subQ) {
-                    $subQ->whereNotNull('pickup_point')
-                         ->where('pickup_point', '!=', '')
-                         ->where('pickup_point', '!=', 'HASTA HQ Office');
+                    $subQ->whereNull('pickup_point')
+                         ->orWhere('pickup_point', '')
+                         ->orWhere('pickup_point', '!=', 'HASTA HQ Office');
                 })
-                // OR return_point exists and is NOT 'HASTA HQ Office'
+                // OR return_point is NOT 'HASTA HQ Office' (including NULL/empty)
                 ->orWhere(function($subQ) {
-                    $subQ->whereNotNull('return_point')
-                         ->where('return_point', '!=', '')
-                         ->where('return_point', '!=', 'HASTA HQ Office');
+                    $subQ->whereNull('return_point')
+                         ->orWhere('return_point', '')
+                         ->orWhere('return_point', '!=', 'HASTA HQ Office');
                 });
             });
 
@@ -90,15 +89,17 @@ class AdminRunnerTaskController extends Controller
         $bookings = $query->paginate(20)->withQueryString();
 
         // Summary stats for header - use same query logic as above
+        // Show tasks where at least one location (pickup OR return) is NOT "HASTA HQ Office"
+        // This includes NULL/empty values (they are not "HASTA HQ Office")
         $runnerTaskCondition = function($q) {
             $q->where(function($subQ) {
-                $subQ->whereNotNull('pickup_point')
-                     ->where('pickup_point', '!=', '')
-                     ->where('pickup_point', '!=', 'HASTA HQ Office');
+                $subQ->whereNull('pickup_point')
+                     ->orWhere('pickup_point', '')
+                     ->orWhere('pickup_point', '!=', 'HASTA HQ Office');
             })->orWhere(function($subQ) {
-                $subQ->whereNotNull('return_point')
-                     ->where('return_point', '!=', '')
-                     ->where('return_point', '!=', 'HASTA HQ Office');
+                $subQ->whereNull('return_point')
+                     ->orWhere('return_point', '')
+                     ->orWhere('return_point', '!=', 'HASTA HQ Office');
             });
         };
         

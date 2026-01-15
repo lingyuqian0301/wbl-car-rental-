@@ -420,6 +420,35 @@
             transform: translateX(-240px);
         }
 
+        .vehicle-status-box.hidden {
+            display: none;
+        }
+
+        .vehicle-status-toggle-btn {
+            position: fixed;
+            left: var(--sidebar-width);
+            bottom: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--admin-red);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: var(--shadow-lg);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .vehicle-status-toggle-btn:hover {
+            background: var(--admin-red-dark);
+            transform: scale(1.1);
+        }
+
+
         .vehicle-status-box-header {
             background: var(--admin-red);
             color: white;
@@ -882,16 +911,27 @@
         </nav>
     </aside>
 
+    <!-- Vehicle Status Toggle Button (shown when box is hidden) -->
+    <button type="button" class="vehicle-status-toggle-btn" id="vehicleStatusToggleBtn" onclick="showVehicleStatusBox()" title="Show Vehicle Status">
+        <i class="bi bi-car-front-fill" style="font-size: 1.2rem;"></i>
+    </button>
+
     <!-- Vehicle Status Floating Box -->
     <div class="vehicle-status-box" id="vehicleStatusBox">
-        <div class="vehicle-status-box-header" onclick="toggleVehicleStatusBox()">
+        <div class="vehicle-status-box-header">
             <h6>
-                <i class="bi bi-truck"></i>
+                <i class="bi bi-car-front-fill"></i>
                 <span>Vehicle Status</span>
+                <span id="statusDate"></span>
             </h6>
-            <button type="button" class="toggle-btn" id="vehicleStatusToggle">
-                <i class="bi bi-chevron-left"></i>
-            </button>
+            <div class="d-flex gap-1">
+                <button type="button" class="toggle-btn" id="vehicleStatusToggle" onclick="toggleVehicleStatusBox()" title="Collapse/Expand">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" class="toggle-btn" onclick="hideVehicleStatusBox()" title="Hide">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
         </div>
         <div class="vehicle-status-box-body" id="vehicleStatusBody">
             <div class="text-center py-3">
@@ -902,6 +942,11 @@
             </div>
         </div>
     </div>
+
+    <!-- Vehicle Status Toggle Button (shown when box is hidden) -->
+    <button type="button" class="vehicle-status-toggle-btn" id="vehicleStatusToggleBtn" onclick="showVehicleStatusBox()" title="Show Vehicle Status">
+        <i class="bi bi-car-front-fill" style="font-size: 1.2rem;"></i>
+    </button>
 
     <!-- Top Bar -->
     <header class="admin-topbar">
@@ -1221,9 +1266,58 @@
             }
         }
 
+        function hideVehicleStatusBox() {
+            const box = document.getElementById('vehicleStatusBox');
+            const toggleBtn = document.getElementById('vehicleStatusToggleBtn');
+            if (box) {
+                box.classList.add('hidden');
+            }
+            if (toggleBtn) {
+                toggleBtn.style.display = 'flex';
+            }
+            // Store state in localStorage
+            localStorage.setItem('vehicleStatusBoxHidden', 'true');
+        }
+
+        function showVehicleStatusBox() {
+            const box = document.getElementById('vehicleStatusBox');
+            const toggleBtn = document.getElementById('vehicleStatusToggleBtn');
+            if (box) {
+                box.classList.remove('hidden');
+                box.classList.remove('collapsed'); // Also expand if collapsed
+                const toggleBtnIcon = document.getElementById('vehicleStatusToggle');
+                if (toggleBtnIcon) {
+                    toggleBtnIcon.innerHTML = '<i class="bi bi-chevron-left"></i>';
+                }
+            }
+            if (toggleBtn) {
+                toggleBtn.style.display = 'none';
+            }
+            // Store state in localStorage
+            localStorage.setItem('vehicleStatusBoxHidden', 'false');
+        }
+
         // Load vehicle status on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadVehicleStatus();
+            
+            // Check if box should be hidden from localStorage
+            const isHidden = localStorage.getItem('vehicleStatusBoxHidden') === 'true';
+            if (isHidden) {
+                const box = document.getElementById('vehicleStatusBox');
+                const toggleBtn = document.getElementById('vehicleStatusToggleBtn');
+                if (box) {
+                    box.classList.add('hidden');
+                }
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'flex';
+                }
+            } else {
+                const toggleBtn = document.getElementById('vehicleStatusToggleBtn');
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'none';
+                }
+            }
             
             // Refresh every 60 seconds
             setInterval(() => loadVehicleStatus(), 60000);

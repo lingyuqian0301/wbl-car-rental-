@@ -21,14 +21,19 @@ class RunnerTaskController extends Controller
         $filterYear = $request->get('year', Carbon::now()->year);
         
         // Base query - get bookings assigned to this runner
+        // Show tasks where at least one location (pickup OR return) is NOT "HASTA HQ Office"
+        // Hide only if BOTH pickup AND return are "HASTA HQ Office"
         $bookings = Booking::with(['vehicle', 'customer.user'])
             ->where('staff_served', $user->userID)
             ->where(function($q) {
+                // Show if pickup_point is NOT 'HASTA HQ Office' (and not null/empty)
                 $q->where(function($subQ) {
                     $subQ->whereNotNull('pickup_point')
                          ->where('pickup_point', '!=', '')
                          ->where('pickup_point', '!=', 'HASTA HQ Office');
-                })->orWhere(function($subQ) {
+                })
+                // OR return_point is NOT 'HASTA HQ Office' (and not null/empty)
+                ->orWhere(function($subQ) {
                     $subQ->whereNotNull('return_point')
                          ->where('return_point', '!=', '')
                          ->where('return_point', '!=', 'HASTA HQ Office');

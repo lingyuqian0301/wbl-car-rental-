@@ -1490,7 +1490,66 @@
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
-                                    @foreach($returnForm->images as $index => $image)
+                                    @php
+                                        $keyImage = null;
+                                        $otherImages = collect();
+                                        foreach($returnForm->images as $img) {
+                                            $imagePath = strtolower($img->image_path ?? $img->imagePath ?? '');
+                                            if (str_contains($imagePath, 'key') || str_contains($imagePath, 'key_location')) {
+                                                $keyImage = $img;
+                                            } else {
+                                                $otherImages->push($img);
+                                            }
+                                        }
+                                    @endphp
+                                    
+                                    @if($keyImage)
+                                        <!-- Key Image Display -->
+                                        <div class="col-12 mb-3">
+                                            <div class="card" style="border: 2px solid #fbbf24; background: #fffbeb;">
+                                                <div class="card-header" style="background: #fbbf24; color: white;">
+                                                    <h6 class="mb-0"><i class="bi bi-key"></i> Key Location Image</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-4">
+                                                            <img src="{{ getFileUrl($keyImage->image_path ?? $keyImage->imagePath) }}" alt="Key Location Image" class="img-fluid rounded" style="max-height: 200px; width: 100%; object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#returnKeyImageModal" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
+                                                        </div>
+                                                        <div class="col-md-8">
+                                                            <p class="mb-2"><strong>Key Location Image</strong></p>
+                                                            <p class="text-muted small mb-2">Uploaded during vehicle return</p>
+                                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#returnKeyImageModal">
+                                                                <i class="bi bi-eye"></i> View Full Size
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Key Image Modal -->
+                                            <div class="modal fade" id="returnKeyImageModal" tabindex="-1">
+                                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title"><i class="bi bi-key"></i> Key Location Image</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body text-center">
+                                                            <img src="{{ getFileUrl($keyImage->image_path ?? $keyImage->imagePath) }}" alt="Key Location Image" class="img-fluid" style="max-height: 70vh;">
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <a href="{{ getFileUrl($keyImage->image_path ?? $keyImage->imagePath) }}" target="_blank" class="btn btn-primary">
+                                                                <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+                                                            </a>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                    
+                                    @foreach($otherImages as $index => $image)
                                         <div class="col-md-3 col-sm-4 col-6">
                                             <div class="card h-100" style="border: 1px solid #e5e7eb;">
                                                 <img src="{{ getFileUrl($image->image_path ?? $image->imagePath) }}" alt="Condition Image {{ $index + 1 }}" class="card-img-top" style="height: 150px; object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#returnConditionImageModal{{ $index }}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RlZTJlNiIvPjx0ZXh0IHg9IjEwMCIgeT0iNzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';">
@@ -1753,6 +1812,7 @@
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Refund Status</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Handled By</th>
                                         <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Receipt</th>
+                                        <th style="background: var(--admin-red-light); color: var(--admin-red-dark); font-weight: 600; border-bottom: 2px solid var(--admin-red); padding: 12px; font-size: 0.85rem; white-space: nowrap;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1919,6 +1979,67 @@
                                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                                                 <button type="submit" class="btn btn-danger">
                                                                     <i class="bi bi-upload me-1"></i>Upload Receipt
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <!-- Actions -->
+                                        <td style="padding: 12px; vertical-align: middle;">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editFineAmountModalReservation{{ $booking->bookingID }}" title="Edit Fine Amount">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            
+                                            <!-- Edit Fine Amount Modal -->
+                                            <div class="modal fade" id="editFineAmountModalReservation{{ $booking->bookingID }}" tabindex="-1">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header bg-danger text-white">
+                                                            <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Fine Amount - Booking #{{ $booking->bookingID }}</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <form id="editFineAmountFormReservation{{ $booking->bookingID }}">
+                                                            @csrf
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Original Deposit Amount</label>
+                                                                    <input type="text" class="form-control" id="depositAmountReservation{{ $booking->bookingID }}" value="RM {{ number_format($booking->deposit_amount ?? 0, 2) }}" readonly style="background-color: #f8f9fa;" data-deposit-amount="{{ $booking->deposit_amount ?? 0 }}">
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="fineAmountReservation{{ $booking->bookingID }}" class="form-label">Fine Amount (RM) <span class="text-danger">*</span></label>
+                                                                    <input type="number" 
+                                                                           class="form-control" 
+                                                                           id="fineAmountReservation{{ $booking->bookingID }}" 
+                                                                           name="deposit_fine_amount" 
+                                                                           step="0.01" 
+                                                                           min="0" 
+                                                                           max="{{ $booking->deposit_amount ?? 0 }}"
+                                                                           value="{{ $booking->deposit_fine_amount ?? 0 }}"
+                                                                           required
+                                                                           oninput="calculateRefundAmountReservation({{ $booking->bookingID }}, {{ $booking->deposit_amount ?? 0 }})">
+                                                                    <div class="form-text">Enter the fine amount to be deducted from deposit. Refund amount will be auto-calculated.</div>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="refundAmountReservation{{ $booking->bookingID }}" class="form-label">Refund Amount (RM)</label>
+                                                                    <input type="number" 
+                                                                           class="form-control" 
+                                                                           id="refundAmountReservation{{ $booking->bookingID }}" 
+                                                                           name="deposit_refund_amount" 
+                                                                           step="0.01" 
+                                                                           min="0"
+                                                                           max="{{ $booking->deposit_amount ?? 0 }}"
+                                                                           value="{{ $booking->deposit_refund_amount ?? ($booking->deposit_amount ?? 0) }}"
+                                                                           readonly
+                                                                           style="background-color: #e7f3ff; font-weight: 600;">
+                                                                    <div class="form-text text-success">Auto-calculated: Deposit Amount - Fine Amount</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-danger">
+                                                                    <i class="bi bi-save me-1"></i>Save Changes
                                                                 </button>
                                                             </div>
                                                         </form>
@@ -2464,6 +2585,94 @@
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('An error occurred while uploading receipt.', false);
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                });
+            });
+        });
+    });
+
+    // Auto-calculate refund amount based on fine amount (for reservation page)
+    function calculateRefundAmountReservation(bookingID, depositAmount) {
+        const fineAmountInput = document.getElementById('fineAmountReservation' + bookingID);
+        const refundAmountInput = document.getElementById('refundAmountReservation' + bookingID);
+        
+        if (fineAmountInput && refundAmountInput) {
+            const fineAmount = parseFloat(fineAmountInput.value) || 0;
+            const refundAmount = Math.max(0, depositAmount - fineAmount);
+            refundAmountInput.value = refundAmount.toFixed(2);
+            
+            // Update display in table if exists
+            const displayElement = document.getElementById('refund-amount-display-' + bookingID);
+            if (displayElement) {
+                if (refundAmount > 0) {
+                    displayElement.innerHTML = '<strong class="text-success">RM ' + refundAmount.toFixed(2) + '</strong>';
+                } else {
+                    displayElement.innerHTML = '<span class="text-muted">-</span>';
+                }
+            }
+        }
+    }
+
+    // Handle edit fine amount form submission (for reservation page)
+    document.addEventListener('DOMContentLoaded', function() {
+        const editForms = document.querySelectorAll('[id^="editFineAmountFormReservation"]');
+        editForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const bookingId = this.id.replace('editFineAmountFormReservation', '');
+                const formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                const modalId = 'editFineAmountModalReservation' + bookingId;
+                
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+                
+                // Get deposit amount from the form's data attribute
+                const depositAmountField = document.getElementById('depositAmountReservation' + bookingId);
+                const depositAmount = parseFloat(depositAmountField?.getAttribute('data-deposit-amount') || depositAmountField?.value.replace(/[^0-9.]/g, '') || 0);
+                const fineAmount = parseFloat(formData.get('deposit_fine_amount')) || 0;
+                
+                // Auto-calculate refund amount: deposit - fine
+                const refundAmount = Math.max(0, depositAmount - fineAmount);
+                
+                // Convert FormData to JSON - refund amount is auto-calculated
+                const data = {
+                    deposit_fine_amount: fineAmount,
+                    deposit_refund_amount: refundAmount
+                };
+                
+                fetch(`{{ route('admin.deposits.update-fine-amount-ajax', ':id') }}`.replace(':id', bookingId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Fine amount and refund amount updated successfully.', true);
+                        // Close modal and reload page
+                        const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                        if (modal) {
+                            modal.hide();
+                        }
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
+                    } else {
+                        showNotification(data.message || 'Failed to update fine amount.', false);
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred while updating fine amount.', false);
                     submitButton.disabled = false;
                     submitButton.innerHTML = originalText;
                 });

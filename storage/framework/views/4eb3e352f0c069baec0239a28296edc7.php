@@ -38,7 +38,7 @@
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['for' => 'name']); ?>
-                <?php echo e(__('Name')); ?> <span class="text-red-600">*</span>
+                <?php echo e(__('Full Name')); ?> <span class="text-red-600">*</span>
              <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginale3da9d84bb64e4bc2eeebaafabfb2581)): ?>

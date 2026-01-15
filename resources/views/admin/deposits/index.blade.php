@@ -189,19 +189,19 @@
                                     <span class="text-muted">-</span>
                                 @endif
                             </td>
-                            <td>
-                                @if($booking->deposit_fine_amount)
-                                    <strong>RM {{ number_format($booking->deposit_fine_amount, 2) }}</strong>
+                            <td id="fine-amount-display-{{ $booking->bookingID }}">
+                                @if($booking->deposit_fine_amount && $booking->deposit_fine_amount > 0)
+                                    <strong class="text-danger">RM {{ number_format($booking->deposit_fine_amount, 2) }}</strong>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('admin.deposits.show', $booking->bookingID) }}?tab=deposit-detail" class="text-muted text-decoration-none">-</a>
+                                <strong>RM {{ number_format($booking->deposit_amount ?? 0, 2) }}</strong>
                             </td>
-                            <td>
-                                @if($booking->deposit_refund_amount)
-                                    <strong>RM {{ number_format($booking->deposit_refund_amount, 2) }}</strong>
+                            <td id="refund-amount-display-{{ $booking->bookingID }}">
+                                @if($booking->deposit_refund_amount && $booking->deposit_refund_amount > 0)
+                                    <strong class="text-success">RM {{ number_format($booking->deposit_refund_amount, 2) }}</strong>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
@@ -239,43 +239,105 @@
                                 </select>
                             </td>
                             <td>
-                                @php
-                                    $receiptPath = $booking->deposit_refund_receipt ?? null;
-                                    $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
-                                @endphp
-                                @if($hasReceipt)
-                                    <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#viewDepositReceiptModal{{ $booking->bookingID }}">
-                                        <i class="bi bi-receipt"></i> View
+                                <div class="d-flex gap-1">
+                                    <!-- Edit Fine Amount Button -->
+                                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editFineAmountModal{{ $booking->bookingID }}" title="Edit Fine Amount">
+                                        <i class="bi bi-pencil"></i> Edit
                                     </button>
-                                    <!-- View Receipt Modal -->
-                                    <div class="modal fade" id="viewDepositReceiptModal{{ $booking->bookingID }}" tabindex="-1">
-                                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                                            <div class="modal-content">
-                                                <div class="modal-header bg-danger text-white">
-                                                    <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Deposit Refund Receipt - Booking #{{ $booking->bookingID }}</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body text-center p-4">
-                                                    @if(str_contains(strtolower($receiptPath ?? ''), '.pdf'))
-                                                        <iframe src="{{ getFileUrl($receiptPath) }}" style="width: 100%; height: 500px; border: none;"></iframe>
-                                                    @else
-                                                        <img src="{{ getFileUrl($receiptPath) }}" alt="Receipt" class="img-fluid rounded" style="max-height: 70vh;">
-                                                    @endif
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <a href="{{ getFileUrl($receiptPath) }}" target="_blank" class="btn btn-primary">
-                                                        <i class="bi bi-box-arrow-up-right me-1"></i>Open
-                                                    </a>
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    
+                                    @php
+                                        $receiptPath = $booking->deposit_refund_receipt ?? null;
+                                        $hasReceipt = $receiptPath && (str_contains($receiptPath, '.jpg') || str_contains($receiptPath, '.jpeg') || str_contains($receiptPath, '.png') || str_contains($receiptPath, '.pdf') || str_contains($receiptPath, 'receipts/') || str_contains($receiptPath, 'uploads/'));
+                                    @endphp
+                                    @if($hasReceipt)
+                                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#viewDepositReceiptModal{{ $booking->bookingID }}" title="View Receipt">
+                                            <i class="bi bi-receipt"></i> View
+                                        </button>
+                                        <!-- View Receipt Modal -->
+                                        <div class="modal fade" id="viewDepositReceiptModal{{ $booking->bookingID }}" tabindex="-1">
+                                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Deposit Refund Receipt - Booking #{{ $booking->bookingID }}</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center p-4">
+                                                        @if(str_contains(strtolower($receiptPath ?? ''), '.pdf'))
+                                                            <iframe src="{{ getFileUrl($receiptPath) }}" style="width: 100%; height: 500px; border: none;"></iframe>
+                                                        @else
+                                                            <img src="{{ getFileUrl($receiptPath) }}" alt="Receipt" class="img-fluid rounded" style="max-height: 70vh;">
+                                                        @endif
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <a href="{{ getFileUrl($receiptPath) }}" target="_blank" class="btn btn-primary">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Open
+                                                        </a>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                    @else
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadDepositReceiptModal{{ $booking->bookingID }}" title="Upload Receipt">
+                                            <i class="bi bi-upload"></i> Upload
+                                        </button>
+                                    @endif
+                                </div>
+                                
+                                <!-- Edit Fine Amount Modal -->
+                                <div class="modal fade" id="editFineAmountModal{{ $booking->bookingID }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Fine Amount - Booking #{{ $booking->bookingID }}</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form id="editFineAmountForm{{ $booking->bookingID }}">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Original Deposit Amount</label>
+                                                        <input type="text" class="form-control" id="depositAmount{{ $booking->bookingID }}" value="RM {{ number_format($booking->deposit_amount ?? 0, 2) }}" readonly style="background-color: #f8f9fa;" data-deposit-amount="{{ $booking->deposit_amount ?? 0 }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="fineAmount{{ $booking->bookingID }}" class="form-label">Fine Amount (RM) <span class="text-danger">*</span></label>
+                                                        <input type="number" 
+                                                               class="form-control" 
+                                                               id="fineAmount{{ $booking->bookingID }}" 
+                                                               name="deposit_fine_amount" 
+                                                               step="0.01" 
+                                                               min="0" 
+                                                               max="{{ $booking->deposit_amount ?? 0 }}"
+                                                               value="{{ $booking->deposit_fine_amount ?? 0 }}"
+                                                               required
+                                                               oninput="calculateRefundAmount({{ $booking->bookingID }}, {{ $booking->deposit_amount ?? 0 }})">
+                                                        <div class="form-text">Enter the fine amount to be deducted from deposit. Refund amount will be auto-calculated.</div>
+                                                    </div>
+                                                                <div class="mb-3">
+                                                                    <label for="refundAmount{{ $booking->bookingID }}" class="form-label">Refund Amount (RM)</label>
+                                                                    <input type="number" 
+                                                                           class="form-control" 
+                                                                           id="refundAmount{{ $booking->bookingID }}" 
+                                                                           name="deposit_refund_amount" 
+                                                                           step="0.01" 
+                                                                           min="0"
+                                                                           max="{{ $booking->deposit_amount ?? 0 }}"
+                                                                           value="{{ $booking->deposit_refund_amount ?? ($booking->deposit_amount ?? 0) }}"
+                                                                           readonly
+                                                                           style="background-color: #e7f3ff; font-weight: 600;">
+                                                                    <div class="form-text text-success">Auto-calculated: Deposit Amount - Fine Amount</div>
+                                                                </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="bi bi-save me-1"></i>Save Changes
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
-                                @else
-                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadDepositReceiptModal{{ $booking->bookingID }}">
-                                        <i class="bi bi-upload"></i> Upload
-                                    </button>
-                                @endif
+                                </div>
                                 <!-- Upload Receipt Modal -->
                                 <div class="modal fade" id="uploadDepositReceiptModal{{ $booking->bookingID }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered">
@@ -324,6 +386,103 @@
 
 @push('scripts')
 <script>
+// Auto-calculate refund amount based on fine amount
+function calculateRefundAmount(bookingID, depositAmount) {
+    const fineAmountInput = document.getElementById('fineAmount' + bookingID);
+    const refundAmountInput = document.getElementById('refundAmount' + bookingID);
+    
+    if (fineAmountInput && refundAmountInput) {
+        const fineAmount = parseFloat(fineAmountInput.value) || 0;
+        const refundAmount = Math.max(0, depositAmount - fineAmount);
+        refundAmountInput.value = refundAmount.toFixed(2);
+    }
+}
+
+// Handle edit fine amount form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const editForms = document.querySelectorAll('[id^="editFineAmountForm"]');
+    editForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const bookingId = this.id.replace('editFineAmountForm', '');
+            const formData = new FormData(this);
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            const modalId = 'editFineAmountModal' + bookingId;
+            
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+            
+            // Get deposit amount from the form's data attribute
+            const depositAmountField = document.getElementById('depositAmount' + bookingId);
+            const depositAmount = parseFloat(depositAmountField?.getAttribute('data-deposit-amount') || depositAmountField?.value.replace(/[^0-9.]/g, '') || 0);
+            const fineAmount = parseFloat(formData.get('deposit_fine_amount')) || 0;
+            
+            // Auto-calculate refund amount: deposit - fine
+            const refundAmount = Math.max(0, depositAmount - fineAmount);
+            
+            // Convert FormData to JSON - refund amount is auto-calculated
+            const data = {
+                deposit_fine_amount: fineAmount,
+                deposit_refund_amount: refundAmount
+            };
+            
+            fetch(`{{ route('admin.deposits.update-fine-amount-ajax', ':id') }}`.replace(':id', bookingId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update fine amount display
+                    const fineAmountDisplay = document.getElementById('fine-amount-display-' + bookingId);
+                    if (fineAmountDisplay) {
+                        if (fineAmount > 0) {
+                            fineAmountDisplay.innerHTML = '<strong class="text-danger">RM ' + fineAmount.toFixed(2) + '</strong>';
+                        } else {
+                            fineAmountDisplay.innerHTML = '<span class="text-muted">-</span>';
+                        }
+                    }
+                    
+                    // Update refund amount display
+                    const refundAmountDisplay = document.getElementById('refund-amount-display-' + bookingId);
+                    if (refundAmountDisplay) {
+                        if (refundAmount > 0) {
+                            refundAmountDisplay.innerHTML = '<strong class="text-success">RM ' + refundAmount.toFixed(2) + '</strong>';
+                        } else {
+                            refundAmountDisplay.innerHTML = '<span class="text-muted">-</span>';
+                        }
+                    }
+                    
+                    // Show success message
+                    alert('Fine amount and refund amount updated successfully.');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                    if (modal) {
+                        modal.hide();
+                    }
+                } else {
+                    alert(data.message || 'Failed to update fine amount.');
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating fine amount.');
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            });
+        });
+    });
+});
+
 function updateRefundStatus(select, bookingID) {
     const status = select.value;
     const originalValue = select.getAttribute('data-original-value') || select.selectedOptions[0].text;

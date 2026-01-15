@@ -305,24 +305,71 @@ class AdminDepositController extends Controller
     {
         $validated = $request->validate([
             'deposit_fine_amount' => 'required|numeric|min:0',
-            'deposit_refund_amount' => 'required|numeric|min:0',
+            'deposit_refund_amount' => 'nullable|numeric|min:0',
         ]);
 
         try {
-            $booking->update([
-                'deposit_fine_amount' => $validated['deposit_fine_amount'],
-                'deposit_refund_amount' => $validated['deposit_refund_amount'],
-                'lastUpdateDate' => now(),
-            ]);
+            $depositAmount = $booking->deposit_amount ?? 0;
+            $fineAmount = $validated['deposit_fine_amount'];
+            
+            // Auto-calculate refund amount if not provided: deposit_amount - fine_amount
+            $refundAmount = $validated['deposit_refund_amount'] ?? ($depositAmount - $fineAmount);
+            
+            // Ensure refund amount is not negative
+            if ($refundAmount < 0) {
+                $refundAmount = 0;
+            }
+            
+            // Ensure refund amount doesn't exceed deposit amount
+            if ($refundAmount > $depositAmount) {
+                $refundAmount = $depositAmount;
+            }
+            
+            // Validate that fine + refund doesn't exceed deposit
+            if (($fineAmount + $refundAmount) > $depositAmount) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fine amount and refund amount cannot exceed the original deposit amount (RM ' . number_format($depositAmount, 2) . ').'
+                ], 422);
+            }
+
+            // Build update data - only include columns that exist
+            $updateData = ['lastUpdateDate' => now()];
+            
+            // Check if columns exist before updating
+            if (Schema::hasColumn('booking', 'deposit_fine_amount')) {
+                $updateData['deposit_fine_amount'] = $fineAmount;
+            } else {
+                \Log::warning('Column deposit_fine_amount does not exist in booking table');
+            }
+            
+            if (Schema::hasColumn('booking', 'deposit_refund_amount')) {
+                $updateData['deposit_refund_amount'] = $refundAmount;
+            } else {
+                \Log::warning('Column deposit_refund_amount does not exist in booking table');
+            }
+
+            // If no valid columns to update, return error
+            if (count($updateData) === 1) { // Only lastUpdateDate
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Database columns not found. Please run migrations: php artisan migrate'
+                ], 500);
+            }
+
+            $booking->update($updateData);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Fine amount updated successfully.'
+                'message' => 'Fine amount and refund amount updated successfully.',
+                'deposit_fine_amount' => number_format($fineAmount, 2),
+                'deposit_refund_amount' => number_format($refundAmount, 2),
             ]);
         } catch (\Exception $e) {
+            \Log::error('Failed to update deposit amounts: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update fine amount: ' . $e->getMessage()
+                'message' => 'Failed to update deposit amounts: ' . $e->getMessage()
             ], 500);
         }
     }
