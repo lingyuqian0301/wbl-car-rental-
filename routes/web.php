@@ -136,6 +136,11 @@ Route::post('/booking/{vehicleID}', [BookingController::class, 'store'])
     ->name('booking.store')
     ->where('vehicleID', '[0-9]+');
 
+Route::post('/booking/clear-resume', function (Request $request) {
+    $request->session()->forget('booking_resume');
+    return response()->json(['success' => true]);
+})->name('booking.clear-resume');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.submit');

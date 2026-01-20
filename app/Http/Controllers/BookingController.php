@@ -173,6 +173,24 @@ class BookingController extends Controller
         $customer = Customer::where('userID', $user->userID)->first();
 
         if (!$customer || $this->isProfileIncomplete($customer)) {
+            // Store booking data in session
+            session([
+                'booking_redirect' => [
+                    'vehicleID' => $vehicleID,
+                    'start_date' => $request->start_date,
+                    'start_time' => $request->start_time,
+                    'end_date' => $request->end_date,
+                    'end_time' => $request->end_time,
+                    'pickup_point' => $request->pickup_point,
+                    'return_point' => $request->return_point,
+                    'pickup_surcharge' => $request->pickup_surcharge,
+                    'return_surcharge' => $request->return_surcharge,
+                    'pickup_custom_location' => $request->pickup_custom_location,
+                    'return_custom_location' => $request->return_custom_location,
+                    'addons' => $request->addons ?? [],
+                ]
+            ]);
+            
             return redirect()
                 ->route('profile.edit')
                 ->with('warning', 'Please complete your profile information before proceeding with booking.');

@@ -238,6 +238,21 @@ class ProfileController extends Controller
             }
 
             DB::commit();
+            
+            // Check if user came from booking flow
+            if (session()->has('booking_redirect')) {
+                $bookingData = session('booking_redirect');
+                $vehicleID = $bookingData['vehicleID'];
+                
+                // Store booking data in session for the vehicle show page to use
+                session(['booking_resume' => $bookingData]);
+                session()->forget('booking_redirect');
+                
+                return redirect()
+                    ->route('vehicles.show', ['id' => $vehicleID])
+                    ->with('success', 'Profile updated successfully! Resuming your booking...');
+            }
+            
             return Redirect::route('profile.edit')->with('success', 'Profile updated successfully!');
 
         } catch (\Exception $e) {

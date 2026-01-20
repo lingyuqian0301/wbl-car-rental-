@@ -788,14 +788,14 @@
                     </div>
                 </div>
 
-                <input type="hidden" id="pickup_point" name="pickup_point" value="">
-                <input type="hidden" id="pickup_surcharge" name="pickup_surcharge" value="0">
-                <input type="hidden" id="pickup_custom_location" name="pickup_custom_location" value="">
+                <input type="hidden" id="pickup_point" name="pickup_point" value="{{ session('booking_resume.pickup_point') ?? '' }}">
+                <input type="hidden" id="pickup_surcharge" name="pickup_surcharge" value="{{ session('booking_resume.pickup_surcharge') ?? '0' }}">
+                <input type="hidden" id="pickup_custom_location" name="pickup_custom_location" value="{{ session('booking_resume.pickup_custom_location') ?? '' }}">
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Date</small>
-                        <input type="date" id="startDate" name="start_date" value="{{ request('start_date') }}" required>
+                        <input type="date" id="startDate" name="start_date" value="{{ session('booking_resume.start_date') ?? request('start_date') }}" required>
                     </div>
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
@@ -809,7 +809,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Date</small>
-                        <input type="date" id="endDate" name="end_date" value="{{ request('end_date') }}" required>
+                        <input type="date" id="endDate" name="end_date" value="{{ session('booking_resume.end_date') ?? request('end_date') }}" required>
                     </div>
                     <div class="form-group">
                         <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-bottom: 0.4rem;">Time</small>
@@ -1300,7 +1300,87 @@ document.addEventListener('DOMContentLoaded', function () {
     // 2. Initialize calendars
     initializeDatePickers();
 
-    // 3. Trigger validation and price calculation if dates are present from URL
+    // 3. Restore booking data from session if available
+    const resumeData = @json(session('booking_resume'));
+    if (resumeData) {
+        // Set times
+        if (resumeData.start_time) {
+            document.getElementById('startTime').value = resumeData.start_time;
+        }
+        if (resumeData.end_time) {
+            document.getElementById('endTime').value = resumeData.end_time;
+        }
+
+        // Restore pickup type and location
+        if (resumeData.pickup_point) {
+            if (resumeData.pickup_point === 'HASTA HQ Office') {
+                document.getElementById('pickupOfficeRadio').checked = true;
+                document.getElementById('pickupOfficeLocation').style.display = 'block';
+            } else if (resumeData.pickup_point.startsWith('Faculty:')) {
+                document.getElementById('pickupFacultyRadio').checked = true;
+                const faculty = resumeData.pickup_point.split('Faculty: ')[1];
+                if (document.getElementById('pickupFacultySelect')) {
+                    document.getElementById('pickupFacultySelect').value = faculty;
+                }
+                document.getElementById('pickupFacultyLocation').style.display = 'block';
+            } else if (resumeData.pickup_point.startsWith('College:')) {
+                document.getElementById('pickupCollegeRadio').checked = true;
+                const college = resumeData.pickup_point.split('College: ')[1];
+                if (document.getElementById('pickupCollegeSelect')) {
+                    document.getElementById('pickupCollegeSelect').value = college;
+                }
+                document.getElementById('pickupCollegeLocation').style.display = 'block';
+            } else if (resumeData.pickup_point.startsWith('Others:')) {
+                document.getElementById('othersPickupRadio').checked = true;
+                const location = resumeData.pickup_point.split('Others: ')[1];
+                if (document.getElementById('othersPickupInput')) {
+                    document.getElementById('othersPickupInput').value = location;
+                }
+                document.getElementById('pickupOthersLocation').style.display = 'block';
+            }
+        }
+
+        // Restore return type and location
+        if (resumeData.return_point) {
+            if (resumeData.return_point === 'HASTA HQ Office') {
+                document.getElementById('returnOfficeRadio').checked = true;
+                document.getElementById('returnOfficeLocation').style.display = 'block';
+            } else if (resumeData.return_point.startsWith('Faculty:')) {
+                document.getElementById('returnFacultyRadio').checked = true;
+                const faculty = resumeData.return_point.split('Faculty: ')[1];
+                if (document.getElementById('returnFacultySelect')) {
+                    document.getElementById('returnFacultySelect').value = faculty;
+                }
+                document.getElementById('returnFacultyLocation').style.display = 'block';
+            } else if (resumeData.return_point.startsWith('College:')) {
+                document.getElementById('returnCollegeRadio').checked = true;
+                const college = resumeData.return_point.split('College: ')[1];
+                if (document.getElementById('returnCollegeSelect')) {
+                    document.getElementById('returnCollegeSelect').value = college;
+                }
+                document.getElementById('returnCollegeLocation').style.display = 'block';
+            } else if (resumeData.return_point.startsWith('Others:')) {
+                document.getElementById('othersReturnRadio').checked = true;
+                const location = resumeData.return_point.split('Others: ')[1];
+                if (document.getElementById('othersReturnInput')) {
+                    document.getElementById('othersReturnInput').value = location;
+                }
+                document.getElementById('returnOthersLocation').style.display = 'block';
+            }
+        }
+
+        // Restore addons
+        if (resumeData.addons && resumeData.addons.length > 0) {
+            addonCheckboxes.forEach(checkbox => {
+                const addonKey = checkbox.value.split('|')[0].toLowerCase().replace(/\s+/g, '_');
+                if (resumeData.addons.includes(addonKey)) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+    }
+
+    // Trigger validation and price calculation if dates are present from URL
     if (startDateInput.value && endDateInput.value) {
         validateDates(); 
     }
