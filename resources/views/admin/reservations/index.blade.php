@@ -17,23 +17,9 @@
 
 @section('content')
 <div class="container-fluid py-2">
-    <!-- Dynamic Tabs -->
-    <ul class="nav nav-tabs mb-3" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ ($activeTab ?? 'bookings') === 'bookings' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#bookings" type="button" role="tab">
-                <i class="bi bi-calendar-check"></i> Bookings
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link {{ ($activeTab ?? '') === 'leasing' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#leasing" type="button" role="tab">
-                <i class="bi bi-file-earmark-text"></i> Leasing
-            </button>
-        </li>
-    </ul>
-
     <div class="tab-content">
         <!-- Bookings Tab -->
-        <div class="tab-pane fade {{ ($activeTab ?? 'bookings') === 'bookings' ? 'show active' : '' }}" id="bookings" role="tabpanel">
+        <div class="tab-pane fade show active" id="bookings" role="tabpanel">
             <x-admin-page-header 
                 title="Reservations" 
                 description="Manage all booking reservations"

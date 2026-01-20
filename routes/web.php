@@ -398,6 +398,7 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
             Route::get('/', [AdminInvoiceController::class, 'index'])->name('index');
             Route::get('/export-pdf', [AdminInvoiceController::class, 'exportPdf'])->name('export-pdf');
             Route::get('/export-excel', [AdminInvoiceController::class, 'exportExcel'])->name('export-excel');
+            Route::post('/{booking}/send-email', [AdminInvoiceController::class, 'sendEmail'])->name('send-email');
         });
 
         Route::prefix('admin/vouchers')->name('admin.vouchers.')->group(function () {

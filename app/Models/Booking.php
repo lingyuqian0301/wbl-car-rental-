@@ -113,11 +113,13 @@ class Booking extends Model
 
     /**
      * Get the additional charges for this booking.
+     * NOTE: AdditionalCharges table doesn't exist in the database.
+     * This relationship is commented out to prevent SQL errors.
      */
-    public function additionalCharges(): HasOne
-    {
-        return $this->hasOne(AdditionalCharges::class, 'bookingID', 'bookingID');
-    }
+    // public function additionalCharges(): HasOne
+    // {
+    //     return $this->hasOne(AdditionalCharges::class, 'bookingID', 'bookingID');
+    // }
 
     /**
      * Get the invoice for this booking.
@@ -129,11 +131,13 @@ class Booking extends Model
 
     /**
      * Get the review for this booking.
+     * NOTE: Review table has been removed from the database.
+     * This relationship is commented out to prevent SQL errors.
      */
-    public function review(): HasOne
-    {
-        return $this->hasOne(Review::class, 'bookingID', 'bookingID');
-    }
+    // public function review(): HasOne
+    // {
+    //     return $this->hasOne(Review::class, 'bookingID', 'bookingID');
+    // }
 
     /**
      * Get total price (deposit + rental amount).

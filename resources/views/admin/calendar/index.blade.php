@@ -414,6 +414,11 @@
     @push('scripts')
     <script>
         function showVehiclesForDate(date) {
+            // Update sidebar vehicle status box when date is clicked
+            if (typeof loadVehicleStatus === 'function') {
+                loadVehicleStatus(date);
+            }
+            
             const modal = new bootstrap.Modal(document.getElementById('vehicleAvailabilityModal'));
             const modalDateElement = document.getElementById('modalDate');
             const vehiclesListElement = document.getElementById('vehiclesList');

@@ -247,18 +247,23 @@ class AdminCustomerController extends Controller
             'internationalStudent.studentDetails',
             'localUtmStaff.staffDetails',
             'internationalUtmStaff.staffDetails',
-            'bookings' => function($q) {
-                $q->with(['vehicle', 'payments'])
-                  ->orderBy('rental_start_date', 'asc');
-            }
         ]);
+        
+        // Load bookings separately to ensure they're loaded correctly
+        $bookings = \App\Models\Booking::where('customerID', $customer->customerID)
+            ->with(['vehicle', 'payments'])
+            ->orderBy('rental_start_date', 'desc')
+            ->get();
+        
+        // Set bookings on customer for view compatibility
+        $customer->setRelation('bookings', $bookings);
 
         // Calculate booking statistics
-        $totalBookings = $customer->bookings->count();
+        $totalBookings = $bookings->count();
         $totalOutstanding = 0;
         $totalWalletAmount = 0;
 
-        foreach ($customer->bookings as $booking) {
+        foreach ($bookings as $booking) {
             $totalRequired = ($booking->rental_amount ?? 0) + ($booking->deposit_amount ?? 0);
             $totalPaid = $booking->payments->where('payment_status', 'Verified')->sum('total_amount');
             $outstanding = max(0, $totalRequired - $totalPaid);
@@ -281,6 +286,17 @@ class AdminCustomerController extends Controller
 
     public function edit(Customer $customer): View
     {
+        // Load all relationships
+        $customer->load([
+            'user',
+            'local',
+            'international',
+            'localStudent.studentDetails',
+            'internationalStudent.studentDetails',
+            'localUtmStaff.staffDetails',
+            'internationalUtmStaff.staffDetails',
+        ]);
+
         $viewName = str_starts_with(Route::currentRouteName(), 'staff.') ? 'staff.customers.edit' : 'admin.customers.edit';
         return view($viewName, [
             'customer' => $customer,
@@ -290,24 +306,113 @@ class AdminCustomerController extends Controller
     public function update(Request $request, Customer $customer): RedirectResponse
     {
         $validated = $request->validate([
-            'matric_number' => 'nullable|string|max:255',
-            'fullname' => 'required|string|max:255',
-            'ic_number' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:255',
+            'DOB' => 'nullable|date',
+            'address' => 'nullable|string|max:500',
+            'customer_license' => 'nullable|string|max:255',
+            'emergency_contact' => 'nullable|string|max:255',
+            'ic_number' => 'nullable|string|max:255',
+            'stateOfOrigin' => 'nullable|string|max:255',
+            'passport_no' => 'nullable|string|max:255',
+            'countryOfOrigin' => 'nullable|string|max:255',
+            'matric_number' => 'nullable|string|max:255',
             'college' => 'nullable|string|max:255',
             'faculty' => 'nullable|string|max:255',
-            'customer_type' => 'nullable|string|max:255',
-            'registration_date' => 'nullable|date',
-            'emergency_contact' => 'nullable|string|max:255',
-            'country' => 'nullable|string|max:255',
-            'customer_license' => 'nullable|string|max:255',
+            'programme' => 'nullable|string|max:255',
+            'yearOfStudy' => 'nullable|string|max:255',
         ]);
 
-        $customer->update($validated);
+        try {
+            DB::beginTransaction();
 
-        return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])
-            ->with('success', 'Customer updated successfully.');
+            // 1. Update User
+            if ($customer->user) {
+                $customer->user->update([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'] ?? $customer->user->email,
+                    'phone' => $validated['phone'] ?? $customer->user->phone,
+                    'DOB' => $validated['DOB'] ?? $customer->user->DOB,
+                ]);
+            }
+
+            // 2. Update Customer
+            $customer->update([
+                'address' => $validated['address'] ?? $customer->address,
+                'customer_license' => $validated['customer_license'] ?? $customer->customer_license,
+                'emergency_contact' => $validated['emergency_contact'] ?? $customer->emergency_contact,
+                'phone_number' => $validated['phone'] ?? $customer->phone_number,
+            ]);
+
+            // 3. Update Local/International
+            if ($validated['ic_number'] ?? null) {
+                // Update Local
+                if ($customer->local) {
+                    $customer->local->update([
+                        'ic_no' => $validated['ic_number'],
+                        'stateOfOrigin' => $validated['stateOfOrigin'] ?? $customer->local->stateOfOrigin,
+                    ]);
+                } else {
+                    \App\Models\Local::create([
+                        'customerID' => $customer->customerID,
+                        'ic_no' => $validated['ic_number'],
+                        'stateOfOrigin' => $validated['stateOfOrigin'] ?? null,
+                    ]);
+                }
+            } elseif ($validated['passport_no'] ?? null) {
+                // Update International
+                if ($customer->international) {
+                    $customer->international->update([
+                        'passport_no' => $validated['passport_no'],
+                        'countryOfOrigin' => $validated['countryOfOrigin'] ?? $customer->international->countryOfOrigin,
+                    ]);
+                } else {
+                    \App\Models\International::create([
+                        'customerID' => $customer->customerID,
+                        'passport_no' => $validated['passport_no'],
+                        'countryOfOrigin' => $validated['countryOfOrigin'] ?? null,
+                    ]);
+                }
+            }
+
+            // 4. Update StudentDetails if matric_number exists
+            if ($validated['matric_number'] ?? null) {
+                \App\Models\StudentDetails::updateOrCreate(
+                    ['matric_number' => $validated['matric_number']],
+                    [
+                        'college' => $validated['college'] ?? null,
+                        'faculty' => $validated['faculty'] ?? null,
+                        'programme' => $validated['programme'] ?? null,
+                        'yearOfStudy' => $validated['yearOfStudy'] ?? null,
+                    ]
+                );
+
+                // Update LocalStudent or InternationalStudent
+                if ($customer->local) {
+                    \App\Models\LocalStudent::updateOrCreate(
+                        ['customerID' => $customer->customerID],
+                        ['matric_number' => $validated['matric_number']]
+                    );
+                } elseif ($customer->international) {
+                    \App\Models\InternationalStudent::updateOrCreate(
+                        ['customerID' => $customer->customerID],
+                        ['matric_number' => $validated['matric_number']]
+                    );
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.customers.show', ['customer' => $customer->customerID, 'tab' => 'detail'])
+                ->with('success', 'Customer updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Customer update failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update customer: ' . $e->getMessage());
+        }
     }
 
     public function destroy(Customer $customer): RedirectResponse

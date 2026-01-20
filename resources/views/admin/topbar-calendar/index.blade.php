@@ -519,11 +519,6 @@
         <div class="calendar-header">
             <h4 class="mb-0">
                 <i class="bi bi-calendar-event"></i> Top Bar Calendar
-                @if(count($unreadBookings) > 0)
-                    <span class="unread-badge">
-                        <i class="bi bi-exclamation-circle"></i> {{ count($unreadBookings) }} Unread
-                    </span>
-                @endif
             </h4>
         </div>
 
@@ -726,12 +721,43 @@
 });
 
 
-                        // Position popup near the event
+                        // Position popup near the event but ensure it stays inside screen area
                         if (event) {
                             const rect = event.target.getBoundingClientRect();
+                            const popupRect = popup.getBoundingClientRect();
+                            const viewportWidth = window.innerWidth;
+                            const viewportHeight = window.innerHeight;
+                            const margin = 15;
+                            
+                            // Calculate initial position (below the event)
+                            let top = rect.bottom + 10;
+                            let left = rect.left - 150;
+                            
+                            // Constrain horizontally to stay within viewport
+                            if (left + popupRect.width > viewportWidth - margin) {
+                                left = viewportWidth - popupRect.width - margin;
+                            }
+                            if (left < margin) {
+                                left = margin;
+                            }
+                            
+                            // Constrain vertically to stay within viewport
+                            if (top + popupRect.height > viewportHeight - margin) {
+                                // Try positioning above the event
+                                const topAbove = rect.top - popupRect.height - 10;
+                                if (topAbove >= margin) {
+                                    top = topAbove;
+                                } else {
+                                    // If can't fit above, position at top with max-height
+                                    top = margin;
+                                    popup.style.maxHeight = (viewportHeight - margin * 2) + 'px';
+                                    popup.querySelector('.popup-body').style.overflowY = 'auto';
+                                }
+                            }
+                            
                             popup.style.position = 'fixed';
-                            popup.style.top = (rect.bottom + 10) + 'px';
-                            popup.style.left = (rect.left - 150) + 'px';
+                            popup.style.top = top + 'px';
+                            popup.style.left = left + 'px';
                         }
 
                         // When clicked, popup is locked and stays open until closed
@@ -906,43 +932,7 @@
         }
 
         function goToBookingDetail(bookingId) {
-            window.location.href = `/admin/bookings/reservations/${bookingId}?tab=booking-detail`;
-        }
-
-        function markAsReadAndClose(bookingId, isUnread) {
-            if (isUnread) {
-                fetch(`/admin/topbar-calendar/bookings/${bookingId}/mark-as-read`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ date_type: 'pickup' })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update bar appearance
-                        const bar = document.querySelector(`.booking-duration-bar[data-booking-id="${bookingId}"]`);
-                        if (bar) {
-                            bar.classList.remove('unread');
-                            bar.dataset.isUnread = 'false';
-                            const dot = bar.querySelector('.unread-dot');
-                            if (dot) dot.remove();
-                        }
-                        // Update floating box
-                        const box = document.getElementById('booking-box-' + bookingId);
-                        if (box) box.dataset.isUnread = 'false';
-                    }
-                    closeBookingBox(bookingId);
-                })
-                .catch(error => {
-                    console.error('Error marking as read:', error);
-                    closeBookingBox(bookingId);
-                });
-            } else {
-                closeBookingBox(bookingId);
-            }
+            window.location.href = `/admin/bookings/reservations/${bookingId}`;
         }
     </script>
 @endsection

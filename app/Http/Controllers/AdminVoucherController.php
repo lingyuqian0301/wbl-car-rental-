@@ -138,32 +138,13 @@ class AdminVoucherController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $rules = [
-            'voucher_code' => 'required|string|max:50|unique:voucher,voucher_code',
-            'voucher_name' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'discount_type' => 'required|in:percentage,Percentage,amount,Amount',
-            'discount_value' => 'required|numeric|min:0',
-            'restrictions' => 'nullable|string',
-            'isActive' => 'boolean',
-        ];
-        
-        // Only validate these fields if the columns exist
-        if (\Schema::hasColumn('voucher', 'expiry_date')) {
-            $rules['expiry_date'] = 'nullable|date|after_or_equal:today';
-        }
-        if (\Schema::hasColumn('voucher', 'num_valid')) {
-            $rules['num_valid'] = 'required|integer|min:1';
-        }
-        
-        $validated = $request->validate($rules);
-
-        $validated['voucher_isActive'] = $request->has('isActive') ? 1 : 0;
-        unset($validated['isActive']); // Remove isActive, we use voucher_isActive
-        // Only set num_applied if the column exists
-        if (\Schema::hasColumn('voucher', 'num_applied')) {
-        $validated['num_applied'] = 0;
-        }
+        // Based on actual database structure: voucherID, loyaltyCardID, discount_type, discount_amount, voucher_isActive
+        $validated = $request->validate([
+            'loyaltyCardID' => 'nullable|integer|exists:loyaltycard,loyaltyCardID',
+            'discount_type' => 'required|string|in:percentage,flat',
+            'discount_amount' => 'required|numeric|min:0',
+            'voucher_isActive' => 'required|in:0,1',
+        ]);
 
         Voucher::create($validated);
 
@@ -173,38 +154,13 @@ class AdminVoucherController extends Controller
 
     public function update(Request $request, Voucher $voucher): RedirectResponse
     {
-        $rules = [
-            'voucher_code' => 'required|string|max:50|unique:voucher,voucher_code,' . $voucher->voucherID . ',voucherID',
-            'voucher_name' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'discount_type' => 'required|in:percentage,Percentage,amount,Amount',
-            'discount_value' => 'required|numeric|min:0',
-            'restrictions' => 'nullable|string',
-            'isActive' => 'boolean',
-        ];
-        
-        // Only validate these fields if the columns exist
-        if (\Schema::hasColumn('voucher', 'expiry_date')) {
-            $rules['expiry_date'] = 'nullable|date';
-        }
-        if (\Schema::hasColumn('voucher', 'num_valid')) {
-            $rules['num_valid'] = 'required|integer|min:0';
-        }
-        
-        $validated = $request->validate($rules);
-
-        $validated['voucher_isActive'] = $request->has('isActive') ? 1 : 0;
-        unset($validated['isActive']); // Remove isActive, we use voucher_isActive
-
-        // Ensure num_valid is not less than num_applied (only if both columns exist)
-        if (\Schema::hasColumn('voucher', 'num_valid') && \Schema::hasColumn('voucher', 'num_applied')) {
-            $currentApplied = $voucher->num_applied ?? 0;
-            if (isset($validated['num_valid']) && $validated['num_valid'] < $currentApplied) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Number of valid vouchers cannot be less than the number of applied vouchers.');
-            }
-        }
+        // Based on actual database structure: voucherID, loyaltyCardID, discount_type, discount_amount, voucher_isActive
+        $validated = $request->validate([
+            'loyaltyCardID' => 'nullable|integer|exists:loyaltycard,loyaltyCardID',
+            'discount_type' => 'required|string|in:percentage,flat',
+            'discount_amount' => 'required|numeric|min:0',
+            'voucher_isActive' => 'required|in:0,1',
+        ]);
 
         $voucher->update($validated);
 

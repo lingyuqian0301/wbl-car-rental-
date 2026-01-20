@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -25,7 +26,7 @@ class AdminInvoiceController extends Controller
             'vehicle', 
             'payments', 
             'invoice',
-            'additionalCharges',
+            // 'additionalCharges', // AdditionalCharges table doesn't exist in database
         ])->whereHas('invoice');
 
         // Search by plate number
@@ -130,8 +131,9 @@ class AdminInvoiceController extends Controller
             $totalPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
             $depositAmount = $booking->deposit_amount ?? 0;
             $rentalAmount = $booking->rental_amount ?? 0;
-            $additionalCharges = $booking->additionalCharges;
-            $additionalChargesTotal = $additionalCharges ? ($additionalCharges->total_extra_charge ?? 0) : 0;
+            // AdditionalCharges table doesn't exist in database
+            // $additionalCharges = $booking->additionalCharges;
+            $additionalChargesTotal = 0; // Set to 0 since table doesn't exist
             $totalPaymentAmount = $depositAmount + $rentalAmount + $additionalChargesTotal;
 
             return [
@@ -187,7 +189,7 @@ class AdminInvoiceController extends Controller
             'vehicle', 
             'payments', 
             'invoice',
-            'additionalCharges',
+            // 'additionalCharges', // AdditionalCharges table doesn't exist in database
         ])->whereHas('invoice');
 
         if ($search) {
@@ -231,5 +233,159 @@ class AdminInvoiceController extends Controller
         }
 
         return $query;
+    }
+
+    /**
+     * Send invoice email to customer
+     */
+    public function sendEmail(Request $request, Booking $booking): JsonResponse
+    {
+        try {
+            // Load booking with relations (same as InvoiceController)
+            $booking->load([
+                'customer.user', 
+                'vehicle.car', 
+                'vehicle.motorcycle', 
+                'payments', 
+                'invoice'
+            ]);
+
+            $customer = $booking->customer;
+            $user = $customer ? $customer->user : null;
+            
+            if (!$user || !$user->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer email not found.',
+                ], 404);
+            }
+
+            // Generate PDF invoice (using same logic as InvoiceController::generatePDF)
+            $invoiceData = $booking->invoice;
+            if (!$invoiceData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invoice not found for this booking.',
+                ], 404);
+            }
+
+            // Get voucher (same as InvoiceController)
+            $voucher = null;
+            $discountAmount = 0;
+            if ($customer) {
+                $loyaltyCard = \Illuminate\Support\Facades\DB::table('loyaltycard')
+                    ->where('customerID', $customer->customerID)
+                    ->first();
+                
+                if ($loyaltyCard) {
+                    $usedVoucher = \Illuminate\Support\Facades\DB::table('voucher')
+                        ->where('loyaltyCardID', $loyaltyCard->loyaltyCardID)
+                        ->where('voucher_isActive', 0)
+                        ->orderBy('voucherID', 'desc')
+                        ->first();
+                    
+                    if ($usedVoucher) {
+                        $voucher = $usedVoucher;
+                    }
+                }
+            }
+
+            // Calculate totals (same as InvoiceController)
+            $verifiedPayments = $booking->payments()
+                ->where('payment_status', 'Verified')
+                ->orderBy('payment_date', 'asc')
+                ->get();
+
+            $allPayments = $booking->payments()
+                ->orderBy('payment_date', 'asc')
+                ->get();
+
+            $totalPaid = $verifiedPayments->sum('total_amount');
+
+            $vehicle = $booking->vehicle;
+            $dailyRate = $vehicle->rental_price ?? 0;
+            $rentalBase = $dailyRate * ($booking->duration ?? 1);
+            
+            $addonPrices = ['power_bank' => 5, 'phone_holder' => 5, 'usb_wire' => 3];
+            $addonNames = ['power_bank' => 'Power Bank', 'phone_holder' => 'Phone Holder', 'usb_wire' => 'USB Wire'];
+            $addonsArray = !empty($booking->addOns_item) ? explode(',', $booking->addOns_item) : [];
+            $addonsBreakdown = [];
+            $addonsTotal = 0;
+            
+            foreach ($addonsArray as $addon) {
+                if (isset($addonPrices[$addon])) {
+                    $addonPrice = $addonPrices[$addon];
+                    $addonTotal = $addonPrice * ($booking->duration ?? 1);
+                    $addonsBreakdown[] = [
+                        'name' => $addonNames[$addon],
+                        'daily_price' => $addonPrice,
+                        'duration' => $booking->duration ?? 1,
+                        'total' => $addonTotal
+                    ];
+                    $addonsTotal += $addonTotal;
+                }
+            }
+
+            $depositAmount = $booking->deposit_amount ?? 50;
+            $pickupSurcharge = 0;
+            $baseAmount = $rentalBase + $addonsTotal;
+            
+            if ($voucher && $voucher->discount_type === 'PERCENT') {
+                $discountAmount = $baseAmount * ($voucher->discount_amount / 100);
+            } elseif ($voucher && $voucher->discount_type === 'FLAT') {
+                $discountAmount = min($voucher->discount_amount, $baseAmount);
+            }
+            
+            $subtotalAfterDiscount = $baseAmount - $discountAmount;
+            $finalTotal = $subtotalAfterDiscount + $depositAmount;
+            $outstandingBalance = max(0, $finalTotal - $totalPaid);
+
+            $localCustomer = \App\Models\Local::where('customerID', $customer->customerID)->first();
+            $internationalCustomer = \App\Models\International::where('customerID', $customer->customerID)->first();
+            $localstudent = $localCustomer ? ($customer->localStudent ?? null) : null;
+
+            // Generate PDF with all necessary data
+            $pdf = Pdf::loadView('pdf.invoice', [
+                'booking' => $booking,
+                'invoiceData' => $invoiceData,
+                'customer' => $customer,
+                'user' => $user,
+                'vehicle' => $vehicle,
+                'voucher' => $voucher,
+                'discountAmount' => $discountAmount,
+                'depositAmount' => $depositAmount,
+                'rentalBase' => $rentalBase,
+                'dailyRate' => $dailyRate,
+                'addonsBreakdown' => $addonsBreakdown,
+                'addonsTotal' => $addonsTotal,
+                'pickupSurcharge' => $pickupSurcharge,
+                'baseAmount' => $baseAmount,
+                'subtotalAfterDiscount' => $subtotalAfterDiscount,
+                'finalTotal' => $finalTotal,
+                'totalPaid' => $totalPaid,
+                'outstandingBalance' => $outstandingBalance,
+                'allPayments' => $allPayments,
+                'verifiedPayments' => $verifiedPayments,
+                'localCustomer' => $localCustomer,
+                'localstudent' => $localstudent,
+                'internationalCustomer' => $internationalCustomer,
+                'invoiceDate' => now(),
+            ]);
+
+            // Send email
+            \Illuminate\Support\Facades\Mail::to($user->email)
+                ->send(new \App\Mail\BookingInvoiceMail($booking, $pdf));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invoice email sent successfully to ' . $user->email,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Invoice Email Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send invoice email: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

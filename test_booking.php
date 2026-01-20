@@ -26,3 +26,4 @@ if ($booking) {
     echo "Booking ID 3 not found\n";
 }
 
+

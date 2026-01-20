@@ -14,12 +14,18 @@ class Voucher extends Model
     protected $keyType = 'int';
     public $timestamps = false;
 
+    /**
+     * Fillable columns based on the actual voucher table used in this project.
+     * We keep legacy fields for compatibility, but also include discount_amount
+     * so the simple voucher CRUD (loyalty-based) can save correctly.
+     */
     protected $fillable = [
         'voucher_code',
         'voucher_name',
         'description',
         'discount_type',
         'discount_value',
+        'discount_amount',
         'expiry_date',
         'num_valid',
         'num_applied',

@@ -20,6 +20,7 @@ class CancellationNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: 'cheongyishien@graduate.utm.my',
             subject: 'Booking Cancellation Update - Booking #' . $this->booking->bookingID,
         );
     }

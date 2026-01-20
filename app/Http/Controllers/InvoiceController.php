@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Invoice;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Response;
 
 class InvoiceController extends Controller
 {
-    public function generatePDF(int $bookingId): Response
+    public function generatePDF(int $bookingId)
     {
         // Load Booking with relations
         // We load 'customer.user' because Name/Email are in the User table, Phone is in Customer table
@@ -47,18 +47,13 @@ class InvoiceController extends Controller
                 ->where('customerID', $customer->customerID)
                 ->first();
             
-            // Try to find voucher that was used (check deactivated vouchers created around booking time)
-            // Since booking might not have created_at, we check vouchers created before booking's lastUpdateDate
+            // Try to find voucher that was used (check deactivated vouchers)
+            // NOTE: Voucher table doesn't have created_at column
             if ($loyaltyCard) {
-                $bookingDate = $booking->lastUpdateDate ?? $booking->created_at ?? now();
                 $usedVoucher = \Illuminate\Support\Facades\DB::table('voucher')
                     ->where('loyaltyCardID', $loyaltyCard->loyaltyCardID)
                     ->where('voucher_isActive', 0)
-                    ->where(function($query) use ($bookingDate) {
-                        $query->where('created_at', '<=', $bookingDate)
-                              ->orWhereNull('created_at');
-                    })
-                    ->orderBy('created_at', 'desc')
+                    ->orderBy('voucherID', 'desc')
                     ->first();
                 
                 if ($usedVoucher) {
@@ -109,6 +104,9 @@ class InvoiceController extends Controller
         // Since rental_amount is final total, we need to reverse calculate
         $depositAmount = $booking->deposit_amount ?? 50;
         $pickupSurcharge = 0; // Default, will be calculated if needed
+        $returnSurcharge = 0; // Default
+        $pickupCustomLocation = null;
+        $returnCustomLocation = null;
         
         // Calculate base amount before discount
         $baseAmount = $rentalBase + $addonsTotal;
@@ -128,6 +126,15 @@ class InvoiceController extends Controller
         // Get customer identity details
         $localCustomer = \App\Models\Local::where('customerID', $customer->customerID)->first();
         $internationalCustomer = \App\Models\International::where('customerID', $customer->customerID)->first();
+        $localstudent = $localCustomer ? ($customer->localStudent ?? null) : null; // Fix: define $localstudent variable
+
+        // Ensure we always have invoice data for the view
+        $invoiceData = $booking->invoice ?? new Invoice([
+            'invoice_number' => 'INV-' . date('Ymd') . '-' . $booking->bookingID,
+            'issue_date'     => now(),
+            'totalAmount'    => $finalTotal,
+            'bookingID'      => $booking->bookingID,
+        ]);
 
         // Prepare comprehensive data for PDF
         $data = [
@@ -151,14 +158,19 @@ class InvoiceController extends Controller
             'allPayments'        => $allPayments,
             'verifiedPayments'   => $verifiedPayments,
             'localCustomer'      => $localCustomer,
+            'localstudent'       => $localstudent, // Fix: pass $localstudent to view
             'internationalCustomer' => $internationalCustomer,
-            'invoiceData'        => $booking->invoice,
+            'invoiceData'        => $invoiceData,
             'invoiceDate'        => now(),
+            'returnSurcharge'    => $returnSurcharge,
+            'pickupCustomLocation' => $pickupCustomLocation,
+            'returnCustomLocation' => $returnCustomLocation,
         ];
 
         try {
             $pdf = Pdf::loadView('pdf.invoice', $data);
-            return $pdf->download('Invoice-'.$booking->bookingID.'.pdf');
+            // Stream so it opens in a new browser tab instead of forcing download
+            return $pdf->stream('Invoice-'.$booking->bookingID.'.pdf');
         } catch (\Exception $e) {
             \Log::error('PDF Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Unable to generate invoice.');

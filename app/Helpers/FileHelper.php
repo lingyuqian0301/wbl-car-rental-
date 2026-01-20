@@ -34,6 +34,11 @@ if (!function_exists('getFileUrl')) {
 
         // Check if it's a local file path with slashes
         if (strpos($fileIdOrPath, '/') !== false || strpos($fileIdOrPath, '\\') !== false) {
+            // If path already starts with 'storage/', don't add it again
+            if (str_starts_with($fileIdOrPath, 'storage/')) {
+                return asset($fileIdOrPath);
+            }
+            
             // Try to find in public folder first
             if (file_exists(public_path($fileIdOrPath))) {
                 return asset($fileIdOrPath);

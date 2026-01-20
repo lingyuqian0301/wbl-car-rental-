@@ -488,31 +488,37 @@
             overflow-y: auto;
         }
 
-        .vehicle-status-summary {
+        .vehicle-status-summary-list {
+            padding: 0;
+        }
+
+        .vehicle-status-summary-list-item {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            padding: 8px 10px;
-            margin-bottom: 10px;
-            background: var(--gray-50);
-            border-radius: var(--radius-sm);
-            font-size: 0.8rem;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.85rem;
         }
 
-        .vehicle-status-summary-item {
-            text-align: center;
+        .vehicle-status-summary-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .vehicle-status-summary-list-item i {
+            margin-right: 8px;
+            font-size: 0.9rem;
+        }
+
+        .summary-label {
             flex: 1;
+            color: #374151;
+            font-weight: 500;
         }
 
-        .vehicle-status-summary-item .count {
-            display: block;
+        .summary-count {
             font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .vehicle-status-summary-item .label {
-            font-size: 0.7rem;
-            color: var(--gray-600);
-            margin-top: 2px;
+            color: #374151;
         }
 
         .vehicle-list-item {
@@ -1181,27 +1187,51 @@
                         year: 'numeric'
                     });
 
-                    // Summary section
+                    // Summary section (like picture 1)
                     let html = `
-                        <div class="vehicle-status-summary">
-                            <div class="vehicle-status-summary-item">
-                                <span class="count status-available">${data.available}</span>
-                                <span class="label">Available</span>
+                        <div class="vehicle-status-summary-list">
+                            <div class="vehicle-status-summary-list-item">
+                                <i class="bi bi-circle-fill" style="color: #374151;"></i>
+                                <span class="summary-label">Total Vehicles</span>
+                                <span class="summary-count">${data.total}</span>
                             </div>
-                            <div class="vehicle-status-summary-item">
-                                <span class="count status-booked">${data.booked}</span>
-                                <span class="label">Booked</span>
+                            <div class="vehicle-status-summary-list-item">
+                                <i class="bi bi-check-circle-fill" style="color: #22c55e;"></i>
+                                <span class="summary-label">Available</span>
+                                <span class="summary-count" style="color: #22c55e;">${data.available}</span>
                             </div>
-                            <div class="vehicle-status-summary-item">
-                                <span class="count status-maintenance">${data.maintenance}</span>
-                                <span class="label">Maintenance</span>
+                            <div class="vehicle-status-summary-list-item">
+                                <i class="bi bi-x-circle-fill" style="color: #dc2626;"></i>
+                                <span class="summary-label">Booked</span>
+                                <span class="summary-count" style="color: #dc2626;">${data.booked}</span>
+                            </div>
+                            <div class="vehicle-status-summary-list-item">
+                                <i class="bi bi-wrench-adjustable" style="color: #f97316;"></i>
+                                <span class="summary-label">Maintenance</span>
+                                <span class="summary-count" style="color: #f97316;">${data.maintenance}</span>
                             </div>
                         </div>
                     `;
 
-                    // Vehicle list
-                    if (data.vehicles && data.vehicles.length > 0) {
+                    // Vehicle list (like picture 2 - show when date is clicked or when explicitly requested)
+                    // Show detailed list if date parameter is provided (means date was clicked)
+                    if (data.vehicles && data.vehicles.length > 0 && date) {
+                        // Show detailed vehicle list with status badges
                         data.vehicles.forEach(vehicle => {
+                            let statusClass = 'status-available';
+                            let statusText = 'Available';
+                            let statusIcon = 'bi-check-circle-fill';
+                            
+                            if (vehicle.is_booked) {
+                                statusClass = 'status-booked';
+                                statusText = 'Booked';
+                                statusIcon = 'bi-x-circle-fill';
+                            } else if (vehicle.is_maintenance) {
+                                statusClass = 'status-maintenance';
+                                statusText = 'Maintenance';
+                                statusIcon = 'bi-wrench-adjustable';
+                            }
+                            
                             html += `
                                 <div class="vehicle-list-item">
                                     <div class="vehicle-list-item-info">
@@ -1210,20 +1240,15 @@
                                             <div class="vehicle-list-item-type">${vehicle.vehicle_type}</div>
                                         </div>
                                     </div>
-                                    <div class="vehicle-list-item-status ${vehicle.statusClass}">
-                                        <i class="bi ${vehicle.statusIcon}"></i>
-                                        <span>${vehicle.statusText}</span>
-                                    </div>
+                                    <span class="vehicle-list-item-status ${statusClass}">
+                                        <i class="bi ${statusIcon}"></i>
+                                        <span>${statusText}</span>
+                                    </span>
                                 </div>
                             `;
                         });
-                    } else {
-                        html += `
-                            <div class="text-center py-3 text-muted">
-                                <i class="bi bi-inbox"></i>
-                                <p class="mb-0 mt-2 small">No vehicles found</p>
-                            </div>
-                        `;
+                    } else if (!date) {
+                        // Default view - only show summary, no detailed list
                     }
 
                     // Date footer

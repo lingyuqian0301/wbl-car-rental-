@@ -274,8 +274,8 @@ class AdminReservationController extends Controller
             'vehicle.documents',
             'payments',
             'invoice',
-            'review',
-            'additionalCharges',
+            // 'review', // Review table has been removed from the database
+            // 'additionalCharges', // AdditionalCharges table doesn't exist in database
             'vehicleConditionForms.images', // Load vehicle condition forms with images
         ]);
 

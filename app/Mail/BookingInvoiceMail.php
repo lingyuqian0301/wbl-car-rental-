@@ -25,6 +25,7 @@ class BookingInvoiceMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: 'cheongyishien@graduate.utm.my',
             subject: 'Payment Verified - Invoice for Booking #' . $this->booking->bookingID,
         );
     }

@@ -231,9 +231,13 @@
                                     @if($payments->count() > 0)
                                         @foreach($payments as $payment)
                                             @if($payment->proof_of_payment || $payment->transaction_reference)
+                                                @php
+                                                    $receiptPath = $payment->proof_of_payment ?? $payment->transaction_reference;
+                                                    $receiptUrl = getFileUrl($receiptPath);
+                                                @endphp
                                                 <button type="button" 
                                                         class="btn btn-sm btn-outline-success btn-update-cancellation" 
-                                                        onclick="showReceipt('{{ $payment->proof_of_payment ?? $payment->transaction_reference }}', '{{ $payment->paymentID }}')">
+                                                        onclick="showReceipt('{{ $receiptUrl }}', '{{ $payment->paymentID }}')">
                                                     <i class="bi bi-receipt"></i> Receipt {{ $loop->iteration }}
                                                 </button>
                                             @endif
@@ -296,11 +300,12 @@
                             </td>
                             <td>
                                 @if($customerEmail)
-                                    <a href="mailto:{{ $customerEmail }}?subject=Regarding Your Booking %23{{ $booking->bookingID }} Cancellation&body=Dear {{ $booking->customer->user->name ?? 'Customer' }},%0D%0A%0D%0AThis is regarding your booking %23{{ $booking->bookingID }} cancellation request.%0D%0A%0D%0ABooking Details:%0D%0A- Booking ID: %23{{ $booking->bookingID }}%0D%0A- Vehicle: {{ $vehiclePlate }}%0D%0A- Amount Paid: RM {{ number_format($totalPaid, 2) }}%0D%0A%0D%0A%0D%0ABest Regards,%0D%0AHASTA Travel %26 Tours Team" 
-                                       class="btn btn-sm btn-primary btn-email"
-                                       title="Draft email to {{ $customerEmail }}">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-primary btn-email" 
+                                            onclick="sendCancellationEmail({{ $booking->bookingID }}, this)"
+                                            title="Send email to {{ $customerEmail }}">
                                         <i class="bi bi-envelope"></i> Email
-                                    </a>
+                                    </button>
                                 @else
                                     <span class="text-muted small">No email</span>
                                 @endif
@@ -754,6 +759,45 @@
         
         const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
         modal.show();
+    }
+
+    // Send cancellation email
+    function sendCancellationEmail(bookingId, button) {
+        if (!confirm('Send email to customer about this cancellation?')) {
+            return;
+        }
+
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+
+        fetch(`/admin/bookings/cancellation/${bookingId}/send-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Email sent successfully to ' + (data.message || 'customer'));
+                button.innerHTML = '<i class="bi bi-check-circle"></i> Sent';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+            } else {
+                alert('Failed to send email: ' + (data.message || 'Unknown error'));
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to send email. Please try again.');
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
     }
 </script>
 @endpush

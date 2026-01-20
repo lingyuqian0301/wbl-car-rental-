@@ -1044,7 +1044,6 @@
                                     <th>End Date</th>
                                     <th>Duration</th>
                                     <th>Status</th>
-                                    <th>Review Form</th>
                                     <th>Vehicle Condition Form</th>
                                     <th>Amount</th>
                                 </tr>
@@ -1054,7 +1053,6 @@
                                     @php
                                         $customer = $booking->customer;
                                         $user = $customer->user ?? null;
-                                        $review = $booking->review;
                                         // Assuming there's a vehicle condition form - using bookingID for now
                                     @endphp
                                     <tr>
@@ -1073,16 +1071,7 @@
                                             </span>
                                         </td>
                                         <td>
-                                            @if($review)
-                                                <a href="{{ route('bookings.show', $booking->bookingID) }}#review" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    <i class="bi bi-star"></i> View Review
-                                                </a>
-                                            @else
-                                                <span class="text-muted small">Not submitted</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('bookings.show', $booking->bookingID) }}#vehicle-condition" target="_blank" class="btn btn-sm btn-outline-info">
+                                            <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" class="btn btn-sm btn-outline-info">
                                                 <i class="bi bi-clipboard-check"></i> View Form
                                             </a>
                                         </td>
@@ -1090,7 +1079,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="8" class="text-center text-muted py-4">
                                             <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
                                             No bookings recorded yet.
                                         </td>

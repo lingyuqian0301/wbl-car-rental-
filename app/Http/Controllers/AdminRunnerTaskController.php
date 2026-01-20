@@ -16,11 +16,14 @@ class AdminRunnerTaskController extends Controller
         $today = Carbon::today();
         
         // Get bookings that need runner:
-        // Show tasks where at least one location (pickup OR return) is NOT "HASTA HQ Office"
-        // Hide only if BOTH pickup AND return are "HASTA HQ Office"
-        // This includes NULL/empty values (they are not "HASTA HQ Office")
+        // Show bookings where:
+        // - Only pickup point != 'HASTA HQ Office' (return can be anything)
+        // - OR only return point != 'HASTA HQ Office' (pickup can be anything)
+        // - OR both pickup and return point != 'HASTA HQ Office'
+        // This means: (pickup != 'HASTA HQ Office') OR (return != 'HASTA HQ Office')
+        // Including NULL/empty values (they are not equal to 'HASTA HQ Office')
+        // Show ALL bookings (past, current, future) - not just future ones
         $query = Booking::with(['customer.user', 'vehicle'])
-            ->where('rental_start_date', '>', $today)
             ->whereIn('booking_status', ['Pending', 'Confirmed'])
             ->where(function($q) {
                 // Show if pickup_point is NOT 'HASTA HQ Office' (including NULL/empty)
@@ -89,8 +92,8 @@ class AdminRunnerTaskController extends Controller
         $bookings = $query->paginate(20)->withQueryString();
 
         // Summary stats for header - use same query logic as above
-        // Show tasks where at least one location (pickup OR return) is NOT "HASTA HQ Office"
-        // This includes NULL/empty values (they are not "HASTA HQ Office")
+        // Show bookings where: (pickup != 'HASTA HQ Office') OR (return != 'HASTA HQ Office')
+        // Including NULL/empty values
         $runnerTaskCondition = function($q) {
             $q->where(function($subQ) {
                 $subQ->whereNull('pickup_point')
@@ -103,13 +106,11 @@ class AdminRunnerTaskController extends Controller
             });
         };
         
-        $totalBookings = Booking::where('rental_start_date', '>', $today)
-            ->whereIn('booking_status', ['Pending', 'Confirmed'])
+        $totalBookings = Booking::whereIn('booking_status', ['Pending', 'Confirmed'])
             ->where($runnerTaskCondition)
             ->count();
         
-        $assignedCount = Booking::where('rental_start_date', '>', $today)
-            ->whereIn('booking_status', ['Pending', 'Confirmed'])
+        $assignedCount = Booking::whereIn('booking_status', ['Pending', 'Confirmed'])
             ->whereNotNull('staff_served')
             ->where($runnerTaskCondition)
             ->count();

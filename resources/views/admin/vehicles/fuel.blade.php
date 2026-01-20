@@ -114,7 +114,7 @@
                                 <td><strong>RM {{ number_format($fuel->cost ?? 0, 2) }}</strong></td>
                                 <td>
                                     @if($fuel->receipt_img)
-                                        <img src="{{ asset('storage/' . $fuel->receipt_img) }}" 
+                                        <img src="{{ getFileUrl($fuel->receipt_img) }}" 
                                              alt="Receipt" 
                                              class="receipt-img"
                                              data-bs-toggle="modal" 
@@ -161,12 +161,12 @@
                                                 $isPdf = strtolower(pathinfo($fuel->receipt_img, PATHINFO_EXTENSION)) === 'pdf';
                                             @endphp
                                             @if($isPdf)
-                                                <iframe src="{{ asset('storage/' . $fuel->receipt_img) }}" 
+                                                <iframe src="{{ getFileUrl($fuel->receipt_img) }}" 
                                                         style="width: 100%; height: 70vh; border: none; border-radius: 6px;"
                                                         onerror="this.parentElement.innerHTML='<p class=\'text-muted\'>PDF not found</p>';">
                                                 </iframe>
                                             @else
-                                                <img src="{{ asset('storage/' . $fuel->receipt_img) }}" 
+                                                <img src="{{ getFileUrl($fuel->receipt_img) }}" 
                                                      alt="Fuel Receipt" 
                                                      class="img-fluid" 
                                                      style="max-height: 70vh; width: auto; border-radius: 6px;"
@@ -174,7 +174,7 @@
                                             @endif
                                         </div>
                                         <div class="modal-footer">
-                                            <a href="{{ asset('storage/' . $fuel->receipt_img) }}" 
+                                            <a href="{{ getFileUrl($fuel->receipt_img) }}" 
                                                target="_blank" 
                                                class="btn btn-primary">
                                                 <i class="bi bi-download"></i> Open in New Tab

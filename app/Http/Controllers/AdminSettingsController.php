@@ -375,15 +375,19 @@ class AdminSettingsController extends Controller
         
         if ($staff->runner && $staff->user) {
             // Get bookings where this runner is assigned (staff_served = runner's userID)
-            // AND either pickup_point or return_point is not 'HASTA HQ Office'
+            // AND (pickup != 'HASTA HQ Office' OR return != 'HASTA HQ Office')
+            // Same logic as RunnerTaskController (runner's own task list) - excludes NULL/empty
             $runnerBookings = \App\Models\Booking::with(['vehicle', 'customer.user'])
                 ->where('staff_served', $staff->user->userID)
                 ->where(function($q) {
+                    // Show if pickup_point is NOT 'HASTA HQ Office' (and not null/empty)
                     $q->where(function($subQ) {
                         $subQ->whereNotNull('pickup_point')
                              ->where('pickup_point', '!=', '')
                              ->where('pickup_point', '!=', 'HASTA HQ Office');
-                    })->orWhere(function($subQ) {
+                    })
+                    // OR return_point is NOT 'HASTA HQ Office' (and not null/empty)
+                    ->orWhere(function($subQ) {
                         $subQ->whereNotNull('return_point')
                              ->where('return_point', '!=', '')
                              ->where('return_point', '!=', 'HASTA HQ Office');
@@ -401,7 +405,8 @@ class AdminSettingsController extends Controller
                 ->orderBy('rental_start_date', 'desc')
                 ->get();
 
-            // Create task entries for pickup/return
+            // Create task entries for pickup/return - same logic as RunnerTaskController
+            $today = \Carbon\Carbon::today();
             foreach ($runnerBookings as $booking) {
                 $pickupLocation = !empty($booking->pickup_point) ? $booking->pickup_point : null;
                 $returnLocation = !empty($booking->return_point) ? $booking->return_point : null;
@@ -411,13 +416,19 @@ class AdminSettingsController extends Controller
                 // Check if pickup is not at HASTA HQ Office and within selected month/year
                 if ($pickupLocation && $pickupLocation !== 'HASTA HQ Office' && $pickupDate) {
                     if ($pickupDate->month == $filterMonth && $pickupDate->year == $filterYear) {
+                        $deliveryDate = $pickupDate->copy()->subDay(); // One day before pickup
+                        $isDone = $pickupDate->lt($today);
+                        
                         $runnerTasks->push([
                             'num' => 0, // Will be set later
                             'booking_id' => $booking->bookingID,
                             'task_date' => $pickupDate,
+                            'delivery_date' => $deliveryDate,
                             'task_type' => 'Pickup',
                             'location' => $pickupLocation,
                             'plate_number' => $booking->vehicle->plate_number ?? 'N/A',
+                            'customer_name' => $booking->customer->user->name ?? 'N/A',
+                            'is_done' => $isDone,
                             'commission_amount' => 2.00, // Fixed commission per pickup
                         ]);
                     }
@@ -426,21 +437,27 @@ class AdminSettingsController extends Controller
                 // Check if return is not at HASTA HQ Office and within selected month/year
                 if ($returnLocation && $returnLocation !== 'HASTA HQ Office' && $returnDate) {
                     if ($returnDate->month == $filterMonth && $returnDate->year == $filterYear) {
+                        $deliveryDate = $returnDate->copy()->subDay(); // One day before return
+                        $isDone = $returnDate->lt($today);
+                        
                         $runnerTasks->push([
                             'num' => 0, // Will be set later
                             'booking_id' => $booking->bookingID,
                             'task_date' => $returnDate,
+                            'delivery_date' => $deliveryDate,
                             'task_type' => 'Return',
                             'location' => $returnLocation,
                             'plate_number' => $booking->vehicle->plate_number ?? 'N/A',
+                            'customer_name' => $booking->customer->user->name ?? 'N/A',
+                            'is_done' => $isDone,
                             'commission_amount' => 2.00, // Fixed commission per return
                         ]);
                     }
                 }
             }
 
-            // Sort by date and add row numbers
-            $runnerTasks = $runnerTasks->sortBy('task_date')->values();
+            // Sort by task_date descending (same as RunnerTaskController) and add row numbers
+            $runnerTasks = $runnerTasks->sortByDesc('task_date')->values();
             $runnerTasks = $runnerTasks->map(function($task, $index) {
                 $task['num'] = $index + 1;
                 return $task;

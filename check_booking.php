@@ -12,3 +12,4 @@ if ($b) {
     echo "Customer: " . ($b->customer && $b->customer->user ? $b->customer->user->name : "N/A") . PHP_EOL;
 }
 
+

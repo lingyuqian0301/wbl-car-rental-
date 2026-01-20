@@ -183,6 +183,7 @@
                         <th>Invoice Picture</th>
                         <th>Car Plate No</th>
                         <th>Total Payment Amount</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -192,7 +193,8 @@
                             $customer = $booking->customer;
                             $user = $customer->user ?? null;
                             $vehicle = $booking->vehicle;
-                            $additionalCharges = $booking->additionalCharges;
+                            // AdditionalCharges table doesn't exist in database
+                            // $additionalCharges = $booking->additionalCharges;
                             
                             // Calculate total payment amount
                             $totalPaid = $booking->payments()
@@ -204,7 +206,7 @@
                             // FIX: Added fallback to total_amount if rental_amount is missing
                             $rentalAmount = $booking->rental_amount ?? $booking->total_amount ?? 0;
                             
-                            $additionalChargesTotal = $additionalCharges ? ($additionalCharges->total_extra_charge ?? 0) : 0;
+                            $additionalChargesTotal = 0; // Set to 0 since table doesn't exist
                             $totalPaymentAmount = $depositAmount + $rentalAmount + $additionalChargesTotal;
                         @endphp
                         <tr>
@@ -274,10 +276,22 @@
                                     @endif
                                 </div>
                             </td>
+                            <td>
+                                @if($user && $user->email)
+                                    <button type="button" 
+                                            class="btn btn-sm btn-primary" 
+                                            onclick="sendInvoiceEmail({{ $booking->bookingID }}, this)"
+                                            title="Send invoice email to {{ $user->email }}">
+                                        <i class="bi bi-envelope"></i> Email
+                                    </button>
+                                @else
+                                    <span class="text-muted small">No email</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                 <p class="mt-3 mb-0">No invoices available.</p>
                             </td>
@@ -294,4 +308,47 @@
         @endif
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Send invoice email
+    function sendInvoiceEmail(bookingId, button) {
+        if (!confirm('Send invoice email to customer?')) {
+            return;
+        }
+
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+
+        fetch(`/admin/invoices/${bookingId}/send-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Invoice email sent successfully to customer');
+                button.innerHTML = '<i class="bi bi-check-circle"></i> Sent';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+            } else {
+                alert('Failed to send email: ' + (data.message || 'Unknown error'));
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to send email. Please try again.');
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
+    }
+</script>
+@endpush
 @endsection

@@ -156,15 +156,9 @@
                 <thead>
                     <tr>
                         <th>Voucher ID</th>
-                        <th>Voucher Code</th>
-                        <th>Voucher Name</th>
-                        <th>Description</th>
-                        <th>Discount</th>
-                        <th>Valid</th>
-                        <th>Applied</th>
-                        <th>Left</th>
-                        <th>Created Date</th>
-                        <th>Expiry Date</th>
+                        <th>Loyalty Card ID</th>
+                        <th>Discount Type</th>
+                        <th>Discount Amount</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -172,60 +166,19 @@
                 <tbody>
                     @forelse($vouchers as $voucher)
                         @php
-                            $numLeft = $voucher->num_valid - $voucher->num_applied;
-                            $isActive = $voucher->isActive;
-                            $isExpired = $voucher->expiry_date && \Carbon\Carbon::parse($voucher->expiry_date)->isPast();
-                            $allUsed = $numLeft <= 0;
+                            $isActive = $voucher->voucher_isActive ?? false;
                             
-                            $statusText = 'Active';
-                            $statusClass = 'bg-success';
-                            if (!$isActive) {
-                                $statusText = 'Inactive';
-                                $statusClass = 'bg-secondary';
-                            } elseif ($isExpired) {
-                                $statusText = 'Expired';
-                                $statusClass = 'bg-danger';
-                            } elseif ($allUsed) {
-                                $statusText = 'All Used';
-                                $statusClass = 'bg-warning text-dark';
-                            }
+                            $statusText = $isActive ? 'Active' : 'Inactive';
+                            $statusClass = $isActive ? 'bg-success' : 'bg-secondary';
                             
-                            $discountDisplay = ($voucher->discount_type === 'percentage' || $voucher->discount_type === 'Percentage') 
-                                ? $voucher->discount_value . '%' 
-                                : 'RM ' . number_format($voucher->discount_value, 2);
+                            $discountAmount = $voucher->discount_amount ?? 0;
+                            $discountType = $voucher->discount_type ?? 'N/A';
                         @endphp
                         <tr>
                             <td><strong>#{{ $voucher->voucherID }}</strong></td>
-                            <td><code>{{ $voucher->voucher_code }}</code></td>
-                            <td>{{ $voucher->voucher_name ?? 'N/A' }}</td>
-                            <td>
-                                <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ $voucher->description }}">
-                                    {{ $voucher->description ?? 'N/A' }}
-                                </div>
-                            </td>
-                            <td><strong>{{ $discountDisplay }}</strong></td>
-                            <td>{{ $voucher->num_valid }}</td>
-                            <td>
-                                @if($voucher->num_applied > 0)
-                                    <span class="btn-used-count" onclick="showUsedCustomers({{ $voucher->voucherID }})">
-                                        {{ $voucher->num_applied }}
-                                    </span>
-                                @else
-                                    {{ $voucher->num_applied }}
-                                @endif
-                            </td>
-                            <td><strong>{{ $numLeft }}</strong></td>
-                            <td>{{ $voucher->created_at ? $voucher->created_at->format('d M Y') : 'N/A' }}</td>
-                            <td>
-                                @if($voucher->expiry_date)
-                                    {{ \Carbon\Carbon::parse($voucher->expiry_date)->format('d M Y') }}
-                                    @if($isExpired)
-                                        <span class="badge bg-danger ms-1">Expired</span>
-                                    @endif
-                                @else
-                                    <span class="text-muted">No expiry</span>
-                                @endif
-                            </td>
+                            <td>{{ $voucher->loyaltyCardID ?? 'N/A' }}</td>
+                            <td>{{ $discountType }}</td>
+                            <td><strong>RM {{ number_format($discountAmount, 2) }}</strong></td>
                             <td>
                                 <span class="badge badge-status {{ $statusClass }}">
                                     {{ $statusText }}
@@ -254,7 +207,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12" class="text-center py-4 text-muted">
+                            <td colspan="6" class="text-center py-4 text-muted">
                                 <i class="bi bi-inbox"></i> No vouchers found
                             </td>
                         </tr>
@@ -284,71 +237,41 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Voucher Code <span class="text-danger">*</span></label>
-                            <input type="text" name="voucher_code" class="form-control" required 
-                                   placeholder="e.g., SUMMER2024" value="{{ old('voucher_code') }}">
-                            @error('voucher_code')
+                            <label class="form-label">Loyalty Card ID</label>
+                            <input type="number" name="loyaltyCardID" class="form-control" 
+                                   placeholder="Optional" value="{{ old('loyaltyCardID') }}">
+                            @error('loyaltyCardID')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Voucher Name</label>
-                            <input type="text" name="voucher_name" class="form-control" 
-                                   placeholder="e.g., Summer Sale 2024" value="{{ old('voucher_name') }}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control" rows="3" 
-                                      placeholder="Enter voucher description">{{ old('description') }}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Discount Type <span class="text-danger">*</span></label>
                             <select name="discount_type" class="form-select" required>
                                 <option value="">Select type</option>
                                 <option value="percentage" {{ old('discount_type') === 'percentage' ? 'selected' : '' }}>Percentage (%)</option>
-                                <option value="amount" {{ old('discount_type') === 'amount' ? 'selected' : '' }}>Amount (RM)</option>
+                                <option value="flat" {{ old('discount_type') === 'flat' ? 'selected' : '' }}>Flat Amount (RM)</option>
                             </select>
                             @error('discount_type')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Discount Value <span class="text-danger">*</span></label>
-                            <input type="number" name="discount_value" class="form-control" required 
-                                   step="0.01" min="0" placeholder="e.g., 10 or 50.00" value="{{ old('discount_value') }}">
-                            @error('discount_value')
+                            <label class="form-label">Discount Amount <span class="text-danger">*</span></label>
+                            <input type="number" name="discount_amount" class="form-control" required 
+                                   step="0.01" min="0" placeholder="e.g., 10.00" value="{{ old('discount_amount') }}">
+                            @error('discount_amount')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Number of Valid Vouchers <span class="text-danger">*</span></label>
-                            <input type="number" name="num_valid" class="form-control" required 
-                                   min="1" placeholder="e.g., 100" value="{{ old('num_valid') }}">
-                            @error('num_valid')
+                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                            <select name="voucher_isActive" class="form-select" required>
+                                <option value="1" {{ old('voucher_isActive', '1') == '1' ? 'selected' : '' }}>Active</option>
+                                <option value="0" {{ old('voucher_isActive') == '0' ? 'selected' : '' }}>Inactive</option>
+                            </select>
+                            @error('voucher_isActive')
                                 <div class="text-danger small">{{ $message }}</div>
                             @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Expiry Date</label>
-                            <input type="date" name="expiry_date" class="form-control" 
-                                   min="{{ date('Y-m-d') }}" value="{{ old('expiry_date') }}">
-                            @error('expiry_date')
-                                <div class="text-danger small">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Restrictions</label>
-                            <textarea name="restrictions" class="form-control" rows="2" 
-                                      placeholder="Enter any restrictions or terms (optional)">{{ old('restrictions') }}</textarea>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="isActive" value="1" 
-                                       id="addIsActive" {{ old('isActive', true) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="addIsActive">
-                                    Active
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -375,50 +298,40 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Voucher Code <span class="text-danger">*</span></label>
-                            <input type="text" name="voucher_code" id="edit_voucher_code" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Voucher Name</label>
-                            <input type="text" name="voucher_name" id="edit_voucher_name" class="form-control">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Description</label>
-                            <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
+                            <label class="form-label">Loyalty Card ID</label>
+                            <input type="number" name="loyaltyCardID" id="edit_loyaltyCardID" class="form-control">
+                            @error('loyaltyCardID')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Discount Type <span class="text-danger">*</span></label>
                             <select name="discount_type" id="edit_discount_type" class="form-select" required>
                                 <option value="">Select type</option>
                                 <option value="percentage">Percentage (%)</option>
-                                <option value="amount">Amount (RM)</option>
+                                <option value="flat">Flat Amount (RM)</option>
                             </select>
+                            @error('discount_type')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Discount Value <span class="text-danger">*</span></label>
-                            <input type="number" name="discount_value" id="edit_discount_value" class="form-control" 
+                            <label class="form-label">Discount Amount <span class="text-danger">*</span></label>
+                            <input type="number" name="discount_amount" id="edit_discount_amount" class="form-control" 
                                    required step="0.01" min="0">
+                            @error('discount_amount')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Number of Valid Vouchers <span class="text-danger">*</span></label>
-                            <input type="number" name="num_valid" id="edit_num_valid" class="form-control" required min="0">
-                            <small class="text-muted" id="edit_num_applied_hint"></small>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Expiry Date</label>
-                            <input type="date" name="expiry_date" id="edit_expiry_date" class="form-control">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Restrictions</label>
-                            <textarea name="restrictions" id="edit_restrictions" class="form-control" rows="2"></textarea>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="isActive" value="1" id="editIsActive">
-                                <label class="form-check-label" for="editIsActive">
-                                    Active
-                                </label>
-                            </div>
+                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                            <select name="voucher_isActive" id="edit_voucher_isActive" class="form-select" required>
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
+                            </select>
+                            @error('voucher_isActive')
+                                <div class="text-danger small">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -477,17 +390,10 @@
 
     function populateEditForm(voucher) {
         document.getElementById('editVoucherForm').action = `/admin/vouchers/${voucher.voucherID}`;
-        document.getElementById('edit_voucher_code').value = voucher.voucher_code || '';
-        document.getElementById('edit_voucher_name').value = voucher.voucher_name || '';
-        document.getElementById('edit_description').value = voucher.description || '';
+        document.getElementById('edit_loyaltyCardID').value = voucher.loyaltyCardID || '';
         document.getElementById('edit_discount_type').value = voucher.discount_type || '';
-        document.getElementById('edit_discount_value').value = voucher.discount_value || '';
-        document.getElementById('edit_num_valid').value = voucher.num_valid || '';
-        document.getElementById('edit_num_applied_hint').textContent = 
-            `(Currently ${voucher.num_applied || 0} vouchers have been applied)`;
-        document.getElementById('edit_expiry_date').value = voucher.expiry_date || '';
-        document.getElementById('edit_restrictions').value = voucher.restrictions || '';
-        document.getElementById('editIsActive').checked = voucher.isActive == 1;
+        document.getElementById('edit_discount_amount').value = voucher.discount_amount || voucher.discount_value || '';
+        document.getElementById('edit_voucher_isActive').value = voucher.voucher_isActive ?? (voucher.isActive ? '1' : '0');
     }
 
     function showUsedCustomers(voucherID) {

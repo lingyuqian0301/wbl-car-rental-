@@ -95,6 +95,7 @@ class PaymentController extends Controller
             'payment_bank_name'       => $request->bank_name,
             'payment_bank_account_no' => $request->bank_account_number,
             'transaction_reference'   => $request->transaction_reference,
+            'proof_of_payment'        => $receiptImagePath, // Save receipt image path
             'payment_status'          => 'Pending',
             'payment_date'            => now(),
             'isPayment_complete'      => false,

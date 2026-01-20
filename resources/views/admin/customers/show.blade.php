@@ -38,6 +38,19 @@
         color: #6b7280;
         margin-top: 8px;
     }
+    .reservation-info-text {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 4px;
+    }
+    .table th {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--hasta-red-dark);
+    }
+    .table td {
+        vertical-align: middle;
+    }
 </style>
 @endpush
 
@@ -387,8 +400,12 @@
                                         <i class="bi bi-person-badge fs-1 d-block mb-2" style="color: var(--hasta-red);"></i>
                                         <h6 class="fw-semibold">{{ $customer->local ? 'IC' : 'Passport' }}</h6>
                                         @php
-                                            // Get IC image from customer table
-                                            $icImg = $customer->customer_ic_img ?? null;
+                                            // Get IC image from local table for local customers, otherwise from customer table for international
+                                            if ($customer->local) {
+                                                $icImg = $customer->local->ic_img ?? null;
+                                            } else {
+                                                $icImg = $customer->customer_ic_img ?? null;
+                                            }
                                         @endphp
                                         @if($icImg)
                                             <div class="mb-2">
@@ -534,8 +551,9 @@
 
             <!-- Booking List -->
             <div class="card">
-                <div class="card-header bg-danger text-white">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Booking History</h5>
+                    <span class="badge bg-light text-dark">{{ $totalBookings ?? 0 }} total</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -543,18 +561,21 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Booking ID</th>
-                                    <th>Booking Date</th>
+                                    <th>Vehicle</th>
                                     <th>Plate No</th>
                                     <th>Duration</th>
                                     <th>Pickup Date</th>
                                     <th>Return Date</th>
-                                    <th>Payment Amount</th>
-                                    <th>Booking Status</th>
+                                    <th>Total Amount</th>
+                                    <th>Paid</th>
+                                    <th>Outstanding</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @php
-                                    $sortedBookings = $customer->bookings->sortBy(function($booking) {
+                                    $sortedBookings = $customer->bookings->sortByDesc(function($booking) {
                                         return $booking->rental_start_date ? \Carbon\Carbon::parse($booking->rental_start_date)->timestamp : 0;
                                     });
                                 @endphp
@@ -562,12 +583,15 @@
                                     @php
                                         $pickupDate = $booking->rental_start_date ?? null;
                                         $returnDate = $booking->rental_end_date ?? null;
-                                        $duration = $pickupDate && $returnDate ? \Carbon\Carbon::parse($pickupDate)->diffInDays(\Carbon\Carbon::parse($returnDate)) + 1 : 'N/A';
+                                        $duration = $pickupDate && $returnDate ? \Carbon\Carbon::parse($pickupDate)->diffInDays(\Carbon\Carbon::parse($returnDate)) + 1 : ($booking->duration ?? 'N/A');
                                         $bookingDate = $booking->lastUpdateDate ?? $booking->created_at ?? null;
                                         
                                         // Calculate total payment amount
                                         $totalPaid = $booking->payments ? $booking->payments->where('payment_status', 'Verified')->sum('total_amount') : 0;
                                         $totalAmount = ($booking->deposit_amount ?? 0) + ($booking->rental_amount ?? 0);
+                                        $outstandingBalance = max(0, $totalAmount - $totalPaid);
+                                        
+                                        $vehicle = $booking->vehicle;
                                     @endphp
                                     <tr>
                                         <td>
@@ -576,10 +600,15 @@
                                             </a>
                                         </td>
                                         <td>
-                                            {{ $bookingDate ? \Carbon\Carbon::parse($bookingDate)->format('d M Y') : 'N/A' }}
+                                            @if($vehicle)
+                                                <div class="fw-semibold">{{ $vehicle->vehicle_brand ?? 'N/A' }} {{ $vehicle->vehicle_model ?? '' }}</div>
+                                                <div class="text-muted small">{{ $vehicle->vehicleType ?? 'N/A' }}</div>
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
                                         </td>
                                         <td>
-                                            <strong>{{ $booking->vehicle->plate_number ?? ($booking->vehicle->plate_no ?? 'N/A') }}</strong>
+                                            <strong>{{ $vehicle->plate_number ?? ($vehicle->plate_no ?? 'N/A') }}</strong>
                                         </td>
                                         <td>
                                             @if($duration !== 'N/A')
@@ -589,26 +618,52 @@
                                             @endif
                                         </td>
                                         <td>
-                                            {{ $pickupDate ? \Carbon\Carbon::parse($pickupDate)->format('d M Y') : 'N/A' }}
+                                            @if($pickupDate)
+                                                <div>{{ \Carbon\Carbon::parse($pickupDate)->format('d M Y') }}</div>
+                                                <div class="text-muted small">{{ \Carbon\Carbon::parse($pickupDate)->format('h:i A') }}</div>
+                                            @else
+                                                N/A
+                                            @endif
                                         </td>
                                         <td>
-                                            {{ $returnDate ? \Carbon\Carbon::parse($returnDate)->format('d M Y') : 'N/A' }}
+                                            @if($returnDate)
+                                                <div>{{ \Carbon\Carbon::parse($returnDate)->format('d M Y') }}</div>
+                                                <div class="text-muted small">{{ \Carbon\Carbon::parse($returnDate)->format('h:i A') }}</div>
+                                            @else
+                                                N/A
+                                            @endif
                                         </td>
                                         <td>
                                             <strong>RM {{ number_format($totalAmount, 2) }}</strong>
-                                            <div class="reservation-info-text">
-                                                <div>Paid: RM {{ number_format($totalPaid, 2) }}</div>
-                                            </div>
                                         </td>
                                         <td>
-                                            <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : 'bg-info')) }}">
+                                            <span class="text-success fw-semibold">RM {{ number_format($totalPaid, 2) }}</span>
+                                        </td>
+                                        <td>
+                                            @if($outstandingBalance > 0)
+                                                <span class="text-danger fw-semibold">RM {{ number_format($outstandingBalance, 2) }}</span>
+                                            @else
+                                                <span class="text-success">RM 0.00</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $booking->booking_status === 'Confirmed' ? 'bg-success' : ($booking->booking_status === 'Pending' ? 'bg-warning text-dark' : ($booking->booking_status === 'Cancelled' ? 'bg-danger' : ($booking->booking_status === 'Completed' ? 'bg-info' : 'bg-secondary'))) }}">
                                                 {{ $booking->booking_status ?? 'N/A' }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ route('admin.bookings.reservations.show', $booking->bookingID) }}" 
+                                                   class="btn btn-outline-primary" 
+                                                   title="View Booking Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted py-4">
+                                        <td colspan="11" class="text-center text-muted py-4">
                                             <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
                                             No booking history recorded yet.
                                         </td>

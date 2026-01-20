@@ -46,7 +46,7 @@
         @if($activeTab === 'vehicle')
             @include('admin.vehicles.vehicle-list')
         @elseif($activeTab === 'voucher')
-            @include('admin.vouchers.index', ['showHeader' => false])
+            @include('admin.vouchers.index')
         @elseif($activeTab === 'reward')
             <div class="card">
                 <div class="card-body text-center py-5">
