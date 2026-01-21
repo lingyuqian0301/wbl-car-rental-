@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
@@ -48,6 +50,31 @@ class User extends Authenticatable
             'isActive' => 'boolean',
             'role' => 'integer',
         ];
+    }
+
+    /**
+     * Dynamically calculate age from DOB whenever accessed
+     * This ensures age is always accurate and never outdated
+     */
+    protected function age(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value, $attributes) {
+                // If DOB exists, calculate age dynamically
+                if (!empty($attributes['DOB'])) {
+                    try {
+                        $dob = Carbon::parse($attributes['DOB']);
+                        return $dob->age;
+                    } catch (\Exception $e) {
+                        return $value; // Fallback to stored value
+                    }
+                }
+                
+                // If no DOB, return stored value
+                return $value;
+            },
+            set: fn ($value) => $value // Allow manual setting
+        );
     }
 
     public function customer(): HasOne

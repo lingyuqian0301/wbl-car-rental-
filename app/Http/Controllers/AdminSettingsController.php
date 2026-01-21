@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Helpers\MalaysianICHelper;
 
 use App\Models\Admin;
 use App\Models\Staff;
@@ -103,7 +104,7 @@ class AdminSettingsController extends Controller
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
                 'DOB' => $validated['DOB'],
-                'age' => Carbon::parse($validated['DOB'])->age,
+                'age' => isset($validated['DOB']) ? Carbon::parse($validated['DOB'])->age : null,
                 'dateRegistered' => $now,
                 'lastLogin' => null,
                 'isActive' => true,
@@ -188,6 +189,14 @@ class AdminSettingsController extends Controller
             'staff_type' => 'required|in:staffit,runner',
         ]);
 
+        // Extract DOB and age from IC if not provided
+        if (!isset($validated['DOB']) && !empty($validated['ic_no'])) {
+            $icData = MalaysianICHelper::extractDOBAndAge($validated['ic_no']);
+            if ($icData['dob']) {
+                $validated['DOB'] = $icData['dob']->format('Y-m-d');
+            }
+        }
+
         DB::beginTransaction();
         try {
             $now = now();
@@ -198,10 +207,9 @@ class AdminSettingsController extends Controller
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
                 'DOB' => $validated['DOB'],
-                'age' => Carbon::parse($validated['DOB'])->age,
+                'age' => isset($validated['DOB']) ? Carbon::parse($validated['DOB'])->age : null,
                 'dateRegistered' => $now,
                 'lastLogin' => null,
-                'isActive' => true,
             ]);
 
             PersonDetails::firstOrCreate([
@@ -317,6 +325,14 @@ class AdminSettingsController extends Controller
 
         // Get tasks from maintenance, fuel, and other sources
         $tasks = collect();
+
+                    // Extract DOB and age from IC if not provided  
+                    if (!isset($validated['DOB']) && !empty($validated['ic_no'])) {
+                        $icData = MalaysianICHelper::extractDOBAndAge($validated['ic_no']);
+                        if ($icData['dob']) {
+                            $validated['DOB'] = $icData['dob']->format('Y-m-d');
+                        }
+                    }
         $totalCommission = 0;
         $taskCount = 0;
 

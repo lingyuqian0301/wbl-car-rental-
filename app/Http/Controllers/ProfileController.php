@@ -9,6 +9,7 @@ use App\Models\International;
 use App\Models\StudentDetails;
 use App\Models\LocalStudent;
 use App\Models\InternationalStudent;
+use App\Helpers\MalaysianICHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -142,6 +143,19 @@ class ProfileController extends Controller
             $identityType = $request->identity_type ?? 'ic';
             $identityValue = $request->identity_value;
             $state = $request->state;
+            // Extract DOB and Age from IC number (for Malaysian customers)
+            if ($identityType === 'ic' && $identityValue) {
+                $icData = MalaysianICHelper::extractDOBAndAge($identityValue);
+                
+                if ($icData['dob']) {
+                    // Update User DOB and age
+                    $user->update([
+                        'DOB' => $icData['dob']->format('Y-m-d'),
+                        'age' => $icData['age']
+                    ]);
+                }
+            }
+
 
             if ($identityValue) {
                 if ($identityType === 'ic') {

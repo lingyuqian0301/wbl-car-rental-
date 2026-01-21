@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\InternationalStudent;
 use App\Models\LocalStudent;
+use App\Helpers\MalaysianICHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,7 +19,18 @@ class ProfileUpdateRequest extends FormRequest
             'address' => ['nullable', 'string'],
 
             'identity_type' => ['required', 'in:ic,passport'],
-            'identity_value' => ['required', 'string'],
+            'identity_value' => [
+                'required', 
+                'string',
+                function ($attribute, $value, $fail) {
+                    // Validate IC format if identity_type is 'ic'
+                    if ($this->input('identity_type') === 'ic') {
+                        if (!MalaysianICHelper::validate($value)) {
+                            $fail('The IC number format is invalid. Please use format: YYMMDD-PB-XXXG or 12 digits.');
+                        }
+                    }
+                },
+            ],
             'state' => ['required', 'string'],
 
             // Custom validation for Unique Matric Number

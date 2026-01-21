@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Helpers\MalaysianICHelper;
 
 use App\Models\Customer;
 use App\Models\Booking;
@@ -195,6 +196,17 @@ class AdminCustomerController extends Controller
 
         DB::beginTransaction();
         try {
+                        // Extract DOB and age from IC if provided
+                        $dob = null;
+                        $age = null;
+                        if (!empty($validated['ic_number'])) {
+                            $icData = MalaysianICHelper::extractDOBAndAge($validated['ic_number']);
+                            if ($icData['dob']) {
+                                $dob = $icData['dob']->format('Y-m-d');
+                                $age = $icData['age'];
+                            }
+                        }
+
             // Create User first
             $user = \App\Models\User::create([
                 'username' => $validated['email'],
@@ -203,6 +215,8 @@ class AdminCustomerController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'password' => Hash::make($validated['password']),
                 'dateRegistered' => $validated['registration_date'] ?? now(),
+                                'DOB' => $dob,
+                                'age' => $age,
                 'isActive' => true,
             ]);
 
