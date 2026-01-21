@@ -90,9 +90,40 @@ class PickupController extends Controller
         }
 
         // =========================================================
-        // 3. KEY IMAGE LOGIC
+        // 3. KEY IMAGE LOGIC - Fetch from recent previous booking
         // =========================================================
-        $keyLocationImage = 'assets/dummy_key_location.jpg'; 
+        $keyLocationImage = null;
+        
+        // Find the most recent completed booking for the SAME VEHICLE (not same customer)
+        // This ensures we get the last return location for THIS specific vehicle
+        $previousBooking = Booking::where('vehicleID', $booking->vehicleID)
+            ->where('bookingID', '!=', $booking->bookingID)
+            ->where('booking_status', 'Completed')
+            ->with(['vehicleConditionForms' => function($query) {
+                $query->where('form_type', 'RETURN')->with('images');
+            }])
+            ->orderBy('rental_end_date', 'desc')
+            ->first();
+        
+        // If found, get the return form and look for key location image
+        if ($previousBooking) {
+            $returnForm = $previousBooking->vehicleConditionForms->where('form_type', 'RETURN')->first();
+            
+            if ($returnForm && $returnForm->images && $returnForm->images->count() > 0) {
+                // Look for image containing 'key_location_image' in the path
+                $keyImage = $returnForm->images->first(function($img) {
+                    return strpos($img->image_path, 'key_location_image') !== false;
+                });
+                
+                if ($keyImage && $keyImage->image_path) {
+                    // Verify file exists before using it
+                    $fullPath = public_path($keyImage->image_path);
+                    if (file_exists($fullPath)) {
+                        $keyLocationImage = $keyImage->image_path;
+                    }
+                }
+            }
+        } 
 
         // Get related data
         $customer = $booking->customer;
@@ -147,7 +178,9 @@ class PickupController extends Controller
 
         if ($request->hasFile('fuel_image')) {
             $file = $request->file('fuel_image');
-            $filename = uniqid() . '_' . time() . '_fuel_image.' . $file->getClientOriginalExtension();
+            // Convert extension to lowercase for Linux compatibility
+            $extension = strtolower($file->getClientOriginalExtension());
+            $filename = uniqid() . '_' . time() . '_fuel_image.' . $extension;
             $file->move($destinationPath, $filename);
             $fuelImgPath = 'images/vehicle_conditions/' . $filename;
         }
@@ -180,8 +213,11 @@ class PickupController extends Controller
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
                 
+                // Convert extension to lowercase for Linux compatibility
+                $extension = strtolower($file->getClientOriginalExtension());
+                
                 // Generate a unique filename
-                $filename = uniqid() . '_' . time() . '_' . $field . '.' . $file->getClientOriginalExtension();
+                $filename = uniqid() . '_' . time() . '_' . $field . '.' . $extension;
                 
                 // Move file
                 $file->move($destinationPath, $filename);
@@ -200,7 +236,9 @@ class PickupController extends Controller
         // Handle extra images
         if ($request->hasFile('additional_images')) {
             foreach ($request->file('additional_images') as $index => $file) {
-                $filename = uniqid() . '_' . time() . '_additional_' . $index . '.' . $file->getClientOriginalExtension();
+                // Convert extension to lowercase for Linux compatibility
+                $extension = strtolower($file->getClientOriginalExtension());
+                $filename = uniqid() . '_' . time() . '_additional_' . $index . '.' . $extension;
                 $file->move($destinationPath, $filename);
                 $relativePath = 'images/vehicle_conditions/' . $filename;
                 

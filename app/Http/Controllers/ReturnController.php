@@ -62,6 +62,7 @@ class ReturnController extends Controller
             'left_image' => 'nullable|image|max:5120',
             'right_image' => 'nullable|image|max:5120',
             'fuel_image' => 'nullable|image|max:5120',
+            'key_location_image' => 'nullable|image|max:5120',
             'additional_images.*' => 'nullable|image|max:5120',
         ], [
             'confirm_return.required' => 'You must confirm the vehicle return',
@@ -86,7 +87,9 @@ class ReturnController extends Controller
 
         if ($request->hasFile('fuel_image')) {
             $file = $request->file('fuel_image');
-            $filename = uniqid() . '_' . time() . '_fuel_image_return.' . $file->getClientOriginalExtension();
+            // Convert extension to lowercase for Linux compatibility
+            $extension = strtolower($file->getClientOriginalExtension());
+            $filename = uniqid() . '_' . time() . '_fuel_image_return.' . $extension;
             $file->move($destinationPath, $filename);
             $fuelImgPath = 'images/vehicle_conditions/' . $filename;
         }
@@ -113,19 +116,22 @@ class ReturnController extends Controller
         }
 
         // E. Save Remaining Images (Excluded fuel_image)
-        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image'];
+        $imageFields = ['front_image', 'back_image', 'left_image', 'right_image', 'key_location_image'];
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $file = $request->file($field);
                 
-                // Generate a unique filename
-                $filename = uniqid() . '_' . time() . '_' . $field . '_return.' . $file->getClientOriginalExtension();
+                // Convert extension to lowercase for Linux compatibility
+                $extension = strtolower($file->getClientOriginalExtension());
                 
-                // Move file to public/images/vehicle_conditions
+                // Generate a unique filename
+                $filename = uniqid() . '_' . time() . '_' . $field . '_return.' . $extension;
+                
+                // Move file
                 $file->move($destinationPath, $filename);
                 
-                // Store the relative URL path in database
+                // Store relative path
                 $relativePath = 'images/vehicle_conditions/' . $filename;
 
                 VehicleConditionImage::create([
@@ -139,7 +145,9 @@ class ReturnController extends Controller
         // Handle additional images
         if ($request->hasFile('additional_images')) {
             foreach ($request->file('additional_images') as $index => $file) {
-                $filename = uniqid() . '_' . time() . '_additional_return_' . $index . '.' . $file->getClientOriginalExtension();
+                // Convert extension to lowercase for Linux compatibility
+                $extension = strtolower($file->getClientOriginalExtension());
+                $filename = uniqid() . '_' . time() . '_additional_return_' . $index . '.' . $extension;
                 $file->move($destinationPath, $filename);
                 $relativePath = 'images/vehicle_conditions/' . $filename;
 

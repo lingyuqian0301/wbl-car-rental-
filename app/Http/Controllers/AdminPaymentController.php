@@ -140,12 +140,18 @@ class AdminPaymentController extends Controller
                 }
             }
 
-            $grandTotal = $booking->rental_amount; 
-            if ($totalPaid >= ($grandTotal - 1.00)) {
-                $booking->update(['booking_status' => 'Confirmed']);
-                $booking->payments()->update(['isPayment_complete' => 1]);
-            } else {
-                $booking->update(['booking_status' => 'Reserved']);
+            // IMPORTANT: Do NOT change status if booking has progressed beyond early payment stages
+            // Status flow: Pending → Reserved → Confirmed → Ongoing → Completed
+            // Only update status if booking is in early stages (Pending, Reserved, Confirmed)
+            // Never reset status from Ongoing or Completed back to Confirmed/Reserved
+            if (!in_array($booking->booking_status, ['Ongoing', 'Completed'])) {
+                $grandTotal = $booking->rental_amount; 
+                if ($totalPaid >= ($grandTotal - 1.00)) {
+                    $booking->update(['booking_status' => 'Confirmed']);
+                    $booking->payments()->update(['isPayment_complete' => 1]);
+                } else {
+                    $booking->update(['booking_status' => 'Reserved']);
+                }
             }
         }
 
@@ -307,16 +313,22 @@ class AdminPaymentController extends Controller
                     }
                 }
 
-                $totalVerifiedPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
-                $grandTotal = $booking->rental_amount ?? 0;
+                // IMPORTANT: Do NOT change status if booking has progressed beyond early payment stages
+                // Status flow: Pending → Reserved → Confirmed → Ongoing → Completed
+                // Only update status if booking is in early stages (Pending, Reserved, Confirmed)
+                // Never reset status from Ongoing or Completed back to earlier stages
+                if (!in_array($booking->booking_status, ['Ongoing', 'Completed'])) {
+                    $totalVerifiedPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+                    $grandTotal = $booking->rental_amount ?? 0;
 
-                if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
-                    $booking->update(['booking_status' => 'Confirmed', 'lastUpdateDate' => now()]);
-                    $booking->payments()->where('payment_status', 'Verified')->update(['isPayment_complete' => 1]);
-                } elseif ($totalVerifiedPaid > 0) {
-                    $booking->update(['booking_status' => 'Reserved', 'lastUpdateDate' => now()]);
-                } else {
-                    $booking->update(['booking_status' => 'Pending', 'lastUpdateDate' => now()]);
+                    if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
+                        $booking->update(['booking_status' => 'Confirmed', 'lastUpdateDate' => now()]);
+                        $booking->payments()->where('payment_status', 'Verified')->update(['isPayment_complete' => 1]);
+                    } elseif ($totalVerifiedPaid > 0) {
+                        $booking->update(['booking_status' => 'Reserved', 'lastUpdateDate' => now()]);
+                    } else {
+                        $booking->update(['booking_status' => 'Pending', 'lastUpdateDate' => now()]);
+                    }
                 }
             }
 
@@ -441,15 +453,21 @@ class AdminPaymentController extends Controller
             $payment->update($updateData);
 
             if ($booking) {
-                $totalVerifiedPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
-                $grandTotal = $booking->rental_amount ?? 0;
+                // IMPORTANT: Do NOT change status if booking has progressed beyond early payment stages
+                // Status flow: Pending → Reserved → Confirmed → Ongoing → Completed
+                // Only update status if booking is in early stages (Pending, Reserved, Confirmed)
+                // Never reset status from Ongoing or Completed back to earlier stages
+                if (!in_array($booking->booking_status, ['Ongoing', 'Completed'])) {
+                    $totalVerifiedPaid = $booking->payments()->where('payment_status', 'Verified')->sum('total_amount');
+                    $grandTotal = $booking->rental_amount ?? 0;
 
-                if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
-                    $booking->update(['booking_status' => 'Confirmed', 'lastUpdateDate' => now()]);
-                } elseif ($totalVerifiedPaid > 0) {
-                    $booking->update(['booking_status' => 'Reserved', 'lastUpdateDate' => now()]);
-                } else {
-                    $booking->update(['booking_status' => 'Pending', 'lastUpdateDate' => now()]);
+                    if ($totalVerifiedPaid >= ($grandTotal - 1.00)) {
+                        $booking->update(['booking_status' => 'Confirmed', 'lastUpdateDate' => now()]);
+                    } elseif ($totalVerifiedPaid > 0) {
+                        $booking->update(['booking_status' => 'Reserved', 'lastUpdateDate' => now()]);
+                    } else {
+                        $booking->update(['booking_status' => 'Pending', 'lastUpdateDate' => now()]);
+                    }
                 }
             }
         }

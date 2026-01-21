@@ -450,6 +450,17 @@
                         <label class="form-label">Mileage</label>
                         <input type="number" name="mileage" class="form-input" placeholder="Enter mileage">
                     </div>
+                    
+                    @if($keyLocationImage)
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <div class="photo-upload">
+                            <div class="photo-label">Key Location <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">(from previous booking)</span></div>
+                            <div class="photo-box" style="min-height: 150px; border: 2px solid var(--primary-blue); cursor: default;">
+                                <img src="{{ asset($keyLocationImage) }}" alt="Previous Key Location" style="max-width: 100%; max-height: 180px; object-fit: contain;">
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
 
                 <div class="fuel-gauge-section">
