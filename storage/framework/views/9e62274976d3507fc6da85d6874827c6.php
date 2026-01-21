@@ -1,5 +1,3 @@
-
-
 <?php $__env->startSection('title', 'Staff IT Dashboard'); ?>
 
 <?php $__env->startSection('content'); ?>

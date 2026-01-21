@@ -368,17 +368,20 @@ class AdminSettingsController extends Controller
         }
 
         // For Runner: Get runner tasks (pickups/returns assigned to this runner)
-        // Only show tasks where the runner is assigned to the booking via staff_served
+        // IMPORTANT: Only show tasks where the runner is explicitly assigned via staff_served
+        // This is different from AdminRunnerTaskController which shows ALL tasks (assigned + unassigned)
         $runnerTasks = collect();
         $runnerTotalCommission = 0;
         $runnerTaskCount = 0;
         
         if ($staff->runner && $staff->user) {
-            // Get bookings where this runner is assigned (staff_served = runner's userID)
-            // AND (pickup != 'HASTA HQ Office' OR return != 'HASTA HQ Office')
-            // Same logic as RunnerTaskController (runner's own task list) - excludes NULL/empty
+            // CRITICAL: Only get bookings where this specific runner is assigned
+            // staff_served MUST equal this runner's userID - no exceptions
+            // This is different from AdminRunnerTaskController which shows ALL tasks (assigned + unassigned)
+            // Then filter for tasks that need runner service (pickup/return != 'HASTA HQ Office')
             $runnerBookings = \App\Models\Booking::with(['vehicle', 'customer.user'])
-                ->where('staff_served', $staff->user->userID)
+                ->whereNotNull('staff_served') // Ensure staff_served is not null
+                ->where('staff_served', $staff->user->userID) // ONLY assigned to this runner - no other runners
                 ->where(function($q) {
                     // Show if pickup_point is NOT 'HASTA HQ Office' (and not null/empty)
                     $q->where(function($subQ) {
